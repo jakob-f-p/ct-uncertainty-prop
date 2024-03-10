@@ -1,0 +1,6 @@
+.idea/
+
+cmake-build-debug-visual-studio/
+qt-creator-build/
+
+CMakeLists.txt.user
