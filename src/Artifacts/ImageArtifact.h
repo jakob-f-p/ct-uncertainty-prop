@@ -8,7 +8,7 @@ public:
 
     void PrintSelf(std::ostream& os, vtkIndent indent) override;
 
-    Type getArtifactType() const override;
+    Type GetArtifactType() const override;
 
     ImageArtifact(const ImageArtifact&) = delete;
     void operator=(const ImageArtifact&) = delete;

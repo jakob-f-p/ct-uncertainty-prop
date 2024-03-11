@@ -6,6 +6,6 @@ void StructureArtifact::PrintSelf(std::ostream& os, vtkIndent indent) {
     os << indent << "ArtifactType: Structure Artifact\n";
 }
 
-Artifact::Type StructureArtifact::getArtifactType() const {
+Artifact::Type StructureArtifact::GetArtifactType() const {
     return Type::STRUCTURE_ARTIFACT;
 }

@@ -8,7 +8,9 @@ public:
 
     void PrintSelf(std::ostream& os, vtkIndent indent) override;
 
-    Type getArtifactType() const override;
+    Type GetArtifactType() const override;
+
+    virtual float EvaluateAtPosition(const double x[3]) = 0;
 
     virtual bool IgnoreCompetingStructures() = 0;
 

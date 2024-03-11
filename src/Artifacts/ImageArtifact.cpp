@@ -6,6 +6,6 @@ void ImageArtifact::PrintSelf(std::ostream& os, vtkIndent indent) {
     os << indent << "ArtifactType: Image Artifact\n";
 }
 
-Artifact::Type ImageArtifact::getArtifactType() const {
+Artifact::Type ImageArtifact::GetArtifactType() const {
     return Type::IMAGE_ARTIFACT;
 }

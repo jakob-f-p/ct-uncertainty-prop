@@ -8,6 +8,8 @@ public:
 
     SubType GetArtifactSubType() const override;
 
+    float EvaluateAtPosition(const double* x) override;
+
     bool IgnoreCompetingStructures() override;
 
     MotionArtifact(const MotionArtifact&) = delete;

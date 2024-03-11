@@ -3,14 +3,14 @@
 void Artifact::PrintSelf(std::ostream& os, vtkIndent indent) {
     this->Superclass::PrintSelf(os, indent);
 
-    os << indent << "Name: '" << name << "'\n";
+    os << indent << "Name: '" << Name << "'\n";
 }
 
-std::string Artifact::getName() {
-    return name;
+std::string Artifact::GetName() {
+    return Name;
 }
 
-std::vector<Artifact::SubType> Artifact::getImageArtifactTypes() {
+std::vector<Artifact::SubType> Artifact::GetImageArtifactTypes() {
     return {
         IMAGE_GAUSSIAN,
         IMAGE_SALT_PEPPER,
@@ -22,7 +22,7 @@ std::vector<Artifact::SubType> Artifact::getImageArtifactTypes() {
     };
 }
 
-std::vector<Artifact::SubType> Artifact::getStructureArtifactTypes() {
+std::vector<Artifact::SubType> Artifact::GetStructureArtifactTypes() {
     return {
         STRUCTURE_STREAKING,
         STRUCTURE_METALLIC,

@@ -11,7 +11,7 @@ public:
 
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
-    std::string getName();
+    std::string GetName();
 
     enum Type {
         IMAGE_ARTIFACT,
@@ -32,13 +32,13 @@ public:
         STRUCTURE_MOTION
     };
 
-    virtual Type getArtifactType() const = 0;
+    virtual Type GetArtifactType() const = 0;
 
     virtual SubType GetArtifactSubType() const = 0;
 
-    static std::vector<SubType> getImageArtifactTypes();
+    static std::vector<SubType> GetImageArtifactTypes();
 
-    static std::vector<SubType> getStructureArtifactTypes();
+    static std::vector<SubType> GetStructureArtifactTypes();
 
     Artifact(const Artifact&) = delete;
     void operator=(const Artifact&) = delete;
@@ -47,5 +47,5 @@ protected:
     Artifact() = default;
     ~Artifact() override = default;
 
-    std::string name;
+    std::string Name;
 };

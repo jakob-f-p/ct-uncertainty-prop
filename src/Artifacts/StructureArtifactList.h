@@ -19,6 +19,8 @@ public:
     StructureArtifactList(const StructureArtifactList&) = delete;
     void operator=(const StructureArtifactList&) = delete;
 
+    void AddArtifactValuesAtPositionToMap(const double x[3], std::map<Artifact::SubType, float>& artifactValueMap);
+
 protected:
     StructureArtifactList() = default;
     ~StructureArtifactList() override = default;
