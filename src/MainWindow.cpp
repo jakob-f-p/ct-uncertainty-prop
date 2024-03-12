@@ -13,10 +13,8 @@ MainWindow::MainWindow() {
 
     auto* modelingWidget = new ModelingWidget();
 
-    auto* testTab1Widget = new QPushButton();
     auto* testTab2Widget = new QPushButton();
 
-    tabWidget->addTab(testTab1Widget, "TestTab1");
     tabWidget->addTab(modelingWidget, "Implicit Data Modeling");
     tabWidget->addTab(testTab2Widget, "TestTab2");
 

@@ -7,8 +7,8 @@
 namespace CT {
 
     struct TissueOrMaterialType {
-        std::string name;
-        float ctNumber; // value on the Hounsfield scale
+        std::string Name;
+        float CtNumber; // value on the Hounsfield scale
 
         friend std::ostream& operator<< (std::ostream& stream, const TissueOrMaterialType& type);
     };
@@ -35,5 +35,5 @@ namespace CT {
     NameTissueTypeMap GetDefaultTissueTypes();
 
     TissueOrMaterialType GetTissueOrMaterialTypeByName(const std::string& tissueName,
-                                                       const CT::NameTissueTypeMap &tissueTypeMap = defaultTissueTypes);
+                                                       const CT::NameTissueTypeMap& tissueTypeMap = defaultTissueTypes);
 }

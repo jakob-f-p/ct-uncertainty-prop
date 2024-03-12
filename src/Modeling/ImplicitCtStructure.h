@@ -5,6 +5,7 @@
 #include <vtkImplicitFunction.h>
 
 #include "CT.h"
+#include "CtStructure.h"
 #include "../Artifacts/StructureArtifactList.h"
 
 
@@ -14,12 +15,14 @@
  *
  * This class is used in ImplicitCsgTree as an implicit source of data.
  */
-class ImplicitCtStructure : public vtkObject {
+class ImplicitCtStructure : public CtStructure {
 public:
     static ImplicitCtStructure* New();
-    vtkTypeMacro(ImplicitCtStructure, vtkObject);
+    vtkTypeMacro(ImplicitCtStructure, CtStructure);
 
     void PrintSelf(ostream& os, vtkIndent indent) override;
+
+    vtkMTimeType GetMTime() override;
 
     /**
      * Set/Get the implicit function separating the function domain into position inside, on, and outside of the
@@ -28,18 +31,19 @@ public:
     vtkSetObjectMacro(ImplicitFunction, vtkImplicitFunction);
     vtkGetObjectMacro(ImplicitFunction, vtkImplicitFunction);
 
+    void SetTransform(vtkAbstractTransform* transform) override;
+    vtkAbstractTransform* GetTransform() override;
+
     /**
      * Set the type of tissue.
      */
     void SetTissueType(CT::TissueOrMaterialType tissueType);
 
-    /**
-     * Return f(x, y z) where f > 0 is outside of the surface, f = 0 is on the surface, and f < 0 is inside the surface.
-     * Additionally, the distance to the surface is positively correlated with the function value at a given position.
-     * @param x the input position vector consisting of x, y, and z coordinates
-     * @return the function value f(x, y, z) at position x
-     */
-    double FunctionValue(const double x[3]);
+    void EvaluateAtPosition(const double x[3], Result& result) override;
+
+    float FunctionValue(const double x[3]) override;
+
+    bool CtStructureExists(const CtStructure* structure) override;
 
     ImplicitCtStructure(const ImplicitCtStructure&) = delete;
     void operator=(const ImplicitCtStructure&) = delete;
