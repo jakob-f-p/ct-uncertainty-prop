@@ -9,7 +9,7 @@ void ImplicitStructureCombination::PrintSelf(ostream& os, vtkIndent indent)
 {
     this->Superclass::PrintSelf(os, indent);
 
-    os << indent << "Operator Type: " << GetOperatorTypeName();
+    os << indent << "Operator Type: " << GetOperatorTypeName() << "\n";
 
     os << indent << "Ct Structures:\n";
     auto nextIndent = indent.GetNextIndent();
@@ -42,7 +42,7 @@ void ImplicitStructureCombination::Delete() {
 
 void ImplicitStructureCombination::AddCtStructure(CtStructure& ctStructure) {
     if (auto search = std::find(CtStructures.begin(), CtStructures.end(), &ctStructure);
-        search == CtStructures.end()) {
+        search != CtStructures.end()) {
         vtkWarningMacro("Trying to add implicit CT structure which is already present");
     }
 
@@ -221,9 +221,12 @@ float ImplicitStructureCombination::FunctionValue(const double x[3]) {
 }
 
 bool ImplicitStructureCombination::CtStructureExists(const CtStructure* structure) {
-    return this == structure || std::any_of(CtStructures.begin(),
-                                            CtStructures.end(),
-                                            [structure](CtStructure* child) { return child == structure; });
+    return this == structure
+            || std::any_of(CtStructures.begin(),
+                           CtStructures.end(),
+                           [structure](CtStructure* child) {
+                return child->CtStructureExists(structure);
+            });
 }
 
 ImplicitStructureCombination*

@@ -7,4 +7,9 @@ Q_OBJECT
 
 public:
     ModelingWidget();
+
+private:
+    void SetUpRenderingWidgetForShowingImplicitData();
+
+    void SetUpDockWidgetForImplicitCsgTreeModeling();
 };

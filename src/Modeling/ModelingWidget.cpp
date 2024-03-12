@@ -5,18 +5,32 @@
 #include <QPushButton>
 #include <QTreeView>
 
+#include <vtkNew.h>
+#include <vtkGenericOpenGLRenderWindow.h>
+
 #include "ModelingWidget.h"
 
 ModelingWidget::ModelingWidget() {
+
+    SetUpRenderingWidgetForShowingImplicitData();
+
+    SetUpDockWidgetForImplicitCsgTreeModeling();
+}
+
+void ModelingWidget::SetUpRenderingWidgetForShowingImplicitData() {
+    vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
+//    renderWindow->SetSize(1200, 600);
+//    renderWindow->AddRenderer(volumeRenderer);
+//    renderWindow->AddRenderer(contourRenderer);
+    renderWindow->SetWindowName("CT-Data");
+
     auto* renderingWidget = new QVTKOpenGLNativeWidget();
+    renderingWidget->setRenderWindow(renderWindow);
 
     setCentralWidget(renderingWidget);
+}
 
-//    QPalette greenPal = QPalette();
-//    greenPal.setColor(QPalette::Window, Qt::green);
-//    widget->setAutoFillBackground(true);
-//    widget->setPalette(greenPal);
-
+void ModelingWidget::SetUpDockWidgetForImplicitCsgTreeModeling() {
     auto* dockWidget = new QDockWidget();
     dockWidget->setFeatures(
             QDockWidget::DockWidgetFeature::DockWidgetMovable | QDockWidget::DockWidgetFeature::DockWidgetFloatable);
@@ -46,3 +60,9 @@ ModelingWidget::ModelingWidget() {
 
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dockWidget);
 }
+
+//    QPalette greenPal = QPalette();
+//    greenPal.setColor(QPalette::Window, Qt::green);
+//    widget->setAutoFillBackground(true);
+//    widget->setPalette(greenPal);
+
