@@ -1,9 +1,9 @@
 #pragma once
 
+#include "../Artifacts/Artifact.h"
+
 #include <vtkAbstractTransform.h>
 #include <vtkObject.h>
-
-#include "../Artifacts/Artifact.h"
 
 class CtStructure : public vtkObject {
 public:

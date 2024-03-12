@@ -1,9 +1,9 @@
+#include "ImplicitCtStructure.h"
+
+#include <vtkNew.h>
 #include <vtkObjectFactory.h>
 
 #include <utility>
-#include <vtkNew.h>
-
-#include "ImplicitCtStructure.h"
 
 vtkStandardNewMacro(ImplicitCtStructure)
 

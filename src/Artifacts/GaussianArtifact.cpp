@@ -1,6 +1,6 @@
-#include <vtkObjectFactory.h>
-
 #include "GaussianArtifact.h"
+
+#include <vtkObjectFactory.h>
 
 vtkStandardNewMacro(GaussianArtifact)
 

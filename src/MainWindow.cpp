@@ -1,7 +1,9 @@
-#include <QStatusBar>
-#include <QPushButton>
 #include "MainWindow.h"
+
 #include "Modeling/ModelingWidget.h"
+
+#include <QPushButton>
+#include <QStatusBar>
 
 MainWindow::MainWindow() {
     resize(1400, 700);

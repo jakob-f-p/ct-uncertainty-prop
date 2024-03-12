@@ -1,6 +1,6 @@
-#include <vtkObjectFactory.h>
-
 #include "MotionArtifact.h"
+
+#include <vtkObjectFactory.h>
 
 vtkStandardNewMacro(MotionArtifact)
 

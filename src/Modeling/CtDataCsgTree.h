@@ -1,7 +1,5 @@
 #pragma once
 
-#include "CtStructure.h"
-#include "ImplicitCtStructure.h"
 #include "ImplicitStructureCombination.h"
 
 class CtDataCsgTree : public vtkObject {

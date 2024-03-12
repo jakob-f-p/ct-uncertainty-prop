@@ -1,6 +1,6 @@
-#include <vtkObjectFactory.h>
-
 #include "CtDataCsgTree.h"
+
+#include <vtkObjectFactory.h>
 
 vtkStandardNewMacro(CtDataCsgTree)
 

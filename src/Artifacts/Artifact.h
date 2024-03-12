@@ -1,9 +1,9 @@
 #pragma once
 
+#include <vtkObject.h>
+
 #include <string>
 #include <vector>
-
-#include <vtkObject.h>
 
 class Artifact : public vtkObject {
 public:

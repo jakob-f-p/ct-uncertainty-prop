@@ -1,7 +1,7 @@
+#include "CT.h"
+
 #include <vtkObject.h>
 #include <vtkSetGet.h>
-
-#include "CT.h"
 
 std::ostream& CT::operator<<(ostream& stream, const CT::TissueOrMaterialType& type) {
     return stream << type.Name << ": ('" << type.CtNumber << "')";

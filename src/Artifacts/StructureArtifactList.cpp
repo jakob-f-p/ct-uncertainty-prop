@@ -1,7 +1,7 @@
+#include "StructureArtifactList.h"
+
 #include <vtkObjectFactory.h>
 #include <vtkSetGet.h>
-
-#include "StructureArtifactList.h"
 
 vtkStandardNewMacro(StructureArtifactList)
 

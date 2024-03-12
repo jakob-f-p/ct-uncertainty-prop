@@ -1,7 +1,7 @@
-#include <vtkObjectFactory.h>
-
 #include "CT.h"
 #include "ImplicitStructureCombination.h"
+
+#include <vtkObjectFactory.h>
 
 vtkStandardNewMacro(ImplicitStructureCombination);
 

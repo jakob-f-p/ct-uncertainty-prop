@@ -1,10 +1,10 @@
 #pragma once
 
+#include "StructureArtifact.h"
+
 #include <algorithm>
 #include <map>
 #include <vector>
-
-#include "StructureArtifact.h"
 
 class StructureArtifactList : public vtkObject {
 public:

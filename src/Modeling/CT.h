@@ -32,6 +32,12 @@ namespace CT {
         };
     }
 
+    #define ENUM_DEFINITION(name, ctNumber) name,
+
+    enum TissueOrMaterialTypes {
+        FOR_EACH_TISSUE_OR_MATERIAL_TYPE(ENUM_DEFINITION)
+    };
+
     NameTissueTypeMap GetDefaultTissueTypes();
 
     TissueOrMaterialType GetTissueOrMaterialTypeByName(const std::string& tissueName,

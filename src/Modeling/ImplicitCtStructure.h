@@ -1,12 +1,11 @@
 #pragma once
 
-#include <mutex>
-
-#include <vtkImplicitFunction.h>
-
 #include "CT.h"
 #include "CtStructure.h"
+
 #include "../Artifacts/StructureArtifactList.h"
+
+#include <vtkImplicitFunction.h>
 
 
 /**

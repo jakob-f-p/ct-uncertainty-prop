@@ -3,7 +3,6 @@
 #include "ImplicitCtStructure.h"
 
 class ImplicitStructureCombination : public CtStructure {
-
 public:
     static ImplicitStructureCombination* New();
     vtkTypeMacro(ImplicitStructureCombination, CtStructure)
