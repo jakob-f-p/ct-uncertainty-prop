@@ -21,17 +21,15 @@ vtkMTimeType ImplicitCtStructure::GetMTime() {
     return std::max(thisMTime, implicitFunctionMTime);
 }
 
-void ImplicitCtStructure::SetTransform(vtkTransform* transform) {
+void ImplicitCtStructure::SetTransform(const QVariant& trs) {
     if (!this->ImplicitFunction) {
         vtkErrorMacro("No implicit function specified. Cannot set transform.");
         return;
     }
 
-    this->ImplicitFunction->SetTransform(transform);
-}
+    this->Transform->SetTranslationRotationScaling(trs);
 
-vtkTransform* ImplicitCtStructure::GetTransform() {
-    return dynamic_cast<vtkTransform*>(this->ImplicitFunction->GetTransform());
+    this->ImplicitFunction->SetTransform(Transform);
 }
 
 ImplicitCtStructure::ImplicitCtStructure() {
@@ -77,10 +75,6 @@ int ImplicitCtStructure::ChildCount() const {
     return 0;
 }
 
-int ImplicitCtStructure::ColumnCount() const {
-    return 2;
-}
-
 const std::vector<CtStructure*>& ImplicitCtStructure::GetChildren() const {
     return {};
 }
@@ -91,8 +85,13 @@ const CtStructure* ImplicitCtStructure::ChildAt(int idx) const {
 
 QVariant ImplicitCtStructure::Data(int idx) const {
     switch (idx) {
-        case 1: return Tissue.Name.c_str();
-        case 2: return ImplicitFunction->GetClassNameA();
+        case SUBTYPE: return ImplicitFunction->GetClassName();
+        case NAME: return Name.c_str();
+        case DETAILS: return Tissue.Name.c_str();
+        case LONG_NAME: return ("Basic Structure: " + std::string(ImplicitFunction->GetClassName()) + (Name.empty() ? "" : " (" + Name + ")")).c_str();
+        case TRANSFORM: return GetTransformQVariant();
+        case TISSUE_TYPE: return QMap<QString, QVariant>{ {Tissue.Name.c_str(), Tissue.CtNumber} };
+//        case STRUCTURE_ARTIFACTS: return {}; // TODO
         default: return {};
     }
 }

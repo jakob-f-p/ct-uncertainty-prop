@@ -1,21 +1,37 @@
 #pragma once
 
+#include "SimpleTransform.h"
 #include "../Artifacts/Artifact.h"
 
 #include <QVariant>
 
-#include <vtkTransform.h>
 #include <vtkObject.h>
 
+/**
+ * QDataModel columns:
+ *  0: item subtype QString (operator type / implicit function type)
+ *  1: item name defined by user QString
+ *  2: item details QString
+ *  3: long name QString
+ *  4: Transform QList<QList<float>> where (0: translate, 1: rotate, 2: scale)
+ *  ImplicitCtStructure:
+ *    5: Tissue or Material Type QMap<QString, float>
+ *    6: Structure Artifacts ?
+ *  ImplicitStructureCombination
+ *    7: Operator Type QMap<QString, OperatorType>
+ */
 class CtStructure : public vtkObject {
 public:
     vtkTypeMacro(CtStructure, vtkObject)
 
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
-    virtual void SetTransform(vtkTransform* transform) = 0;
+    void SetName(std::string name);
+    std::string GetName() const;
 
-    virtual vtkTransform* GetTransform() = 0;
+    virtual void SetTransform(const QVariant& trs) = 0;
+    const SimpleTransform* GetTransform() const;
+    QVariant GetTransformQVariant() const;
 
     struct Result {
         float FunctionValue;
@@ -35,9 +51,21 @@ public:
 
     virtual bool CtStructureExists(const CtStructure* structure) = 0;
 
+    enum Column {
+        SUBTYPE = 0,
+        NAME,
+        DETAILS,
+        LONG_NAME,
+        TRANSFORM,
+        TISSUE_TYPE,
+        STRUCTURE_ARTIFACTS,
+        OPERATOR_TYPE,
+        NUMBER_OF_COLUMNS
+    };
+
     virtual int ChildCount() const = 0;
 
-    virtual int ColumnCount() const = 0;
+    static int ColumnCount() ;
 
     CtStructure* GetParent() const;
 
@@ -56,7 +84,9 @@ public:
 
 protected:
     CtStructure();
-    ~CtStructure() override = default;
+    ~CtStructure() override;
 
+    std::string Name;
+    SimpleTransform* Transform;
     CtStructure* Parent;    // always of type implicit structure combination
 };

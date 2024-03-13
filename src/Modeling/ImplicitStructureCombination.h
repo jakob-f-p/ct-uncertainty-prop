@@ -17,9 +17,7 @@ public:
 
     vtkMTimeType GetMTime() override;
 
-    void SetTransform(vtkTransform* transform) override;
-
-    vtkTransform* GetTransform() override;
+    void SetTransform(const QVariant& trs) override;
 
     void EvaluateAtPosition(const double x[3], Result& result) override;
 
@@ -31,13 +29,11 @@ public:
                                            ImplicitStructureCombination* grandParent);
 
     void SetOperatorType(OperatorType operatorType);
-    OperatorType GetOperatorType();
+    OperatorType GetOperatorType() const;
 
     bool CtStructureExists(const CtStructure* structure) override;
 
     int ChildCount() const override;
-
-    int ColumnCount() const override;
 
     const CtStructure* ChildAt(int idx) const override;
 
@@ -54,10 +50,9 @@ protected:
 
     OperatorType OpType;
     std::vector<CtStructure*> CtStructures;
-    vtkTransform* Transform;
 
 private:
-    const char* GetOperatorTypeName() const;
+    std::string GetOperatorTypeName() const;
 
     void ReplaceConnection(CtStructure* oldChildPointer, CtStructure* newChildPointer);
 };

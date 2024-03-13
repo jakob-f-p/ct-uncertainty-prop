@@ -1,7 +1,28 @@
 #include "CtStructure.h"
 
+#include <utility>
+
 void CtStructure::PrintSelf(ostream &os, vtkIndent indent) {
     Superclass::PrintSelf(os, indent);
+}
+
+void CtStructure::SetName(std::string name) {
+    Name = std::move(name);
+}
+std::string CtStructure::GetName() const {
+    return Name;
+}
+
+const SimpleTransform* CtStructure::GetTransform() const {
+    return Transform;
+}
+
+QVariant CtStructure::GetTransformQVariant() const {
+    return Transform->GetTranslationRotationScaling();
+}
+
+int CtStructure::ColumnCount() {
+    return Column::NUMBER_OF_COLUMNS;
 }
 
 CtStructure* CtStructure::GetParent() const {
@@ -27,4 +48,9 @@ int CtStructure::ChildIndex() const {
 
 CtStructure::CtStructure() {
     Parent = nullptr;
+    Transform = SimpleTransform::New();
+}
+
+CtStructure::~CtStructure() {
+    Transform->Delete();
 }

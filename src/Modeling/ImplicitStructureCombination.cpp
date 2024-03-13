@@ -3,8 +3,6 @@
 
 #include <vtkObjectFactory.h>
 
-#include <cassert>
-
 vtkStandardNewMacro(ImplicitStructureCombination);
 
 void ImplicitStructureCombination::PrintSelf(ostream& os, vtkIndent indent)
@@ -77,14 +75,9 @@ CtStructure* ImplicitStructureCombination::RemoveImplicitCtStructure(ImplicitCtS
 
 ImplicitStructureCombination::ImplicitStructureCombination() {
     this->OpType = UNION;
-    this->Transform = vtkTransform::New();
 }
 
 ImplicitStructureCombination::~ImplicitStructureCombination() {
-    if (this->Transform) {
-        this->Transform->Delete();
-    }
-
     for (const auto& structure : CtStructures) {
         structure->UnRegister(this);
     }
@@ -94,11 +87,11 @@ void ImplicitStructureCombination::SetOperatorType(ImplicitStructureCombination:
     this->OpType = operatorType;
 }
 
-ImplicitStructureCombination::OperatorType ImplicitStructureCombination::GetOperatorType() {
+ImplicitStructureCombination::OperatorType ImplicitStructureCombination::GetOperatorType() const {
     return this->OpType;
 }
 
-const char* ImplicitStructureCombination::GetOperatorTypeName() const {
+std::string ImplicitStructureCombination::GetOperatorTypeName() const {
     switch (OpType) {
         case UNION:        return "Union";
         case INTERSECTION: return "Intersection";
@@ -108,12 +101,8 @@ const char* ImplicitStructureCombination::GetOperatorTypeName() const {
     return "";
 }
 
-void ImplicitStructureCombination::SetTransform(vtkTransform* transform) {
-    vtkSetObjectBodyMacro(Transform, vtkAbstractTransform, transform);
-}
-
-vtkTransform* ImplicitStructureCombination::GetTransform() {
-    return Transform;
+void ImplicitStructureCombination::SetTransform(const QVariant& trs) {
+    this->Transform->SetTranslationRotationScaling(trs);
 }
 
 void ImplicitStructureCombination::EvaluateAtPosition(const double x[3], CtStructure::Result& result) {
@@ -236,10 +225,6 @@ int ImplicitStructureCombination::ChildCount() const {
     return static_cast<int>(CtStructures.size());
 }
 
-int ImplicitStructureCombination::ColumnCount() const {
-    return 2;
-}
-
 const std::vector<CtStructure*>& ImplicitStructureCombination::GetChildren() const {
     return CtStructures;
 }
@@ -255,16 +240,11 @@ const CtStructure* ImplicitStructureCombination::ChildAt(int idx) const {
 
 QVariant ImplicitStructureCombination::Data(int idx) const {
     switch (idx) {
-        case 0: return GetOperatorTypeName();
-        case 1: {
-            QList<QVariant> transformMatrix;
-            transformMatrix.reserve(16);
-            double* transformData = Transform->GetMatrix()->GetData();
-            for (int i = 0; i < 16; ++i) {
-                transformMatrix.push_back(transformData[i]);
-            }
-            return {transformMatrix};
-        }
+        case SUBTYPE: return GetOperatorTypeName().c_str();
+        case NAME: return Name.c_str();
+        case LONG_NAME: return ("Combination: " + GetOperatorTypeName() + (Name.empty() ? "" : " (" + Name + ")")).c_str();
+        case TRANSFORM: return GetTransformQVariant();
+        case OPERATOR_TYPE: return QMap<QString, QVariant>{ {GetOperatorTypeName().c_str(), GetOperatorType()} };
         default: return {};
     }
 }

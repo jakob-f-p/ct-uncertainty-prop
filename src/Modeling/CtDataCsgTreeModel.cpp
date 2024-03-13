@@ -70,3 +70,16 @@ QVariant CtDataCsgTreeModel::data(const QModelIndex& index, int role) const {
     auto* item = static_cast<const CtStructure*>(index.internalPointer());
     return item->Data(index.column());
 }
+
+QVariant CtDataCsgTreeModel::headerData(int section, Qt::Orientation orientation, int role) const {
+    if (orientation != Qt::Horizontal || role != Qt::DisplayRole) {
+        return {};
+    }
+
+    switch (section) {
+        case CtStructure::Column::SUBTYPE: return "Type";
+        case CtStructure::Column::NAME: return "Name";
+        case CtStructure::Column::DETAILS: return "Details";
+        default: return {};
+    }
+}
