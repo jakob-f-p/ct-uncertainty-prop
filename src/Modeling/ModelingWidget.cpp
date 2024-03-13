@@ -1,14 +1,15 @@
-#include <QDockWidget.h>
-#include <QVTKOpenGLNativeWidget.h>
-#include <QFrame>
-#include <QVBoxLayout>
-#include <QPushButton>
-#include <QTreeView>
+#include "../App.h"
+#include "ModelingWidget.h"
+#include "CtDataCsgTreeModel.h"
 
 #include <vtkNew.h>
 #include <vtkGenericOpenGLRenderWindow.h>
 
-#include "ModelingWidget.h"
+#include <QDockWidget.h>
+#include <QVTKOpenGLNativeWidget.h>
+#include <QVBoxLayout>
+#include <QPushButton>
+#include <QTreeView>
 
 ModelingWidget::ModelingWidget() {
 
@@ -19,9 +20,6 @@ ModelingWidget::ModelingWidget() {
 
 void ModelingWidget::SetUpRenderingWidgetForShowingImplicitData() {
     vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
-//    renderWindow->SetSize(1200, 600);
-//    renderWindow->AddRenderer(volumeRenderer);
-//    renderWindow->AddRenderer(contourRenderer);
     renderWindow->SetWindowName("CT-Data");
 
     auto* renderingWidget = new QVTKOpenGLNativeWidget();
@@ -50,7 +48,10 @@ void ModelingWidget::SetUpDockWidgetForImplicitCsgTreeModeling() {
     horizontalLayout->addWidget(combineWithStructure);
     horizontalLayout->addWidget(removeStructureButton);
 
+    auto* treeModel = new CtDataCsgTreeModel(*App::GetInstance()->GetCtDataCsgTree());
     auto* treeView = new QTreeView();
+    treeView->setModel(treeModel);
+
 
     auto* verticalLayout = new QVBoxLayout(dockWidgetContent);
     verticalLayout->addWidget(buttonBarWidget);

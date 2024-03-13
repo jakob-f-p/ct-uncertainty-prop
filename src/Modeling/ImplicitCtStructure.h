@@ -30,8 +30,8 @@ public:
     vtkSetObjectMacro(ImplicitFunction, vtkImplicitFunction);
     vtkGetObjectMacro(ImplicitFunction, vtkImplicitFunction);
 
-    void SetTransform(vtkAbstractTransform* transform) override;
-    vtkAbstractTransform* GetTransform() override;
+    void SetTransform(vtkTransform* transform) override;
+    vtkTransform* GetTransform() override;
 
     /**
      * Set the type of tissue.
@@ -43,6 +43,16 @@ public:
     float FunctionValue(const double x[3]) override;
 
     bool CtStructureExists(const CtStructure* structure) override;
+
+    int ChildCount() const override;
+
+    int ColumnCount() const override;
+
+    const std::vector<CtStructure*>& GetChildren() const override;
+
+    const CtStructure* ChildAt(int idx) const override;
+
+    QVariant Data(int idx) const override;
 
     ImplicitCtStructure(const ImplicitCtStructure&) = delete;
     void operator=(const ImplicitCtStructure&) = delete;

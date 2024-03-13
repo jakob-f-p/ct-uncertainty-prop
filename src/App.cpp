@@ -44,10 +44,10 @@ App::~App() {
 int App::Run() {
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 
+    InitializeWithTestData();
+
     MainWindow mainWindow;
     mainWindow.show();
-
-    InitializeWithTestData();
 
     return QApplication::exec();
 }
@@ -82,4 +82,8 @@ void App::InitializeWithTestData() {
 
     CtDataTree->RemoveImplicitCtStructure(*implicitCtStructure2);
     CtDataTree->Print(std::cout);
+}
+
+const CtDataCsgTree* App::GetCtDataCsgTree() const {
+    return CtDataTree;
 }

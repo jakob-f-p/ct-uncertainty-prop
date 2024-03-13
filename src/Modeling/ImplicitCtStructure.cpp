@@ -21,7 +21,7 @@ vtkMTimeType ImplicitCtStructure::GetMTime() {
     return std::max(thisMTime, implicitFunctionMTime);
 }
 
-void ImplicitCtStructure::SetTransform(vtkAbstractTransform* transform) {
+void ImplicitCtStructure::SetTransform(vtkTransform* transform) {
     if (!this->ImplicitFunction) {
         vtkErrorMacro("No implicit function specified. Cannot set transform.");
         return;
@@ -30,8 +30,8 @@ void ImplicitCtStructure::SetTransform(vtkAbstractTransform* transform) {
     this->ImplicitFunction->SetTransform(transform);
 }
 
-vtkAbstractTransform* ImplicitCtStructure::GetTransform() {
-    return this->ImplicitFunction->GetTransform();
+vtkTransform* ImplicitCtStructure::GetTransform() {
+    return dynamic_cast<vtkTransform*>(this->ImplicitFunction->GetTransform());
 }
 
 ImplicitCtStructure::ImplicitCtStructure() {
@@ -71,4 +71,28 @@ float ImplicitCtStructure::FunctionValue(const double x[3]) {
 
 bool ImplicitCtStructure::CtStructureExists(const CtStructure* structure) {
     return this == structure;
+}
+
+int ImplicitCtStructure::ChildCount() const {
+    return 0;
+}
+
+int ImplicitCtStructure::ColumnCount() const {
+    return 2;
+}
+
+const std::vector<CtStructure*>& ImplicitCtStructure::GetChildren() const {
+    return {};
+}
+
+const CtStructure* ImplicitCtStructure::ChildAt(int idx) const {
+    return nullptr;
+}
+
+QVariant ImplicitCtStructure::Data(int idx) const {
+    switch (idx) {
+        case 1: return Tissue.Name.c_str();
+        case 2: return ImplicitFunction->GetClassNameA();
+        default: return {};
+    }
 }

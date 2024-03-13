@@ -28,6 +28,7 @@ void CtDataCsgTree::AddImplicitCtStructure(ImplicitCtStructure& implicitCtStruct
         }
 
         Root = &implicitCtStructure;
+        Root->SetParent(nullptr);
         Root->Register(this);
 
         this->Modified();
@@ -63,6 +64,10 @@ void CtDataCsgTree::CombineWithImplicitCtStructure(ImplicitCtStructure& implicit
 
     previousRoot->UnRegister(this);
 
+    newRoot->SetParent(nullptr);
+    previousRoot->SetParent(newRoot);
+    implicitCtStructure.SetParent(newRoot);
+
     Root = newRoot;
 }
 
@@ -78,17 +83,21 @@ void CtDataCsgTree::RemoveImplicitCtStructure(ImplicitCtStructure& implicitCtStr
         return;
     }
 
-    ImplicitStructureCombination* root = ImplicitStructureCombination::SafeDownCast(Root);
-    ImplicitStructureCombination* parent = root->FindParentOfCtStructure(implicitCtStructure);
+    auto* parent = dynamic_cast<ImplicitStructureCombination*>(implicitCtStructure.GetParent());
 
     if (!parent) {
         vtkErrorMacro("Parent cannot be null here");
         return;
     }
 
-    ImplicitStructureCombination* grandParent = root->FindParentOfCtStructure(*parent);
+    auto* grandParent = dynamic_cast<ImplicitStructureCombination*>(parent->GetParent());
 
-    parent->RemoveImplicitCtStructure(&implicitCtStructure, grandParent);
+    CtStructure* newRoot = parent->RemoveImplicitCtStructure(&implicitCtStructure, grandParent);
+    if (newRoot) {
+        Root->UnRegister(this);
+        Root = nullptr;
+        newRoot->SetParent(nullptr);
+    }
 }
 
 CtDataCsgTree::CtDataCsgTree() {
@@ -99,6 +108,10 @@ CtDataCsgTree::~CtDataCsgTree() {
     if (Root) {
         Root->Delete();
     }
+}
+
+CtStructure* CtDataCsgTree::GetRoot() const {
+    return Root;
 }
 
 bool CtDataCsgTree::CtStructureExists(const CtStructure& ctStructure) {

@@ -3,6 +3,8 @@
 
 #include <vtkObjectFactory.h>
 
+#include <cassert>
+
 vtkStandardNewMacro(ImplicitStructureCombination);
 
 void ImplicitStructureCombination::PrintSelf(ostream& os, vtkIndent indent)
@@ -32,14 +34,6 @@ vtkMTimeType ImplicitStructureCombination::GetMTime() {
 }
 
 
-void ImplicitStructureCombination::Delete() {
-    for (const auto& structure : CtStructures) {
-        structure->Delete();
-    }
-
-    Superclass::Delete();
-}
-
 void ImplicitStructureCombination::AddCtStructure(CtStructure& ctStructure) {
     if (auto search = std::find(CtStructures.begin(), CtStructures.end(), &ctStructure);
         search != CtStructures.end()) {
@@ -47,6 +41,7 @@ void ImplicitStructureCombination::AddCtStructure(CtStructure& ctStructure) {
     }
 
     CtStructures.push_back(&ctStructure);
+    ctStructure.SetParent(this);
     ctStructure.Register(this);
 
     this->Modified();
@@ -73,6 +68,7 @@ CtStructure* ImplicitStructureCombination::RemoveImplicitCtStructure(ImplicitCtS
             return remainingStructure;
         }
 
+        remainingStructure->SetParent(grandParent);
         grandParent->ReplaceConnection(this, remainingStructure);
     }
 
@@ -81,7 +77,7 @@ CtStructure* ImplicitStructureCombination::RemoveImplicitCtStructure(ImplicitCtS
 
 ImplicitStructureCombination::ImplicitStructureCombination() {
     this->OpType = UNION;
-    this->Transform = nullptr;
+    this->Transform = vtkTransform::New();
 }
 
 ImplicitStructureCombination::~ImplicitStructureCombination() {
@@ -102,21 +98,21 @@ ImplicitStructureCombination::OperatorType ImplicitStructureCombination::GetOper
     return this->OpType;
 }
 
-const char* ImplicitStructureCombination::GetOperatorTypeName() {
+const char* ImplicitStructureCombination::GetOperatorTypeName() const {
     switch (OpType) {
         case UNION:        return "Union";
         case INTERSECTION: return "Intersection";
         case DIFFERENCE:   return "Difference";
     }
 
-    return nullptr;
+    return "";
 }
 
-void ImplicitStructureCombination::SetTransform(vtkAbstractTransform* transform) {
+void ImplicitStructureCombination::SetTransform(vtkTransform* transform) {
     vtkSetObjectBodyMacro(Transform, vtkAbstractTransform, transform);
 }
 
-vtkAbstractTransform* ImplicitStructureCombination::GetTransform() {
+vtkTransform* ImplicitStructureCombination::GetTransform() {
     return Transform;
 }
 
@@ -229,36 +225,46 @@ bool ImplicitStructureCombination::CtStructureExists(const CtStructure* structur
             });
 }
 
-ImplicitStructureCombination*
-ImplicitStructureCombination::FindParentOfCtStructure(CtStructure& ctStructure) {
-    for (const auto& structure : CtStructures) {
-        if (structure == &ctStructure) {
-            return this;
-        }
-    }
-
-    ImplicitStructureCombination* parent;
-    ImplicitStructureCombination* implicitStructureCombination;
-    for (const auto& structure : CtStructures) {
-        if (structure->IsA("ImplicitStructureCombination")) {
-            implicitStructureCombination = dynamic_cast<ImplicitStructureCombination*>(structure);
-            parent = implicitStructureCombination->FindParentOfCtStructure(ctStructure);
-            if (parent) {
-                return parent;
-            }
-        }
-    }
-
-    return nullptr;
-}
-
-size_t ImplicitStructureCombination::GetNumberOfChildStructures() {
-    return CtStructures.size();
-}
-
 void ImplicitStructureCombination::ReplaceConnection(CtStructure* oldChildPointer, CtStructure* newChildPointer) {
     std::replace(CtStructures.begin(), CtStructures.end(), oldChildPointer, newChildPointer);
 
     newChildPointer->Register(this);
     oldChildPointer->Delete();
+}
+
+int ImplicitStructureCombination::ChildCount() const {
+    return static_cast<int>(CtStructures.size());
+}
+
+int ImplicitStructureCombination::ColumnCount() const {
+    return 2;
+}
+
+const std::vector<CtStructure*>& ImplicitStructureCombination::GetChildren() const {
+    return CtStructures;
+}
+
+const CtStructure* ImplicitStructureCombination::ChildAt(int idx) const {
+    if (idx >= CtStructures.size()) {
+        vtkErrorMacro("Index is not in range");
+        return nullptr;
+    }
+
+    return CtStructures[idx];
+}
+
+QVariant ImplicitStructureCombination::Data(int idx) const {
+    switch (idx) {
+        case 0: return GetOperatorTypeName();
+        case 1: {
+            QList<QVariant> transformMatrix;
+            transformMatrix.reserve(16);
+            double* transformData = Transform->GetMatrix()->GetData();
+            for (int i = 0; i < 16; ++i) {
+                transformMatrix.push_back(transformData[i]);
+            }
+            return {transformMatrix};
+        }
+        default: return {};
+    }
 }

@@ -2,7 +2,9 @@
 
 #include "../Artifacts/Artifact.h"
 
-#include <vtkAbstractTransform.h>
+#include <QVariant>
+
+#include <vtkTransform.h>
 #include <vtkObject.h>
 
 class CtStructure : public vtkObject {
@@ -11,8 +13,9 @@ public:
 
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
-    virtual void SetTransform(vtkAbstractTransform* transform) = 0;
-    virtual vtkAbstractTransform* GetTransform() = 0;
+    virtual void SetTransform(vtkTransform* transform) = 0;
+
+    virtual vtkTransform* GetTransform() = 0;
 
     struct Result {
         float FunctionValue;
@@ -21,7 +24,6 @@ public:
     };
 
     virtual void EvaluateAtPosition(const double x[3], Result& result) = 0;
-
     /**
      * Return f(x, y z) where f > 0 is outside of the surface, f = 0 is on the surface, and f < 0 is inside the surface.
      * Additionally, the distance to the surface is positively correlated with the function value at a given position.
@@ -33,10 +35,28 @@ public:
 
     virtual bool CtStructureExists(const CtStructure* structure) = 0;
 
+    virtual int ChildCount() const = 0;
+
+    virtual int ColumnCount() const = 0;
+
+    CtStructure* GetParent() const;
+
+    void SetParent(CtStructure* parent);
+
+    int ChildIndex() const;
+
+    virtual const std::vector<CtStructure*>& GetChildren() const = 0;
+
+    virtual const CtStructure* ChildAt(int idx) const = 0;
+
+    virtual QVariant Data(int idx) const = 0;
+
     CtStructure(const CtStructure&) = delete;
     void operator=(const CtStructure&) = delete;
 
 protected:
-    CtStructure() = default;
+    CtStructure();
     ~CtStructure() override = default;
+
+    CtStructure* Parent;    // always of type implicit structure combination
 };

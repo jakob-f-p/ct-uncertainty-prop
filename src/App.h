@@ -12,6 +12,8 @@ public:
     int Run();
     static int Quit();
 
+    const CtDataCsgTree* GetCtDataCsgTree() const;
+
     App(const App&) = delete;
     void operator=(const App&) = delete;
     App() = delete;

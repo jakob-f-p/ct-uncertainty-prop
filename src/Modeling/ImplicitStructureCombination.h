@@ -7,10 +7,7 @@ public:
     static ImplicitStructureCombination* New();
     vtkTypeMacro(ImplicitStructureCombination, CtStructure)
 
-
     void PrintSelf(ostream& os, vtkIndent indent) override;
-
-    void Delete() override;
 
     enum OperatorType {
         UNION,
@@ -20,9 +17,9 @@ public:
 
     vtkMTimeType GetMTime() override;
 
-    void SetTransform(vtkAbstractTransform* transform) override;
+    void SetTransform(vtkTransform* transform) override;
 
-    vtkAbstractTransform* GetTransform() override;
+    vtkTransform* GetTransform() override;
 
     void EvaluateAtPosition(const double x[3], Result& result) override;
 
@@ -33,14 +30,20 @@ public:
     CtStructure* RemoveImplicitCtStructure(ImplicitCtStructure* implicitStructure,
                                            ImplicitStructureCombination* grandParent);
 
-    ImplicitStructureCombination* FindParentOfCtStructure(CtStructure& ctStructure);
-
     void SetOperatorType(OperatorType operatorType);
     OperatorType GetOperatorType();
 
     bool CtStructureExists(const CtStructure* structure) override;
 
-    size_t GetNumberOfChildStructures();
+    int ChildCount() const override;
+
+    int ColumnCount() const override;
+
+    const CtStructure* ChildAt(int idx) const override;
+
+    const std::vector<CtStructure*>& GetChildren() const override;
+
+    QVariant Data(int idx) const override;
 
     ImplicitStructureCombination(const ImplicitStructureCombination&) = delete;
     void operator=(const ImplicitStructureCombination&) = delete;
@@ -51,10 +54,10 @@ protected:
 
     OperatorType OpType;
     std::vector<CtStructure*> CtStructures;
-    vtkAbstractTransform* Transform;
+    vtkTransform* Transform;
 
 private:
-    const char* GetOperatorTypeName();
+    const char* GetOperatorTypeName() const;
 
     void ReplaceConnection(CtStructure* oldChildPointer, CtStructure* newChildPointer);
 };

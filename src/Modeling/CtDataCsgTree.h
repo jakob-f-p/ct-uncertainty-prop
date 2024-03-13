@@ -19,6 +19,8 @@ public:
 
     void RemoveImplicitCtStructure(ImplicitCtStructure& implicitCtStructure);
 
+    CtStructure* GetRoot() const;
+
     CtDataCsgTree(const CtDataCsgTree&) = delete;
     void operator=(const CtDataCsgTree&) = delete;
 
@@ -29,5 +31,5 @@ protected:
     CtStructure* Root;
 
 private:
-    bool CtStructureExists (const CtStructure& ctStructure);
+    bool CtStructureExists(const CtStructure& ctStructure);
 };
