@@ -16,12 +16,12 @@ CtStructureEditDialog::CtStructureEditDialog(QAbstractItemModel& model,
     setMinimumSize(200, 200);
 
     auto* structure = static_cast<CtStructure*>(modelIndex.internalPointer());
-    setWindowTitle(structure->Data(CtStructure::Column::LONG_NAME).toString());
+//    setWindowTitle(structure->Data().toString());
 
     auto* verticalLayout = new QVBoxLayout();
 
     auto* nameLineEdit = new QLineEdit();
-    nameLineEdit->setText(structure->Data(CtStructure::Column::NAME).toString());
+//    nameLineEdit->setText(structure->Data(CtStructure::DataKey::NAME).toString());
     verticalLayout->addWidget(nameLineEdit);
 
     auto* transformEditGroup = new QGroupBox("Transform");

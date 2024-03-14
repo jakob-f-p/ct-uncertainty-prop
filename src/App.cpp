@@ -62,23 +62,21 @@ int App::Quit() {
 }
 
 void App::InitializeWithTestData() {
-    vtkNew<vtkSphere> implicitSphere;
-    implicitSphere->SetRadius(10.0);
     vtkNew<ImplicitCtStructure> implicitCtStructure1;
-    implicitCtStructure1->SetImplicitFunction(implicitSphere);
-    implicitCtStructure1->SetTissueType(CT::GetTissueOrMaterialTypeByName("CancellousBone"));
+    implicitCtStructure1->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::SPHERE);
+    implicitCtStructure1->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("CancellousBone"));
 
     vtkNew<ImplicitCtStructure> implicitCtStructure2;
-    implicitCtStructure2->SetImplicitFunction(implicitSphere);
-    implicitCtStructure2->SetTissueType(CT::GetTissueOrMaterialTypeByName("CorticalBone"));
+    implicitCtStructure2->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::BOX);
+    implicitCtStructure2->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("CorticalBone"));
 
     vtkNew<ImplicitCtStructure> implicitCtStructure3;
-    implicitCtStructure3->SetImplicitFunction(implicitSphere);
-    implicitCtStructure3->SetTissueType(CT::GetTissueOrMaterialTypeByName("SoftTissue"));
+    implicitCtStructure3->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::BOX);
+    implicitCtStructure3->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("SoftTissue"));
 
     CtDataTree->AddImplicitCtStructure(*implicitCtStructure1);
     CtDataTree->CombineWithImplicitCtStructure(*implicitCtStructure2, ImplicitStructureCombination::OperatorType::UNION);
-    CtDataTree->CombineWithImplicitCtStructure(*implicitCtStructure3, ImplicitStructureCombination::OperatorType::UNION);
+    CtDataTree->CombineWithImplicitCtStructure(*implicitCtStructure3, ImplicitStructureCombination::OperatorType::INTERSECTION);
 
     CtDataTree->RemoveImplicitCtStructure(*implicitCtStructure2);
     CtDataTree->Print(std::cout);

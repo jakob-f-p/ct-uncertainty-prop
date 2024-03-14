@@ -1,4 +1,3 @@
-#include "CT.h"
 #include "ImplicitStructureCombination.h"
 
 #include <vtkObjectFactory.h>
@@ -43,6 +42,34 @@ void ImplicitStructureCombination::AddCtStructure(CtStructure& ctStructure) {
     ctStructure.Register(this);
 
     this->Modified();
+}
+
+std::string
+ImplicitStructureCombination::OperatorTypeToString(ImplicitStructureCombination::OperatorType operatorType) {
+    switch (operatorType) {
+        case UNION:        return "Union";
+        case INTERSECTION: return "Intersection";
+        case DIFFERENCE:   return "Difference";
+        default: {
+            qWarning("No string representation for this operator exists");
+            return "";
+        }
+    }
+}
+
+ImplicitStructureCombination::OperatorType
+ImplicitStructureCombination::StringToOperatorType(const std::string& string) {
+    OperatorType operatorType;
+    for (int i = 0; i < NUMBER_OF_OPERATOR_TYPES; ++i) {
+        operatorType = static_cast<OperatorType>(i);
+        if (OperatorTypeToString(operatorType) == string) {
+            return operatorType;
+        }
+    }
+
+    qWarning("no matching operator type found");
+    return NUMBER_OF_OPERATOR_TYPES;
+
 }
 
 CtStructure* ImplicitStructureCombination::RemoveImplicitCtStructure(ImplicitCtStructure* implicitStructure,
@@ -155,7 +182,7 @@ void ImplicitStructureCombination::EvaluateAtPosition(const double x[3], CtStruc
     }
 
     result.FunctionValue = res.FunctionValue;
-    result.IntensityValue = CT::GetTissueOrMaterialTypeByName("Air").CtNumber;
+    result.IntensityValue = ImplicitCtStructure::GetTissueOrMaterialTypeByName("Air").CtNumber;
     for (auto& entry: result.ArtifactValueMap) {
         entry.second = 0.0f;
     }
@@ -225,8 +252,8 @@ int ImplicitStructureCombination::ChildCount() const {
     return static_cast<int>(CtStructures.size());
 }
 
-const std::vector<CtStructure*>& ImplicitStructureCombination::GetChildren() const {
-    return CtStructures;
+const std::vector<CtStructure*>* ImplicitStructureCombination::GetChildren() const {
+    return &CtStructures;
 }
 
 const CtStructure* ImplicitStructureCombination::ChildAt(int idx) const {
@@ -238,13 +265,13 @@ const CtStructure* ImplicitStructureCombination::ChildAt(int idx) const {
     return CtStructures[idx];
 }
 
-QVariant ImplicitStructureCombination::Data(int idx) const {
-    switch (idx) {
-        case SUBTYPE: return GetOperatorTypeName().c_str();
+QVariant ImplicitStructureCombination::PackageData(CtStructure::DataKey dataKey) const {
+    switch (dataKey) {
         case NAME: return Name.c_str();
-        case LONG_NAME: return ("Combination: " + GetOperatorTypeName() + (Name.empty() ? "" : " (" + Name + ")")).c_str();
+        case EDIT_DIALOG_NAME: return ("Combination" + (Name.empty() ? "" : " (" + Name + ")")).c_str();
+        case TREE_VIEW_NAME: return (GetOperatorTypeName() + (Name.empty() ? "" : " (" + Name + ")")).c_str();
         case TRANSFORM: return GetTransformQVariant();
-        case OPERATOR_TYPE: return QMap<QString, QVariant>{ {GetOperatorTypeName().c_str(), GetOperatorType()} };
+        case OPERATOR_TYPE: return static_cast<int>(OpType);
         default: return {};
     }
 }

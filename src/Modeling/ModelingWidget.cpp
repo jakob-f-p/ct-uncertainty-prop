@@ -2,6 +2,7 @@
 #include "ModelingWidget.h"
 #include "CtDataCsgTreeModel.h"
 #include "CtStructureEditDialog.h"
+#include "CtStructureDelegate.h"
 
 #include <vtkNew.h>
 #include <vtkGenericOpenGLRenderWindow.h>
@@ -49,18 +50,16 @@ void ModelingWidget::SetUpDockWidgetForImplicitCsgTreeModeling() {
     horizontalLayout->addWidget(combineWithStructure);
     horizontalLayout->addWidget(removeStructureButton);
 
-    auto* treeModel = new CtDataCsgTreeModel(*App::GetInstance()->GetCtDataCsgTree());
     auto* treeView = new QTreeView();
+    auto* treeModel = new CtDataCsgTreeModel(*App::GetInstance()->GetCtDataCsgTree());
+    auto* treeDelegate = new CtStructureDelegate();
     treeView->setModel(treeModel);
-    std::vector<int> hiddenColumnIndices = {3, 4, 5, 6, 7};
-    std::for_each(hiddenColumnIndices.begin(),
-                  hiddenColumnIndices.end(),
-                  [treeView](int i) { treeView->setColumnHidden(i, true); });
+    treeView->setItemDelegate(treeDelegate);
 
-    connect(treeView, &QTreeView::doubleClicked, [treeModel, treeView](const QModelIndex& index) {
-        CtStructureEditDialog editDialog(*treeModel, index, treeView);
-        editDialog.exec();
-    });
+//    connect(treeView, &QTreeView::doubleClicked, [treeModel, treeView](const QModelIndex& index) {
+//        CtStructureEditDialog editDialog(*treeModel, index, treeView);
+//        editDialog.exec();
+//    });
 
 
     auto* verticalLayout = new QVBoxLayout(dockWidgetContent);

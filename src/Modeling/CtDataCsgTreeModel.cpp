@@ -63,23 +63,26 @@ int CtDataCsgTreeModel::columnCount(const QModelIndex& parent) const {
 }
 
 QVariant CtDataCsgTreeModel::data(const QModelIndex& index, int role) const {
-    if (!index.isValid() || role != Qt::DisplayRole) {
+    if (!index.isValid() || (role != Qt::DisplayRole && role != Qt::EditRole)) {
         return {};
     }
 
     auto* item = static_cast<const CtStructure*>(index.internalPointer());
-    return item->Data(index.column());
+    return item->Data();
 }
 
 QVariant CtDataCsgTreeModel::headerData(int section, Qt::Orientation orientation, int role) const {
-    if (orientation != Qt::Horizontal || role != Qt::DisplayRole) {
+    if (section != 0 || orientation != Qt::Horizontal || role != Qt::DisplayRole) {
         return {};
     }
 
-    switch (section) {
-        case CtStructure::Column::SUBTYPE: return "Type";
-        case CtStructure::Column::NAME: return "Name";
-        case CtStructure::Column::DETAILS: return "Details";
-        default: return {};
+    return "Structures";
+}
+
+Qt::ItemFlags CtDataCsgTreeModel::flags(const QModelIndex& index) const {
+    if (!index.isValid()) {
+        return {};
     }
+
+    return Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable;
 }

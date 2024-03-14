@@ -24,6 +24,8 @@ public:
 
     QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
 
+    Qt::ItemFlags flags(const QModelIndex& index) const override;
+
 protected:
     const CtDataCsgTree& Tree;
 };

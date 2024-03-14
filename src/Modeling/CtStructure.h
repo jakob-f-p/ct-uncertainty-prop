@@ -2,24 +2,13 @@
 
 #include "SimpleTransform.h"
 #include "../Artifacts/Artifact.h"
+#include "../Artifacts/StructureArtifactList.h"
 
 #include <QVariant>
 
 #include <vtkObject.h>
+#include <vtkImplicitFunction.h>
 
-/**
- * QDataModel columns:
- *  0: item subtype QString (operator type / implicit function type)
- *  1: item name defined by user QString
- *  2: item details QString
- *  3: long name QString
- *  4: Transform QList<QList<float>> where (0: translate, 1: rotate, 2: scale)
- *  ImplicitCtStructure:
- *    5: Tissue or Material Type QMap<QString, float>
- *    6: Structure Artifacts ?
- *  ImplicitStructureCombination
- *    7: Operator Type QMap<QString, OperatorType>
- */
 class CtStructure : public vtkObject {
 public:
     vtkTypeMacro(CtStructure, vtkObject)
@@ -51,17 +40,20 @@ public:
 
     virtual bool CtStructureExists(const CtStructure* structure) = 0;
 
-    enum Column {
-        SUBTYPE = 0,
+    enum DataKey {
+        STRUCTURE_TYPE,
         NAME,
-        DETAILS,
-        LONG_NAME,
+        EDIT_DIALOG_NAME,
+        TREE_VIEW_NAME,
         TRANSFORM,
+        IMPLICIT_FUNCTION_TYPE,
         TISSUE_TYPE,
         STRUCTURE_ARTIFACTS,
         OPERATOR_TYPE,
-        NUMBER_OF_COLUMNS
+        NUMBER_OF_DATA_KEYS
     };
+    static std::string DataKeyToString(DataKey dataKey);
+    static DataKey StringToDataKey(const std::string& string);
 
     virtual int ChildCount() const = 0;
 
@@ -73,11 +65,13 @@ public:
 
     int ChildIndex() const;
 
-    virtual const std::vector<CtStructure*>& GetChildren() const = 0;
+    virtual const std::vector<CtStructure*>* GetChildren() const = 0;
 
     virtual const CtStructure* ChildAt(int idx) const = 0;
 
-    virtual QVariant Data(int idx) const = 0;
+    QVariant Data() const;
+
+    virtual QVariant PackageData(DataKey dataKey) const = 0;
 
     CtStructure(const CtStructure&) = delete;
     void operator=(const CtStructure&) = delete;

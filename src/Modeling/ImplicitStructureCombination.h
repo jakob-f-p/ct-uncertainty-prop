@@ -9,13 +9,16 @@ public:
 
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
+    vtkMTimeType GetMTime() override;
+
     enum OperatorType {
         UNION,
         INTERSECTION,
-        DIFFERENCE
+        DIFFERENCE,
+        NUMBER_OF_OPERATOR_TYPES
     };
-
-    vtkMTimeType GetMTime() override;
+    static std::string OperatorTypeToString(OperatorType operatorType);
+    static OperatorType StringToOperatorType(const std::string& string);
 
     void SetTransform(const QVariant& trs) override;
 
@@ -37,9 +40,9 @@ public:
 
     const CtStructure* ChildAt(int idx) const override;
 
-    const std::vector<CtStructure*>& GetChildren() const override;
+    const std::vector<CtStructure*>* GetChildren() const override;
 
-    QVariant Data(int idx) const override;
+    QVariant PackageData(DataKey dataKey) const override;
 
     ImplicitStructureCombination(const ImplicitStructureCombination&) = delete;
     void operator=(const ImplicitStructureCombination&) = delete;
