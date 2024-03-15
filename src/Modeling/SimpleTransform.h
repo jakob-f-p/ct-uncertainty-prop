@@ -1,7 +1,5 @@
 #pragma once
 
-#include <QList>
-
 #include <vtkTransform.h>
 
 #include <array>
@@ -12,8 +10,8 @@ public:
     vtkTypeMacro(SimpleTransform, vtkTransform);
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
-    QVariant GetTranslationRotationScaling();
-    void SetTranslationRotationScaling(const QVariant& trs);
+    std::array<std::array<float, 3>, 3> GetTranslationRotationScaling();
+    void SetTranslationRotationScaling(const std::array<std::array<float, 3>, 3>& trs);
 
     SimpleTransform(const SimpleTransform&) = delete;
     void operator=(const SimpleTransform&) = delete;

@@ -7,11 +7,18 @@
 
 void CtStructure::PrintSelf(ostream &os, vtkIndent indent) {
     Superclass::PrintSelf(os, indent);
+
+    os << indent << "Name: " << Name << "\n";
+    os << indent << "View Name: " << GetViewName() << "\n";
+    os << indent << "Transform: " << "\n";
+    Transform->PrintSelf(os, indent.GetNextIndent());
+    os << indent << "Parent: " << Parent << std::endl;
 }
 
 void CtStructure::SetName(std::string name) {
     Name = std::move(name);
 }
+
 std::string CtStructure::GetName() const {
     return Name;
 }
@@ -20,26 +27,6 @@ const SimpleTransform* CtStructure::GetTransform() const {
     return Transform;
 }
 
-QVariant CtStructure::GetTransformQVariant() const {
-    return Transform->GetTranslationRotationScaling();
-}
-
-std::string CtStructure::DataKeyToString(CtStructure::DataKey dataKey) {
-    return std::to_string(dataKey);
-}
-
-CtStructure::DataKey CtStructure::StringToDataKey(const std::string& string) {
-    DataKey dataKey;
-    for (int i = 0; i < NUMBER_OF_DATA_KEYS; ++i) {
-        dataKey = static_cast<DataKey>(i);
-        if (DataKeyToString(dataKey) == string) {
-            return dataKey;
-        }
-    }
-
-    qWarning("no matching data key found");
-    return NUMBER_OF_DATA_KEYS;
-}
 
 int CtStructure::ColumnCount() {
     return 1;
@@ -60,6 +47,7 @@ int CtStructure::ChildIndex() const {
 
     auto* childrenOfParent = Parent->GetChildren();
     if (!childrenOfParent) {
+        qWarning("Children cannot be nullptr");
         return -1;
     }
 
@@ -79,19 +67,10 @@ CtStructure::~CtStructure() {
     Transform->Delete();
 }
 
-QVariant CtStructure::Data() const {
-    QMap<QString, QVariant> map;
-    DataKey dataKey;
-    QVariant val;
-
-    for (int i = 0; i < NUMBER_OF_DATA_KEYS; ++i) {
-        dataKey = static_cast<DataKey>(i);
-        val = PackageData(dataKey);
-        if (val.isValid()) {
-            map[DataKeyToString(dataKey).c_str()] = val;
-        }
-    }
-
-    return map;
+CtStructureDetails CtStructure::GetCtStructureDetails() const {
+    return {
+        Name.c_str(),
+        GetViewName().c_str(),
+        Transform->GetTranslationRotationScaling()
+    };
 }
-

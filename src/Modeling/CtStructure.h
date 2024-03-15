@@ -1,7 +1,6 @@
 #pragma once
 
 #include "SimpleTransform.h"
-#include "../Artifacts/Artifact.h"
 #include "../Artifacts/StructureArtifactList.h"
 
 #include <QVariant>
@@ -9,7 +8,16 @@
 #include <vtkObject.h>
 #include <vtkImplicitFunction.h>
 
+
+struct CtStructureDetails {
+    QString Name;
+    QString ViewName;
+    std::array<std::array<float, 3>, 3> Transform;
+};
+
 class CtStructure : public vtkObject {
+    Q_GADGET
+
 public:
     vtkTypeMacro(CtStructure, vtkObject)
 
@@ -18,9 +26,8 @@ public:
     void SetName(std::string name);
     std::string GetName() const;
 
-    virtual void SetTransform(const QVariant& trs) = 0;
+    virtual void SetTransform(const std::array<std::array<float, 3>, 3>& trs) = 0;
     const SimpleTransform* GetTransform() const;
-    QVariant GetTransformQVariant() const;
 
     struct Result {
         float FunctionValue;
@@ -40,24 +47,9 @@ public:
 
     virtual bool CtStructureExists(const CtStructure* structure) = 0;
 
-    enum DataKey {
-        STRUCTURE_TYPE,
-        NAME,
-        EDIT_DIALOG_NAME,
-        TREE_VIEW_NAME,
-        TRANSFORM,
-        IMPLICIT_FUNCTION_TYPE,
-        TISSUE_TYPE,
-        STRUCTURE_ARTIFACTS,
-        OPERATOR_TYPE,
-        NUMBER_OF_DATA_KEYS
-    };
-    static std::string DataKeyToString(DataKey dataKey);
-    static DataKey StringToDataKey(const std::string& string);
-
     virtual int ChildCount() const = 0;
 
-    static int ColumnCount() ;
+    static int ColumnCount();
 
     CtStructure* GetParent() const;
 
@@ -69,9 +61,7 @@ public:
 
     virtual const CtStructure* ChildAt(int idx) const = 0;
 
-    QVariant Data() const;
-
-    virtual QVariant PackageData(DataKey dataKey) const = 0;
+    virtual QVariant Data() const = 0;
 
     CtStructure(const CtStructure&) = delete;
     void operator=(const CtStructure&) = delete;
@@ -80,7 +70,29 @@ protected:
     CtStructure();
     ~CtStructure() override;
 
+    virtual std::string GetViewName() const = 0;
+    CtStructureDetails GetCtStructureDetails() const;
+
     std::string Name;
     SimpleTransform* Transform;
     CtStructure* Parent;    // always of type implicit structure combination
 };
+
+template<class EnumType>
+struct EnumString {
+    QString Name;
+    EnumType EnumValue = {};
+};
+
+#define GET_ENUM_VALUES(EnumType)                                   \
+static std::vector<EnumString<EnumType>> Get##EnumType##Values() {  \
+    auto metaEnum = QMetaEnum::fromType<EnumType>();                \
+    std::vector<EnumString<EnumType>> values(metaEnum.keyCount());  \
+    EnumType enumValue;                                             \
+    for (int i = 0; i < values.size(); i++) {                       \
+        enumValue = static_cast<EnumType>(metaEnum.value(i));       \
+        values[i] = { EnumType##ToString(enumValue).c_str(), enumValue };   \
+    }                                                               \
+    return values;                                                  \
+}                                                                   \
+

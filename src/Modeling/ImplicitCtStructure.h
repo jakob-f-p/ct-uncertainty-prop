@@ -1,11 +1,11 @@
 #pragma once
 
 #include "CtStructure.h"
-
 #include "../Artifacts/StructureArtifactList.h"
 
-#include <vtkImplicitFunction.h>
+#include <QMetaEnum>
 
+#include <vtkImplicitFunction.h>
 
 /**
  * @class ImplicitCtStructure
@@ -14,6 +14,8 @@
  * This class is used in ImplicitCsgTree as an implicit source of data.
  */
 class ImplicitCtStructure : public CtStructure {
+    Q_GADGET
+
 public:
     static ImplicitCtStructure* New();
     vtkTypeMacro(ImplicitCtStructure, CtStructure);
@@ -25,12 +27,11 @@ public:
     enum ImplicitFunctionType {
         SPHERE,
         BOX,
-        CONE,
-        NUMBER_OF_IMPLICIT_FUNCTION_TYPES
+        CONE
     };
-
+    Q_ENUM(ImplicitFunctionType);
     static std::string ImplicitFunctionTypeToString(ImplicitFunctionType implicitFunctionType);
-    static ImplicitFunctionType StringToImplicitFunctionType(const std::string& string);
+    GET_ENUM_VALUES(ImplicitFunctionType);
 
     /**
      * Set/Get the implicit function separating the function domain into position inside, on, and outside of the
@@ -40,15 +41,14 @@ public:
 
     struct TissueOrMaterialType {
         std::string Name;
-        float CtNumber; // value on the Hounsfield scale
+        float CtNumber = 0.0f; // value on the Hounsfield scale
 
         friend std::ostream& operator<< (std::ostream& stream, const TissueOrMaterialType& type);
     };
     static TissueOrMaterialType GetTissueOrMaterialTypeByName(const std::string& tissueName);
-    static std::vector<std::string> GetTissueAndMaterialTypeNames();
-    static QStringList GetTissueAndMaterialTypeNamesQ();
+    static QStringList GetTissueAndMaterialTypeNames();
 
-    void SetTransform(const QVariant& trs) override;
+    void SetTransform(const std::array<std::array<float, 3>, 3>& trs) override;
 
     /**
      * Set the type of tissue.
@@ -67,8 +67,9 @@ public:
 
     const CtStructure* ChildAt(int idx) const override;
 
-    QVariant PackageData(DataKey dataKey) const override;
+    QVariant Data() const override;
 
+public:
     ImplicitCtStructure(const ImplicitCtStructure&) = delete;
     void operator=(const ImplicitCtStructure&) = delete;
 
@@ -76,10 +77,18 @@ protected:
     ImplicitCtStructure();
     ~ImplicitCtStructure() override;
 
+    std::string GetViewName() const override;
+
     ImplicitFunctionType ImplicitFType;
     vtkImplicitFunction* ImplicitFunction;
     TissueOrMaterialType Tissue;
     StructureArtifactList* StructureArtifacts;
 
     static std::map<std::string, TissueOrMaterialType> TissueTypeMap;
+};
+
+struct ImplicitCtStructureDetails : public CtStructureDetails {
+    ImplicitCtStructure::ImplicitFunctionType ImplicitFunctionType = ImplicitCtStructure::ImplicitFunctionType::SPHERE;
+    QString TissueName;
+    QList<StructureArtifactDetails> StructureArtifacts;
 };

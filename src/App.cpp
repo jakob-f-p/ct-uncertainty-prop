@@ -64,15 +64,15 @@ int App::Quit() {
 void App::InitializeWithTestData() {
     vtkNew<ImplicitCtStructure> implicitCtStructure1;
     implicitCtStructure1->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::SPHERE);
-    implicitCtStructure1->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("CancellousBone"));
+    implicitCtStructure1->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("Cancellous Bone"));
 
     vtkNew<ImplicitCtStructure> implicitCtStructure2;
     implicitCtStructure2->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::BOX);
-    implicitCtStructure2->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("CorticalBone"));
+    implicitCtStructure2->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("Cortical Bone"));
 
     vtkNew<ImplicitCtStructure> implicitCtStructure3;
     implicitCtStructure3->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::BOX);
-    implicitCtStructure3->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("SoftTissue"));
+    implicitCtStructure3->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("Soft Tissue"));
 
     CtDataTree->AddImplicitCtStructure(*implicitCtStructure1);
     CtDataTree->CombineWithImplicitCtStructure(*implicitCtStructure2, ImplicitStructureCombination::OperatorType::UNION);

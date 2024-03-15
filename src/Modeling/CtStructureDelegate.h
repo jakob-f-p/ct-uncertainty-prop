@@ -22,10 +22,7 @@ public:
     QString displayText(const QVariant& value, const QLocale& locale) const override;
 
 public slots:
-    void acceptDialog(QDialog* dialog);
-    void closeEditor();
-
-private:
-    void createTransformationEditGroup(const std::string& title, QVBoxLayout* parentLayout) const;
+    void commitEdit();
+    void discardChanges();
 };
 

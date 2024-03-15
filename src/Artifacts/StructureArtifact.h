@@ -21,3 +21,7 @@ protected:
     StructureArtifact() = default;
     ~StructureArtifact() override = default;
 };
+
+struct StructureArtifactDetails {
+
+};

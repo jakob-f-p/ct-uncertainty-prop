@@ -3,6 +3,8 @@
 #include "ImplicitCtStructure.h"
 
 class ImplicitStructureCombination : public CtStructure {
+    Q_GADGET
+
 public:
     static ImplicitStructureCombination* New();
     vtkTypeMacro(ImplicitStructureCombination, CtStructure)
@@ -14,13 +16,16 @@ public:
     enum OperatorType {
         UNION,
         INTERSECTION,
-        DIFFERENCE,
-        NUMBER_OF_OPERATOR_TYPES
+        DIFFERENCE
     };
+    Q_ENUM(OperatorType);
     static std::string OperatorTypeToString(OperatorType operatorType);
-    static OperatorType StringToOperatorType(const std::string& string);
+    GET_ENUM_VALUES(OperatorType);
 
-    void SetTransform(const QVariant& trs) override;
+    void SetOperatorType(OperatorType operatorType);
+    OperatorType GetOperatorType() const;
+
+    void SetTransform(const std::array<std::array<float, 3>, 3>& trs) override;
 
     void EvaluateAtPosition(const double x[3], Result& result) override;
 
@@ -31,9 +36,6 @@ public:
     CtStructure* RemoveImplicitCtStructure(ImplicitCtStructure* implicitStructure,
                                            ImplicitStructureCombination* grandParent);
 
-    void SetOperatorType(OperatorType operatorType);
-    OperatorType GetOperatorType() const;
-
     bool CtStructureExists(const CtStructure* structure) override;
 
     int ChildCount() const override;
@@ -42,7 +44,7 @@ public:
 
     const std::vector<CtStructure*>* GetChildren() const override;
 
-    QVariant PackageData(DataKey dataKey) const override;
+    QVariant Data() const override;
 
     ImplicitStructureCombination(const ImplicitStructureCombination&) = delete;
     void operator=(const ImplicitStructureCombination&) = delete;
@@ -50,6 +52,8 @@ public:
 protected:
     ImplicitStructureCombination();
     ~ImplicitStructureCombination() override;
+
+    std::string GetViewName() const override;
 
     OperatorType OpType;
     std::vector<CtStructure*> CtStructures;
@@ -59,3 +63,9 @@ private:
 
     void ReplaceConnection(CtStructure* oldChildPointer, CtStructure* newChildPointer);
 };
+
+struct ImplicitStructureCombinationDetails : public CtStructureDetails {
+    ImplicitStructureCombination::OperatorType OperatorType = ImplicitStructureCombination::OperatorType::UNION;
+};
+
+Q_DECLARE_METATYPE(ImplicitStructureCombinationDetails)

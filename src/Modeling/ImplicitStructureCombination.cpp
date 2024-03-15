@@ -31,19 +31,6 @@ vtkMTimeType ImplicitStructureCombination::GetMTime() {
 }
 
 
-void ImplicitStructureCombination::AddCtStructure(CtStructure& ctStructure) {
-    if (auto search = std::find(CtStructures.begin(), CtStructures.end(), &ctStructure);
-        search != CtStructures.end()) {
-        vtkWarningMacro("Trying to add implicit CT structure which is already present");
-    }
-
-    CtStructures.push_back(&ctStructure);
-    ctStructure.SetParent(this);
-    ctStructure.Register(this);
-
-    this->Modified();
-}
-
 std::string
 ImplicitStructureCombination::OperatorTypeToString(ImplicitStructureCombination::OperatorType operatorType) {
     switch (operatorType) {
@@ -57,59 +44,6 @@ ImplicitStructureCombination::OperatorTypeToString(ImplicitStructureCombination:
     }
 }
 
-ImplicitStructureCombination::OperatorType
-ImplicitStructureCombination::StringToOperatorType(const std::string& string) {
-    OperatorType operatorType;
-    for (int i = 0; i < NUMBER_OF_OPERATOR_TYPES; ++i) {
-        operatorType = static_cast<OperatorType>(i);
-        if (OperatorTypeToString(operatorType) == string) {
-            return operatorType;
-        }
-    }
-
-    qWarning("no matching operator type found");
-    return NUMBER_OF_OPERATOR_TYPES;
-
-}
-
-CtStructure* ImplicitStructureCombination::RemoveImplicitCtStructure(ImplicitCtStructure* implicitStructure,
-                                                                     ImplicitStructureCombination* grandParent) {
-    if (auto search = std::find(CtStructures.begin(), CtStructures.end(), implicitStructure);
-        search == CtStructures.end()) {
-        vtkWarningMacro("Given structure could not be removed because it was not present");
-        return nullptr;
-    }
-
-    auto pastLastIt = std::remove(CtStructures.begin(), CtStructures.end(), implicitStructure);
-    CtStructures.erase(pastLastIt);
-
-    implicitStructure->Delete();
-
-
-    if (CtStructures.size() == 1) {
-        CtStructure* remainingStructure = CtStructures[0];
-
-        if (!grandParent) {     // this node is root
-            return remainingStructure;
-        }
-
-        remainingStructure->SetParent(grandParent);
-        grandParent->ReplaceConnection(this, remainingStructure);
-    }
-
-    return nullptr;
-}
-
-ImplicitStructureCombination::ImplicitStructureCombination() {
-    this->OpType = UNION;
-}
-
-ImplicitStructureCombination::~ImplicitStructureCombination() {
-    for (const auto& structure : CtStructures) {
-        structure->UnRegister(this);
-    }
-}
-
 void ImplicitStructureCombination::SetOperatorType(ImplicitStructureCombination::OperatorType operatorType) {
     this->OpType = operatorType;
 }
@@ -118,17 +52,7 @@ ImplicitStructureCombination::OperatorType ImplicitStructureCombination::GetOper
     return this->OpType;
 }
 
-std::string ImplicitStructureCombination::GetOperatorTypeName() const {
-    switch (OpType) {
-        case UNION:        return "Union";
-        case INTERSECTION: return "Intersection";
-        case DIFFERENCE:   return "Difference";
-    }
-
-    return "";
-}
-
-void ImplicitStructureCombination::SetTransform(const QVariant& trs) {
+void ImplicitStructureCombination::SetTransform(const std::array<std::array<float, 3>, 3>& trs) {
     this->Transform->SetTranslationRotationScaling(trs);
 }
 
@@ -174,6 +98,7 @@ void ImplicitStructureCombination::EvaluateAtPosition(const double x[3], CtStruc
             }
             res = std::move(results[0]);
             break;
+        default: break;
     }
 
     if (res.FunctionValue <= 0.0f) {
@@ -218,7 +143,7 @@ float ImplicitStructureCombination::FunctionValue(const double x[3]) {
             return max;
         }
 
-        case DIFFERENCE:
+        case DIFFERENCE: {
             float result = CtStructures[0]->FunctionValue(x);
             for (int i = 1; i < CtStructures.size(); ++i) {
                 f = -CtStructures[i]->FunctionValue(x);
@@ -227,9 +152,51 @@ float ImplicitStructureCombination::FunctionValue(const double x[3]) {
                 }
             }
             return result;
+        }
+
+        default: return 0.0f;
+    }
+}
+
+void ImplicitStructureCombination::AddCtStructure(CtStructure& ctStructure) {
+    if (auto search = std::find(CtStructures.begin(), CtStructures.end(), &ctStructure);
+            search != CtStructures.end()) {
+        vtkWarningMacro("Trying to add implicit CT structure which is already present");
     }
 
-    return 0.0f;
+    CtStructures.push_back(&ctStructure);
+    ctStructure.SetParent(this);
+    ctStructure.Register(this);
+
+    this->Modified();
+}
+
+CtStructure* ImplicitStructureCombination::RemoveImplicitCtStructure(ImplicitCtStructure* implicitStructure,
+                                                                     ImplicitStructureCombination* grandParent) {
+    if (auto search = std::find(CtStructures.begin(), CtStructures.end(), implicitStructure);
+            search == CtStructures.end()) {
+        vtkWarningMacro("Given structure could not be removed because it was not present");
+        return nullptr;
+    }
+
+    auto pastLastIt = std::remove(CtStructures.begin(), CtStructures.end(), implicitStructure);
+    CtStructures.erase(pastLastIt);
+
+    implicitStructure->Delete();
+
+
+    if (CtStructures.size() == 1) {
+        CtStructure* remainingStructure = CtStructures[0];
+
+        if (!grandParent) {     // this node is root
+            return remainingStructure;
+        }
+
+        remainingStructure->SetParent(grandParent);
+        grandParent->ReplaceConnection(this, remainingStructure);
+    }
+
+    return nullptr;
 }
 
 bool ImplicitStructureCombination::CtStructureExists(const CtStructure* structure) {
@@ -265,13 +232,36 @@ const CtStructure* ImplicitStructureCombination::ChildAt(int idx) const {
     return CtStructures[idx];
 }
 
-QVariant ImplicitStructureCombination::PackageData(CtStructure::DataKey dataKey) const {
-    switch (dataKey) {
-        case NAME: return Name.c_str();
-        case EDIT_DIALOG_NAME: return ("Combination" + (Name.empty() ? "" : " (" + Name + ")")).c_str();
-        case TREE_VIEW_NAME: return (GetOperatorTypeName() + (Name.empty() ? "" : " (" + Name + ")")).c_str();
-        case TRANSFORM: return GetTransformQVariant();
-        case OPERATOR_TYPE: return static_cast<int>(OpType);
-        default: return {};
+QVariant ImplicitStructureCombination::Data() const {
+    ImplicitStructureCombinationDetails combinationDetails {
+        GetCtStructureDetails(),
+        OpType
+    };
+    return QVariant::fromValue(combinationDetails);
+}
+
+ImplicitStructureCombination::ImplicitStructureCombination() {
+    this->OpType = UNION;
+}
+
+ImplicitStructureCombination::~ImplicitStructureCombination() {
+    for (const auto& structure : CtStructures) {
+        structure->UnRegister(this);
+    }
+}
+
+std::string ImplicitStructureCombination::GetViewName() const {
+    return GetOperatorTypeName() + (Name.empty() ? "" : " (" + Name + ")");
+}
+
+std::string ImplicitStructureCombination::GetOperatorTypeName() const {
+    switch (OpType) {
+        case UNION:        return "Union";
+        case INTERSECTION: return "Intersection";
+        case DIFFERENCE:   return "Difference";
+        default: {
+            qWarning("Invalid Operator Type set");
+            return "";
+        }
     }
 }

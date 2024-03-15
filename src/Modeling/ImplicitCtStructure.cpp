@@ -10,15 +10,17 @@
 vtkStandardNewMacro(ImplicitCtStructure)
 
 void ImplicitCtStructure::PrintSelf(ostream &os, vtkIndent indent) {
-    this->Superclass::PrintSelf(os, indent);
+    Superclass::PrintSelf(os, indent);
 
+    os << indent << "Implicit Function Type:" << ImplicitFunctionTypeToString(ImplicitFType) << "\n";
     os << indent << "Implicit Function: (" << ImplicitFunction << ")\n";
     os << indent << "Tissue Type: " << Tissue << ")\n";
+    os << indent << "Structure Artifact List: " << StructureArtifacts << ")\n";
 }
 
 vtkMTimeType ImplicitCtStructure::GetMTime() {
-    vtkMTimeType thisMTime = this->Superclass::GetMTime();
-    vtkMTimeType implicitFunctionMTime = this->ImplicitFunction->GetMTime();
+    vtkMTimeType thisMTime = Superclass::GetMTime();
+    vtkMTimeType implicitFunctionMTime = ImplicitFunction->GetMTime();
 
     return std::max(thisMTime, implicitFunctionMTime);
 }
@@ -35,20 +37,6 @@ ImplicitCtStructure::ImplicitFunctionTypeToString(ImplicitCtStructure::ImplicitF
         }
     }
 }
-
-ImplicitCtStructure::ImplicitFunctionType ImplicitCtStructure::StringToImplicitFunctionType(const std::string& string){
-    ImplicitFunctionType type;
-    for (int i = 0; i < NUMBER_OF_IMPLICIT_FUNCTION_TYPES; ++i) {
-        type = static_cast<ImplicitFunctionType>(i);
-        if (ImplicitFunctionTypeToString(type) == string) {
-            return type;
-        }
-    }
-
-    qWarning("No matching implicit function type found");
-    return NUMBER_OF_IMPLICIT_FUNCTION_TYPES;
-}
-
 
 void ImplicitCtStructure::SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType implicitFunctionType) {
     if (ImplicitFunction) {
@@ -88,15 +76,7 @@ ImplicitCtStructure::GetTissueOrMaterialTypeByName(const std::string& tissueName
     return TissueTypeMap.at("Air");
 }
 
-std::vector<std::string> ImplicitCtStructure::GetTissueAndMaterialTypeNames() {
-    std::vector<std::string> names;
-    for (const auto &typeEntry: TissueTypeMap) {
-        names.push_back(typeEntry.first);
-    }
-    return names;
-}
-
-QStringList ImplicitCtStructure::GetTissueAndMaterialTypeNamesQ() {
+QStringList ImplicitCtStructure::GetTissueAndMaterialTypeNames() {
     QStringList names;
     for (const auto &typeEntry: TissueTypeMap) {
         names.push_back(typeEntry.first.c_str());
@@ -104,7 +84,7 @@ QStringList ImplicitCtStructure::GetTissueAndMaterialTypeNamesQ() {
     return names;
 }
 
-void ImplicitCtStructure::SetTransform(const QVariant& trs) {
+void ImplicitCtStructure::SetTransform(const std::array<std::array<float, 3>, 3>& trs) {
     if (!this->ImplicitFunction) {
         vtkErrorMacro("No implicit function specified. Cannot set transform.");
         return;
@@ -113,20 +93,6 @@ void ImplicitCtStructure::SetTransform(const QVariant& trs) {
     this->Transform->SetTranslationRotationScaling(trs);
 
     this->ImplicitFunction->SetTransform(Transform);
-}
-
-ImplicitCtStructure::ImplicitCtStructure() {
-    this->ImplicitFType = NUMBER_OF_IMPLICIT_FUNCTION_TYPES;
-    this->ImplicitFunction = nullptr;
-    this->Tissue = GetTissueOrMaterialTypeByName("Air");
-    this->StructureArtifacts = StructureArtifactList::New();
-}
-
-ImplicitCtStructure::~ImplicitCtStructure() {
-    this->ImplicitFunction->Delete();
-    this->StructureArtifacts->Delete();
-
-    this->Modified();
 }
 
 void ImplicitCtStructure::SetTissueType(ImplicitCtStructure::TissueOrMaterialType tissueType) {
@@ -167,25 +133,40 @@ const CtStructure* ImplicitCtStructure::ChildAt(int idx) const {
     return nullptr;
 }
 
-QVariant ImplicitCtStructure::PackageData(CtStructure::DataKey dataKey) const {
-    switch (dataKey) {
-        case NAME: return Name.c_str();
-        case EDIT_DIALOG_NAME: return ImplicitFunctionTypeToString(ImplicitFType).c_str();
-        case TREE_VIEW_NAME: return (ImplicitFunctionTypeToString(ImplicitFType) + (Name.empty() ? "" : " (" + Name + ")")).c_str();
-        case TRANSFORM: return GetTransformQVariant();
-        case IMPLICIT_FUNCTION_TYPE: return static_cast<int>(ImplicitFType);
-        case TISSUE_TYPE: return Tissue.Name.c_str();
-        case STRUCTURE_ARTIFACTS: return QVariant(); // TODO
-        default: return {};
-    }
+QVariant ImplicitCtStructure::Data() const {
+    ImplicitCtStructureDetails implicitCtStructureDetails {
+        GetCtStructureDetails(),
+        ImplicitFType,
+        Tissue.Name.c_str(),
+        {}
+    };
+    return QVariant::fromValue(implicitCtStructureDetails);
+}
+
+ImplicitCtStructure::ImplicitCtStructure() {
+    this->ImplicitFType = SPHERE;
+    this->ImplicitFunction = vtkSphere::New();
+    this->Tissue = GetTissueOrMaterialTypeByName("Air");
+    this->StructureArtifacts = StructureArtifactList::New();
+}
+
+ImplicitCtStructure::~ImplicitCtStructure() {
+    this->ImplicitFunction->Delete();
+    this->StructureArtifacts->Delete();
+
+    this->Modified();
+}
+
+std::string ImplicitCtStructure::GetViewName() const {
+    return ImplicitFunctionTypeToString(ImplicitFType) + (Name.empty() ? "" : " (" + Name + ")");
 }
 
 std::map<std::string, ImplicitCtStructure::TissueOrMaterialType> ImplicitCtStructure::TissueTypeMap = {
-        { "Air",            { "Air",           -1000.0f } },
-        { "Fat",            { "Fat",            -100.0f } },
-        { "Water",          { "Water",             0.0f } },
-        { "SoftTissue",     { "SoftTissue",      200.0f } },
-        { "CancellousBone", { "CancellousBone",  350.0f } },
-        { "CorticalBone",   { "CorticalBone",    800.0f } },
-        { "Metal",          { "Metal",         15000.0f } }
+        { "Air",             { "Air",            -1000.0f } },
+        { "Fat",             { "Fat",             -100.0f } },
+        { "Water",           { "Water",              0.0f } },
+        { "Soft Tissue",     { "Soft Tissue",      200.0f } },
+        { "Cancellous Bone", { "Cancellous Bone",  350.0f } },
+        { "Cortical Bone",   { "Cortical Bone",    800.0f } },
+        { "Metal",           { "Metal",          15000.0f } }
 };
