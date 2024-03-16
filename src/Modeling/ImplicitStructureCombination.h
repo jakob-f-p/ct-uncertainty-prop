@@ -46,6 +46,12 @@ public:
 
     QVariant Data() const override;
 
+    void SetData(const QVariant &variant) override;
+
+    bool IsImplicitCtStructure() const override;
+
+    void ReplaceChild(ImplicitCtStructure *oldChild, ImplicitStructureCombination *newChild);
+
     ImplicitStructureCombination(const ImplicitStructureCombination&) = delete;
     void operator=(const ImplicitStructureCombination&) = delete;
 

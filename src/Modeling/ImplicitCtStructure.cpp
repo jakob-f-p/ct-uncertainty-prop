@@ -170,3 +170,19 @@ std::map<std::string, ImplicitCtStructure::TissueOrMaterialType> ImplicitCtStruc
         { "Cortical Bone",   { "Cortical Bone",    800.0f } },
         { "Metal",           { "Metal",          15000.0f } }
 };
+
+void ImplicitCtStructure::SetData(const QVariant& variant) {
+    auto implicitCtStructureDetails = variant.value<ImplicitCtStructureDetails>();
+    SetData(implicitCtStructureDetails);
+}
+
+void ImplicitCtStructure::SetData(const ImplicitCtStructureDetails &implicitCtStructureDetails) {
+    SetCtStructureDetails(implicitCtStructureDetails);
+
+    SetImplicitFunction(implicitCtStructureDetails.ImplicitFunctionType);
+    SetTissueType(GetTissueOrMaterialTypeByName(implicitCtStructureDetails.TissueName.toStdString()));
+}
+
+bool ImplicitCtStructure::IsImplicitCtStructure() const {
+    return true;
+}

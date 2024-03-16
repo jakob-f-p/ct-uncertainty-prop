@@ -7,6 +7,8 @@
 
 #include <vtkImplicitFunction.h>
 
+struct ImplicitCtStructureDetails;
+
 /**
  * @class ImplicitCtStructure
  * @brief class representing implicit CT structures with structure Artifacts
@@ -69,6 +71,11 @@ public:
 
     QVariant Data() const override;
 
+    void SetData(const QVariant& variant) override;
+    void SetData(const ImplicitCtStructureDetails& implicitCtStructureDetails);
+
+    bool IsImplicitCtStructure() const override;
+
 public:
     ImplicitCtStructure(const ImplicitCtStructure&) = delete;
     void operator=(const ImplicitCtStructure&) = delete;
@@ -92,3 +99,4 @@ struct ImplicitCtStructureDetails : public CtStructureDetails {
     QString TissueName;
     QList<StructureArtifactDetails> StructureArtifacts;
 };
+

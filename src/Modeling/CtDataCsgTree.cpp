@@ -1,5 +1,6 @@
 #include "CtDataCsgTree.h"
 
+#include <vtkNew.h>
 #include <vtkObjectFactory.h>
 
 vtkStandardNewMacro(CtDataCsgTree)
@@ -43,6 +44,18 @@ void CtDataCsgTree::AddImplicitCtStructure(ImplicitCtStructure& implicitCtStruct
     parent->AddCtStructure(implicitCtStructure);
 }
 
+void CtDataCsgTree::AddImplicitCtStructure(const ImplicitCtStructureDetails &implicitCtStructureDetails,
+                                           ImplicitStructureCombination *parent) {
+    if (!Root) {
+        vtkErrorMacro("No root is present yet. Cannot add.");
+        return;
+    }
+
+    vtkNew<ImplicitCtStructure> implicitCtStructure;
+    implicitCtStructure->SetData(implicitCtStructureDetails);
+    AddImplicitCtStructure(*implicitCtStructure, parent);
+}
+
 void CtDataCsgTree::CombineWithImplicitCtStructure(ImplicitCtStructure& implicitCtStructure,
                                                    ImplicitStructureCombination::OperatorType operatorType) {
     if (!Root) {
@@ -71,6 +84,41 @@ void CtDataCsgTree::CombineWithImplicitCtStructure(ImplicitCtStructure& implicit
     Root = newRoot;
 }
 
+void CtDataCsgTree::CombineWithImplicitCtStructure(ImplicitCtStructureDetails &implicitCtStructureDetails) {
+    vtkNew<ImplicitCtStructure> implicitCtStructure;
+    implicitCtStructure->SetData(implicitCtStructureDetails);
+    CombineWithImplicitCtStructure(*implicitCtStructure, ImplicitStructureCombination::OperatorType::UNION);
+}
+
+void CtDataCsgTree::RefineWithImplicitStructure(const ImplicitCtStructureDetails& newStructureDetails,
+                                                ImplicitCtStructure& structureToRefine,
+                                                ImplicitStructureCombination::OperatorType operatorType) {
+    if (!Root) {
+        vtkErrorMacro("No root is present yet. Cannot refine.");
+        return;
+    }
+
+    vtkNew<ImplicitCtStructure> newStructure;
+    newStructure->SetData(newStructureDetails);
+
+    auto* parent = dynamic_cast<ImplicitStructureCombination*>(structureToRefine.GetParent());
+
+    ImplicitStructureCombination* combination = ImplicitStructureCombination::New();
+    combination->SetOperatorType(operatorType);
+    combination->SetParent(parent);
+
+    combination->AddCtStructure(structureToRefine);
+    combination->AddCtStructure(*newStructure);
+
+    if (!parent) {
+        structureToRefine.UnRegister(this);
+        Root = combination;
+        Root->Register(this);
+        return;
+    }
+    parent->ReplaceChild(&structureToRefine, combination);
+}
+
 void CtDataCsgTree::RemoveImplicitCtStructure(ImplicitCtStructure& implicitCtStructure) {
     if (!CtStructureExists(implicitCtStructure)) {
         vtkErrorMacro("CT structure to remove does not exist. Cannot remove non-existing structure");
@@ -94,8 +142,9 @@ void CtDataCsgTree::RemoveImplicitCtStructure(ImplicitCtStructure& implicitCtStr
 
     CtStructure* newRoot = parent->RemoveImplicitCtStructure(&implicitCtStructure, grandParent);
     if (newRoot) {
-        Root->UnRegister(this);
-        Root = nullptr;
+        newRoot->Register(this);
+        Root->Delete();
+        Root = newRoot;
         newRoot->SetParent(nullptr);
     }
 }

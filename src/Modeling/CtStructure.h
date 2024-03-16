@@ -17,13 +17,11 @@ struct CtStructureDetails {
 
 class CtStructure : public vtkObject {
     Q_GADGET
-
 public:
     vtkTypeMacro(CtStructure, vtkObject)
-
     void PrintSelf(ostream& os, vtkIndent indent) override;
-
     void SetName(std::string name);
+
     std::string GetName() const;
 
     virtual void SetTransform(const std::array<std::array<float, 3>, 3>& trs) = 0;
@@ -34,8 +32,8 @@ public:
         float IntensityValue;
         std::map<Artifact::SubType, float> ArtifactValueMap;
     };
-
     virtual void EvaluateAtPosition(const double x[3], Result& result) = 0;
+
     /**
      * Return f(x, y z) where f > 0 is outside of the surface, f = 0 is on the surface, and f < 0 is inside the surface.
      * Additionally, the distance to the surface is positively correlated with the function value at a given position.
@@ -46,7 +44,6 @@ public:
     virtual float FunctionValue(const double x[3]) = 0;
 
     virtual bool CtStructureExists(const CtStructure* structure) = 0;
-
     virtual int ChildCount() const = 0;
 
     static int ColumnCount();
@@ -63,6 +60,10 @@ public:
 
     virtual QVariant Data() const = 0;
 
+    virtual void SetData(const QVariant& variant) = 0;
+
+    virtual bool IsImplicitCtStructure() const = 0;
+
     CtStructure(const CtStructure&) = delete;
     void operator=(const CtStructure&) = delete;
 
@@ -72,6 +73,7 @@ protected:
 
     virtual std::string GetViewName() const = 0;
     CtStructureDetails GetCtStructureDetails() const;
+    void SetCtStructureDetails(const CtStructureDetails& ctStructureDetails);
 
     std::string Name;
     SimpleTransform* Transform;

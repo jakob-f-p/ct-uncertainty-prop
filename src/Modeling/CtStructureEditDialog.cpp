@@ -5,7 +5,7 @@
 #include <QDialogButtonBox>
 #include <QLabel>
 
-CtStructureEditDialog::CtStructureEditDialog(QWidget* parent) :
+CtStructureEditDialog::CtStructureEditDialog(QWidget* parent, bool autoClose) :
         QDialog(parent),
         TransformSpinBoxes {} {
 
@@ -18,13 +18,15 @@ CtStructureEditDialog::CtStructureEditDialog(QWidget* parent) :
     auto* nameEditBar = new QWidget();
     auto* nameEditLayout = new QHBoxLayout(nameEditBar);
     auto* nameLineEditLabel = new QLabel("Name");
-    NameEditLineEdit = new QLineEdit();
+    nameLineEditLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    NameLineEdit = new QLineEdit();
     nameEditLayout->addWidget(nameLineEditLabel);
-    nameEditLayout->addWidget(NameEditLineEdit);
+    nameEditLayout->addSpacing(20);
+    nameEditLayout->addWidget(NameLineEdit);
     verticalLayout->addWidget(nameEditBar);
 
-    ImplicitCtStructureEditArea = new QWidget();
-    auto* implicitFunctionTissueLayout = new QHBoxLayout(ImplicitCtStructureEditArea);
+    ImplicitCtStructureEditSection = new QWidget();
+    auto* implicitFunctionTissueLayout = new QHBoxLayout(ImplicitCtStructureEditSection);
     auto* implicitFunctionLabel = new QLabel("Structure Type");
     implicitFunctionTissueLayout->addWidget(implicitFunctionLabel);
     ImplicitFunctionEditComboBox = new QComboBox();
@@ -38,10 +40,10 @@ CtStructureEditDialog::CtStructureEditDialog(QWidget* parent) :
     TissueTypeEditComboBox = new QComboBox();
     TissueTypeEditComboBox->addItems(ImplicitCtStructure::GetTissueAndMaterialTypeNames());
     implicitFunctionTissueLayout->addWidget(TissueTypeEditComboBox);
-    verticalLayout->addWidget(ImplicitCtStructureEditArea);
+    verticalLayout->addWidget(ImplicitCtStructureEditSection);
 
-    ImplicitStructureCombinationEditArea = new QWidget();
-    auto* operatorTypeEditLayout = new QHBoxLayout(ImplicitStructureCombinationEditArea);
+    ImplicitStructureCombinationEditSection = new QWidget();
+    auto* operatorTypeEditLayout = new QHBoxLayout(ImplicitStructureCombinationEditSection);
     auto* operatorTypeLabel = new QLabel("Operator Type");
     operatorTypeEditLayout->addWidget(operatorTypeLabel);
     OperatorTypeEditComboBox = new QComboBox();
@@ -49,7 +51,7 @@ CtStructureEditDialog::CtStructureEditDialog(QWidget* parent) :
         OperatorTypeEditComboBox->addItem(operatorAndName.Name, operatorAndName.EnumValue);
     }
     operatorTypeEditLayout->addWidget(OperatorTypeEditComboBox);
-    verticalLayout->addWidget(ImplicitStructureCombinationEditArea);
+    verticalLayout->addWidget(ImplicitStructureCombinationEditSection);
 
     auto* transformEditGroup = new QGroupBox("Transform");
     auto* transformVerticalLayout = new QVBoxLayout(transformEditGroup);
@@ -63,8 +65,13 @@ CtStructureEditDialog::CtStructureEditDialog(QWidget* parent) :
     dialogButtonBar->setOrientation(Qt::Horizontal);
     dialogButtonBar->setStandardButtons(QDialogButtonBox::Cancel | QDialogButtonBox::Ok);
     verticalLayout->addWidget(dialogButtonBar);
-    connect(dialogButtonBar, &QDialogButtonBox::accepted, this, &QDialog::accepted);
-    connect(dialogButtonBar, &QDialogButtonBox::rejected, this, &QDialog::rejected);
+    if (autoClose) {
+        connect(dialogButtonBar, &QDialogButtonBox::accepted, this, &QDialog::accept);
+        connect(dialogButtonBar, &QDialogButtonBox::rejected, this, &QDialog::reject);
+    } else {
+        connect(dialogButtonBar, &QDialogButtonBox::accepted, this, &QDialog::accepted);
+        connect(dialogButtonBar, &QDialogButtonBox::rejected, this, &QDialog::rejected);
+    }
 
     setLayout(verticalLayout);
 }
@@ -95,6 +102,14 @@ void CtStructureEditDialog::createTransformationEditGroup(const std::string& tit
     parentLayout->addWidget(bar);
 }
 
+void CtStructureEditDialog::HideImplicitCtStructureSection() {
+    ImplicitCtStructureEditSection->hide();
+}
+
+void CtStructureEditDialog::HideImplicitStructureCombinationSection() {
+    ImplicitStructureCombinationEditSection->hide();
+}
+
 void CtStructureEditDialog::SetImplicitCtStructureData(const ImplicitCtStructureDetails& implicitCtStructureDetails) {
     SetCtStructureData(implicitCtStructureDetails);
 
@@ -108,7 +123,7 @@ void CtStructureEditDialog::SetImplicitCtStructureData(const ImplicitCtStructure
         TissueTypeEditComboBox->setCurrentIndex(idx);
     }
 
-    ImplicitStructureCombinationEditArea->hide();
+    ImplicitStructureCombinationEditSection->hide();
 }
 
 void CtStructureEditDialog::SetImplicitStructureCombinationData(
@@ -120,13 +135,13 @@ void CtStructureEditDialog::SetImplicitStructureCombinationData(
         OperatorTypeEditComboBox->setCurrentIndex(idx);
     }
 
-    ImplicitCtStructureEditArea->hide();
+    ImplicitCtStructureEditSection->hide();
 }
 
 void CtStructureEditDialog::SetCtStructureData(const CtStructureDetails& ctStructureDetails) {
     setWindowTitle(ctStructureDetails.ViewName);
 
-    NameEditLineEdit->setText(ctStructureDetails.Name);
+    NameLineEdit->setText(ctStructureDetails.Name);
 
     for (int i = 0; i < ctStructureDetails.Transform.size(); ++i) {
         for (int j = 0; j < ctStructureDetails.Transform[i].size(); ++j) {
@@ -159,5 +174,5 @@ CtStructureDetails CtStructureEditDialog::GetCtStructureData() {
         }
     }
 
-    return { NameEditLineEdit->text(), "", transform };
+    return { NameLineEdit->text(), "", transform };
 }

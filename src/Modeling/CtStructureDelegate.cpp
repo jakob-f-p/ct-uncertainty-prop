@@ -35,14 +35,14 @@ void CtStructureDelegate::setEditorData(QWidget* editor, const QModelIndex& inde
 }
 
 void CtStructureDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const {
-    QVariant data = index.data(Qt::EditRole);
-    bool isImplicitCtStructure = data.canConvert<ImplicitCtStructureDetails>();
     auto *dialogEditor = dynamic_cast<CtStructureEditDialog *>(editor);
-    if (isImplicitCtStructure) {
-        model->setData(index, QVariant::fromValue(dialogEditor->GetImplicitCtStructureData()));
-    } else {
-        model->setData(index, QVariant::fromValue(dialogEditor->GetImplicitStructureCombinationData()));
-    }
+
+    bool isImplicitCtStructure = index.data(Qt::UserRole).toBool();
+    QVariant editedData = isImplicitCtStructure
+            ? QVariant::fromValue(dialogEditor->GetImplicitCtStructureData())
+            : QVariant::fromValue(dialogEditor->GetImplicitStructureCombinationData());
+
+    model->setData(index, editedData);
 }
 
 void CtStructureDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option,

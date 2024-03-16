@@ -9,7 +9,7 @@ class CtDataCsgTreeModel : public QAbstractItemModel {
 public:
     Q_DISABLE_COPY_MOVE(CtDataCsgTreeModel)
 
-    explicit CtDataCsgTreeModel(const CtDataCsgTree& csgTree, QObject* parent = nullptr);
+    explicit CtDataCsgTreeModel(CtDataCsgTree& csgTree, QObject* parent = nullptr);
     ~CtDataCsgTreeModel() override = default;
 
     QModelIndex index(int row, int column, const QModelIndex& parent) const override;
@@ -26,6 +26,19 @@ public:
 
     Qt::ItemFlags flags(const QModelIndex& index) const override;
 
+    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+
+    QModelIndex AddImplicitCtStructure(const ImplicitCtStructureDetails& implicitCtStructureDetails,
+                                       const QModelIndex& siblingIndex);
+
+    void CombineWithImplicitCtStructure(ImplicitCtStructureDetails& implicitCtStructureDetails);
+
+    void RefineWithImplicitStructure(const ImplicitCtStructureDetails& implicitCtStructureDetails,
+                                     const QModelIndex& index);
+
+    void RemoveImplicitCtStructure(const QModelIndex& implicitCtStructureIndex);
+
+    bool HasRoot();
 protected:
-    const CtDataCsgTree& Tree;
+    CtDataCsgTree& Tree;
 };

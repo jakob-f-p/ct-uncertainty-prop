@@ -265,3 +265,28 @@ std::string ImplicitStructureCombination::GetOperatorTypeName() const {
         }
     }
 }
+
+void ImplicitStructureCombination::SetData(const QVariant &variant) {
+    auto implicitStructureCombinationDetails = variant.value<ImplicitStructureCombinationDetails>();
+
+    SetCtStructureDetails(implicitStructureCombinationDetails);
+
+    SetOperatorType(implicitStructureCombinationDetails.OperatorType);
+}
+
+bool ImplicitStructureCombination::IsImplicitCtStructure() const {
+    return false;
+}
+
+void ImplicitStructureCombination::ReplaceChild(ImplicitCtStructure *oldChild, ImplicitStructureCombination *newChild) {
+    auto oldStructure = std::find(CtStructures.begin(), CtStructures.end(), oldChild);
+    if (oldStructure == CtStructures.end()){
+        qWarning("Given pointer to old child is not a child of this structure");
+        return;
+    }
+
+    *oldStructure = newChild;
+
+    oldChild->UnRegister(this);
+    newChild->Register(this);
+}

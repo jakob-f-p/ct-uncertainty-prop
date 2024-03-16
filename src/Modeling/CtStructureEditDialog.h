@@ -15,13 +15,16 @@ class CtStructureEditDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit CtStructureEditDialog(QWidget* parent = nullptr);
+    explicit CtStructureEditDialog(QWidget* parent = nullptr, bool autoClose = false);
 
     void SetImplicitCtStructureData(const ImplicitCtStructureDetails& implicitCtStructureDetails);
     void SetImplicitStructureCombinationData(const ImplicitStructureCombinationDetails& implicitStructureCombinationDetails);
 
     ImplicitCtStructureDetails GetImplicitCtStructureData();
     ImplicitStructureCombinationDetails GetImplicitStructureCombinationData();
+
+    void HideImplicitCtStructureSection();
+    void HideImplicitStructureCombinationSection();
 
 private:
     static void createTransformationEditGroup(const std::string& title,
@@ -31,13 +34,13 @@ private:
     void SetCtStructureData(const CtStructureDetails& ctStructureDetails);
     CtStructureDetails GetCtStructureData();
 
-    QLineEdit* NameEditLineEdit;
+    QLineEdit* NameLineEdit;
 
-    QWidget* ImplicitCtStructureEditArea;
+    QWidget* ImplicitCtStructureEditSection;
     QComboBox* ImplicitFunctionEditComboBox;
     QComboBox* TissueTypeEditComboBox;
 
-    QWidget* ImplicitStructureCombinationEditArea;
+    QWidget* ImplicitStructureCombinationEditSection;
     QComboBox* OperatorTypeEditComboBox;
 
     std::array<std::array<QDoubleSpinBox*, 3>, 3> TransformSpinBoxes;

@@ -74,3 +74,8 @@ CtStructureDetails CtStructure::GetCtStructureDetails() const {
         Transform->GetTranslationRotationScaling()
     };
 }
+
+void CtStructure::SetCtStructureDetails(const CtStructureDetails &ctStructureDetails) {
+    SetName(ctStructureDetails.Name.toStdString());
+    SetTransform(ctStructureDetails.Transform);
+}

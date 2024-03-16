@@ -1,6 +1,6 @@
 #include "CtDataCsgTreeModel.h"
 
-CtDataCsgTreeModel::CtDataCsgTreeModel(const CtDataCsgTree& csgTree, QObject* parent)
+CtDataCsgTreeModel::CtDataCsgTreeModel(CtDataCsgTree& csgTree, QObject* parent)
         : Tree(csgTree) {
 
 }
@@ -63,11 +63,16 @@ int CtDataCsgTreeModel::columnCount(const QModelIndex& parent) const {
 }
 
 QVariant CtDataCsgTreeModel::data(const QModelIndex& index, int role) const {
-    if (!index.isValid() || (role != Qt::DisplayRole && role != Qt::EditRole)) {
+    if (!index.isValid() || (role != Qt::DisplayRole && role != Qt::EditRole && role != Qt::UserRole)) {
         return {};
     }
 
     auto* item = static_cast<const CtStructure*>(index.internalPointer());
+
+    if (role == Qt::UserRole) {
+        return item->IsImplicitCtStructure();
+    }
+
     return item->Data();
 }
 
@@ -85,4 +90,63 @@ Qt::ItemFlags CtDataCsgTreeModel::flags(const QModelIndex& index) const {
     }
 
     return Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable;
+}
+
+bool CtDataCsgTreeModel::setData(const QModelIndex &index, const QVariant &value, int role) {
+    if (!index.isValid()) {
+        return false;
+    }
+
+    auto* ctStructure = static_cast<CtStructure*>(index.internalPointer());
+    ctStructure->SetData(value);
+
+    emit dataChanged(index, index);
+    return true;
+}
+
+QModelIndex CtDataCsgTreeModel::AddImplicitCtStructure(const ImplicitCtStructureDetails &implicitCtStructureDetails,
+                                                       const QModelIndex &siblingIndex) {
+    const QModelIndex& parentIndex = siblingIndex.parent();
+    auto* parent = static_cast<ImplicitStructureCombination*>(parentIndex.internalPointer());
+    int insertionIndex = parent ? parent->ChildCount() : 0;
+
+    beginInsertRows(parentIndex, insertionIndex, insertionIndex);
+
+    Tree.AddImplicitCtStructure(implicitCtStructureDetails, parent);
+
+    endInsertRows();
+
+    QModelIndex newIndex = index(insertionIndex, 0, parentIndex);
+    return newIndex;
+}
+
+void CtDataCsgTreeModel::CombineWithImplicitCtStructure(ImplicitCtStructureDetails& implicitCtStructureDetails) {
+    beginResetModel();
+
+    Tree.CombineWithImplicitCtStructure(implicitCtStructureDetails);
+
+    endResetModel();
+}
+
+void CtDataCsgTreeModel::RefineWithImplicitStructure(const ImplicitCtStructureDetails& implicitCtStructureDetails,
+                                                     const QModelIndex& index) {
+    beginResetModel();
+
+    auto* structureToRefine = static_cast<ImplicitCtStructure*>(index.internalPointer());
+    Tree.RefineWithImplicitStructure(implicitCtStructureDetails, *structureToRefine);
+
+    endResetModel();
+}
+
+void CtDataCsgTreeModel::RemoveImplicitCtStructure(const QModelIndex &implicitCtStructureIndex) {
+    beginResetModel();
+
+    auto* implicitCtStructure = static_cast<ImplicitCtStructure*>(implicitCtStructureIndex.internalPointer());
+    Tree.RemoveImplicitCtStructure(*implicitCtStructure);
+
+    endResetModel();
+}
+
+bool CtDataCsgTreeModel::HasRoot() {
+    return Tree.GetRoot();
 }

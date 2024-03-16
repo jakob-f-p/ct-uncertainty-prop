@@ -82,6 +82,6 @@ void App::InitializeWithTestData() {
     CtDataTree->Print(std::cout);
 }
 
-const CtDataCsgTree* App::GetCtDataCsgTree() const {
+CtDataCsgTree* App::GetCtDataCsgTree() const {
     return CtDataTree;
 }
