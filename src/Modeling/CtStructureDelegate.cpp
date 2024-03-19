@@ -5,10 +5,13 @@
 
 #include <QComboBox>
 #include <QDialog>
+#include <QEvent>
 #include <QSpinBox>
 #include <QLabel>
 
-CtStructureDelegate::CtStructureDelegate(QObject* parent) : QStyledItemDelegate(parent) {
+CtStructureDelegate::CtStructureDelegate(QObject* parent) :
+        QStyledItemDelegate(parent),
+        ExpectingCommit(false) {
 }
 
 QWidget*
@@ -42,7 +45,9 @@ void CtStructureDelegate::setModelData(QWidget* editor, QAbstractItemModel* mode
             ? QVariant::fromValue(dialogEditor->GetImplicitCtStructureData())
             : QVariant::fromValue(dialogEditor->GetImplicitStructureCombinationData());
 
-    model->setData(index, editedData);
+//    if (ExpectingCommit) {
+        model->setData(index, editedData);
+//    }
 }
 
 void CtStructureDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option,
@@ -63,11 +68,17 @@ QString CtStructureDelegate::displayText(const QVariant& value, const QLocale& l
 
 void CtStructureDelegate::commitEdit() {
     auto* ctStructureEditDialog = qobject_cast<CtStructureEditDialog*>(sender());
+
     emit commitData(ctStructureEditDialog);
     emit closeEditor(ctStructureEditDialog);
 }
 
 void CtStructureDelegate::discardChanges() {
     auto* ctStructureEditDialog = qobject_cast<CtStructureEditDialog*>(sender());
+
     emit closeEditor(ctStructureEditDialog);
+}
+
+bool CtStructureDelegate::eventFilter(QObject *object, QEvent *event) {
+    return false;
 }

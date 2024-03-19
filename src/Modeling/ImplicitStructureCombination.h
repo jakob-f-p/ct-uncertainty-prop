@@ -29,7 +29,9 @@ public:
 
     void EvaluateAtPosition(const double x[3], Result& result) override;
 
-    float FunctionValue(const double* x) override;
+    const FunctionValueRadiodensity FunctionValueAndRadiodensity(const double x[3]) const override;
+
+    float FunctionValue(const double* x) const override;
 
     void AddCtStructure(CtStructure& ctStructure);
 
@@ -73,5 +75,3 @@ private:
 struct ImplicitStructureCombinationDetails : public CtStructureDetails {
     ImplicitStructureCombination::OperatorType OperatorType = ImplicitStructureCombination::OperatorType::UNION;
 };
-
-Q_DECLARE_METATYPE(ImplicitStructureCombinationDetails)

@@ -24,5 +24,11 @@ public:
 public slots:
     void commitEdit();
     void discardChanges();
+
+protected:
+    bool eventFilter(QObject *object, QEvent *event) override;
+
+private:
+    bool ExpectingCommit;
 };
 

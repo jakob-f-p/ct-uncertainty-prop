@@ -31,6 +31,8 @@ void SimpleTransform::SetTranslationRotationScaling(const std::array<std::array<
     TranslationValues = trs[0];
     RotationAngles =    trs[1];
     ScaleFactors =      trs[2];
+
+    Modified();
 }
 
 void SimpleTransform::InternalDeepCopy(vtkAbstractTransform* copy) {
@@ -50,6 +52,7 @@ void SimpleTransform::InternalUpdate() {
     RotateY(RotationAngles[1]);
     RotateZ(RotationAngles[2]);
     Scale(ScaleFactors.data());
+    Inverse();
 
     this->Superclass::InternalUpdate();
 }

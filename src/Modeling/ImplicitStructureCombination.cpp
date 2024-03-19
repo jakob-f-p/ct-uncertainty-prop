@@ -1,11 +1,12 @@
 #include "ImplicitStructureCombination.h"
+#include "tracy/Tracy.hpp"
+#include "tracy/TracyC.h"
 
 #include <vtkObjectFactory.h>
 
 vtkStandardNewMacro(ImplicitStructureCombination);
 
-void ImplicitStructureCombination::PrintSelf(ostream& os, vtkIndent indent)
-{
+void ImplicitStructureCombination::PrintSelf(ostream& os, vtkIndent indent) {
     this->Superclass::PrintSelf(os, indent);
 
     os << indent << "Operator Type: " << GetOperatorTypeName() << "\n";
@@ -19,15 +20,14 @@ void ImplicitStructureCombination::PrintSelf(ostream& os, vtkIndent indent)
 
 vtkMTimeType ImplicitStructureCombination::GetMTime() {
     vtkMTimeType thisMTime = this->CtStructure::GetMTime();
-    auto maxMTimeStructureIt = std::max_element(CtStructures.begin(),
-                                                      CtStructures.end(),
-                                                      [](CtStructure* a, CtStructure* b) {
-        return a && b && a->GetMTime() < b->GetMTime();
-    });
 
-    return maxMTimeStructureIt == CtStructures.end()
-            ? thisMTime
-            : std::max(thisMTime, (*maxMTimeStructureIt)->GetMTime());
+    std::vector<vtkMTimeType> childrenMTimes(CtStructures.size());
+    std::transform(CtStructures.begin(), CtStructures.end(), childrenMTimes.begin(),
+                   [](CtStructure* child) { return child->GetMTime(); });
+    auto maxMTimeChild = std::max_element(childrenMTimes.begin(), childrenMTimes.end());
+    vtkMTimeType maxChildMTime = maxMTimeChild == childrenMTimes.end() ? 0 : *maxMTimeChild;
+
+    return std::max(thisMTime, maxChildMTime);
 }
 
 
@@ -46,6 +46,8 @@ ImplicitStructureCombination::OperatorTypeToString(ImplicitStructureCombination:
 
 void ImplicitStructureCombination::SetOperatorType(ImplicitStructureCombination::OperatorType operatorType) {
     this->OpType = operatorType;
+
+    this->Modified();
 }
 
 ImplicitStructureCombination::OperatorType ImplicitStructureCombination::GetOperatorType() const {
@@ -57,41 +59,64 @@ void ImplicitStructureCombination::SetTransform(const std::array<std::array<floa
 }
 
 void ImplicitStructureCombination::EvaluateAtPosition(const double x[3], CtStructure::Result& result) {
+    TracyCZoneN(evaluateCombinationA, "EvaluateCombinationA", true)
     if (CtStructures.empty()) {
         vtkErrorMacro("CtStructureList is empty. Cannot evaluate");
         return;
     }
 
-    vtkWarningMacro("TODO: Implement correct artifact evaluation (add artifact values that ignore when they are covered by another structure)");
+//    TODO: Implement correct artifact evaluation (add artifact values that ignore when they are covered by another structure)
+    const size_t size = CtStructures.size();
+    auto results = std::vector<Result>(size);
+    TracyCZoneEnd(evaluateCombinationA)
 
-    auto results = std::vector<Result>(CtStructures.size());
     for (int i = 0; i < CtStructures.size(); ++i) {
         CtStructures[i]->EvaluateAtPosition(x, results[i]);
     }
 
+    TracyCZoneN(evaluateCombinationB, "EvaluateCombinationB", true)
     Result res;
     switch (OpType) {
         case UNION: {
-            res = std::move(*std::min_element(results.begin(),
-                                              results.end(),
-                                              [](Result& a, Result& b) {
-                return a.FunctionValue < b.FunctionValue;
-            }));
+            const Result* minRes;
+            auto minF = VTK_FLOAT_MAX;
+            for (int i = 0; i < size; ++i) {
+                float f = results[i].FunctionValue;
+                if (f <= minF) {
+                    minF = f;
+                    minRes = &results[i];
+                }
+            }
+            res = *minRes;
+//            res = std::move(*std::min_element(results.begin(),
+//                                              results.end(),
+//                                              [](Result& a, Result& b) {
+//                return a.FunctionValue < b.FunctionValue;
+//            }));
             break;
         }
 
         case INTERSECTION: {
-            res = std::move(*std::max_element(results.begin(),
-                                              results.end(),
-                                              [](Result& a, Result& b) {
-                return a.FunctionValue < b.FunctionValue;
-            }));
+            const Result* maxRes;
+            auto maxF = VTK_FLOAT_MIN;
+            for (int i = 0; i < size; ++i) {
+                float f = results[i].FunctionValue;
+                if (f >= maxF) {
+                    maxF = f;
+                    maxRes = &results[i];
+                }
+            }
+            res = *maxRes;
+//            res = std::move(*std::max_element(results.begin(),
+//                                              results.end(),
+//                                              [](Result& a, Result& b) {
+//                return a.FunctionValue < b.FunctionValue;
+//            }));
             break;
         }
         case DIFFERENCE:
-            float negF;
-            for (int i = 1; i < results.size(); ++i) {
-                negF = -results[i].FunctionValue;
+            for (int i = 1; i < size; ++i) {
+                float negF = -results[i].FunctionValue;
                 if (negF > results[0].FunctionValue) {
                     results[0].FunctionValue = negF;
                 }
@@ -107,13 +132,64 @@ void ImplicitStructureCombination::EvaluateAtPosition(const double x[3], CtStruc
     }
 
     result.FunctionValue = res.FunctionValue;
-    result.IntensityValue = ImplicitCtStructure::GetTissueOrMaterialTypeByName("Air").CtNumber;
+    result.IntensityValue = res.IntensityValue;
     for (auto& entry: result.ArtifactValueMap) {
         entry.second = 0.0f;
     }
+    TracyCZoneEnd(evaluateCombinationB)
 }
 
-float ImplicitStructureCombination::FunctionValue(const double x[3]) {
+const CtStructure::FunctionValueRadiodensity
+ImplicitStructureCombination::FunctionValueAndRadiodensity(const double x[3]) const {
+    if (CtStructures.empty()) {
+        vtkErrorMacro("CtStructureList is empty. Cannot calculate function value and radiodensity");
+        return {};
+    }
+
+    double transformedPoint[3];
+    Transform->TransformPoint(x, transformedPoint);
+
+    switch (OpType) {
+        case UNION: {
+            FunctionValueRadiodensity min { VTK_FLOAT_MAX, VTK_FLOAT_MAX };
+            for (const auto* ctStructure: CtStructures) {
+                FunctionValueRadiodensity current = ctStructure->FunctionValueAndRadiodensity(transformedPoint);
+                if (current.FunctionValue < min.FunctionValue) {
+                    min.FunctionValue = current.FunctionValue;
+                    min.Radiodensity = current.Radiodensity;
+                }
+            }
+            return min;
+        }
+
+        case INTERSECTION: {
+            FunctionValueRadiodensity max { VTK_FLOAT_MIN, VTK_FLOAT_MIN };
+            for (const auto* ctStructure: CtStructures) {
+                FunctionValueRadiodensity current = ctStructure->FunctionValueAndRadiodensity(transformedPoint);
+                if (current.FunctionValue > max.FunctionValue) {
+                    max.FunctionValue = current.FunctionValue;
+                    max.Radiodensity = current.Radiodensity;
+                }
+            }
+            return max;
+        }
+
+        case DIFFERENCE: {
+            FunctionValueRadiodensity result = CtStructures[0]->FunctionValueAndRadiodensity(transformedPoint);
+            for (int i = 1; i < CtStructures.size(); ++i) {
+                float functionValue = -CtStructures[i]->FunctionValue(transformedPoint);
+                if (functionValue > result.FunctionValue) {
+                    result.FunctionValue = functionValue;
+                }
+            }
+            return result;
+        }
+
+        default: return {};
+    }
+}
+
+float ImplicitStructureCombination::FunctionValue(const double x[3]) const {
     if (CtStructures.empty()) {
         vtkErrorMacro("CtStructureList is empty. Cannot evaluate");
         return 0.0f;
@@ -255,15 +331,7 @@ std::string ImplicitStructureCombination::GetViewName() const {
 }
 
 std::string ImplicitStructureCombination::GetOperatorTypeName() const {
-    switch (OpType) {
-        case UNION:        return "Union";
-        case INTERSECTION: return "Intersection";
-        case DIFFERENCE:   return "Difference";
-        default: {
-            qWarning("Invalid Operator Type set");
-            return "";
-        }
-    }
+    return OperatorTypeToString(OpType);
 }
 
 void ImplicitStructureCombination::SetData(const QVariant &variant) {

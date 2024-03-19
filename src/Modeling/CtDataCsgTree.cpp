@@ -1,5 +1,6 @@
 #include "CtDataCsgTree.h"
 
+#include <vtkCommand.h>
 #include <vtkNew.h>
 #include <vtkObjectFactory.h>
 
@@ -15,7 +16,7 @@ void CtDataCsgTree::PrintSelf(ostream& os, vtkIndent indent) {
 
 vtkMTimeType CtDataCsgTree::GetMTime() {
     vtkMTimeType thisMTime = vtkObject::GetMTime();
-    vtkMTimeType nodeMTime = Root->GetMTime();
+    vtkMTimeType nodeMTime = Root ? Root->GetMTime() : 0;
 
     return std::max(thisMTime, nodeMTime);
 }
@@ -46,14 +47,11 @@ void CtDataCsgTree::AddImplicitCtStructure(ImplicitCtStructure& implicitCtStruct
 
 void CtDataCsgTree::AddImplicitCtStructure(const ImplicitCtStructureDetails &implicitCtStructureDetails,
                                            ImplicitStructureCombination *parent) {
-    if (!Root) {
-        vtkErrorMacro("No root is present yet. Cannot add.");
-        return;
-    }
-
     vtkNew<ImplicitCtStructure> implicitCtStructure;
     implicitCtStructure->SetData(implicitCtStructureDetails);
     AddImplicitCtStructure(*implicitCtStructure, parent);
+
+    InvokeEvent(vtkCommand::ModifiedEvent);
 }
 
 void CtDataCsgTree::CombineWithImplicitCtStructure(ImplicitCtStructure& implicitCtStructure,
@@ -82,12 +80,16 @@ void CtDataCsgTree::CombineWithImplicitCtStructure(ImplicitCtStructure& implicit
     implicitCtStructure.SetParent(newRoot);
 
     Root = newRoot;
+
+    InvokeEvent(vtkCommand::ModifiedEvent);
 }
 
 void CtDataCsgTree::CombineWithImplicitCtStructure(ImplicitCtStructureDetails &implicitCtStructureDetails) {
     vtkNew<ImplicitCtStructure> implicitCtStructure;
     implicitCtStructure->SetData(implicitCtStructureDetails);
     CombineWithImplicitCtStructure(*implicitCtStructure, ImplicitStructureCombination::OperatorType::UNION);
+
+    InvokeEvent(vtkCommand::ModifiedEvent);
 }
 
 void CtDataCsgTree::RefineWithImplicitStructure(const ImplicitCtStructureDetails& newStructureDetails,
@@ -117,6 +119,8 @@ void CtDataCsgTree::RefineWithImplicitStructure(const ImplicitCtStructureDetails
         return;
     }
     parent->ReplaceChild(&structureToRefine, combination);
+
+    InvokeEvent(vtkCommand::ModifiedEvent);
 }
 
 void CtDataCsgTree::RemoveImplicitCtStructure(ImplicitCtStructure& implicitCtStructure) {
@@ -128,6 +132,7 @@ void CtDataCsgTree::RemoveImplicitCtStructure(ImplicitCtStructure& implicitCtStr
     if (Root == &implicitCtStructure) {
         Root->UnRegister(this);
         Root = nullptr;
+        InvokeEvent(vtkCommand::ModifiedEvent);
         return;
     }
 
@@ -147,6 +152,14 @@ void CtDataCsgTree::RemoveImplicitCtStructure(ImplicitCtStructure& implicitCtStr
         Root = newRoot;
         newRoot->SetParent(nullptr);
     }
+
+    Modified();
+}
+
+void CtDataCsgTree::SetData(CtStructure* ctStructure, const QVariant& data) {
+    ctStructure->SetData(data);
+
+    InvokeEvent(vtkCommand::ModifiedEvent);
 }
 
 CtDataCsgTree::CtDataCsgTree() {

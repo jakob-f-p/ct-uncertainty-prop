@@ -7,25 +7,6 @@ set(CMAKE_AUTOUIC ON)
 file(GLOB_RECURSE UNCERTAINTY_PROPAGATION_SRC CONFIGURE_DEPENDS "*.h" "*.cpp" "*.ui")
 
 add_executable(uncertainty_propagation ${UNCERTAINTY_PROPAGATION_SRC})
-#add_executable(uncertainty_propagation
-#        main.cpp
-#        App.h App.cpp
-#        MainWindow.h MainWindow.cpp
-#
-#        Modeling/CtStructure.h Modeling/CtStructure.cpp
-#        Modeling/ImplicitCtStructure.h Modeling/ImplicitCtStructure.cpp
-#        Modeling/ImplicitCtStructure.h Modeling/ImplicitCtStructure.cpp
-#        Modeling/ImplicitStructureCombination.h Modeling/ImplicitStructureCombination.cpp
-#        Modeling/CT.h Modeling/CT.cpp
-#        Modeling/CtDataCsgTree.h Modeling/CtDataCsgTree.cpp
-#        Modeling/ModelingWidget.h Modeling/ModelingWidget.cpp
-#
-#        Artifacts/Artifact.h Artifacts/Artifact.cpp
-#        Artifacts/StructureArtifact.h Artifacts/StructureArtifact.cpp
-#        Artifacts/ImageArtifact.h Artifacts/ImageArtifact.cpp
-#        Artifacts/StructureArtifactList.h Artifacts/StructureArtifactList.cpp
-#)
-
 
 ### add Qt6 ###
 set(QT_COMPONENTS
@@ -85,6 +66,8 @@ set(VTK_COMPONENTS
         GUISupportQt
         RenderingCore
         RenderingQt
+        RenderingVolume
+        RenderingVolumeOpenGL2
 )
 
 find_package(VTK REQUIRED COMPONENTS ${VTK_COMPONENTS})

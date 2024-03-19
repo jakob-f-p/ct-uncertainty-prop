@@ -2,6 +2,7 @@
 
 #include "CtStructure.h"
 #include "../Artifacts/StructureArtifactList.h"
+#include "../Enum.h"
 
 #include <QMetaEnum>
 
@@ -59,7 +60,9 @@ public:
 
     void EvaluateAtPosition(const double x[3], Result& result) override;
 
-    float FunctionValue(const double x[3]) override;
+    const FunctionValueRadiodensity FunctionValueAndRadiodensity(const double x[3]) const override;
+
+    float FunctionValue(const double x[3]) const override;
 
     bool CtStructureExists(const CtStructure* structure) override;
 

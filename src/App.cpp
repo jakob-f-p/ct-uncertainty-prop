@@ -1,17 +1,18 @@
 #include "App.h"
 #include "MainWindow.h"
-
-#include <vtkSphere.h>
+#include "Modeling/ImplicitCtStructure.h"
 
 #include <QApplication>
 #include <QSurfaceFormat>
 #include <QVTKOpenGLNativeWidget.h>
 
+#include <SMP/Common/vtkSMPToolsAPI.h>
+
 App* App::Self = nullptr;
 
 App* App::CreateInstance(int argc, char* argv[]) {
     if (Self) {
-        std::cout << "App already exists. Cannot create new instance." << std::endl;
+        qWarning("App already exists. Cannot create new instance.");
         return nullptr;
     }
 
@@ -21,7 +22,7 @@ App* App::CreateInstance(int argc, char* argv[]) {
 
 App* App::GetInstance() {
     if (!Self) {
-        std::cout << "No instance exists. Instance needs to be created first." << std::endl;
+        qWarning("No instance exists. Instance needs to be created first.");
         return nullptr;
     }
     return Self;
@@ -44,6 +45,10 @@ App::~App() {
 int App::Run() {
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 
+    auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
+    smpToolsApi.SetBackend("STDTHREAD");
+    qWarning(QString("Backend: %1").arg(smpToolsApi.GetBackend()).toStdString().c_str());
+
     InitializeWithTestData();
 
     MainWindow mainWindow;
@@ -65,21 +70,21 @@ void App::InitializeWithTestData() {
     vtkNew<ImplicitCtStructure> implicitCtStructure1;
     implicitCtStructure1->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::SPHERE);
     implicitCtStructure1->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("Cancellous Bone"));
+    implicitCtStructure1->SetTransform({ 40.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f });
 
     vtkNew<ImplicitCtStructure> implicitCtStructure2;
     implicitCtStructure2->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::BOX);
     implicitCtStructure2->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("Cortical Bone"));
-
-    vtkNew<ImplicitCtStructure> implicitCtStructure3;
-    implicitCtStructure3->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::BOX);
-    implicitCtStructure3->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("Soft Tissue"));
+//
+//    vtkNew<ImplicitCtStructure> implicitCtStructure3;
+//    implicitCtStructure3->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::BOX);
+//    implicitCtStructure3->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("Soft Tissue"));
 
     CtDataTree->AddImplicitCtStructure(*implicitCtStructure1);
-    CtDataTree->CombineWithImplicitCtStructure(*implicitCtStructure2, ImplicitStructureCombination::OperatorType::UNION);
-    CtDataTree->CombineWithImplicitCtStructure(*implicitCtStructure3, ImplicitStructureCombination::OperatorType::INTERSECTION);
-
-    CtDataTree->RemoveImplicitCtStructure(*implicitCtStructure2);
-    CtDataTree->Print(std::cout);
+    CtDataTree->CombineWithImplicitCtStructure(*implicitCtStructure2, ImplicitStructureCombination::OperatorType::INTERSECTION);
+//    CtDataTree->CombineWithImplicitCtStructure(*implicitCtStructure3, ImplicitStructureCombination::OperatorType::UNION);
+//    CtDataTree->RemoveImplicitCtStructure(*implicitCtStructure2);
+//    CtDataTree->RefineWithImplicitStructure({ "a", "", {}, {}, "Water", {}}, *implicitCtStructure3);
 }
 
 CtDataCsgTree* App::GetCtDataCsgTree() const {

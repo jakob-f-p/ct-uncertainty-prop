@@ -98,7 +98,7 @@ bool CtDataCsgTreeModel::setData(const QModelIndex &index, const QVariant &value
     }
 
     auto* ctStructure = static_cast<CtStructure*>(index.internalPointer());
-    ctStructure->SetData(value);
+    Tree.SetData(ctStructure, value);
 
     emit dataChanged(index, index);
     return true;

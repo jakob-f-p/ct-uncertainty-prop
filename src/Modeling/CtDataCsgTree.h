@@ -1,6 +1,7 @@
 #pragma once
 
 #include "ImplicitStructureCombination.h"
+#include "tracy/Tracy.hpp"
 
 class CtDataCsgTree : public vtkObject {
 public:
@@ -30,6 +31,12 @@ public:
 
     CtStructure* GetRoot() const;
 
+    inline void EvaluateAtPosition(const double x[3], CtStructure::Result& result);
+
+    inline CtStructure::FunctionValueRadiodensity FunctionValueAndRadiodensity(const double x[3]);
+
+    void SetData(CtStructure* ctStructure, const QVariant& data);
+
     CtDataCsgTree(const CtDataCsgTree&) = delete;
     void operator=(const CtDataCsgTree&) = delete;
 
@@ -42,3 +49,21 @@ protected:
 private:
     bool CtStructureExists(const CtStructure& ctStructure);
 };
+
+void CtDataCsgTree::EvaluateAtPosition(const double x[3], CtStructure::Result &result) {
+    if (!Root) {
+        qWarning("Tree does not have a root. Cannot evaluate");
+        return;
+    }
+
+    return Root->EvaluateAtPosition(x, result);
+}
+
+inline CtStructure::FunctionValueRadiodensity CtDataCsgTree::FunctionValueAndRadiodensity(const double x[3]) {
+    if (!Root) {
+        qWarning("Tree does not have a root. Cannot evaluate");
+        return {};
+    }
+
+    return Root->FunctionValueAndRadiodensity(x);
+}

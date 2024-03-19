@@ -1,11 +1,13 @@
 #include "ImplicitCtStructure.h"
 #include "CtStructure.h"
+#include "tracy/Tracy.hpp"
 
+#include <vtkBox.h>
 #include <vtkNew.h>
 #include <vtkObjectFactory.h>
+#include <vtkSphere.h>
 
 #include <utility>
-#include <vtkSphere.h>
 
 vtkStandardNewMacro(ImplicitCtStructure)
 
@@ -46,11 +48,15 @@ void ImplicitCtStructure::SetImplicitFunction(ImplicitCtStructure::ImplicitFunct
     ImplicitFType = implicitFunctionType;
     switch (implicitFunctionType) {
         case SPHERE: {
-            ImplicitFunction = vtkSphere::New();
+            auto* sphere = vtkSphere::New();
+            sphere->SetRadius(25.0f);
+            ImplicitFunction = sphere;
             break;
         }
         case BOX: {
-            ImplicitFunction = vtkSphere::New();
+            auto* box = vtkBox::New();
+            box->SetBounds(-40.0, 40.0, -10.0, 10.0, -10.0, 10.0);
+            ImplicitFunction = box;
             break;
         }
         case CONE: {
@@ -58,6 +64,10 @@ void ImplicitCtStructure::SetImplicitFunction(ImplicitCtStructure::ImplicitFunct
         }
 
         default: qWarning("No matching implicit function type");
+    }
+
+    if (Transform) {
+        ImplicitFunction->SetTransform(Transform);
     }
 }
 
@@ -102,13 +112,19 @@ void ImplicitCtStructure::SetTissueType(ImplicitCtStructure::TissueOrMaterialTyp
 }
 
 void ImplicitCtStructure::EvaluateAtPosition(const double x[3], CtStructure::Result& result) {
+    ZoneScopedN("EvaluateStructure");
     result.FunctionValue = this->FunctionValue(x);
     result.IntensityValue = this->Tissue.CtNumber;
 
     StructureArtifacts->AddArtifactValuesAtPositionToMap(x, result.ArtifactValueMap);
 }
 
-float ImplicitCtStructure::FunctionValue(const double x[3]) {
+const CtStructure::FunctionValueRadiodensity
+ImplicitCtStructure::FunctionValueAndRadiodensity(const double x[3]) const {
+    return { FunctionValue(x), Tissue.CtNumber };
+}
+
+float ImplicitCtStructure::FunctionValue(const double x[3]) const {
     if (!this->ImplicitFunction) {
         vtkErrorMacro("No implicit function specified. Cannot calculate function value.");
         return 0.0;

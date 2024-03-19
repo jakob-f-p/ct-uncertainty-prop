@@ -3,12 +3,13 @@
 #include "ImplicitStructureCombination.h"
 
 #include <QDialogButtonBox>
+#include <QKeyEvent>
 #include <QLabel>
+#include <QPushButton>
 
 CtStructureEditDialog::CtStructureEditDialog(QWidget* parent, bool autoClose) :
         QDialog(parent),
         TransformSpinBoxes {} {
-
     setMinimumSize(200, 200);
 
     setModal(true);
@@ -24,6 +25,7 @@ CtStructureEditDialog::CtStructureEditDialog(QWidget* parent, bool autoClose) :
     nameEditLayout->addSpacing(20);
     nameEditLayout->addWidget(NameLineEdit);
     verticalLayout->addWidget(nameEditBar);
+
 
     ImplicitCtStructureEditSection = new QWidget();
     auto* implicitFunctionTissueLayout = new QHBoxLayout(ImplicitCtStructureEditSection);
@@ -42,6 +44,7 @@ CtStructureEditDialog::CtStructureEditDialog(QWidget* parent, bool autoClose) :
     implicitFunctionTissueLayout->addWidget(TissueTypeEditComboBox);
     verticalLayout->addWidget(ImplicitCtStructureEditSection);
 
+
     ImplicitStructureCombinationEditSection = new QWidget();
     auto* operatorTypeEditLayout = new QHBoxLayout(ImplicitStructureCombinationEditSection);
     auto* operatorTypeLabel = new QLabel("Operator Type");
@@ -53,6 +56,7 @@ CtStructureEditDialog::CtStructureEditDialog(QWidget* parent, bool autoClose) :
     operatorTypeEditLayout->addWidget(OperatorTypeEditComboBox);
     verticalLayout->addWidget(ImplicitStructureCombinationEditSection);
 
+
     auto* transformEditGroup = new QGroupBox("Transform");
     auto* transformVerticalLayout = new QVBoxLayout(transformEditGroup);
     std::array<std::string, 3> transformNames { "Translate", "Rotate", "Scale" };
@@ -60,6 +64,7 @@ CtStructureEditDialog::CtStructureEditDialog(QWidget* parent, bool autoClose) :
         createTransformationEditGroup(transformNames[i], TransformSpinBoxes[i], transformVerticalLayout);
     }
     verticalLayout->addWidget(transformEditGroup);
+
 
     auto* dialogButtonBar = new QDialogButtonBox();
     dialogButtonBar->setOrientation(Qt::Horizontal);

@@ -15,8 +15,14 @@ void CtStructure::PrintSelf(ostream &os, vtkIndent indent) {
     os << indent << "Parent: " << Parent << std::endl;
 }
 
+vtkMTimeType CtStructure::GetMTime() {
+    return std::max({ Superclass::GetMTime(), Transform->GetMTime() });
+}
+
 void CtStructure::SetName(std::string name) {
     Name = std::move(name);
+
+    this->Modified();
 }
 
 std::string CtStructure::GetName() const {
@@ -53,7 +59,9 @@ int CtStructure::ChildIndex() const {
 
     auto searchIt = std::find(childrenOfParent->begin(), childrenOfParent->end(), this);
 
-    assert(searchIt != childrenOfParent->end());
+    if(searchIt == childrenOfParent->end()) {
+        qWarning("Structures is not child of parent");
+    }
 
     return static_cast<int>(std::distance(childrenOfParent->begin(), searchIt));
 }
@@ -69,8 +77,8 @@ CtStructure::~CtStructure() {
 
 CtStructureDetails CtStructure::GetCtStructureDetails() const {
     return {
-        Name.c_str(),
-        GetViewName().c_str(),
+        QString::fromStdString(Name),
+        QString::fromStdString(GetViewName()),
         Transform->GetTranslationRotationScaling()
     };
 }

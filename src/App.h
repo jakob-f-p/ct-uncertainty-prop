@@ -26,10 +26,11 @@ protected:
 private:
     void InitializeWithTestData();
 
-    CtDataCsgTree* CtDataTree;
+    static App* Self;
+
     int Argc;
     char** Argv;
     QApplication* QApp;
 
-    static App* Self;
+    CtDataCsgTree* CtDataTree;
 };

@@ -9,19 +9,17 @@
 #include <vtkImplicitFunction.h>
 
 
-struct CtStructureDetails {
-    QString Name;
-    QString ViewName;
-    std::array<std::array<float, 3>, 3> Transform;
-};
+struct CtStructureDetails;
 
 class CtStructure : public vtkObject {
     Q_GADGET
 public:
     vtkTypeMacro(CtStructure, vtkObject)
     void PrintSelf(ostream& os, vtkIndent indent) override;
-    void SetName(std::string name);
 
+    virtual vtkMTimeType GetMTime() override;
+
+    void SetName(std::string name);
     std::string GetName() const;
 
     virtual void SetTransform(const std::array<std::array<float, 3>, 3>& trs) = 0;
@@ -34,6 +32,12 @@ public:
     };
     virtual void EvaluateAtPosition(const double x[3], Result& result) = 0;
 
+    struct FunctionValueRadiodensity {
+        float FunctionValue;
+        float Radiodensity;
+    };
+    virtual const FunctionValueRadiodensity FunctionValueAndRadiodensity(const double x[3]) const = 0;
+
     /**
      * Return f(x, y z) where f > 0 is outside of the surface, f = 0 is on the surface, and f < 0 is inside the surface.
      * Additionally, the distance to the surface is positively correlated with the function value at a given position.
@@ -41,7 +45,7 @@ public:
      * @param x the input position vector consisting of x, y, and z coordinates
      * @return the function value f(x, y, z) at position x
      */
-    virtual float FunctionValue(const double x[3]) = 0;
+    virtual float FunctionValue(const double x[3]) const = 0;
 
     virtual bool CtStructureExists(const CtStructure* structure) = 0;
     virtual int ChildCount() const = 0;
@@ -80,21 +84,9 @@ protected:
     CtStructure* Parent;    // always of type implicit structure combination
 };
 
-template<class EnumType>
-struct EnumString {
+struct CtStructureDetails {
     QString Name;
-    EnumType EnumValue = {};
+    QString ViewName;
+    std::array<std::array<float, 3>, 3> Transform;
 };
-
-#define GET_ENUM_VALUES(EnumType)                                   \
-static std::vector<EnumString<EnumType>> Get##EnumType##Values() {  \
-    auto metaEnum = QMetaEnum::fromType<EnumType>();                \
-    std::vector<EnumString<EnumType>> values(metaEnum.keyCount());  \
-    EnumType enumValue;                                             \
-    for (int i = 0; i < values.size(); i++) {                       \
-        enumValue = static_cast<EnumType>(metaEnum.value(i));       \
-        values[i] = { EnumType##ToString(enumValue).c_str(), enumValue };   \
-    }                                                               \
-    return values;                                                  \
-}                                                                   \
 
