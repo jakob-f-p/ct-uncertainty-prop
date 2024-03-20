@@ -64,6 +64,8 @@ set(VTK_COMPONENTS
         CommonCore
         FiltersCore
         GUISupportQt
+        InteractionStyle
+        RenderingAnnotation
         RenderingCore
         RenderingQt
         RenderingVolume

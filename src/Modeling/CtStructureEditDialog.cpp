@@ -60,8 +60,9 @@ CtStructureEditDialog::CtStructureEditDialog(QWidget* parent, bool autoClose) :
     auto* transformEditGroup = new QGroupBox("Transform");
     auto* transformVerticalLayout = new QVBoxLayout(transformEditGroup);
     std::array<std::string, 3> transformNames { "Translate", "Rotate", "Scale" };
+    std::array<double, 3> transformStepSizes { 2.0, 1.0, 0.1 };
     for (int i = 0; i < transformNames.size(); i++) {
-        createTransformationEditGroup(transformNames[i], TransformSpinBoxes[i], transformVerticalLayout);
+        createTransformationEditGroup(transformNames[i], TransformSpinBoxes[i], transformVerticalLayout, transformStepSizes[i]);
     }
     verticalLayout->addWidget(transformEditGroup);
 
@@ -83,7 +84,8 @@ CtStructureEditDialog::CtStructureEditDialog(QWidget* parent, bool autoClose) :
 
 void CtStructureEditDialog::createTransformationEditGroup(const std::string& title,
                                                           std::array<QDoubleSpinBox*, 3>& transformSpinBoxes,
-                                                          QVBoxLayout* parentLayout) {
+                                                          QVBoxLayout* parentLayout,
+                                                          double stepSize) {
     auto* bar = new QWidget();
     bar->setObjectName(title);
 
@@ -101,6 +103,7 @@ void CtStructureEditDialog::createTransformationEditGroup(const std::string& tit
         hLayout->addWidget(label);
         transformSpinBoxes[i] = new QDoubleSpinBox();
         transformSpinBoxes[i]->setRange(-100.0, 100.0);
+        transformSpinBoxes[i]->setSingleStep(stepSize);
         hLayout->addWidget(transformSpinBoxes[i]);
     }
 

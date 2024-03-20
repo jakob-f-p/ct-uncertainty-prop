@@ -29,7 +29,8 @@ public:
 private:
     static void createTransformationEditGroup(const std::string& title,
                                               std::array<QDoubleSpinBox*, 3>& transformSpinBoxes,
-                                              QVBoxLayout* parentLayout);
+                                              QVBoxLayout* parentLayout,
+                                              double stepSize = 1.0);
 
     void SetCtStructureData(const CtStructureDetails& ctStructureDetails);
     CtStructureDetails GetCtStructureData();

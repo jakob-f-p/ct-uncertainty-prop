@@ -3,35 +3,52 @@
 #include "CtStructureEditDialog.h"
 #include "CtStructureDelegate.h"
 
+#include <vtkAxesActor.h>
 #include <vtkCallbackCommand.h>
+#include <vtkCamera.h>
+#include <vtkCaptionActor2D.h>
 #include <vtkColorTransferFunction.h>
+#include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkNew.h>
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkOpenGLGPUVolumeRayCastMapper.h>
+#include <vtkOrientationMarkerWidget.h>
 #include <vtkPiecewiseFunction.h>
-#include <vtkRenderer.h>
+#include <vtkTextActor.h>
 #include <vtkVolume.h>
 #include <vtkVolumeProperty.h>
 
 #include <QDockWidget.h>
-#include <QVTKOpenGLNativeWidget.h>
 #include <QVBoxLayout>
+#include <QVTKOpenGLNativeWidget.h>
 
 ModelingWidget::ModelingWidget() :
-        AddStructureButton(nullptr),
-        CombineWithStructureButton(nullptr),
-        RefineWithStructureButton(nullptr),
-        RemoveStructureButton(nullptr),
-        TreeModel(nullptr),
-        TreeView(nullptr),
+        ResetCameraButton(new QPushButton("Reset Camera")),
+        AddStructureButton(new QPushButton("Add Structure")),
+        CombineWithStructureButton(new QPushButton("Combine With Structure")),
+        RefineWithStructureButton(new QPushButton("Refine With Structure")),
+        RemoveStructureButton(new QPushButton("Remove Structure")),
+        TreeModel(new CtDataCsgTreeModel(*App::GetInstance()->GetCtDataCsgTree())),
+        TreeView(new QTreeView()),
         SelectionModel(nullptr),
         CtStructureCreateDialog(nullptr),
         DataSource(nullptr),
-        DataTree(App::GetInstance()->GetCtDataCsgTree()) {
+        DataTree(App::GetInstance()->GetCtDataCsgTree()),
+        OrientationMarkerWidget(vtkOrientationMarkerWidget::New()),
+        Renderer(vtkOpenGLRenderer::New()),
+        RenderWindowInteractor(QVTKInteractor::New()),
+        InitialCameraPosition { 0.0, 0.5, -1.0 },
+        InitialCamera(vtkCamera::New()) {
 
     SetUpRenderingWidgetForShowingImplicitData();
 
     SetUpDockWidgetForImplicitCsgTreeModeling();
+}
+
+ModelingWidget::~ModelingWidget() {
+    OrientationMarkerWidget->Delete();
+    Renderer->Delete();
+    RenderWindowInteractor->Delete();
 }
 
 void ModelingWidget::OpenDialog(const std::function<const void()>& onAccepted) {
@@ -68,31 +85,50 @@ void ModelingWidget::SetUpRenderingWidgetForShowingImplicitData() {
     volume->SetMapper(volumeMapper);
     volume->SetProperty(volumeProperty);
 
-    vtkNew<vtkRenderer> volumeRenderer;
-    volumeRenderer->AddVolume(volume);
-    volumeRenderer->SetBackground(0.1, 0.1, 0.1);
+    Renderer->AddVolume(volume);
+    Renderer->SetBackground(0.2, 0.2, 0.2);
+    Renderer->ResetCamera();
+    InitialCamera->DeepCopy(Renderer->GetActiveCamera());
 
     vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
     renderWindow->SetWindowName("CT-Data");
-    renderWindow->AddRenderer(volumeRenderer);
+    renderWindow->AddRenderer(Renderer);
+
+    renderWindow->SetInteractor(RenderWindowInteractor);
+    RenderWindowInteractor->Initialize();
+    vtkNew<vtkInteractorStyleTrackballCamera> trackballCameraStyle;
+    RenderWindowInteractor->SetInteractorStyle(trackballCameraStyle);
 
     auto* renderingWidget = new QVTKOpenGLNativeWidget();
     renderingWidget->setRenderWindow(renderWindow);
 
     renderWindow->Render();
 
+    vtkNew<vtkAxesActor> axesActor;
+    axesActor->SetTotalLength(20.0, 20.0, 20.0);
+    OrientationMarkerWidget->SetOrientationMarker(axesActor);
+    OrientationMarkerWidget->SetViewport(0.8, 0.0, 1.0, 0.2);
+    OrientationMarkerWidget->SetInteractor(RenderWindowInteractor);
+    OrientationMarkerWidget->EnabledOn();
+    OrientationMarkerWidget->InteractiveOn();
+
     setCentralWidget(renderingWidget);
 
     vtkNew<vtkCallbackCommand> onDataChangedUpdater;
-    onDataChangedUpdater->SetClientData(renderWindow);
-    onDataChangedUpdater->SetCallback([](vtkObject*, unsigned long, void* renderW, void*) {
-        auto* renderWin = static_cast<vtkGenericOpenGLRenderWindow*>(renderW);
-        renderWin->Render();
+    onDataChangedUpdater->SetClientData(RenderWindowInteractor);
+    onDataChangedUpdater->SetCallback([](vtkObject*, unsigned long, void* rwi, void*) {
+        auto* renderWindowInteractor = static_cast<QVTKInteractor*>(rwi);
+        renderWindowInteractor->Render();
     });
     DataTree->AddObserver(vtkCommand::ModifiedEvent, onDataChangedUpdater);
 }
 
 void ModelingWidget::SetUpDockWidgetForImplicitCsgTreeModeling() {
+    auto* treeDelegate = new CtStructureDelegate();
+    TreeView->setModel(TreeModel);
+    TreeView->setItemDelegate(treeDelegate);
+    SelectionModel = TreeView->selectionModel();
+
     auto* dockWidget = new QDockWidget();
     dockWidget->setFeatures(
             QDockWidget::DockWidgetFeature::DockWidgetMovable | QDockWidget::DockWidgetFeature::DockWidgetFloatable);
@@ -101,31 +137,33 @@ void ModelingWidget::SetUpDockWidgetForImplicitCsgTreeModeling() {
     dockWidget->setMinimumWidth(250);
 
     auto* dockWidgetContent = new QWidget();
+    auto* verticalLayout = new QVBoxLayout(dockWidgetContent);
 
-    auto* buttonBarWidget = new QWidget();
-    auto* horizontalLayout = new QHBoxLayout(buttonBarWidget);
-    AddStructureButton = new QPushButton("Add Structure");
-    CombineWithStructureButton = new QPushButton("Combine With Structure");
-    RefineWithStructureButton = new QPushButton("Refine With Structure");
-    RemoveStructureButton = new QPushButton("Remove Structure");
+    auto* renderingButtonBarWidget = new QWidget();
+    auto* renderingHorizontalLayout = new QHBoxLayout(renderingButtonBarWidget);
+    renderingHorizontalLayout->setContentsMargins(0, 11, 0, 11);
+    ResetCameraButton->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Preferred);
+    renderingHorizontalLayout->addWidget(ResetCameraButton);
+    renderingHorizontalLayout->addStretch();
+    verticalLayout->addWidget(renderingButtonBarWidget);
+
+    auto* line = new QFrame();
+    line->setFrameShape(QFrame::HLine);
+    line->setFrameShadow(QFrame::Sunken);
+    verticalLayout->addWidget(line);
+
+    auto* treeButtonBarWidget = new QWidget();
+    auto* treeHorizontalLayout = new QHBoxLayout(treeButtonBarWidget);
+    treeHorizontalLayout->setContentsMargins(0, 11, 0, 11);
+    treeHorizontalLayout->addWidget(AddStructureButton);
+    treeHorizontalLayout->addWidget(CombineWithStructureButton);
+    treeHorizontalLayout->addWidget(RefineWithStructureButton);
+    treeHorizontalLayout->addStretch();
+    treeHorizontalLayout->addWidget(RemoveStructureButton);
     DisableButtons();
-    horizontalLayout->addWidget(AddStructureButton);
-    horizontalLayout->addWidget(CombineWithStructureButton);
-    horizontalLayout->addWidget(RefineWithStructureButton);
-    horizontalLayout->addStretch();
-    horizontalLayout->addWidget(RemoveStructureButton);
-
-    TreeView = new QTreeView();
-    TreeModel = new CtDataCsgTreeModel(*App::GetInstance()->GetCtDataCsgTree());
-    auto* treeDelegate = new CtStructureDelegate();
-    TreeView->setModel(TreeModel);
-    TreeView->setItemDelegate(treeDelegate);
-    SelectionModel = TreeView->selectionModel();
-
     ConnectButtons();
 
-    auto* verticalLayout = new QVBoxLayout(dockWidgetContent);
-    verticalLayout->addWidget(buttonBarWidget);
+    verticalLayout->addWidget(treeButtonBarWidget);
     verticalLayout->addWidget(TreeView);
 
     dockWidget->setWidget(dockWidgetContent);
@@ -134,6 +172,11 @@ void ModelingWidget::SetUpDockWidgetForImplicitCsgTreeModeling() {
 }
 
 void ModelingWidget::ConnectButtons() {
+    connect(ResetCameraButton, &QPushButton::clicked, [&]() {
+        Renderer->GetActiveCamera()->DeepCopy(InitialCamera);
+        RenderWindowInteractor->Render();
+    });
+
     connect(AddStructureButton, &QPushButton::clicked, [&]() {
         OpenDialog([&]() {
             ImplicitCtStructureDetails dialogData = CtStructureCreateDialog->GetImplicitCtStructureData();
