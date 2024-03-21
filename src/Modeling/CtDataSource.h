@@ -53,12 +53,14 @@ protected:
         CtDataCsgTree* Tree;
         float* Radiodensities;
         float* FunctionValues;
+        uint16_t* ImplicitCtStructureIds;
 
         SampleAlgorithm(CtDataSource* self,
                         vtkImageData* volumeData,
                         CtDataCsgTree* tree,
                         float* radiodensities,
-                        float* functionValues);
+                        float* functionValues,
+                        uint16_t* implicitCtStructureIds);
 
         void operator()(vtkIdType pointId, vtkIdType endPointId) const;
     };

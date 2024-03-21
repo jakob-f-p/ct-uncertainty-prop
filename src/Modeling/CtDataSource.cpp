@@ -8,6 +8,7 @@
 #include <vtkInformationVector.h>
 #include <vtkSMPTools.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
+#include <vtkTypeUInt16Array.h>
 
 vtkStandardNewMacro(CtDataSource)
 
@@ -100,7 +101,15 @@ void CtDataSource::ExecuteDataWithInformation(vtkDataObject *output, vtkInformat
     functionValueArray->Delete();
     float* functionValues = functionValueArray->WritePointer(0, numberOfPoints);
 
-    SampleAlgorithm sampleAlgorithm(this, data, DataTree, radiodensities, functionValues);
+    vtkTypeUInt16Array* implicitCtStructureIdArray= vtkTypeUInt16Array::New();
+    implicitCtStructureIdArray->SetNumberOfComponents(1);
+    implicitCtStructureIdArray->SetName("ImplicitCtStructureIds");
+    implicitCtStructureIdArray->SetNumberOfTuples(numberOfPoints);
+    data->GetPointData()->AddArray(implicitCtStructureIdArray);
+    implicitCtStructureIdArray->Delete();
+    uint16_t* implicitCtStructureIds = implicitCtStructureIdArray->WritePointer(0, numberOfPoints);
+
+    SampleAlgorithm sampleAlgorithm(this, data, DataTree, radiodensities, functionValues, implicitCtStructureIds);
 
     vtkSMPTools::For(0, numberOfPoints, sampleAlgorithm);
 }
@@ -138,14 +147,16 @@ std::array<int, 6> CtDataSource::GetWholeExtent() {
 
 CtDataSource::SampleAlgorithm::SampleAlgorithm(CtDataSource* self,
                                                vtkImageData* volumeData,
-                                               CtDataCsgTree *tree,
-                                               float *radiodensities,
-                                               float *functionValues) :
+                                               CtDataCsgTree* tree,
+                                               float* radiodensities,
+                                               float* functionValues,
+                                               uint16_t* implicitCtStructureIds) :
         Self(self),
         VolumeData(volumeData),
         Tree(tree),
         Radiodensities(radiodensities),
-        FunctionValues(functionValues) {
+        FunctionValues(functionValues),
+        ImplicitCtStructureIds(implicitCtStructureIds) {
 
 }
 
@@ -162,12 +173,16 @@ void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endP
 
         VolumeData->GetPoint(pointId, point);
 
-        CtStructure::FunctionValueRadiodensity result = Tree->FunctionValueAndRadiodensity(point);
+        CtStructure::ModelingResult result = Tree->FunctionValueAndRadiodensity(point);
 
+        bool pointIsWithinStructure = result.FunctionValue < 0;
         FunctionValues[pointId] = result.FunctionValue;
-        Radiodensities[pointId] = result.FunctionValue < 0
+        Radiodensities[pointId] = pointIsWithinStructure
                                     ? result.Radiodensity
                                     : -1000.0f;
+        ImplicitCtStructureIds[pointId] = pointIsWithinStructure
+                                            ? result.ImplicitCtStructureId
+                                            : 0;
 
         pointId++;
     }

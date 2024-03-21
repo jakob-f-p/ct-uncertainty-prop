@@ -1,6 +1,6 @@
 #include "MainWindow.h"
 
-#include "Modeling/ModelingWidget.h"
+#include "Modeling/UI/ModelingWidget.h"
 
 #include <QPushButton>
 #include <QStatusBar>

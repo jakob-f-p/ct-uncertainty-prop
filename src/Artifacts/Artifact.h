@@ -2,8 +2,8 @@
 
 #include <vtkObject.h>
 
+#include <array>
 #include <string>
-#include <vector>
 
 class Artifact : public vtkObject {
 public:
@@ -36,9 +36,21 @@ public:
 
     virtual SubType GetArtifactSubType() const = 0;
 
-    static std::vector<SubType> GetImageArtifactTypes();
+    static constexpr std::array<SubType, 7> GetImageArtifactTypes() {
+        return { IMAGE_GAUSSIAN,
+                 IMAGE_SALT_PEPPER,
+                 IMAGE_RING,
+                 IMAGE_CUPPING,
+                 IMAGE_WIND_MILL,
+                 IMAGE_STAIR_STEP,
+                 IMAGE_STREAKING };
+    };
 
-    static std::vector<SubType> GetStructureArtifactTypes();
+    static constexpr std::array<SubType, 3> GetStructureArtifactTypes(){
+        return { STRUCTURE_STREAKING,
+                 STRUCTURE_METALLIC,
+                 STRUCTURE_MOTION };
+    };
 
     Artifact(const Artifact&) = delete;
     void operator=(const Artifact&) = delete;

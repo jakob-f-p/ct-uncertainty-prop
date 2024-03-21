@@ -1,7 +1,8 @@
 #pragma once
 
+#include "../CtDataCsgTree.h"
+
 #include <QAbstractItemModel>
-#include "CtDataCsgTree.h"
 
 class CtDataCsgTreeModel : public QAbstractItemModel {
     Q_OBJECT

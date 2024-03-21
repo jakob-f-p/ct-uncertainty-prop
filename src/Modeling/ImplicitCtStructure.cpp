@@ -119,9 +119,9 @@ void ImplicitCtStructure::EvaluateAtPosition(const double x[3], CtStructure::Res
     StructureArtifacts->AddArtifactValuesAtPositionToMap(x, result.ArtifactValueMap);
 }
 
-const CtStructure::FunctionValueRadiodensity
-ImplicitCtStructure::FunctionValueAndRadiodensity(const double x[3]) const {
-    return { FunctionValue(x), Tissue.CtNumber };
+const CtStructure::ModelingResult
+ImplicitCtStructure::EvaluateImplicitModel(const double x[3]) const {
+    return { FunctionValue(x), Tissue.CtNumber, Id };
 }
 
 float ImplicitCtStructure::FunctionValue(const double x[3]) const {
@@ -159,11 +159,12 @@ QVariant ImplicitCtStructure::Data() const {
     return QVariant::fromValue(implicitCtStructureDetails);
 }
 
-ImplicitCtStructure::ImplicitCtStructure() {
-    this->ImplicitFType = SPHERE;
-    this->ImplicitFunction = vtkSphere::New();
-    this->Tissue = GetTissueOrMaterialTypeByName("Air");
-    this->StructureArtifacts = StructureArtifactList::New();
+ImplicitCtStructure::ImplicitCtStructure() :
+        Id(++GlobalIdImplicitCtStructureId),
+        ImplicitFType(SPHERE),
+        ImplicitFunction(vtkSphere::New()),
+        Tissue(GetTissueOrMaterialTypeByName("Air")),
+        StructureArtifacts(StructureArtifactList::New()) {
 }
 
 ImplicitCtStructure::~ImplicitCtStructure() {
@@ -186,6 +187,8 @@ std::map<std::string, ImplicitCtStructure::TissueOrMaterialType> ImplicitCtStruc
         { "Cortical Bone",   { "Cortical Bone",    800.0f } },
         { "Metal",           { "Metal",          15000.0f } }
 };
+
+std::atomic<uint16_t> ImplicitCtStructure::GlobalIdImplicitCtStructureId(0);
 
 void ImplicitCtStructure::SetData(const QVariant& variant) {
     auto implicitCtStructureDetails = variant.value<ImplicitCtStructureDetails>();

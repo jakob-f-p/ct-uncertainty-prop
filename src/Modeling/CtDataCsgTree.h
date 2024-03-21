@@ -33,7 +33,7 @@ public:
 
     inline void EvaluateAtPosition(const double x[3], CtStructure::Result& result);
 
-    inline CtStructure::FunctionValueRadiodensity FunctionValueAndRadiodensity(const double x[3]);
+    inline CtStructure::ModelingResult FunctionValueAndRadiodensity(const double x[3]);
 
     void SetData(CtStructure* ctStructure, const QVariant& data);
 
@@ -59,11 +59,11 @@ void CtDataCsgTree::EvaluateAtPosition(const double x[3], CtStructure::Result &r
     return Root->EvaluateAtPosition(x, result);
 }
 
-inline CtStructure::FunctionValueRadiodensity CtDataCsgTree::FunctionValueAndRadiodensity(const double x[3]) {
+inline CtStructure::ModelingResult CtDataCsgTree::FunctionValueAndRadiodensity(const double x[3]) {
     if (!Root) {
         qWarning("Tree does not have a root. Cannot evaluate");
         return {};
     }
 
-    return Root->FunctionValueAndRadiodensity(x);
+    return Root->EvaluateImplicitModel(x);
 }

@@ -29,7 +29,7 @@ public:
 
     void EvaluateAtPosition(const double x[3], Result& result) override;
 
-    const FunctionValueRadiodensity FunctionValueAndRadiodensity(const double x[3]) const override;
+    const ModelingResult EvaluateImplicitModel(const double x[3]) const override;
 
     float FunctionValue(const double* x) const override;
 

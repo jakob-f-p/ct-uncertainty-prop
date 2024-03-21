@@ -60,7 +60,7 @@ public:
 
     void EvaluateAtPosition(const double x[3], Result& result) override;
 
-    const FunctionValueRadiodensity FunctionValueAndRadiodensity(const double x[3]) const override;
+    const ModelingResult EvaluateImplicitModel(const double x[3]) const override;
 
     float FunctionValue(const double x[3]) const override;
 
@@ -89,12 +89,14 @@ protected:
 
     std::string GetViewName() const override;
 
+    const int Id;
     ImplicitFunctionType ImplicitFType;
     vtkImplicitFunction* ImplicitFunction;
     TissueOrMaterialType Tissue;
     StructureArtifactList* StructureArtifacts;
 
     static std::map<std::string, TissueOrMaterialType> TissueTypeMap;
+    static std::atomic<uint16_t> GlobalIdImplicitCtStructureId;
 };
 
 struct ImplicitCtStructureDetails : public CtStructureDetails {

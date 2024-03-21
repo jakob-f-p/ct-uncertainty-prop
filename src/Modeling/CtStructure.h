@@ -32,11 +32,12 @@ public:
     };
     virtual void EvaluateAtPosition(const double x[3], Result& result) = 0;
 
-    struct FunctionValueRadiodensity {
+    struct ModelingResult {
         float FunctionValue;
         float Radiodensity;
+        int ImplicitCtStructureId;
     };
-    virtual const FunctionValueRadiodensity FunctionValueAndRadiodensity(const double x[3]) const = 0;
+    virtual const ModelingResult EvaluateImplicitModel(const double x[3]) const = 0;
 
     /**
      * Return f(x, y z) where f > 0 is outside of the surface, f = 0 is on the surface, and f < 0 is inside the surface.

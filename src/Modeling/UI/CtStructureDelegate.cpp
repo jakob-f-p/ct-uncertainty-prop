@@ -1,6 +1,4 @@
 #include "CtStructureDelegate.h"
-#include "ImplicitCtStructure.h"
-#include "ImplicitStructureCombination.h"
 #include "CtStructureEditDialog.h"
 
 #include <QComboBox>
@@ -45,9 +43,7 @@ void CtStructureDelegate::setModelData(QWidget* editor, QAbstractItemModel* mode
             ? QVariant::fromValue(dialogEditor->GetImplicitCtStructureData())
             : QVariant::fromValue(dialogEditor->GetImplicitStructureCombinationData());
 
-//    if (ExpectingCommit) {
-        model->setData(index, editedData);
-//    }
+    model->setData(index, editedData);
 }
 
 void CtStructureDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option,

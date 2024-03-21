@@ -139,8 +139,8 @@ void ImplicitStructureCombination::EvaluateAtPosition(const double x[3], CtStruc
     TracyCZoneEnd(evaluateCombinationB)
 }
 
-const CtStructure::FunctionValueRadiodensity
-ImplicitStructureCombination::FunctionValueAndRadiodensity(const double x[3]) const {
+const CtStructure::ModelingResult
+ImplicitStructureCombination::EvaluateImplicitModel(const double x[3]) const {
     if (CtStructures.empty()) {
         vtkErrorMacro("CtStructureList is empty. Cannot calculate function value and radiodensity");
         return {};
@@ -151,31 +151,29 @@ ImplicitStructureCombination::FunctionValueAndRadiodensity(const double x[3]) co
 
     switch (OpType) {
         case UNION: {
-            FunctionValueRadiodensity min { VTK_FLOAT_MAX, VTK_FLOAT_MAX };
+            ModelingResult min { VTK_FLOAT_MAX, VTK_FLOAT_MAX };
             for (const auto* ctStructure: CtStructures) {
-                FunctionValueRadiodensity current = ctStructure->FunctionValueAndRadiodensity(transformedPoint);
+                ModelingResult current = ctStructure->EvaluateImplicitModel(transformedPoint);
                 if (current.FunctionValue < min.FunctionValue) {
-                    min.FunctionValue = current.FunctionValue;
-                    min.Radiodensity = current.Radiodensity;
+                    min = current;
                 }
             }
             return min;
         }
 
         case INTERSECTION: {
-            FunctionValueRadiodensity max { VTK_FLOAT_MIN, VTK_FLOAT_MIN };
+            ModelingResult max { VTK_FLOAT_MIN, VTK_FLOAT_MIN };
             for (const auto* ctStructure: CtStructures) {
-                FunctionValueRadiodensity current = ctStructure->FunctionValueAndRadiodensity(transformedPoint);
+                ModelingResult current = ctStructure->EvaluateImplicitModel(transformedPoint);
                 if (current.FunctionValue > max.FunctionValue) {
-                    max.FunctionValue = current.FunctionValue;
-                    max.Radiodensity = current.Radiodensity;
+                    max = current;
                 }
             }
             return max;
         }
 
         case DIFFERENCE: {
-            FunctionValueRadiodensity result = CtStructures[0]->FunctionValueAndRadiodensity(transformedPoint);
+            ModelingResult result = CtStructures[0]->EvaluateImplicitModel(transformedPoint);
             for (int i = 1; i < CtStructures.size(); ++i) {
                 float functionValue = -CtStructures[i]->FunctionValue(transformedPoint);
                 if (functionValue > result.FunctionValue) {

@@ -1,7 +1,7 @@
 #pragma once
 
-#include "ImplicitCtStructure.h"
-#include "ImplicitStructureCombination.h"
+#include "../ImplicitCtStructure.h"
+#include "../ImplicitStructureCombination.h"
 
 #include <QAbstractItemModel>
 #include <QComboBox>

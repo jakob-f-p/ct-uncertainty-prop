@@ -1,8 +1,8 @@
 #pragma once
 
-#include "CtStructureEditDialog.h"
 #include "CtDataCsgTreeModel.h"
-#include "CtDataSource.h"
+#include "CtStructureEditDialog.h"
+#include "../CtDataSource.h"
 
 #include <QItemSelectionModel>
 #include <QMainWindow>

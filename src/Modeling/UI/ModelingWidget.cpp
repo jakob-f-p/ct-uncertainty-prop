@@ -1,7 +1,7 @@
-#include "../App.h"
 #include "ModelingWidget.h"
 #include "CtStructureEditDialog.h"
 #include "CtStructureDelegate.h"
+#include "../../App.h"
 
 #include <vtkAxesActor.h>
 #include <vtkCallbackCommand.h>
@@ -18,7 +18,7 @@
 #include <vtkVolume.h>
 #include <vtkVolumeProperty.h>
 
-#include <QDockWidget.h>
+#include <qdockwidget.h>
 #include <QVBoxLayout>
 #include <QVTKOpenGLNativeWidget.h>
 
@@ -110,7 +110,7 @@ void ModelingWidget::SetUpRenderingWidgetForShowingImplicitData() {
     OrientationMarkerWidget->SetViewport(0.8, 0.0, 1.0, 0.2);
     OrientationMarkerWidget->SetInteractor(RenderWindowInteractor);
     OrientationMarkerWidget->EnabledOn();
-    OrientationMarkerWidget->InteractiveOn();
+    OrientationMarkerWidget->InteractiveOff();
 
     setCentralWidget(renderingWidget);
 

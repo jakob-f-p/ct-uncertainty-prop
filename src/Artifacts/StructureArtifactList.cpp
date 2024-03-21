@@ -21,14 +21,14 @@ void StructureArtifactList::AddStructureArtifact(StructureArtifact* structureArt
 }
 
 StructureArtifactList::TypeToStructureArtifactsMap StructureArtifactList::GetStructureArtifactMap() {
-    std::vector<Artifact::SubType> structureArtifactTypes = Artifact::GetStructureArtifactTypes();
+    auto structureArtifactTypes = Artifact::GetStructureArtifactTypes();
 
     TypeToStructureArtifactsMap map;
-    for (const auto &subType: structureArtifactTypes) {
+    for (const auto& subType: structureArtifactTypes) {
         map[subType] = std::vector<StructureArtifact*>();
     }
 
-    for (const auto &artifact: Artifacts) {
+    for (const auto& artifact: Artifacts) {
         map[artifact->GetArtifactSubType()].push_back(artifact);
     }
 
@@ -37,7 +37,7 @@ StructureArtifactList::TypeToStructureArtifactsMap StructureArtifactList::GetStr
 
 void StructureArtifactList::AddArtifactValuesAtPositionToMap(const double x[3],
                                                              std::map<Artifact::SubType, float>& artifactValueMap) {
-    for (const auto &artifact: Artifacts) {
+    for (const auto& artifact: Artifacts) {
         artifactValueMap[artifact->GetArtifactSubType()] += artifact->EvaluateAtPosition(x);
     }
 }
