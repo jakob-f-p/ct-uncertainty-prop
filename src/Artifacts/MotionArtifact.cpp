@@ -17,3 +17,7 @@ bool MotionArtifact::IgnoreCompetingStructures() {
     vtkErrorMacro("TODO: Implement");
     return false;
 }
+
+void MotionArtifact::DeepCopy(StructureArtifact *source) {
+    StructureArtifact::DeepCopy(source);
+}

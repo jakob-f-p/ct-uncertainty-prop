@@ -21,6 +21,8 @@ public:
 
     void AddArtifactValuesAtPositionToMap(const double x[3], std::map<Artifact::SubType, float>& artifactValueMap);
 
+    void DeepCopy(StructureArtifactList* source);
+
 protected:
     StructureArtifactList() = default;
     ~StructureArtifactList() override = default;

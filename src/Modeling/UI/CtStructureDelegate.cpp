@@ -8,8 +8,7 @@
 #include <QLabel>
 
 CtStructureDelegate::CtStructureDelegate(QObject* parent) :
-        QStyledItemDelegate(parent),
-        ExpectingCommit(false) {
+        QStyledItemDelegate(parent) {
 }
 
 QWidget*

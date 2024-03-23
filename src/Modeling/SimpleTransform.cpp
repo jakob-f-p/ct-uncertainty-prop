@@ -1,7 +1,5 @@
 #include "SimpleTransform.h"
 
-#include <QVariant>
-
 #include <vtkObjectFactory.h>
 
 vtkStandardNewMacro(SimpleTransform)
@@ -38,14 +36,14 @@ void SimpleTransform::SetTranslationRotationScaling(const std::array<std::array<
 void SimpleTransform::InternalDeepCopy(vtkAbstractTransform* copy) {
     auto* transform = dynamic_cast<SimpleTransform*>(copy);
 
-    transform->SetTranslationRotationScaling(GetTranslationRotationScaling());
+    SetTranslationRotationScaling(transform->GetTranslationRotationScaling());
 
-    this->Superclass::DeepCopy(copy);
+    Superclass::InternalDeepCopy(copy);
 }
 
 //------------------------------------------------------------------------------
 void SimpleTransform::InternalUpdate() {
-    this->Superclass::Identity();
+    Superclass::Identity();
 
     Translate(TranslationValues.data());
     RotateX(RotationAngles[0]);
@@ -54,5 +52,5 @@ void SimpleTransform::InternalUpdate() {
     Scale(ScaleFactors.data());
     Inverse();
 
-    this->Superclass::InternalUpdate();
+    Superclass::InternalUpdate();
 }

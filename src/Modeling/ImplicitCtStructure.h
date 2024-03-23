@@ -79,7 +79,8 @@ public:
 
     bool IsImplicitCtStructure() const override;
 
-public:
+    void DeepCopy(CtStructure* source, CtStructure* parent) override;
+
     ImplicitCtStructure(const ImplicitCtStructure&) = delete;
     void operator=(const ImplicitCtStructure&) = delete;
 
@@ -89,7 +90,7 @@ protected:
 
     std::string GetViewName() const override;
 
-    const int Id;
+    int Id;
     ImplicitFunctionType ImplicitFType;
     vtkImplicitFunction* ImplicitFunction;
     TissueOrMaterialType Tissue;
@@ -102,6 +103,5 @@ protected:
 struct ImplicitCtStructureDetails : public CtStructureDetails {
     ImplicitCtStructure::ImplicitFunctionType ImplicitFunctionType = ImplicitCtStructure::ImplicitFunctionType::SPHERE;
     QString TissueName;
-    QList<StructureArtifactDetails> StructureArtifacts;
 };
 

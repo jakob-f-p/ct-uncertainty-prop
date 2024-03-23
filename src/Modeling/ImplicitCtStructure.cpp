@@ -154,7 +154,6 @@ QVariant ImplicitCtStructure::Data() const {
         GetCtStructureDetails(),
         ImplicitFType,
         Tissue.Name.c_str(),
-        {}
     };
     return QVariant::fromValue(implicitCtStructureDetails);
 }
@@ -204,4 +203,17 @@ void ImplicitCtStructure::SetData(const ImplicitCtStructureDetails &implicitCtSt
 
 bool ImplicitCtStructure::IsImplicitCtStructure() const {
     return true;
+}
+
+void ImplicitCtStructure::DeepCopy(CtStructure* source, CtStructure* parent) {
+    Superclass::DeepCopy(source, parent);
+
+    auto* implicitCtStructureSource = dynamic_cast<ImplicitCtStructure*>(source);
+    Id = implicitCtStructureSource->Id;
+    ImplicitFType = implicitCtStructureSource->ImplicitFType;
+    ImplicitFunction = implicitCtStructureSource->ImplicitFunction;
+    ImplicitFunction->Register(this);
+    Tissue = implicitCtStructureSource->Tissue;
+    StructureArtifacts = StructureArtifactList::New();
+    StructureArtifacts->DeepCopy(implicitCtStructureSource->StructureArtifacts);
 }

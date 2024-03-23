@@ -179,3 +179,22 @@ CtStructure* CtDataCsgTree::GetRoot() const {
 bool CtDataCsgTree::CtStructureExists(const CtStructure& ctStructure) {
     return Root && Root->CtStructureExists(&ctStructure);
 }
+
+void CtDataCsgTree::DeepCopy(CtDataCsgTree* source) {
+    if (!source->Root) {
+        Root = nullptr;
+        return;
+    }
+
+    if (Root) {
+        Root->Delete();
+    }
+
+    if (source->Root->IsImplicitCtStructure()) {
+        Root = ImplicitCtStructure::New();
+    } else {
+        Root = ImplicitStructureCombination::New();
+    }
+
+    Root->DeepCopy(source->Root, nullptr);
+}

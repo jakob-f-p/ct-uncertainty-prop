@@ -4,7 +4,8 @@
 
 class StructureArtifact : public Artifact {
 public:
-    vtkTypeMacro(StructureArtifact, Artifact);
+    vtkTypeMacro(StructureArtifact, Artifact)
+    static StructureArtifact* NewStructureArtifact(SubType subType);
 
     void PrintSelf(std::ostream& os, vtkIndent indent) override;
 
@@ -14,14 +15,12 @@ public:
 
     virtual bool IgnoreCompetingStructures() = 0;
 
+    virtual void DeepCopy(StructureArtifact* source);
+
     StructureArtifact(const StructureArtifact&) = delete;
     void operator=(const StructureArtifact&) = delete;
 
 protected:
     StructureArtifact() = default;
     ~StructureArtifact() override = default;
-};
-
-struct StructureArtifactDetails {
-
 };

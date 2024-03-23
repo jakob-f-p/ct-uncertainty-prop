@@ -41,3 +41,16 @@ void StructureArtifactList::AddArtifactValuesAtPositionToMap(const double x[3],
         artifactValueMap[artifact->GetArtifactSubType()] += artifact->EvaluateAtPosition(x);
     }
 }
+
+void StructureArtifactList::DeepCopy(StructureArtifactList* source) {
+    for (const auto &artifact: Artifacts) {
+        artifact->Delete();
+    }
+    Artifacts.clear();
+
+    for (const auto &artifact: source->Artifacts) {
+        auto* newArtifact = StructureArtifact::NewStructureArtifact(artifact->GetArtifactSubType());
+        newArtifact->DeepCopy(artifact);
+        Artifacts.push_back(newArtifact);
+    }
+}

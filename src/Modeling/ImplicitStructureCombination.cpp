@@ -320,7 +320,7 @@ ImplicitStructureCombination::ImplicitStructureCombination() {
 
 ImplicitStructureCombination::~ImplicitStructureCombination() {
     for (const auto& structure : CtStructures) {
-        structure->UnRegister(this);
+        structure->Delete();
     }
 }
 
@@ -342,6 +342,26 @@ void ImplicitStructureCombination::SetData(const QVariant &variant) {
 
 bool ImplicitStructureCombination::IsImplicitCtStructure() const {
     return false;
+}
+
+void ImplicitStructureCombination::DeepCopy(CtStructure* source, CtStructure* parent) {
+    Superclass::DeepCopy(source, parent);
+
+    const auto* implicitStructureCombinationSource = dynamic_cast<ImplicitStructureCombination*>(source);
+    OpType = implicitStructureCombinationSource->OpType;
+
+    for (const auto &ctStructure: CtStructures) {
+        ctStructure->Delete();
+    }
+    CtStructures.clear();
+
+    for (const auto &ctStructure: implicitStructureCombinationSource->CtStructures) {
+        CtStructure* newCtStructure = ctStructure->IsImplicitCtStructure()
+                ? static_cast<CtStructure*>(ImplicitCtStructure::New())
+                : static_cast<CtStructure*>(ImplicitStructureCombination::New());
+        newCtStructure->DeepCopy(ctStructure, this);
+        CtStructures.push_back(newCtStructure);
+    }
 }
 
 void ImplicitStructureCombination::ReplaceChild(ImplicitCtStructure *oldChild, ImplicitStructureCombination *newChild) {

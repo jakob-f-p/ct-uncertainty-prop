@@ -54,6 +54,8 @@ public:
 
     void ReplaceChild(ImplicitCtStructure *oldChild, ImplicitStructureCombination *newChild);
 
+    void DeepCopy(CtStructure* source, CtStructure* parent) override;
+
     ImplicitStructureCombination(const ImplicitStructureCombination&) = delete;
     void operator=(const ImplicitStructureCombination&) = delete;
 

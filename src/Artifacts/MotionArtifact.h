@@ -12,6 +12,8 @@ public:
 
     bool IgnoreCompetingStructures() override;
 
+    void DeepCopy(StructureArtifact *source) override;
+
     MotionArtifact(const MotionArtifact&) = delete;
     void operator=(const MotionArtifact&) = delete;
 

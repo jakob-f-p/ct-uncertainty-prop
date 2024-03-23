@@ -1,5 +1,6 @@
 #pragma once
 
+#include "Artifacts/PipelineList.h"
 #include "Modeling/CtDataCsgTree.h"
 
 #include <QApplication>
@@ -13,6 +14,7 @@ public:
     static int Quit();
 
     CtDataCsgTree* GetCtDataCsgTree() const;
+    PipelineList* GetPipelineList() const;
 
     App(const App&) = delete;
     void operator=(const App&) = delete;
@@ -33,4 +35,5 @@ private:
     QApplication* QApp;
 
     CtDataCsgTree* CtDataTree;
+    PipelineList* Pipelines;
 };

@@ -13,6 +13,7 @@ struct CtStructureDetails;
 
 class CtStructure : public vtkObject {
     Q_GADGET
+
 public:
     vtkTypeMacro(CtStructure, vtkObject)
     void PrintSelf(ostream& os, vtkIndent indent) override;
@@ -51,8 +52,6 @@ public:
     virtual bool CtStructureExists(const CtStructure* structure) = 0;
     virtual int ChildCount() const = 0;
 
-    static int ColumnCount();
-
     CtStructure* GetParent() const;
 
     void SetParent(CtStructure* parent);
@@ -68,6 +67,8 @@ public:
     virtual void SetData(const QVariant& variant) = 0;
 
     virtual bool IsImplicitCtStructure() const = 0;
+
+    virtual void DeepCopy(CtStructure* source, CtStructure* parent);
 
     CtStructure(const CtStructure&) = delete;
     void operator=(const CtStructure&) = delete;

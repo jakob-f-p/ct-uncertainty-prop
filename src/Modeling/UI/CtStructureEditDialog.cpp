@@ -161,7 +161,6 @@ ImplicitCtStructureDetails CtStructureEditDialog::GetImplicitCtStructureData() {
         GetCtStructureData(),
         ImplicitFunctionEditComboBox->currentData().value<ImplicitCtStructure::ImplicitFunctionType>(),
         TissueTypeEditComboBox->currentText(),
-        {}
     };
 }
 

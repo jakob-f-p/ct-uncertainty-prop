@@ -27,8 +27,5 @@ public slots:
 
 protected:
     bool eventFilter(QObject *object, QEvent *event) override;
-
-private:
-    bool ExpectingCommit;
 };
 

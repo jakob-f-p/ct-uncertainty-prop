@@ -11,7 +11,7 @@ public:
     Q_DISABLE_COPY_MOVE(CtDataCsgTreeModel)
 
     explicit CtDataCsgTreeModel(CtDataCsgTree& csgTree, QObject* parent = nullptr);
-    ~CtDataCsgTreeModel() override = default;
+    ~CtDataCsgTreeModel() override;
 
     QModelIndex index(int row, int column, const QModelIndex& parent) const override;
 

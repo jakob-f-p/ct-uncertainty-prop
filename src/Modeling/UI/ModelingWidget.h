@@ -25,7 +25,7 @@ public slots:
 
 
 private:
-    void SetUpRenderingWidgetForShowingImplicitData();
+    void SetUpCentralWidgetForRendering();
 
     void SetUpDockWidgetForImplicitCsgTreeModeling();
 

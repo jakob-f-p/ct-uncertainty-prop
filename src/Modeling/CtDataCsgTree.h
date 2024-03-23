@@ -37,6 +37,8 @@ public:
 
     void SetData(CtStructure* ctStructure, const QVariant& data);
 
+    void DeepCopy(CtDataCsgTree* source);
+
     CtDataCsgTree(const CtDataCsgTree&) = delete;
     void operator=(const CtDataCsgTree&) = delete;
 

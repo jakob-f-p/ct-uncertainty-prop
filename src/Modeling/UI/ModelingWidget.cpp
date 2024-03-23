@@ -40,7 +40,7 @@ ModelingWidget::ModelingWidget() :
         InitialCameraPosition { 0.0, 0.5, -1.0 },
         InitialCamera(vtkCamera::New()) {
 
-    SetUpRenderingWidgetForShowingImplicitData();
+    SetUpCentralWidgetForRendering();
 
     SetUpDockWidgetForImplicitCsgTreeModeling();
 }
@@ -60,7 +60,7 @@ void ModelingWidget::OpenDialog(const std::function<const void()>& onAccepted) {
     connect(CtStructureCreateDialog, &CtStructureEditDialog::accepted, onAccepted);
 }
 
-void ModelingWidget::SetUpRenderingWidgetForShowingImplicitData() {
+void ModelingWidget::SetUpCentralWidgetForRendering() {
     DataSource = CtDataSource::New();
     DataSource->SetDataTree(DataTree);
     vtkNew<vtkPiecewiseFunction> opacityMappingFunction;
@@ -140,11 +140,10 @@ void ModelingWidget::SetUpDockWidgetForImplicitCsgTreeModeling() {
     auto* verticalLayout = new QVBoxLayout(dockWidgetContent);
 
     auto* renderingButtonBarWidget = new QWidget();
-    auto* renderingHorizontalLayout = new QHBoxLayout(renderingButtonBarWidget);
-    renderingHorizontalLayout->setContentsMargins(0, 11, 0, 11);
-    ResetCameraButton->setSizePolicy(QSizePolicy::Policy::Maximum, QSizePolicy::Policy::Preferred);
-    renderingHorizontalLayout->addWidget(ResetCameraButton);
-    renderingHorizontalLayout->addStretch();
+    auto* renderingButtonBarHorizontalLayout = new QHBoxLayout(renderingButtonBarWidget);
+    renderingButtonBarHorizontalLayout->setContentsMargins(0, 11, 0, 11);
+    renderingButtonBarHorizontalLayout->addWidget(ResetCameraButton);
+    renderingButtonBarHorizontalLayout->addStretch();
     verticalLayout->addWidget(renderingButtonBarWidget);
 
     auto* line = new QFrame();
@@ -153,13 +152,13 @@ void ModelingWidget::SetUpDockWidgetForImplicitCsgTreeModeling() {
     verticalLayout->addWidget(line);
 
     auto* treeButtonBarWidget = new QWidget();
-    auto* treeHorizontalLayout = new QHBoxLayout(treeButtonBarWidget);
-    treeHorizontalLayout->setContentsMargins(0, 11, 0, 11);
-    treeHorizontalLayout->addWidget(AddStructureButton);
-    treeHorizontalLayout->addWidget(CombineWithStructureButton);
-    treeHorizontalLayout->addWidget(RefineWithStructureButton);
-    treeHorizontalLayout->addStretch();
-    treeHorizontalLayout->addWidget(RemoveStructureButton);
+    auto* treeButtonBarHorizontalLayout = new QHBoxLayout(treeButtonBarWidget);
+    treeButtonBarHorizontalLayout->setContentsMargins(0, 11, 0, 0);
+    treeButtonBarHorizontalLayout->addWidget(AddStructureButton);
+    treeButtonBarHorizontalLayout->addWidget(CombineWithStructureButton);
+    treeButtonBarHorizontalLayout->addWidget(RefineWithStructureButton);
+    treeButtonBarHorizontalLayout->addStretch();
+    treeButtonBarHorizontalLayout->addWidget(RemoveStructureButton);
     DisableButtons();
     ConnectButtons();
 

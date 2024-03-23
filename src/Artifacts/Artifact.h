@@ -1,11 +1,18 @@
 #pragma once
 
+#include "../Enum.h"
+
+#include <QMetaObject>
+
 #include <vtkObject.h>
 
 #include <array>
 #include <string>
 
+struct ArtifactDetails;
+
 class Artifact : public vtkObject {
+    Q_GADGET
 public:
     vtkTypeMacro(Artifact, vtkObject);
 
@@ -17,6 +24,9 @@ public:
         IMAGE_ARTIFACT,
         STRUCTURE_ARTIFACT
     };
+    Q_ENUM(Type);
+    static std::string TypeToString(Type type);
+    GET_ENUM_VALUES(Type);
 
     enum SubType {
         IMAGE_GAUSSIAN,
@@ -26,11 +36,15 @@ public:
         IMAGE_WIND_MILL,
         IMAGE_STAIR_STEP,
         IMAGE_STREAKING,
+        IMAGE_COMPOSITION,
 
         STRUCTURE_STREAKING,
         STRUCTURE_METALLIC,
         STRUCTURE_MOTION
     };
+    Q_ENUM(SubType);
+    static std::string SubTypeToString(SubType subType);
+    GET_ENUM_VALUES(SubType);
 
     virtual Type GetArtifactType() const = 0;
 
@@ -59,5 +73,13 @@ protected:
     Artifact() = default;
     ~Artifact() override = default;
 
+    ArtifactDetails GetArtifactDetails();
+
     std::string Name;
+};
+
+struct ArtifactDetails {
+    QString Name;
+    Artifact::Type Type;
+    Artifact::SubType SubType;
 };

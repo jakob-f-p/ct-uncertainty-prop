@@ -8,6 +8,8 @@ public:
 
     SubType GetArtifactSubType() const override;
 
+    QVariant Data() override;
+
     GaussianArtifact(const GaussianArtifact&) = delete;
     void operator=(const GaussianArtifact&) = delete;
 

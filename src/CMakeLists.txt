@@ -59,6 +59,13 @@ if (EXISTS ${QT_SRC_DIR})
     endif ()
 endif ()
 
+file(GLOB RESOURCES_FOLDER CONFIGURE_DEPENDS "${PROJECT_SOURCE_DIR}/src/Resources/*.png")
+qt_add_resources(uncertainty_propagation images
+        PREFIX "/"
+        BASE "Resources"
+        FILES ${RESOURCES_FOLDER} "Resources/ArrowLeftDisabled.png"
+)
+
 ### add VTK ###
 set(VTK_COMPONENTS
         CommonCore

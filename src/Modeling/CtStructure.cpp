@@ -33,11 +33,6 @@ const SimpleTransform* CtStructure::GetTransform() const {
     return Transform;
 }
 
-
-int CtStructure::ColumnCount() {
-    return 1;
-}
-
 CtStructure* CtStructure::GetParent() const {
     return Parent;
 }
@@ -64,6 +59,12 @@ int CtStructure::ChildIndex() const {
     }
 
     return static_cast<int>(std::distance(childrenOfParent->begin(), searchIt));
+}
+
+void CtStructure::DeepCopy(CtStructure* source, CtStructure* parent) {
+    Name = source->Name;
+    Transform->DeepCopy(source->Transform);
+    Parent = parent;
 }
 
 CtStructure::CtStructure() {

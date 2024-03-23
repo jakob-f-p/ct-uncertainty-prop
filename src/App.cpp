@@ -1,6 +1,7 @@
 #include "App.h"
 #include "MainWindow.h"
 #include "Modeling/ImplicitCtStructure.h"
+#include "Artifacts/GaussianArtifact.h"
 
 #include <QApplication>
 #include <QSurfaceFormat>
@@ -28,18 +29,20 @@ App* App::GetInstance() {
     return Self;
 }
 
-App::App(int argc, char* argv[]) : Argc(argc), Argv(argv) {
-    QApp = new QApplication(Argc, Argv);
-    CtDataTree = CtDataCsgTree::New();
+App::App(int argc, char* argv[]) :
+        Argc(argc),
+        Argv(argv),
+        QApp(new QApplication(Argc, Argv)),
+        CtDataTree(CtDataCsgTree::New()),
+        Pipelines(PipelineList::New()) {
 }
 
 App::~App() {
     CtDataTree->Delete();
+    Pipelines->Delete();
 
-    if (QApp) {
-        QApplication::quit();
-        delete QApp;
-    }
+    QApplication::quit();
+    delete QApp;
 }
 
 int App::Run() {
@@ -85,8 +88,21 @@ void App::InitializeWithTestData() {
 //    CtDataTree->CombineWithImplicitCtStructure(*implicitCtStructure3, ImplicitStructureCombination::OperatorType::UNION);
 //    CtDataTree->RemoveImplicitCtStructure(*implicitCtStructure2);
 //    CtDataTree->RefineWithImplicitStructure({ "a", "", {}, {}, "Water", {}}, *implicitCtStructure3);
+
+    vtkNew<Pipeline> pipeline;
+    pipeline->SetCtDataTree(CtDataTree);
+    Pipelines->AddPipeline(pipeline);
+    ImageArtifactConcatenation& imageArtifactConcatenation = pipeline->GetImageArtifactConcatenation();
+    vtkNew<GaussianArtifact> gaussianArtifact;
+    vtkNew<ImageArtifactComposition> imageArtifactComposition;
+    imageArtifactConcatenation.AddImageArtifact(*gaussianArtifact);
+    imageArtifactConcatenation.AddImageArtifact(*imageArtifactComposition);
 }
 
 CtDataCsgTree* App::GetCtDataCsgTree() const {
     return CtDataTree;
+}
+
+PipelineList* App::GetPipelineList() const {
+    return Pipelines;
 }

@@ -1,8 +1,8 @@
 #include "MainWindow.h"
 
 #include "Modeling/UI/ModelingWidget.h"
+#include "Artifacts/UI/ArtifactsWidget.h"
 
-#include <QPushButton>
 #include <QStatusBar>
 
 MainWindow::MainWindow() {
@@ -13,12 +13,12 @@ MainWindow::MainWindow() {
     auto* tabWidget = new QTabWidget(this);
     tabWidget->setTabPosition(QTabWidget::TabPosition::West);
 
-    auto* modelingWidget = new ModelingWidget();
+//    auto* modelingWidget = new ModelingWidget();
 
-    auto* testTab2Widget = new QPushButton();
+    auto* artifactsWidget = new ArtifactsWidget();
 
-    tabWidget->addTab(modelingWidget, "Implicit Data Modeling");
-    tabWidget->addTab(testTab2Widget, "TestTab2");
+//    tabWidget->addTab(modelingWidget, "Implicit Data Modeling");
+    tabWidget->addTab(artifactsWidget, "Artifacts Widget");
 
     setCentralWidget(tabWidget);
 }

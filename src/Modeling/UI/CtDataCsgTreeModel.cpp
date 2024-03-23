@@ -2,7 +2,11 @@
 
 CtDataCsgTreeModel::CtDataCsgTreeModel(CtDataCsgTree& csgTree, QObject* parent)
         : Tree(csgTree) {
+    Tree.Register(nullptr);
+}
 
+CtDataCsgTreeModel::~CtDataCsgTreeModel() {
+    Tree.Delete();
 }
 
 QModelIndex CtDataCsgTreeModel::index(int row, int column, const QModelIndex& parent) const {
@@ -55,11 +59,11 @@ int CtDataCsgTreeModel::rowCount(const QModelIndex& parent) const {
 }
 
 int CtDataCsgTreeModel::columnCount(const QModelIndex& parent) const {
-    if (!parent.isValid()) { // assume parent is the imaginary parent item of root item
-        return Tree.GetRoot() ? Tree.GetRoot()->ColumnCount() : 0;
+    if (!parent.isValid() && !Tree.GetRoot()) {
+        return 0;
     }
 
-    return static_cast<const CtStructure*>(parent.internalPointer())->ColumnCount();
+    return 1;
 }
 
 QVariant CtDataCsgTreeModel::data(const QModelIndex& index, int role) const {
