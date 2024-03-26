@@ -24,3 +24,13 @@ StructureArtifact *StructureArtifact::NewStructureArtifact(Artifact::SubType sub
 void StructureArtifact::DeepCopy(StructureArtifact* source) {
     Name = source->Name;
 }
+
+void StructureArtifact::SetChildEditWidgetData(QWidget* widget, const ArtifactDetails& artifactDetails) const {
+    const auto& structureArtifactDetails = dynamic_cast<const StructureArtifactDetails&>(artifactDetails);
+    SetStructureArtifactChildEditWidgetData(widget, structureArtifactDetails);
+}
+
+void StructureArtifact::SetChildData(const ArtifactDetails& artifactDetails) {
+    const auto& structureArtifactDetails = dynamic_cast<const StructureArtifactDetails&>(artifactDetails);
+    SetStructureArtifactChildData(structureArtifactDetails);
+}

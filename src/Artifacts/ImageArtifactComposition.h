@@ -3,6 +3,8 @@
 #include "ImageArtifact.h"
 
 class ImageArtifactComposition : public ImageArtifact {
+    Q_GADGET
+
 public:
     static ImageArtifactComposition* New();
     vtkTypeMacro(ImageArtifactComposition, ImageArtifact)
@@ -18,8 +20,9 @@ public:
     };
     Q_ENUM(CompositionType);
     static std::string CompositionTypeToString(CompositionType compositionType);
-    GET_ENUM_VALUES(CompositionType);
+    GET_ENUM_VALUES(CompositionType, true);
     vtkSetEnumMacro(CompType, CompositionType);
+    vtkGetEnumMacro(CompType, CompositionType);
 
     bool ContainsImageArtifact(const ImageArtifact& artifact);
 
@@ -35,6 +38,8 @@ public:
 
     QVariant Data() override;
 
+    ImageArtifactDetails GetImageArtifactEditWidgetData(QWidget* widget) const override;
+
     ImageArtifactComposition(const ImageArtifactComposition&) = delete;
     void operator=(const ImageArtifactComposition&) = delete;
 
@@ -42,8 +47,14 @@ protected:
     ImageArtifactComposition();
     ~ImageArtifactComposition() override;
 
+    QWidget* GetChildEditWidget() const override;
+    void SetImageArtifactChildEditWidgetData(QWidget* widget, const ImageArtifactDetails& details) const override;
+    void SetImageArtifactChildData(const ImageArtifactDetails& details) override;
+
     std::vector<ImageArtifact*> ImageArtifacts;
     CompositionType CompType;
+
+    QString CompTypeComboBoxObjectName;
 };
 
 struct ImageArtifactCompositionDetails {

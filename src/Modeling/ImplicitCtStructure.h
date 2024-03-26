@@ -34,7 +34,7 @@ public:
     };
     Q_ENUM(ImplicitFunctionType);
     static std::string ImplicitFunctionTypeToString(ImplicitFunctionType implicitFunctionType);
-    GET_ENUM_VALUES(ImplicitFunctionType);
+    GET_ENUM_VALUES(ImplicitFunctionType, true);
 
     /**
      * Set/Get the implicit function separating the function domain into position inside, on, and outside of the

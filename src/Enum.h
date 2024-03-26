@@ -9,13 +9,14 @@ struct EnumString {
     EnumType EnumValue = {};
 };
 
-#define GET_ENUM_VALUES(EnumType)                                           \
+#define GET_ENUM_VALUES(EnumType, hasInvalid)                               \
 static std::vector<EnumString<EnumType>> Get##EnumType##Values() {          \
     auto metaEnum = QMetaEnum::fromType<EnumType>();                        \
-    std::vector<EnumString<EnumType>> values(metaEnum.keyCount());          \
-    EnumType enumValue;                                                     \
-    for (int i = 0; i < values.size(); i++) {                               \
-        enumValue = static_cast<EnumType>(metaEnum.value(i));               \
+    size_t numberOfEnums = metaEnum.keyCount();                             \
+    if (hasInvalid) numberOfEnums--;                                        \
+    std::vector<EnumString<EnumType>> values(numberOfEnums);                \
+    for (int i = 0; i < numberOfEnums; i++) {                               \
+        auto enumValue = static_cast<EnumType>(metaEnum.value(i));      \
         values[i] = { EnumType##ToString(enumValue).c_str(), enumValue };   \
     }                                                                       \
     return values;                                                          \

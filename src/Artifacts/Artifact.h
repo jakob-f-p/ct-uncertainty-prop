@@ -8,6 +8,7 @@
 
 #include <array>
 #include <string>
+#include <QLayout>
 
 struct ArtifactDetails;
 
@@ -19,6 +20,7 @@ public:
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
     std::string GetName();
+    void SetName(const std::string& name);
 
     enum Type {
         IMAGE_ARTIFACT,
@@ -26,7 +28,7 @@ public:
     };
     Q_ENUM(Type);
     static std::string TypeToString(Type type);
-    GET_ENUM_VALUES(Type);
+    GET_ENUM_VALUES(Type, false);
 
     enum SubType {
         IMAGE_GAUSSIAN,
@@ -44,7 +46,7 @@ public:
     };
     Q_ENUM(SubType);
     static std::string SubTypeToString(SubType subType);
-    GET_ENUM_VALUES(SubType);
+    GET_ENUM_VALUES(SubType, false);
 
     virtual Type GetArtifactType() const = 0;
 
@@ -66,6 +68,11 @@ public:
                  STRUCTURE_MOTION };
     };
 
+    void ProvideEditWidgets(QLayout* parentLayout) const;
+    void SetEditWidgetData(QWidget* widget, const ArtifactDetails& artifactDetails);
+
+    void SetData(const ArtifactDetails& artifactDetails);
+
     Artifact(const Artifact&) = delete;
     void operator=(const Artifact&) = delete;
 
@@ -73,13 +80,26 @@ protected:
     Artifact() = default;
     ~Artifact() override = default;
 
-    ArtifactDetails GetArtifactDetails();
+    ArtifactDetails GetArtifactDetails() const;
+
+    virtual QWidget* GetChildEditWidget() const = 0;
+    virtual void SetChildEditWidgetData(QWidget* widget, const ArtifactDetails& artifactDetails) const = 0;
+    ArtifactDetails GetArtifactEditWidgetData(QWidget* widget) const;
+
+    virtual void SetChildData(const ArtifactDetails& artifactDetails) = 0;
 
     std::string Name;
+
+    static const QString NameLineEditObjectName;
+    static const QString ChildEditWidgetObjectName;
 };
 
 struct ArtifactDetails {
     QString Name;
     Artifact::Type Type;
     Artifact::SubType SubType;
+
+    ArtifactDetails(QString name, Artifact::Type type, Artifact::SubType subType);
+    ArtifactDetails();
+    virtual ~ArtifactDetails() = default;
 };

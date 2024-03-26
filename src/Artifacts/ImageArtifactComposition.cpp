@@ -1,7 +1,12 @@
 #include "ImageArtifactComposition.h"
 #include "ImageArtifactDetails.h"
 
+#include <QHBoxLayout>
+#include <QWidget>
+
 #include <vtkObjectFactory.h>
+#include <QComboBox>
+#include <QLabel>
 
 vtkStandardNewMacro(ImageArtifactComposition)
 
@@ -28,7 +33,7 @@ ImageArtifactComposition::CompositionTypeToString(ImageArtifactComposition::Comp
 bool ImageArtifactComposition::ContainsImageArtifact(const ImageArtifact& artifact) {
     return this == &artifact
             || std::any_of(ImageArtifacts.begin(), ImageArtifacts.end(), [&](ImageArtifact* a) {
-                return a->GetArtifactSubType() == IMAGE_COMPOSITION
+                return a->IsComposition()
                         ? dynamic_cast<ImageArtifactComposition*>(a)->ContainsImageArtifact(artifact)
                         : a == &artifact;
             });
@@ -36,6 +41,7 @@ bool ImageArtifactComposition::ContainsImageArtifact(const ImageArtifact& artifa
 
 void ImageArtifactComposition::AddImageArtifact(ImageArtifact& artifact) {
     ImageArtifacts.push_back(&artifact);
+    artifact.SetParent(this);
     artifact.Register(this);
 }
 
@@ -48,6 +54,7 @@ void ImageArtifactComposition::RemoveImageArtifact(ImageArtifact& artifact) {
     }
 
     ImageArtifacts.erase(artifactIt);
+    artifact.Delete();
 }
 
 ImageArtifact* ImageArtifactComposition::ChildArtifact(int idx) {
@@ -66,16 +73,55 @@ int ImageArtifactComposition::NumberOfChildren() {
 
 QVariant ImageArtifactComposition::Data() {
     ImageArtifactDetails details = GetImageArtifactDetails();
-//    details.CompositionDetails.CompositionType = CompType;
+    details.Composition.CompositionType = CompType;
     return QVariant::fromValue(details);
 }
 
+ImageArtifactDetails ImageArtifactComposition::GetImageArtifactEditWidgetData(QWidget* widget) const {
+    auto* compTypeComboBox = widget->findChild<QComboBox*>(CompTypeComboBoxObjectName);
+    return {
+            GetArtifactEditWidgetData(widget),
+            { compTypeComboBox->currentData().value<CompositionType>() },
+            {}
+    };
+}
+
 ImageArtifactComposition::ImageArtifactComposition() :
-        CompType(INVALID) {
+        CompType(INVALID),
+        CompTypeComboBoxObjectName("compTypeComboBox") {
 }
 
 ImageArtifactComposition::~ImageArtifactComposition() {
     for (const auto& imageArtifact: ImageArtifacts) {
         imageArtifact->Delete();
     }
+}
+
+QWidget* ImageArtifactComposition::GetChildEditWidget() const {
+    auto* widget = new QWidget();
+    auto* hLayout = new QHBoxLayout(widget);
+
+    auto* compTypeLabel = new QLabel("Composition Type");
+    hLayout->addWidget(compTypeLabel);
+    auto* compTypeComboBox = new QComboBox();
+    compTypeComboBox->setObjectName(CompTypeComboBoxObjectName);
+    for (const auto &compTypeAndName : GetCompositionTypeValues()) {
+        compTypeComboBox->addItem(compTypeAndName.Name, compTypeAndName.EnumValue);
+    }
+    hLayout->addWidget(compTypeComboBox);
+
+    return widget;
+}
+
+void ImageArtifactComposition::SetImageArtifactChildEditWidgetData(QWidget* widget,
+                                                                   const ImageArtifactDetails& details) const {
+    auto* compTypeComboBox = widget->findChild<QComboBox*>(CompTypeComboBoxObjectName);
+    if (int idx = compTypeComboBox->findData(details.Composition.CompositionType);
+            idx != -1) {
+        compTypeComboBox->setCurrentIndex(idx);
+    }
+}
+
+void ImageArtifactComposition::SetImageArtifactChildData(const ImageArtifactDetails& details) {
+    CompType = details.Composition.CompositionType;
 }

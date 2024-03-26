@@ -52,7 +52,11 @@ endif ()
 
 set(QT_SRC_DIR "${QT_INSTALL_PATH}/../Src")
 if (EXISTS ${QT_SRC_DIR})
-    set(QT_BASE_SRC_DIR "${QT_INSTALL_PATH}/../Src/qtbase/src")
+    set(QT_BASE_SRC_DIR "${QT_INSTALL_PATH}/../qtbase_Src")
+    if (NOT EXISTS ${QT_BASE_SRC_DIR})
+        set(QT_BASE_SRC_DIR "${QT_INSTALL_PATH}/../Src/qtbase/src")
+    endif ()
+
     if (EXISTS ${QT_BASE_SRC_DIR})
         message(NOTICE "Including QT sources from ${QT_BASE_SRC_DIR}")
         include_directories(${QT_BASE_SRC_DIR})

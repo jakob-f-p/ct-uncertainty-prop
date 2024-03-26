@@ -21,3 +21,22 @@ bool MotionArtifact::IgnoreCompetingStructures() {
 void MotionArtifact::DeepCopy(StructureArtifact *source) {
     StructureArtifact::DeepCopy(source);
 }
+
+QWidget* MotionArtifact::GetChildEditWidget() const {
+    qWarning("Todo");
+    return nullptr;
+}
+
+void MotionArtifact::SetStructureArtifactChildEditWidgetData(QWidget* widget,
+                                                             const StructureArtifactDetails& details) const {
+    qWarning("Todo");
+}
+
+void MotionArtifact::SetStructureArtifactChildData(const StructureArtifactDetails& details) {
+    qWarning("Todo");
+}
+
+StructureArtifactDetails MotionArtifact::GetStructureArtifactEditWidgetData(QWidget* widget) const {
+    qWarning("Todo");
+    return {};
+}

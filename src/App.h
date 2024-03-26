@@ -1,5 +1,6 @@
 #pragma once
 
+#include "MainWindow.h"
 #include "Artifacts/PipelineList.h"
 #include "Modeling/CtDataCsgTree.h"
 
@@ -13,6 +14,7 @@ public:
     int Run();
     static int Quit();
 
+    MainWindow* GetMainWindow() const;
     CtDataCsgTree* GetCtDataCsgTree() const;
     PipelineList* GetPipelineList() const;
 
@@ -20,10 +22,9 @@ public:
     void operator=(const App&) = delete;
     App() = delete;
 
-    ~App();
-
 protected:
     App(int argc, char* argv[]);
+    ~App();
 
 private:
     void InitializeWithTestData();
@@ -34,6 +35,7 @@ private:
     char** Argv;
     QApplication* QApp;
 
+    MainWindow* MainWin;
     CtDataCsgTree* CtDataTree;
     PipelineList* Pipelines;
 };

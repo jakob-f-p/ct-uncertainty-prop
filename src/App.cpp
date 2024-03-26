@@ -34,12 +34,14 @@ App::App(int argc, char* argv[]) :
         Argv(argv),
         QApp(new QApplication(Argc, Argv)),
         CtDataTree(CtDataCsgTree::New()),
-        Pipelines(PipelineList::New()) {
+        Pipelines(PipelineList::New()),
+        MainWin(nullptr) {
 }
 
 App::~App() {
     CtDataTree->Delete();
     Pipelines->Delete();
+    delete MainWin;
 
     QApplication::quit();
     delete QApp;
@@ -54,8 +56,8 @@ int App::Run() {
 
     InitializeWithTestData();
 
-    MainWindow mainWindow;
-    mainWindow.show();
+    MainWin = new MainWindow();
+    MainWin->show();
 
     return QApplication::exec();
 }
@@ -93,10 +95,31 @@ void App::InitializeWithTestData() {
     pipeline->SetCtDataTree(CtDataTree);
     Pipelines->AddPipeline(pipeline);
     ImageArtifactConcatenation& imageArtifactConcatenation = pipeline->GetImageArtifactConcatenation();
+
     vtkNew<GaussianArtifact> gaussianArtifact;
-    vtkNew<ImageArtifactComposition> imageArtifactComposition;
+    gaussianArtifact->SetName("sequential gaussian");
     imageArtifactConcatenation.AddImageArtifact(*gaussianArtifact);
+
+    vtkNew<ImageArtifactComposition> imageArtifactComposition;
+    imageArtifactComposition->SetCompType(ImageArtifactComposition::CompositionType::PARALLEL);
+    vtkNew<ImageArtifactComposition> imageArtifactComposition1;
+    imageArtifactComposition1->SetCompType(ImageArtifactComposition::CompositionType::SEQUENTIAL);
+    vtkNew<GaussianArtifact> gaussianArtifact1;
+    imageArtifactComposition->AddImageArtifact(*imageArtifactComposition1);
+    imageArtifactComposition->AddImageArtifact(*gaussianArtifact1);
     imageArtifactConcatenation.AddImageArtifact(*imageArtifactComposition);
+
+    vtkNew<GaussianArtifact> gaussianArtifact2;
+    vtkNew<GaussianArtifact> gaussianArtifact3;
+    imageArtifactComposition1->AddImageArtifact(*gaussianArtifact2);
+    imageArtifactComposition1->AddImageArtifact(*gaussianArtifact3);
+
+    vtkNew<GaussianArtifact> gaussianArtifact4;
+    imageArtifactConcatenation.AddImageArtifact(*gaussianArtifact4);
+}
+
+MainWindow* App::GetMainWindow() const {
+    return MainWin;
 }
 
 CtDataCsgTree* App::GetCtDataCsgTree() const {

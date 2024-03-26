@@ -20,7 +20,7 @@ public:
     };
     Q_ENUM(OperatorType);
     static std::string OperatorTypeToString(OperatorType operatorType);
-    GET_ENUM_VALUES(OperatorType);
+    GET_ENUM_VALUES(OperatorType, false);
 
     void SetOperatorType(OperatorType operatorType);
     OperatorType GetOperatorType() const;

@@ -16,9 +16,7 @@ QModelIndex ImageArtifactConcatenationModel::index(int row, int column, const QM
 
     auto* childArtifact = parent.isValid()
                             ? static_cast<ImageArtifactComposition*>(parent.internalPointer())->ChildArtifact(row)
-                            : &Concatenation.GetStart();
-
-    if (!childArtifact) return {};
+                            : Concatenation.GetStart().ChildArtifact(row);
 
     return createIndex(row, column, childArtifact);
 }
@@ -32,14 +30,14 @@ QModelIndex ImageArtifactConcatenationModel::parent(const QModelIndex& child) co
     if (!parentArtifact) return {};
 
     ImageArtifactComposition* grandparentArtifact = parentArtifact->GetParent();
-    int rowIdx = grandparentArtifact
-                    ? grandparentArtifact->GetChildIdx(*parentArtifact)
-                    : 0;
+    if (!grandparentArtifact) return {};
+
+    int rowIdx = grandparentArtifact->GetChildIdx(*parentArtifact);
     return createIndex(rowIdx, 0, parentArtifact);
 }
 
 int ImageArtifactConcatenationModel::rowCount(const QModelIndex& parent) const {
-    if (!parent.isValid()) return 1;
+    if (!parent.isValid()) return Concatenation.GetStart().NumberOfChildren();
 
     auto* parentArtifact = static_cast<ImageArtifact*>(parent.internalPointer());
     return parentArtifact->GetArtifactSubType() == Artifact::IMAGE_COMPOSITION
@@ -70,4 +68,3 @@ Qt::ItemFlags ImageArtifactConcatenationModel::flags(const QModelIndex& index) c
 
     return Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable;
 }
-

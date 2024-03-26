@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ImageArtifactsView.h"
 #include "../PipelineList.h"
 #include "../../Modeling/UI/CtDataCsgTreeModel.h"
 
@@ -12,6 +13,9 @@
 
 #include <vtkOpenGLRenderer.h>
 #include <vtkOrientationMarkerWidget.h>
+#include <QVBoxLayout>
+#include <QStackedWidget>
+#include <QStackedLayout>
 
 class ArtifactsWidget : public QMainWindow {
     Q_OBJECT
@@ -38,11 +42,13 @@ private:
 
     void InitializeViews();
 
+    void CreateArtifactsViewsAndModels(int pipelineIdx);
+
     PipelineList* Pipelines;
     int CurrentPipelineIndex;
     Pipeline* CurrentPipeline;
-    std::vector<QTreeView*> StructureArtifactsViews;
-    std::vector<QTreeView*> ImageArtifactsViews;
+    QStackedLayout* StructureArtifactsViews;
+    QStackedLayout* ImageArtifactsViews;
 
     QLabel* PipelineTitle;
     QWidget* StructureArtifactModelingWidget;

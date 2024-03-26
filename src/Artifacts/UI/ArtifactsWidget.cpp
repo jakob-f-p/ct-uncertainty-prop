@@ -27,6 +27,8 @@ ArtifactsWidget::ArtifactsWidget() :
         Pipelines(App::GetInstance()->GetPipelineList()),
         CurrentPipelineIndex(Pipelines->IsEmpty() ? -1 : 0),
         CurrentPipeline(nullptr),
+        StructureArtifactsViews(new QStackedLayout()),
+        ImageArtifactsViews(new QStackedLayout()),
         PipelineTitle(new QLabel()),
         StructureArtifactModelingWidget(new QWidget()),
         ImageArtifactModelingWidget(new QWidget()),
@@ -161,13 +163,20 @@ void ArtifactsWidget::SetUpDockWidgetForAddingArtifacts() {
     auto* structureArtifactModelingTitle = new QLabel("Structure Artifacts");
     structureArtifactModelingTitle->setStyleSheet("font-size: 14px; font-weight: bold");
     structureArtifactModelingVerticalLayout->addWidget(structureArtifactModelingTitle);
+    structureArtifactModelingVerticalLayout->addLayout(StructureArtifactsViews);
     verticalLayout->addWidget(StructureArtifactModelingWidget);
 
     auto* imageArtifactModelingVerticalLayout = new QVBoxLayout(ImageArtifactModelingWidget);
     auto* imageArtifactModelingTitle = new QLabel("Image Artifacts");
     imageArtifactModelingTitle->setStyleSheet("font-size: 14px; font-weight: bold");
     imageArtifactModelingVerticalLayout->addWidget(imageArtifactModelingTitle);
+    imageArtifactModelingVerticalLayout->addLayout(ImageArtifactsViews);
     verticalLayout->addWidget(ImageArtifactModelingWidget);
+
+    auto* StructureArtifactsPlaceholderWidget = new QTreeView();
+    StructureArtifactsViews->addWidget(StructureArtifactsPlaceholderWidget);
+    auto* imageArtifactsPlaceholderWidget = new ImageArtifactsView();
+    ImageArtifactsViews->addWidget(imageArtifactsPlaceholderWidget);
 
     dockWidget->setWidget(dockWidgetContent);
 
@@ -202,22 +211,7 @@ void ArtifactsWidget::AddPipeline() {
     newDataTree->FastDelete();
     newPipeline->FastDelete();
 
-    auto* newStructureArtifactsView = new QTreeView();
-    auto* newStructureArtifactsModel = new CtDataCsgTreeModel(*Pipelines->Get(CurrentPipelineIndex)->GetCtDataTree());
-    newStructureArtifactsView->setModel(newStructureArtifactsModel);
-    auto* newCtDataTreeDelegate = new CtStructureDelegate();
-    newStructureArtifactsView->setItemDelegate(newCtDataTreeDelegate);
-    StructureArtifactModelingWidget->layout()->addWidget(newStructureArtifactsView);
-
-    auto* newImageArtifactsView = new QTreeView();
-    auto* newImageArtifactsModel = new ImageArtifactConcatenationModel(Pipelines->Get(CurrentPipelineIndex)->GetImageArtifactConcatenation());
-    newImageArtifactsView->setModel(newImageArtifactsModel);
-    auto* newImageArtifactsDelegate = new ImageArtifactsDelegate();
-    newImageArtifactsView->setItemDelegate(newImageArtifactsDelegate);
-    ImageArtifactModelingWidget->layout()->addWidget(newImageArtifactsView);
-
-    StructureArtifactsViews.push_back(newStructureArtifactsView);
-    ImageArtifactsViews.push_back(newImageArtifactsView);
+    CreateArtifactsViewsAndModels(CurrentPipelineIndex);
 
     UpdatePipelineView();
 }
@@ -225,15 +219,8 @@ void ArtifactsWidget::AddPipeline() {
 void ArtifactsWidget::RemovePipeline() {
     Pipelines->RemovePipeline(CurrentPipeline);
 
-    auto* structureArtifactsViewToRemove = StructureArtifactsViews.at(CurrentPipelineIndex);
-    StructureArtifactModelingWidget->layout()->removeWidget(structureArtifactsViewToRemove);
-    StructureArtifactsViews.erase(std::next(StructureArtifactsViews.begin(), CurrentPipelineIndex));
-    delete structureArtifactsViewToRemove;
-
-    auto* imageArtifactsViewToRemove = ImageArtifactsViews.at(CurrentPipelineIndex);
-    ImageArtifactModelingWidget->layout()->removeWidget(imageArtifactsViewToRemove);
-    ImageArtifactsViews.erase(std::next(ImageArtifactsViews.begin(), CurrentPipelineIndex));
-    delete imageArtifactsViewToRemove;
+    StructureArtifactsViews->removeWidget(StructureArtifactsViews->widget(CurrentPipelineIndex + 1));
+    ImageArtifactsViews->removeWidget(ImageArtifactsViews->widget(CurrentPipelineIndex + 1));
 
     if (Pipelines->IsEmpty()) {
         CurrentPipelineIndex = -1;
@@ -262,15 +249,8 @@ void ArtifactsWidget::UpdatePipelineView() {
     AddPipelineButton->setEnabled(Pipelines->GetSize() < 10);
     RemovePipelineButton->setEnabled(CurrentPipelineIndex > -1);
 
-    for (int i = 0; i < Pipelines->NumberOfPipelines(); ++i) {
-        if (i == CurrentPipelineIndex) {
-            StructureArtifactsViews[i]->show();
-            ImageArtifactsViews[i]->show();
-        } else {
-            StructureArtifactsViews[i]->hide();
-            ImageArtifactsViews[i]->hide();
-        }
-    }
+    StructureArtifactsViews->setCurrentIndex(CurrentPipelineIndex + 1);
+    ImageArtifactsViews->setCurrentIndex(CurrentPipelineIndex + 1);
 }
 
 void ArtifactsWidget::PreviousPipeline() {
@@ -303,21 +283,26 @@ QIcon ArtifactsWidget::GenerateIcon(const std::string &filePrefix) {
 
 void ArtifactsWidget::InitializeViews() {
     for (int i = 0; i < Pipelines->NumberOfPipelines(); ++i) {
-        auto* newStructureArtifactsView = new QTreeView();
-        auto* newStructureArtifactsModel = new CtDataCsgTreeModel( *Pipelines->Get(i)->GetCtDataTree());
-        newStructureArtifactsView->setModel(newStructureArtifactsModel);
-        auto* newCtDataTreeDelegate = new CtStructureDelegate();
-        newStructureArtifactsView->setItemDelegate(newCtDataTreeDelegate);
-        StructureArtifactModelingWidget->layout()->addWidget(newStructureArtifactsView);
-
-        auto* newImageArtifactsView = new QTreeView();
-        auto* newImageArtifactsModel = new ImageArtifactConcatenationModel( Pipelines->Get(i)->GetImageArtifactConcatenation());
-        newImageArtifactsView->setModel(newImageArtifactsModel);
-        auto* newImageArtifactsDelegate = new ImageArtifactsDelegate();
-        newImageArtifactsView->setItemDelegate(newImageArtifactsDelegate);
-        ImageArtifactModelingWidget->layout()->addWidget(newImageArtifactsView);
-
-        StructureArtifactsViews.push_back(newStructureArtifactsView);
-        ImageArtifactsViews.push_back(newImageArtifactsView);
+        CreateArtifactsViewsAndModels(i);
     }
+
+    Pipelines->NumberOfPipelines();
+}
+
+void ArtifactsWidget::CreateArtifactsViewsAndModels(int pipelineIdx) {
+    auto* newStructureArtifactsView = new QTreeView();
+    auto* newStructureArtifactsModel = new CtDataCsgTreeModel(*Pipelines->Get(pipelineIdx)->GetCtDataTree());
+    newStructureArtifactsView->setModel(newStructureArtifactsModel);
+    auto* newCtDataTreeDelegate = new CtStructureDelegate();
+    newStructureArtifactsView->setItemDelegate(newCtDataTreeDelegate);
+    newStructureArtifactsView->setHeaderHidden(true);
+    StructureArtifactsViews->addWidget(newStructureArtifactsView);
+
+    auto* newImageArtifactsView = new ImageArtifactsView();
+    auto* newImageArtifactsModel = new ImageArtifactConcatenationModel(Pipelines->Get(pipelineIdx)->GetImageArtifactConcatenation());
+    newImageArtifactsView->setModel(newImageArtifactsModel);
+    auto* newImageArtifactsDelegate = new ImageArtifactsDelegate();
+    newImageArtifactsView->setItemDelegate(newImageArtifactsDelegate);
+    newImageArtifactsView->setHeaderHidden(true);
+    ImageArtifactsViews->addWidget(newImageArtifactsView);
 }
