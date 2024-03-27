@@ -59,6 +59,7 @@ void ImageArtifactsWidget::SetCurrentView(int pipelineIdx) {
     }
 
     Views->setCurrentIndex(pipelineIdx + 1);
+    UpdateButtonStatesOnSelectionChange(QModelIndex());
 }
 
 void ImageArtifactsWidget::AddView(Pipeline* pipeline) {
@@ -146,17 +147,18 @@ void ImageArtifactsWidget::MoveDown() {
 }
 
 void ImageArtifactsWidget::UpdateButtonStatesOnSelectionChange(const QModelIndex& currentIndex) {
-    if (!currentIndex.isValid())
-        return;
+    bool indexIsValid = currentIndex.isValid();
+    bool viewIsEmpty = !GetCurrentModel()->hasChildren(GetCurrentView()->rootIndex());
 
     auto* currentImageArtifact = static_cast<ImageArtifact*>(currentIndex.internalPointer());
-    bool isImageArtifactComposition = currentImageArtifact->GetArtifactSubType() == Artifact::IMAGE_COMPOSITION;
-    bool hasSiblingsBefore = currentIndex.siblingAtRow(currentIndex.row() - 1).isValid();
-    bool hasSiblingsAfter = currentIndex.siblingAtRow(currentIndex.row() + 1).isValid();
+    bool isEmptyAndInvalid = !indexIsValid && viewIsEmpty;
+    bool isImageArtifactComposition = indexIsValid && currentImageArtifact->GetArtifactSubType() == Artifact::IMAGE_COMPOSITION;
+    bool hasSiblingsBefore = indexIsValid && currentIndex.siblingAtRow(currentIndex.row() - 1).isValid();
+    bool hasSiblingsAfter = indexIsValid && currentIndex.siblingAtRow(currentIndex.row() + 1).isValid();
 
-    AddChildButton->setEnabled(isImageArtifactComposition);
-    AddSiblingButton->setEnabled(true);
-    RemoveButton->setEnabled(true);
+    AddChildButton->setEnabled(isImageArtifactComposition || isEmptyAndInvalid);
+    AddSiblingButton->setEnabled(indexIsValid);
+    RemoveButton->setEnabled(indexIsValid);
     MoveUpButton->setEnabled(hasSiblingsBefore);
     MoveDownButton->setEnabled(hasSiblingsAfter);
 }

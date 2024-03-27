@@ -9,8 +9,8 @@
 #include <vtkOpenGLRenderer.h>
 #include <vtkOrientationMarkerWidget.h>
 
-class CtDataCsgTree;
-class CtDataCsgTreeModel;
+class CtStructureTree;
+class CtStructureTreeModel;
 class CtDataSource;
 class CtStructureEditDialog;
 
@@ -21,31 +21,31 @@ public:
     ModelingWidget();
     ~ModelingWidget() override;
 
-public slots:
-    void OpenCreateDialog(const std::function<const void()>& onAccepted);
-
 private:
     void SetUpCentralWidgetForRendering();
 
-    void SetUpDockWidgetForImplicitCsgTreeModeling();
+    void SetUpDockWidgetForImplicitCtDataModeling();
 
     void ConnectButtons();
 
     void DisableButtons();
+
+    void OpenCreateDialog(const std::function<const void()>& onAccepted);
 
     QPushButton* ResetCameraButton;
     QPushButton* AddStructureButton;
     QPushButton* CombineWithStructureButton;
     QPushButton* RefineWithStructureButton;
     QPushButton* RemoveStructureButton;
+    std::array<QPushButton*, 4> CtStructureButtons;
 
-    CtDataCsgTreeModel* TreeModel;
+    CtStructureTreeModel* TreeModel;
     QTreeView* TreeView;
     QItemSelectionModel* SelectionModel;
 
     CtStructureEditDialog* CtStructureCreateDialog;
     CtDataSource* DataSource;
-    CtDataCsgTree* DataTree;
+    CtStructureTree* DataTree;
 
     vtkOrientationMarkerWidget* OrientationMarkerWidget;
     vtkOpenGLRenderer* Renderer;

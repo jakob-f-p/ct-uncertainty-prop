@@ -1,6 +1,6 @@
 #include "CtDataSource.h"
 
-#include "CtDataCsgTree.h"
+#include "CtStructureTree.h"
 
 #include <vtkDataSetAttributes.h>
 #include <vtkFloatArray.h>
@@ -29,8 +29,8 @@ vtkMTimeType CtDataSource::GetMTime() {
     return std::max({ mTime, treeMTime });
 }
 
-void CtDataSource::SetDataTree(CtDataCsgTree* ctDataCsgTree) {
-    vtkSetObjectBodyMacro(DataTree, CtDataCsgTree, ctDataCsgTree)
+void CtDataSource::SetDataTree(CtStructureTree* ctStructureTree) {
+    vtkSetObjectBodyMacro(DataTree, CtStructureTree, ctStructureTree)
 }
 
 void CtDataSource::SetVolumeDataPhysicalDimensions(float x, float y, float z) {
@@ -107,15 +107,15 @@ void CtDataSource::ExecuteDataWithInformation(vtkDataObject *output, vtkInformat
     functionValueArray->Delete();
     float* functionValues = functionValueArray->WritePointer(0, numberOfPoints);
 
-    vtkTypeUInt16Array* implicitCtStructureIdArray= vtkTypeUInt16Array::New();
-    implicitCtStructureIdArray->SetNumberOfComponents(1);
-    implicitCtStructureIdArray->SetName("ImplicitCtStructureIds");
-    implicitCtStructureIdArray->SetNumberOfTuples(numberOfPoints);
-    data->GetPointData()->AddArray(implicitCtStructureIdArray);
-    implicitCtStructureIdArray->Delete();
-    uint16_t* implicitCtStructureIds = implicitCtStructureIdArray->WritePointer(0, numberOfPoints);
+    vtkTypeUInt16Array* basicStructureIdArray= vtkTypeUInt16Array::New();
+    basicStructureIdArray->SetNumberOfComponents(1);
+    basicStructureIdArray->SetName("BasicStructureIds");
+    basicStructureIdArray->SetNumberOfTuples(numberOfPoints);
+    data->GetPointData()->AddArray(basicStructureIdArray);
+    basicStructureIdArray->Delete();
+    uint16_t* basicStructureIds = basicStructureIdArray->WritePointer(0, numberOfPoints);
 
-    SampleAlgorithm sampleAlgorithm(this, data, DataTree, radiodensities, functionValues, implicitCtStructureIds);
+    SampleAlgorithm sampleAlgorithm(this, data, DataTree, radiodensities, functionValues, basicStructureIds);
 
     vtkSMPTools::For(0, numberOfPoints, sampleAlgorithm);
 }
@@ -153,16 +153,16 @@ std::array<int, 6> CtDataSource::GetWholeExtent() {
 
 CtDataSource::SampleAlgorithm::SampleAlgorithm(CtDataSource* self,
                                                vtkImageData* volumeData,
-                                               CtDataCsgTree* tree,
+                                               CtStructureTree* tree,
                                                float* radiodensities,
                                                float* functionValues,
-                                               uint16_t* implicitCtStructureIds) :
+                                               uint16_t* basicStructureIds) :
         Self(self),
         VolumeData(volumeData),
         Tree(tree),
         Radiodensities(radiodensities),
         FunctionValues(functionValues),
-        ImplicitCtStructureIds(implicitCtStructureIds) {
+        BasicStructureIds(basicStructureIds) {
 
 }
 
@@ -186,8 +186,8 @@ void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endP
         Radiodensities[pointId] = pointIsWithinStructure
                                     ? result.Radiodensity
                                     : -1000.0f;
-        ImplicitCtStructureIds[pointId] = pointIsWithinStructure
-                                            ? result.ImplicitCtStructureId
+        BasicStructureIds[pointId] = pointIsWithinStructure
+                                            ? result.BasicCtStructureId
                                             : 0;
 
         pointId++;

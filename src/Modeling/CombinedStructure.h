@@ -2,14 +2,16 @@
 
 #include "CtStructure.h"
 
-class ImplicitCtStructure;
+class BasicStructure;
 
-class ImplicitStructureCombination : public CtStructure {
+struct CombinedStructureDetails;
+
+class CombinedStructure : public CtStructure {
     Q_GADGET
 
 public:
-    static ImplicitStructureCombination* New();
-    vtkTypeMacro(ImplicitStructureCombination, CtStructure)
+    static CombinedStructure* New();
+    vtkTypeMacro(CombinedStructure, CtStructure)
 
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
@@ -37,33 +39,37 @@ public:
 
     void AddCtStructure(CtStructure& ctStructure);
 
-    CtStructure* RemoveImplicitCtStructure(ImplicitCtStructure* implicitStructure,
-                                           ImplicitStructureCombination* grandParent);
+    CtStructure* RemoveBasicStructure(BasicStructure* basicStructure,
+                                      CombinedStructure* grandParent);
 
     bool CtStructureExists(const CtStructure* structure) override;
 
-    int ChildCount() const override;
+    int ChildCount() const;
 
-    const CtStructure* ChildAt(int idx) const override;
+    const CtStructure* ChildAt(int idx) const;
 
-    const std::vector<CtStructure*>* GetChildren() const override;
+    int ChildIndex(const CombinedStructure& child) const;
 
     QVariant Data() const override;
 
     void SetData(const QVariant &variant) override;
 
-    bool IsImplicitCtStructure() const override;
+    SubType GetSubType() const override;
 
-    void ReplaceChild(ImplicitCtStructure *oldChild, ImplicitStructureCombination *newChild);
+    void ReplaceChild(BasicStructure *oldChild, CombinedStructure *newChild);
 
-    void DeepCopy(CtStructure* source, CtStructure* parent) override;
+    static QWidget* GetEditWidget();
+    static void SetEditWidgetData(QWidget* widget, const CombinedStructureDetails& combinedStructureDetails);
+    static CombinedStructureDetails GetEditWidgetData(QWidget* widget);
 
-    ImplicitStructureCombination(const ImplicitStructureCombination&) = delete;
-    void operator=(const ImplicitStructureCombination&) = delete;
+    void DeepCopy(CtStructure* source, CombinedStructure* parent) override;
+
+    CombinedStructure(const CombinedStructure&) = delete;
+    void operator=(const CombinedStructure&) = delete;
 
 protected:
-    ImplicitStructureCombination();
-    ~ImplicitStructureCombination() override;
+    CombinedStructure();
+    ~CombinedStructure() override;
 
     std::string GetViewName() const override;
 
@@ -74,8 +80,10 @@ private:
     std::string GetOperatorTypeName() const;
 
     void ReplaceConnection(CtStructure* oldChildPointer, CtStructure* newChildPointer);
+
+    static QString OperatorTypeComboBoxName;
 };
 
-struct ImplicitStructureCombinationDetails : public CtStructureDetails {
-    ImplicitStructureCombination::OperatorType OperatorType = ImplicitStructureCombination::OperatorType::UNION;
+struct CombinedStructureDetails : public CtStructureDetails {
+    CombinedStructure::OperatorType OperatorType = CombinedStructure::OperatorType::UNION;
 };

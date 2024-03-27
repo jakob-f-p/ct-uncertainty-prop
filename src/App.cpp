@@ -1,8 +1,8 @@
 #include "App.h"
 
 #include "MainWindow.h"
-#include "Modeling/CtDataCsgTree.h"
-#include "Modeling/ImplicitCtStructure.h"
+#include "Modeling/CtStructureTree.h"
+#include "Modeling/BasicStructure.h"
 #include "Artifacts/GaussianArtifact.h"
 #include "Artifacts/ImageArtifactConcatenation.h"
 #include "Artifacts/ImageArtifactComposition.h"
@@ -38,7 +38,7 @@ App::App(int argc, char* argv[]) :
         Argc(argc),
         Argv(argv),
         QApp(*new QApplication(Argc, Argv)),
-        CtDataTree(*CtDataCsgTree::New()),
+        CtDataTree(*CtStructureTree::New()),
         Pipelines(*PipelineList::New()),
         MainWin(nullptr) {
 }
@@ -57,7 +57,7 @@ int App::Run() {
 
     auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
     smpToolsApi.SetBackend("STDTHREAD");
-    qWarning(QString("Backend: %1").arg(smpToolsApi.GetBackend()).toStdString().c_str());
+    qWarning(("Backend: " + std::string(smpToolsApi.GetBackend())).c_str());
 
     InitializeWithTestData();
 
@@ -77,24 +77,24 @@ int App::Quit() {
 }
 
 void App::InitializeWithTestData() {
-    vtkNew<ImplicitCtStructure> implicitCtStructure1;
-    implicitCtStructure1->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::SPHERE);
-    implicitCtStructure1->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("Cancellous Bone"));
-    implicitCtStructure1->SetTransform({ 40.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f });
+    vtkNew<BasicStructure> basicStructure1;
+    basicStructure1->SetImplicitFunction(BasicStructure::ImplicitFunctionType::SPHERE);
+    basicStructure1->SetTissueType(BasicStructure::GetTissueOrMaterialTypeByName("Cancellous Bone"));
+    basicStructure1->SetTransform({ 40.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f });
 
-    vtkNew<ImplicitCtStructure> implicitCtStructure2;
-    implicitCtStructure2->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::BOX);
-    implicitCtStructure2->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("Cortical Bone"));
-//
-//    vtkNew<ImplicitCtStructure> implicitCtStructure3;
-//    implicitCtStructure3->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::BOX);
-//    implicitCtStructure3->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("Soft Tissue"));
+    vtkNew<BasicStructure> basicStructure2;
+    basicStructure2->SetImplicitFunction(BasicStructure::ImplicitFunctionType::BOX);
+    basicStructure2->SetTissueType(BasicStructure::GetTissueOrMaterialTypeByName("Cortical Bone"));
 
-    CtDataTree.AddImplicitCtStructure(*implicitCtStructure1);
-    CtDataTree.CombineWithImplicitCtStructure(*implicitCtStructure2, ImplicitStructureCombination::OperatorType::INTERSECTION);
-//    CtDataTree->CombineWithImplicitCtStructure(*implicitCtStructure3, ImplicitStructureCombination::OperatorType::UNION);
-//    CtDataTree->RemoveImplicitCtStructure(*implicitCtStructure2);
-//    CtDataTree->RefineWithImplicitStructure({ "a", "", {}, {}, "Water", {}}, *implicitCtStructure3);
+//    vtkNew<BasicStructure> basicStructure3;
+//    basicStructure3->SetImplicitFunction(BasicStructure::ImplicitFunctionType::BOX);
+//    basicStructure3->SetTissueType(BasicStructure::GetTissueOrMaterialTypeByName("Soft Tissue"));
+
+    CtDataTree.AddBasicStructure(*basicStructure1);
+    CtDataTree.CombineWithBasicStructure(*basicStructure2, CombinedStructure::OperatorType::INTERSECTION);
+//    CtDataTree->CombineWithBasicStructure(*basicStructure3, CombinedStructure::OperatorType::UNION);
+//    CtDataTree->RemoveBasicStructure(*basicStructure2);
+//    CtDataTree->RefineWithBasicStructure({ "a", "", {}, {}, "Water", {}}, *basicStructure3);
 
     vtkNew<Pipeline> pipeline;
     pipeline->SetCtDataTree(&CtDataTree);
@@ -123,7 +123,7 @@ void App::InitializeWithTestData() {
     imageArtifactConcatenation.AddImageArtifact(*gaussianArtifact4);
 }
 
-CtDataCsgTree& App::GetCtDataCsgTree() const {
+CtStructureTree& App::GetCtDataTree() const {
     return CtDataTree;
 }
 

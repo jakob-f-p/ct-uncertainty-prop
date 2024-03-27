@@ -1,8 +1,7 @@
 #include "CtStructureDelegate.h"
 
 #include "CtStructureEditDialog.h"
-#include "../ImplicitCtStructure.h"
-#include "../ImplicitStructureCombination.h"
+#include "../CombinedStructure.h"
 
 #include <QComboBox>
 #include <QDialog>
@@ -20,7 +19,9 @@ CtStructureDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& o
         return nullptr;
     }
 
-    auto* ctStructureEditDialog = new CtStructureEditDialog(parent);
+    CtStructure::SubType subType = static_cast<CtStructure*>(index.internalPointer())->GetSubType();
+    auto* ctStructureEditDialog = new CtStructureEditDialog(CtStructureEditDialog::EDIT, subType,
+                                                            BasicStructure::ImplicitFunctionType::INVALID, parent);
     connect(ctStructureEditDialog, &CtStructureEditDialog::accepted, this, &CtStructureDelegate::commitEdit);
     connect(ctStructureEditDialog, &CtStructureEditDialog::rejected, this, &CtStructureDelegate::discardChanges);
     return ctStructureEditDialog;
@@ -28,22 +29,21 @@ CtStructureDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& o
 
 void CtStructureDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
     QVariant data = index.data(Qt::EditRole);
-    bool isImplicitCtStructure = data.canConvert<ImplicitCtStructureDetails>();
+    bool isBasicStructure = data.canConvert<BasicStructureDetails>();
     auto* dialogEditor = dynamic_cast<CtStructureEditDialog*>(editor);
-    if (isImplicitCtStructure) {
-        dialogEditor->SetImplicitCtStructureData(data.value<ImplicitCtStructureDetails>());
+    if (isBasicStructure) {
+        dialogEditor->SetBasicStructureData(data.value<BasicStructureDetails>());
     } else {
-        dialogEditor->SetImplicitStructureCombinationData(data.value<ImplicitStructureCombinationDetails>());
+        dialogEditor->SetCombinedStructureData(data.value<CombinedStructureDetails>());
     }
 }
 
 void CtStructureDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const {
-    auto *dialogEditor = dynamic_cast<CtStructureEditDialog *>(editor);
+    auto* dialogEditor = dynamic_cast<CtStructureEditDialog*>(editor);
 
-    bool isImplicitCtStructure = index.data(Qt::UserRole).toBool();
-    QVariant editedData = isImplicitCtStructure
-            ? QVariant::fromValue(dialogEditor->GetImplicitCtStructureData())
-            : QVariant::fromValue(dialogEditor->GetImplicitStructureCombinationData());
+    QVariant editedData = static_cast<CtStructure*>(index.internalPointer())->IsBasicStructure()
+            ? QVariant::fromValue(dialogEditor->GetBasicStructureData())
+            : QVariant::fromValue(dialogEditor->GetCombinedStructureData());
 
     model->setData(index, editedData);
 }
@@ -53,12 +53,12 @@ void CtStructureDelegate::updateEditorGeometry(QWidget* editor, const QStyleOpti
 }
 
 QString CtStructureDelegate::displayText(const QVariant& value, const QLocale& locale) const {
-    if (value.canConvert<ImplicitCtStructureDetails>()) {
-        return value.value<ImplicitCtStructureDetails>().ViewName;
+    if (value.canConvert<BasicStructureDetails>()) {
+        return value.value<BasicStructureDetails>().ViewName;
     }
 
-    if (value.canConvert<ImplicitStructureCombinationDetails>()) {
-        return value.value<ImplicitStructureCombinationDetails>().ViewName;
+    if (value.canConvert<CombinedStructureDetails>()) {
+        return value.value<CombinedStructureDetails>().ViewName;
     }
 
     return QStyledItemDelegate::displayText(value, locale);

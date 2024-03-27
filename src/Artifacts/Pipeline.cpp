@@ -2,7 +2,7 @@
 
 #include "ImageArtifactConcatenation.h"
 #include "../App.h"
-#include "../Modeling/CtDataCsgTree.h"
+#include "../Modeling/CtStructureTree.h"
 
 #include <vtkObjectFactory.h>
 
@@ -16,14 +16,14 @@ std::string Pipeline::GetName() const {
     return Name;
 }
 
-void Pipeline::SetCtDataTree(CtDataCsgTree* ctDataCsgTree) {
-    vtkSetObjectBodyMacro(CtDataTree, CtDataCsgTree, ctDataCsgTree)
+void Pipeline::SetCtDataTree(CtStructureTree* ctStructureTree) {
+    vtkSetObjectBodyMacro(CtDataTree, CtStructureTree, ctStructureTree)
 }
 
 
 void Pipeline::InitializeWithAppDataTree() {
-    auto* newDataTree = CtDataCsgTree::New();
-    newDataTree->DeepCopy(&App::GetInstance()->GetCtDataCsgTree());
+    auto* newDataTree = CtStructureTree::New();
+    newDataTree->DeepCopy(&App::GetInstance()->GetCtDataTree());
     SetCtDataTree(newDataTree);
 
     newDataTree->FastDelete();

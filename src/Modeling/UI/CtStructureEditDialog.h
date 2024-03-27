@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../BasicStructure.h"
+
 #include <QAbstractItemModel>
 #include <QComboBox>
 #include <QDialog>
@@ -8,42 +10,32 @@
 #include <QLineEdit>
 #include <QVBoxLayout>
 
-struct CtStructureDetails;
-struct ImplicitCtStructureDetails;
-struct ImplicitStructureCombinationDetails;
+struct BasicStructureDetails;
+struct CombinedStructureDetails;
 
 class CtStructureEditDialog : public QDialog {
     Q_OBJECT
 
 public:
-    explicit CtStructureEditDialog(QWidget* parent = nullptr, bool autoClose = false);
+    enum Mode {
+        EDIT,
+        CREATE
+    };
 
-    void SetImplicitCtStructureData(const ImplicitCtStructureDetails& implicitCtStructureDetails);
-    void SetImplicitStructureCombinationData(const ImplicitStructureCombinationDetails& implicitStructureCombinationDetails);
+    explicit CtStructureEditDialog(Mode mode,
+                                   CtStructure::SubType subType,
+                                   BasicStructure::ImplicitFunctionType functionType,
+                                   QWidget* parent = nullptr);
 
-    ImplicitCtStructureDetails GetImplicitCtStructureData();
-    ImplicitStructureCombinationDetails GetImplicitStructureCombinationData();
+    void SetBasicStructureData(const BasicStructureDetails& basicStructureDetails);
+    void SetCombinedStructureData(const CombinedStructureDetails& combinedStructureDetails);
 
-    void HideImplicitCtStructureSection();
-    void HideImplicitStructureCombinationSection();
+    BasicStructureDetails GetBasicStructureData();
+    CombinedStructureDetails GetCombinedStructureData();
 
 private:
-    static void createTransformationEditGroup(const std::string& title,
-                                              std::array<QDoubleSpinBox*, 3>& transformSpinBoxes,
-                                              QVBoxLayout* parentLayout,
-                                              double stepSize = 1.0);
+    CtStructure::SubType SubType;
+    BasicStructure::ImplicitFunctionType FunctionType;
 
-    void SetCtStructureData(const CtStructureDetails& ctStructureDetails);
-    CtStructureDetails GetCtStructureData();
-
-    QLineEdit* NameLineEdit;
-
-    QWidget* ImplicitCtStructureEditSection;
-    QComboBox* ImplicitFunctionEditComboBox;
-    QComboBox* TissueTypeEditComboBox;
-
-    QWidget* ImplicitStructureCombinationEditSection;
-    QComboBox* OperatorTypeEditComboBox;
-
-    std::array<std::array<QDoubleSpinBox*, 3>, 3> TransformSpinBoxes;
+    QWidget* EditWidget;
 };

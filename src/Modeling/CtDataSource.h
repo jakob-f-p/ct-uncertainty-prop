@@ -5,7 +5,7 @@
 
 #include <tracy/Tracy.hpp>
 
-class CtDataCsgTree;
+class CtStructureTree;
 
 class CtDataSource : public vtkImageAlgorithm {
 public:
@@ -15,7 +15,7 @@ public:
 
     vtkMTimeType GetMTime() override;
 
-    void SetDataTree(CtDataCsgTree* ctDataCsgTree);
+    void SetDataTree(CtStructureTree* ctStructureTree);
 
     /**
      * Set physical dimensions of the scanned image in mm along each axis.
@@ -50,22 +50,22 @@ protected:
     public:
         CtDataSource* Self;
         vtkImageData* VolumeData;
-        CtDataCsgTree* Tree;
+        CtStructureTree* Tree;
         float* Radiodensities;
         float* FunctionValues;
-        uint16_t* ImplicitCtStructureIds;
+        uint16_t* BasicStructureIds;
 
         SampleAlgorithm(CtDataSource* self,
                         vtkImageData* volumeData,
-                        CtDataCsgTree* tree,
+                        CtStructureTree* tree,
                         float* radiodensities,
                         float* functionValues,
-                        uint16_t* implicitCtStructureIds);
+                        uint16_t* basicStructureIds);
 
         void operator()(vtkIdType pointId, vtkIdType endPointId) const;
     };
 
     std::array<float, 3> PhysicalDimensions;
     std::array<int, 3> NumberOfVoxels;
-    CtDataCsgTree* DataTree;
+    CtStructureTree* DataTree;
 };

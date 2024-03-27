@@ -16,8 +16,9 @@ static std::vector<EnumString<EnumType>> Get##EnumType##Values() {          \
     if (hasInvalid) numberOfEnums--;                                        \
     std::vector<EnumString<EnumType>> values(numberOfEnums);                \
     for (int i = 0; i < numberOfEnums; i++) {                               \
-        auto enumValue = static_cast<EnumType>(metaEnum.value(i));      \
-        values[i] = { EnumType##ToString(enumValue).c_str(), enumValue };   \
+        auto enumValue = static_cast<EnumType>(metaEnum.value(i));          \
+        values[i] = { QString::fromStdString(EnumType##ToString(enumValue)),\
+                      enumValue };                                          \
     }                                                                       \
     return values;                                                          \
 }                                                                           \

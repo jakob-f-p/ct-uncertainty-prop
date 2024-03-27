@@ -2,7 +2,7 @@
 
 #include <QApplication>
 
-class CtDataCsgTree;
+class CtStructureTree;
 class PipelineList;
 class MainWindow;
 
@@ -14,7 +14,7 @@ public:
     int Run();
     static int Quit();
 
-    CtDataCsgTree& GetCtDataCsgTree() const;
+    CtStructureTree& GetCtDataTree() const;
     PipelineList& GetPipelines() const;
 
     App(const App&) = delete;
@@ -34,7 +34,7 @@ private:
     char** Argv;
 
     QApplication& QApp;
-    CtDataCsgTree& CtDataTree;
+    CtStructureTree& CtDataTree;
     PipelineList& Pipelines;
     MainWindow* MainWin;
 };

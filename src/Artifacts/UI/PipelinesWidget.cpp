@@ -7,7 +7,7 @@
 #include "../Pipeline.h"
 #include "../PipelineList.h"
 #include "../../App.h"
-#include "../../Modeling/UI/CtDataCsgTreeModel.h"
+#include "../../Modeling/UI/CtStructureTreeModel.h"
 #include "../../Modeling/UI/CtStructureDelegate.h"
 
 #include <QLabel>
@@ -144,7 +144,7 @@ QIcon PipelinesWidget::GenerateIcon(const std::string &filePrefix) {
 void PipelinesWidget::InitializeViews() {
     for (int i = 0; i < Pipelines.GetSize(); ++i) {
         auto* newStructureArtifactsView = new QTreeView();
-        auto* newStructureArtifactsModel = new CtDataCsgTreeModel(Pipelines.Get(i));
+        auto* newStructureArtifactsModel = new CtStructureTreeModel(Pipelines.Get(i));
         newStructureArtifactsView->setModel(newStructureArtifactsModel);
         auto* newCtDataTreeDelegate = new CtStructureDelegate();
         newStructureArtifactsView->setItemDelegate(newCtDataTreeDelegate);
@@ -157,7 +157,7 @@ void PipelinesWidget::InitializeViews() {
 
 void PipelinesWidget::CreateArtifactsViewsForCurrentPipeline() {
     auto* newStructureArtifactsView = new QTreeView();
-    auto* newStructureArtifactsModel = new CtDataCsgTreeModel(GetCurrentPipeline());
+    auto* newStructureArtifactsModel = new CtStructureTreeModel(GetCurrentPipeline());
     newStructureArtifactsView->setModel(newStructureArtifactsModel);
     auto* newCtDataTreeDelegate = new CtStructureDelegate();
     newStructureArtifactsView->setItemDelegate(newCtDataTreeDelegate);

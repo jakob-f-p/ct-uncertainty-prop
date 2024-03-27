@@ -1,16 +1,18 @@
-#include "ImplicitStructureCombination.h"
+#include "CombinedStructure.h"
 
-#include "ImplicitCtStructure.h"
+#include "BasicStructure.h"
 #include "SimpleTransform.h"
 
 #include "tracy/Tracy.hpp"
 #include "tracy/TracyC.h"
 
 #include <vtkObjectFactory.h>
+#include <QLabel>
+#include <QComboBox>
 
-vtkStandardNewMacro(ImplicitStructureCombination);
+vtkStandardNewMacro(CombinedStructure);
 
-void ImplicitStructureCombination::PrintSelf(ostream& os, vtkIndent indent) {
+void CombinedStructure::PrintSelf(ostream& os, vtkIndent indent) {
     this->Superclass::PrintSelf(os, indent);
 
     os << indent << "Operator Type: " << GetOperatorTypeName() << "\n";
@@ -22,7 +24,7 @@ void ImplicitStructureCombination::PrintSelf(ostream& os, vtkIndent indent) {
     }
 }
 
-vtkMTimeType ImplicitStructureCombination::GetMTime() {
+vtkMTimeType CombinedStructure::GetMTime() {
     vtkMTimeType thisMTime = this->CtStructure::GetMTime();
 
     std::vector<vtkMTimeType> childrenMTimes(CtStructures.size());
@@ -36,7 +38,7 @@ vtkMTimeType ImplicitStructureCombination::GetMTime() {
 
 
 std::string
-ImplicitStructureCombination::OperatorTypeToString(ImplicitStructureCombination::OperatorType operatorType) {
+CombinedStructure::OperatorTypeToString(CombinedStructure::OperatorType operatorType) {
     switch (operatorType) {
         case UNION:        return "Union";
         case INTERSECTION: return "Intersection";
@@ -48,21 +50,21 @@ ImplicitStructureCombination::OperatorTypeToString(ImplicitStructureCombination:
     }
 }
 
-void ImplicitStructureCombination::SetOperatorType(ImplicitStructureCombination::OperatorType operatorType) {
+void CombinedStructure::SetOperatorType(CombinedStructure::OperatorType operatorType) {
     this->OpType = operatorType;
 
     this->Modified();
 }
 
-ImplicitStructureCombination::OperatorType ImplicitStructureCombination::GetOperatorType() const {
+CombinedStructure::OperatorType CombinedStructure::GetOperatorType() const {
     return this->OpType;
 }
 
-void ImplicitStructureCombination::SetTransform(const std::array<std::array<float, 3>, 3>& trs) {
+void CombinedStructure::SetTransform(const std::array<std::array<float, 3>, 3>& trs) {
     this->Transform->SetTranslationRotationScaling(trs);
 }
 
-void ImplicitStructureCombination::EvaluateAtPosition(const double x[3], CtStructure::Result& result) {
+void CombinedStructure::EvaluateAtPosition(const double x[3], CtStructure::Result& result) {
     TracyCZoneN(evaluateCombinationA, "EvaluateCombinationA", true)
     if (CtStructures.empty()) {
         vtkErrorMacro("CtStructureList is empty. Cannot evaluate");
@@ -144,7 +146,7 @@ void ImplicitStructureCombination::EvaluateAtPosition(const double x[3], CtStruc
 }
 
 const CtStructure::ModelingResult
-ImplicitStructureCombination::EvaluateImplicitModel(const double x[3]) const {
+CombinedStructure::EvaluateImplicitModel(const double x[3]) const {
     if (CtStructures.empty()) {
         vtkErrorMacro("CtStructureList is empty. Cannot calculate function value and radiodensity");
         return {};
@@ -191,7 +193,7 @@ ImplicitStructureCombination::EvaluateImplicitModel(const double x[3]) const {
     }
 }
 
-float ImplicitStructureCombination::FunctionValue(const double x[3]) const {
+float CombinedStructure::FunctionValue(const double x[3]) const {
     if (CtStructures.empty()) {
         vtkErrorMacro("CtStructureList is empty. Cannot evaluate");
         return 0.0f;
@@ -236,7 +238,7 @@ float ImplicitStructureCombination::FunctionValue(const double x[3]) const {
     }
 }
 
-void ImplicitStructureCombination::AddCtStructure(CtStructure& ctStructure) {
+void CombinedStructure::AddCtStructure(CtStructure& ctStructure) {
     if (auto search = std::find(CtStructures.begin(), CtStructures.end(), &ctStructure);
             search != CtStructures.end()) {
         vtkWarningMacro("Trying to add implicit CT structure which is already present");
@@ -249,18 +251,18 @@ void ImplicitStructureCombination::AddCtStructure(CtStructure& ctStructure) {
     this->Modified();
 }
 
-CtStructure* ImplicitStructureCombination::RemoveImplicitCtStructure(ImplicitCtStructure* implicitStructure,
-                                                                     ImplicitStructureCombination* grandParent) {
-    if (auto search = std::find(CtStructures.begin(), CtStructures.end(), implicitStructure);
+CtStructure* CombinedStructure::RemoveBasicStructure(BasicStructure* basicStructure,
+                                                     CombinedStructure* grandParent) {
+    if (auto search = std::find(CtStructures.begin(), CtStructures.end(), basicStructure);
             search == CtStructures.end()) {
         vtkWarningMacro("Given structure could not be removed because it was not present");
         return nullptr;
     }
 
-    auto pastLastIt = std::remove(CtStructures.begin(), CtStructures.end(), implicitStructure);
+    auto pastLastIt = std::remove(CtStructures.begin(), CtStructures.end(), basicStructure);
     CtStructures.erase(pastLastIt);
 
-    implicitStructure->Delete();
+    basicStructure->Delete();
 
 
     if (CtStructures.size() == 1) {
@@ -277,7 +279,7 @@ CtStructure* ImplicitStructureCombination::RemoveImplicitCtStructure(ImplicitCtS
     return nullptr;
 }
 
-bool ImplicitStructureCombination::CtStructureExists(const CtStructure* structure) {
+bool CombinedStructure::CtStructureExists(const CtStructure* structure) {
     return this == structure
             || std::any_of(CtStructures.begin(),
                            CtStructures.end(),
@@ -286,89 +288,131 @@ bool ImplicitStructureCombination::CtStructureExists(const CtStructure* structur
             });
 }
 
-void ImplicitStructureCombination::ReplaceConnection(CtStructure* oldChildPointer, CtStructure* newChildPointer) {
+void CombinedStructure::ReplaceConnection(CtStructure* oldChildPointer, CtStructure* newChildPointer) {
     std::replace(CtStructures.begin(), CtStructures.end(), oldChildPointer, newChildPointer);
 
     newChildPointer->Register(this);
     oldChildPointer->Delete();
 }
 
-int ImplicitStructureCombination::ChildCount() const {
+int CombinedStructure::ChildCount() const {
     return static_cast<int>(CtStructures.size());
 }
 
-const std::vector<CtStructure*>* ImplicitStructureCombination::GetChildren() const {
-    return &CtStructures;
+const CtStructure* CombinedStructure::ChildAt(int idx) const {
+    return CtStructures.at(idx);
 }
 
-const CtStructure* ImplicitStructureCombination::ChildAt(int idx) const {
-    if (idx >= CtStructures.size()) {
-        vtkErrorMacro("Index is not in range");
-        return nullptr;
-    }
+int CombinedStructure::ChildIndex(const CombinedStructure& child) const {
+    auto searchIt = std::find(CtStructures.begin(), CtStructures.end(), this);
+    if(searchIt == CtStructures.end())
+        qWarning("Given structure is not contained in children");
 
-    return CtStructures[idx];
+    return static_cast<int>(std::distance(CtStructures.begin(), searchIt));
 }
 
-QVariant ImplicitStructureCombination::Data() const {
-    ImplicitStructureCombinationDetails combinationDetails {
+QVariant CombinedStructure::Data() const {
+    CombinedStructureDetails combinationDetails {
         GetCtStructureDetails(),
         OpType
     };
     return QVariant::fromValue(combinationDetails);
 }
 
-ImplicitStructureCombination::ImplicitStructureCombination() {
+CombinedStructure::CombinedStructure() {
     this->OpType = UNION;
 }
 
-ImplicitStructureCombination::~ImplicitStructureCombination() {
+CombinedStructure::~CombinedStructure() {
     for (const auto& structure : CtStructures) {
         structure->Delete();
     }
 }
 
-std::string ImplicitStructureCombination::GetViewName() const {
+std::string CombinedStructure::GetViewName() const {
     return GetOperatorTypeName() + (Name.empty() ? "" : " (" + Name + ")");
 }
 
-std::string ImplicitStructureCombination::GetOperatorTypeName() const {
+std::string CombinedStructure::GetOperatorTypeName() const {
     return OperatorTypeToString(OpType);
 }
 
-void ImplicitStructureCombination::SetData(const QVariant &variant) {
-    auto implicitStructureCombinationDetails = variant.value<ImplicitStructureCombinationDetails>();
+void CombinedStructure::SetData(const QVariant &variant) {
+    auto combinedStructureDetails = variant.value<CombinedStructureDetails>();
 
-    SetCtStructureDetails(implicitStructureCombinationDetails);
+    SetCtStructureDetails(combinedStructureDetails);
 
-    SetOperatorType(implicitStructureCombinationDetails.OperatorType);
+    SetOperatorType(combinedStructureDetails.OperatorType);
 }
 
-bool ImplicitStructureCombination::IsImplicitCtStructure() const {
-    return false;
+CtStructure::SubType CombinedStructure::GetSubType() const {
+    return COMBINED;
 }
 
-void ImplicitStructureCombination::DeepCopy(CtStructure* source, CtStructure* parent) {
+QWidget* CombinedStructure::GetEditWidget() {
+    auto* widget = new QWidget();
+    auto* vLayout = new QVBoxLayout(widget);
+
+    CtStructure::AddNameEditWidget(vLayout);
+
+    auto* combinedStructureWidget = new QWidget();
+    auto* combinedStructureVLayout = new QHBoxLayout(combinedStructureWidget);
+    auto* operatorTypeLabel = new QLabel("Operator Type");
+    combinedStructureVLayout->addWidget(operatorTypeLabel);
+    auto* operatorTypeComboBox = new QComboBox();
+    operatorTypeComboBox->setObjectName(OperatorTypeComboBoxName);
+    for (const auto &operatorAndName : CombinedStructure::GetOperatorTypeValues()) {
+        operatorTypeComboBox->addItem(operatorAndName.Name, operatorAndName.EnumValue);
+    }
+    combinedStructureVLayout->addWidget(operatorTypeComboBox);
+    vLayout->addWidget(combinedStructureWidget);
+
+    CtStructure::AddTransformEditWidget(vLayout);
+
+    return widget;
+}
+
+void CombinedStructure::SetEditWidgetData(QWidget* widget, const CombinedStructureDetails& combinedStructureDetails) {
+    CtStructure::SetEditWidgetData(widget, combinedStructureDetails);
+
+    auto* operatorTypeComboBox = widget->findChild<QComboBox*>(OperatorTypeComboBoxName);
+
+    if (int idx = operatorTypeComboBox->findData(combinedStructureDetails.OperatorType);
+            idx != -1) {
+        operatorTypeComboBox->setCurrentIndex(idx);
+    }
+}
+
+CombinedStructureDetails CombinedStructure::GetEditWidgetData(QWidget* widget) {
+    CtStructureDetails ctStructureDetails = CtStructure::GetEditWidgetData(widget);
+
+    auto* operatorTypeComboBox = widget->findChild<QComboBox*>(OperatorTypeComboBoxName);
+
+    return { ctStructureDetails,
+             operatorTypeComboBox->currentData().value<OperatorType>() };
+}
+
+void CombinedStructure::DeepCopy(CtStructure* source, CombinedStructure* parent) {
     Superclass::DeepCopy(source, parent);
 
-    const auto* implicitStructureCombinationSource = dynamic_cast<ImplicitStructureCombination*>(source);
-    OpType = implicitStructureCombinationSource->OpType;
+    const auto* combinedStructureSource = dynamic_cast<CombinedStructure*>(source);
+    OpType = combinedStructureSource->OpType;
 
     for (const auto &ctStructure: CtStructures) {
         ctStructure->Delete();
     }
     CtStructures.clear();
 
-    for (const auto &ctStructure: implicitStructureCombinationSource->CtStructures) {
-        CtStructure* newCtStructure = ctStructure->IsImplicitCtStructure()
-                ? static_cast<CtStructure*>(ImplicitCtStructure::New())
-                : static_cast<CtStructure*>(ImplicitStructureCombination::New());
+    for (const auto &ctStructure: combinedStructureSource->CtStructures) {
+        CtStructure* newCtStructure = ctStructure->GetSubType()
+                ? static_cast<CtStructure*>(BasicStructure::New())
+                : static_cast<CtStructure*>(CombinedStructure::New());
         newCtStructure->DeepCopy(ctStructure, this);
         CtStructures.push_back(newCtStructure);
     }
 }
 
-void ImplicitStructureCombination::ReplaceChild(ImplicitCtStructure *oldChild, ImplicitStructureCombination *newChild) {
+void CombinedStructure::ReplaceChild(BasicStructure *oldChild, CombinedStructure *newChild) {
     auto oldStructure = std::find(CtStructures.begin(), CtStructures.end(), oldChild);
     if (oldStructure == CtStructures.end()){
         qWarning("Given pointer to old child is not a child of this structure");
@@ -380,3 +424,5 @@ void ImplicitStructureCombination::ReplaceChild(ImplicitCtStructure *oldChild, I
     oldChild->UnRegister(this);
     newChild->Register(this);
 }
+
+QString CombinedStructure::OperatorTypeComboBoxName = "OperatorType";

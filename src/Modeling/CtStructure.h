@@ -7,9 +7,11 @@
 #include <vtkObject.h>
 #include <vtkImplicitFunction.h>
 
+class CombinedStructure;
 class SimpleTransform;
 
 struct CtStructureDetails;
+struct StructureArtifactList;
 
 class CtStructure : public vtkObject {
     Q_GADGET
@@ -21,10 +23,8 @@ public:
     vtkMTimeType GetMTime() override;
 
     void SetName(std::string name);
-    std::string GetName() const;
 
     virtual void SetTransform(const std::array<std::array<float, 3>, 3>& trs) = 0;
-    const SimpleTransform* GetTransform() const;
 
     struct Result {
         float FunctionValue;
@@ -36,7 +36,7 @@ public:
     struct ModelingResult {
         float FunctionValue;
         float Radiodensity;
-        int ImplicitCtStructureId;
+        int BasicCtStructureId;
     };
     virtual const ModelingResult EvaluateImplicitModel(const double x[3]) const = 0;
 
@@ -50,25 +50,21 @@ public:
     virtual float FunctionValue(const double x[3]) const = 0;
 
     virtual bool CtStructureExists(const CtStructure* structure) = 0;
-    virtual int ChildCount() const = 0;
 
-    CtStructure* GetParent() const;
-
-    void SetParent(CtStructure* parent);
-
-    int ChildIndex() const;
-
-    virtual const std::vector<CtStructure*>* GetChildren() const = 0;
-
-    virtual const CtStructure* ChildAt(int idx) const = 0;
+    CombinedStructure* GetParent() const;
+    void SetParent(CombinedStructure* parent);
 
     virtual QVariant Data() const = 0;
-
     virtual void SetData(const QVariant& variant) = 0;
 
-    virtual bool IsImplicitCtStructure() const = 0;
+    enum SubType : unsigned int {
+        BASIC,
+        COMBINED
+    };
+    virtual SubType GetSubType() const = 0;
+    bool IsBasicStructure() const;
 
-    virtual void DeepCopy(CtStructure* source, CtStructure* parent);
+    virtual void DeepCopy(CtStructure* source, CombinedStructure* parent);
 
     CtStructure(const CtStructure&) = delete;
     void operator=(const CtStructure&) = delete;
@@ -81,9 +77,27 @@ protected:
     CtStructureDetails GetCtStructureDetails() const;
     void SetCtStructureDetails(const CtStructureDetails& ctStructureDetails);
 
+    static void AddNameEditWidget(QLayout* layout);
+    static void AddTransformEditWidget(QLayout* layout);
+    static void SetEditWidgetData(QWidget* widget, const CtStructureDetails& ctStructureDetails);
+    static CtStructureDetails GetEditWidgetData(QWidget* widget);
+
+    friend class CtStructureEditDialog;
+
     std::string Name;
     SimpleTransform* Transform;
-    CtStructure* Parent;    // always of type implicit structure combination
+    StructureArtifactList* StructureArtifacts;
+    CombinedStructure* Parent;    // always of type implicit structure combination
+
+private:
+    static void CreateTransformationEditGroup(const QString& transformName,
+                                              double stepSize,
+                                              QVBoxLayout* parentLayout);
+    static QString GetSpinBoxName(const QString& transformName, const QString& axisName);
+
+    static QString NameEditObjectName;
+    static QStringList TransformNames;
+    static QStringList AxisNames;
 };
 
 struct CtStructureDetails {

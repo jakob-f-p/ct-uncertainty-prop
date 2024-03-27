@@ -1,11 +1,16 @@
 #include "CtStructure.h"
 
+#include "CombinedStructure.h"
 #include "SimpleTransform.h"
+#include "../Artifacts/StructureArtifactList.h"
 
-#include <vtkObjectFactory.h>
+#include <QLabel>
+#include <QLineEdit>
+#include <QWidget>
+
 #include <vtkNew.h>
-
-#include <utility>
+#include <QGroupBox>
+#include <QDoubleSpinBox>
 
 void CtStructure::PrintSelf(ostream &os, vtkIndent indent) {
     Superclass::PrintSelf(os, indent);
@@ -27,55 +32,35 @@ void CtStructure::SetName(std::string name) {
     this->Modified();
 }
 
-std::string CtStructure::GetName() const {
-    return Name;
-}
-
-const SimpleTransform* CtStructure::GetTransform() const {
-    return Transform;
-}
-
-CtStructure* CtStructure::GetParent() const {
+CombinedStructure* CtStructure::GetParent() const {
     return Parent;
 }
 
-void CtStructure::SetParent(CtStructure* parent) {
+void CtStructure::SetParent(CombinedStructure* parent) {
     Parent = parent;
 }
 
-int CtStructure::ChildIndex() const {
-    if (!Parent) {
-        return 0;
-    }
-
-    auto* childrenOfParent = Parent->GetChildren();
-    if (!childrenOfParent) {
-        qWarning("Children cannot be nullptr");
-        return -1;
-    }
-
-    auto searchIt = std::find(childrenOfParent->begin(), childrenOfParent->end(), this);
-
-    if(searchIt == childrenOfParent->end()) {
-        qWarning("Structures is not child of parent");
-    }
-
-    return static_cast<int>(std::distance(childrenOfParent->begin(), searchIt));
+bool CtStructure::IsBasicStructure() const {
+    return GetSubType() == BASIC;
 }
 
-void CtStructure::DeepCopy(CtStructure* source, CtStructure* parent) {
+void CtStructure::DeepCopy(CtStructure* source, CombinedStructure* parent) {
     Name = source->Name;
     Transform->DeepCopy(source->Transform);
     Parent = parent;
+    StructureArtifacts = StructureArtifactList::New();
+    StructureArtifacts->DeepCopy(source->StructureArtifacts);
 }
 
-CtStructure::CtStructure() {
-    Parent = nullptr;
-    Transform = SimpleTransform::New();
+CtStructure::CtStructure() :
+        Transform(SimpleTransform::New()),
+        StructureArtifacts(StructureArtifactList::New()),
+        Parent(nullptr) {
 }
 
 CtStructure::~CtStructure() {
     Transform->Delete();
+    StructureArtifacts->Delete();
 }
 
 CtStructureDetails CtStructure::GetCtStructureDetails() const {
@@ -90,3 +75,96 @@ void CtStructure::SetCtStructureDetails(const CtStructureDetails &ctStructureDet
     SetName(ctStructureDetails.Name.toStdString());
     SetTransform(ctStructureDetails.Transform);
 }
+
+void CtStructure::AddNameEditWidget(QLayout* layout) {
+    auto* nameEditBar = new QWidget();
+    auto* nameEditLayout = new QHBoxLayout(nameEditBar);
+    auto* nameLineEditLabel = new QLabel("Name");
+    nameLineEditLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+    auto* nameLineEdit = new QLineEdit();
+    nameLineEdit->setObjectName(NameEditObjectName);
+    nameEditLayout->addWidget(nameLineEditLabel);
+    nameEditLayout->addSpacing(20);
+    nameEditLayout->addWidget(nameLineEdit);
+    layout->addWidget(nameEditBar);
+}
+
+void CtStructure::AddTransformEditWidget(QLayout* layout) {
+    auto* transformEditGroup = new QGroupBox("Transform");
+    auto* transformVerticalLayout = new QVBoxLayout(transformEditGroup);
+
+    std::array<double, 3> transformStepSizes { 2.0, 1.0, 0.1 };
+    for (int i = 0; i < TransformNames.size(); i++)
+        CreateTransformationEditGroup(TransformNames[i], transformStepSizes[i], transformVerticalLayout);
+
+    layout->addWidget(transformEditGroup);
+}
+
+void CtStructure::SetEditWidgetData(QWidget* widget, const CtStructureDetails& ctStructureDetails) {
+    if (!widget) {
+        qWarning("Widget must not be nullptr");
+        return;
+    }
+
+    auto* nameLineEdit = widget->findChild<QLineEdit*>(NameEditObjectName);
+    nameLineEdit->setText(ctStructureDetails.Name);
+
+    for (int i = 0; i < ctStructureDetails.Transform.size(); ++i) {
+        for (int j = 0; j < ctStructureDetails.Transform[i].size(); ++j) {
+            auto* spinBox = widget->findChild<QDoubleSpinBox*>(GetSpinBoxName(TransformNames[i], AxisNames[j]));
+            spinBox->setValue(ctStructureDetails.Transform[i][j]);
+        }
+    }
+}
+
+CtStructureDetails CtStructure::GetEditWidgetData(QWidget* widget) {
+    auto* nameLineEdit = widget->findChild<QLineEdit*>(NameEditObjectName);
+    QString name = nameLineEdit->text();
+
+    std::array<std::array<float, 3>, 3> transform {};
+    for (int i = 0; i < transform.size(); ++i) {
+        for (int j = 0; j < transform[i].size(); ++j) {
+            auto* spinBox = widget->findChild<QDoubleSpinBox*>(GetSpinBoxName(TransformNames[i], AxisNames[j]));
+            transform[i][j] = static_cast<float>(spinBox->value());
+        }
+    }
+
+    return { name, "", transform };
+}
+
+void CtStructure::CreateTransformationEditGroup(const QString& transformName,
+                                                double stepSize,
+                                                QVBoxLayout* parentLayout) {
+    auto* bar = new QWidget();
+    bar->setObjectName(transformName);
+
+    auto* hLayout = new QHBoxLayout(bar);
+
+    auto* titleLabel = new QLabel(transformName);
+    hLayout->addWidget(titleLabel);
+    hLayout->addStretch();
+
+    for (const auto& axisName : AxisNames) {
+        hLayout->addSpacing(10);
+        auto* label = new QLabel(axisName);
+        label->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
+        hLayout->addWidget(label);
+        auto* transformSpinBox = new QDoubleSpinBox();
+        transformSpinBox->setObjectName(GetSpinBoxName(transformName, axisName));
+        transformSpinBox->setRange(-100.0, 100.0);
+        transformSpinBox->setSingleStep(stepSize);
+        hLayout->addWidget(transformSpinBox);
+    }
+
+    parentLayout->addWidget(bar);
+}
+
+QString CtStructure::GetSpinBoxName(const QString& transformName, const QString& axisName) {
+    return transformName + axisName;
+}
+
+QString CtStructure::NameEditObjectName = "NameEdit";
+
+QStringList CtStructure::TransformNames { "Translate", "Rotate", "Scale" };
+
+QStringList CtStructure::AxisNames { "x", "y", "z" };

@@ -7,21 +7,20 @@
 
 #include <vtkImplicitFunction.h>
 
-struct ImplicitCtStructureDetails;
-struct StructureArtifactList;
+struct BasicStructureDetails;
 
 /**
- * @class ImplicitCtStructure
+ * @class BasicStructure
  * @brief class representing implicit CT structures with structure Artifacts
  *
- * This class is used in ImplicitCsgTree as an implicit source of data.
+ * This class is used in CtStructureTree as an implicit source of data.
  */
-class ImplicitCtStructure : public CtStructure {
+class BasicStructure : public CtStructure {
     Q_GADGET
 
 public:
-    static ImplicitCtStructure* New();
-    vtkTypeMacro(ImplicitCtStructure, CtStructure);
+    static BasicStructure* New();
+    vtkTypeMacro(BasicStructure, CtStructure);
 
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
@@ -30,7 +29,8 @@ public:
     enum ImplicitFunctionType {
         SPHERE,
         BOX,
-        CONE
+        CONE,
+        INVALID
     };
     Q_ENUM(ImplicitFunctionType);
     static std::string ImplicitFunctionTypeToString(ImplicitFunctionType implicitFunctionType);
@@ -66,27 +66,25 @@ public:
 
     bool CtStructureExists(const CtStructure* structure) override;
 
-    int ChildCount() const override;
-
-    const std::vector<CtStructure*>* GetChildren() const override;
-
-    const CtStructure* ChildAt(int idx) const override;
-
     QVariant Data() const override;
 
     void SetData(const QVariant& variant) override;
-    void SetData(const ImplicitCtStructureDetails& implicitCtStructureDetails);
+    void SetData(const BasicStructureDetails& basicStructureDetails);
 
-    bool IsImplicitCtStructure() const override;
+    SubType GetSubType() const override;
 
-    void DeepCopy(CtStructure* source, CtStructure* parent) override;
+    static QWidget* GetEditWidget(ImplicitFunctionType functionType);
+    static void SetEditWidgetData(QWidget* widget, const BasicStructureDetails& basicStructureDetails);
+    static BasicStructureDetails GetEditWidgetData(QWidget* widget);
 
-    ImplicitCtStructure(const ImplicitCtStructure&) = delete;
-    void operator=(const ImplicitCtStructure&) = delete;
+    void DeepCopy(CtStructure* source, CombinedStructure* parent) override;
+
+    BasicStructure(const BasicStructure&) = delete;
+    void operator=(const BasicStructure&) = delete;
 
 protected:
-    ImplicitCtStructure();
-    ~ImplicitCtStructure() override;
+    BasicStructure();
+    ~BasicStructure() override;
 
     std::string GetViewName() const override;
 
@@ -94,14 +92,17 @@ protected:
     ImplicitFunctionType ImplicitFType;
     vtkImplicitFunction* ImplicitFunction;
     TissueOrMaterialType Tissue;
-    StructureArtifactList* StructureArtifacts;
 
     static std::map<std::string, TissueOrMaterialType> TissueTypeMap;
-    static std::atomic<uint16_t> GlobalIdImplicitCtStructureId;
+    static std::atomic<uint16_t> GlobalBasicStructureId;
+
+private:
+    static QString FunctionTypeComboBoxName;
+    static QString TissueTypeComboBoxName;
 };
 
-struct ImplicitCtStructureDetails : public CtStructureDetails {
-    ImplicitCtStructure::ImplicitFunctionType ImplicitFunctionType = ImplicitCtStructure::ImplicitFunctionType::SPHERE;
+struct BasicStructureDetails : public CtStructureDetails {
+    BasicStructure::ImplicitFunctionType ImplicitFunctionType = BasicStructure::ImplicitFunctionType::SPHERE;
     QString TissueName;
 };
 

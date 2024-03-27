@@ -2,7 +2,7 @@
 
 #include <vtkObject.h>
 
-class CtDataCsgTree;
+class CtStructureTree;
 class ImageArtifactConcatenation;
 
 class Pipeline : public vtkObject {
@@ -14,8 +14,8 @@ public:
 
     std::string GetName() const;
 
-    void SetCtDataTree(CtDataCsgTree* ctDataCsgTree);
-    vtkGetObjectMacro(CtDataTree, CtDataCsgTree);
+    void SetCtDataTree(CtStructureTree* ctStructureTree);
+    vtkGetObjectMacro(CtDataTree, CtStructureTree);
 
     void InitializeWithAppDataTree();
 
@@ -28,7 +28,7 @@ protected:
     Pipeline();
     ~Pipeline() override;
 
-    CtDataCsgTree* CtDataTree;
+    CtStructureTree* CtDataTree;
     ImageArtifactConcatenation& ImageArtifactConcatenation;
     std::string Name;
 };

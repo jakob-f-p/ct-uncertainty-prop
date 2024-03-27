@@ -1,11 +1,11 @@
 #include "ModelingWidget.h"
 
-#include "CtDataCsgTreeModel.h"
+#include "CtStructureTreeModel.h"
 #include "CtStructureEditDialog.h"
 #include "CtStructureDelegate.h"
-#include "../CtDataCsgTree.h"
+#include "../CtStructureTree.h"
 #include "../CtDataSource.h"
-#include "../ImplicitCtStructure.h"
+#include "../BasicStructure.h"
 #include "../../App.h"
 
 #include <vtkAxesActor.h>
@@ -33,12 +33,16 @@ ModelingWidget::ModelingWidget() :
         CombineWithStructureButton(new QPushButton("Combine With Structure")),
         RefineWithStructureButton(new QPushButton("Refine With Structure")),
         RemoveStructureButton(new QPushButton("Remove Structure")),
-        TreeModel(new CtDataCsgTreeModel(App::GetInstance()->GetCtDataCsgTree())),
+        CtStructureButtons { AddStructureButton,
+                             CombineWithStructureButton,
+                             RefineWithStructureButton,
+                             RemoveStructureButton },
+        TreeModel(new CtStructureTreeModel(App::GetInstance()->GetCtDataTree())),
         TreeView(new QTreeView()),
         SelectionModel(nullptr),
         CtStructureCreateDialog(nullptr),
         DataSource(nullptr),
-        DataTree(&App::GetInstance()->GetCtDataCsgTree()),
+        DataTree(&App::GetInstance()->GetCtDataTree()),
         OrientationMarkerWidget(vtkOrientationMarkerWidget::New()),
         Renderer(vtkOpenGLRenderer::New()),
         RenderWindowInteractor(QVTKInteractor::New()),
@@ -47,22 +51,13 @@ ModelingWidget::ModelingWidget() :
 
     SetUpCentralWidgetForRendering();
 
-    SetUpDockWidgetForImplicitCsgTreeModeling();
+    SetUpDockWidgetForImplicitCtDataModeling();
 }
 
 ModelingWidget::~ModelingWidget() {
     OrientationMarkerWidget->Delete();
     Renderer->Delete();
     RenderWindowInteractor->Delete();
-}
-
-void ModelingWidget::OpenCreateDialog(const std::function<const void()>& onAccepted) {
-    CtStructureCreateDialog = new CtStructureEditDialog(this, true);
-    CtStructureCreateDialog->HideImplicitStructureCombinationSection();
-    CtStructureCreateDialog->setModal(true);
-    CtStructureCreateDialog->show();
-
-    connect(CtStructureCreateDialog, &CtStructureEditDialog::accepted, onAccepted);
 }
 
 void ModelingWidget::SetUpCentralWidgetForRendering() {
@@ -128,12 +123,7 @@ void ModelingWidget::SetUpCentralWidgetForRendering() {
     DataTree->AddObserver(vtkCommand::ModifiedEvent, onDataChangedUpdater);
 }
 
-void ModelingWidget::SetUpDockWidgetForImplicitCsgTreeModeling() {
-    auto* treeDelegate = new CtStructureDelegate();
-    TreeView->setModel(TreeModel);
-    TreeView->setItemDelegate(treeDelegate);
-    SelectionModel = TreeView->selectionModel();
-
+void ModelingWidget::SetUpDockWidgetForImplicitCtDataModeling() {
     auto* dockWidget = new QDockWidget();
     dockWidget->setFeatures(
             QDockWidget::DockWidgetFeature::DockWidgetMovable | QDockWidget::DockWidgetFeature::DockWidgetFloatable);
@@ -165,10 +155,15 @@ void ModelingWidget::SetUpDockWidgetForImplicitCsgTreeModeling() {
     treeButtonBarHorizontalLayout->addStretch();
     treeButtonBarHorizontalLayout->addWidget(RemoveStructureButton);
     DisableButtons();
-    ConnectButtons();
-
     verticalLayout->addWidget(treeButtonBarWidget);
+
+    auto* treeDelegate = new CtStructureDelegate();
+    TreeView->setModel(TreeModel);
+    TreeView->setItemDelegate(treeDelegate);
+    SelectionModel = TreeView->selectionModel();
     verticalLayout->addWidget(TreeView);
+
+    ConnectButtons();
 
     dockWidget->setWidget(dockWidgetContent);
 
@@ -183,42 +178,42 @@ void ModelingWidget::ConnectButtons() {
 
     connect(AddStructureButton, &QPushButton::clicked, [&]() {
         OpenCreateDialog([&]() {
-            ImplicitCtStructureDetails dialogData = CtStructureCreateDialog->GetImplicitCtStructureData();
+            BasicStructureDetails dialogData = CtStructureCreateDialog->GetBasicStructureData();
             QModelIndex siblingIndex = SelectionModel->currentIndex();
-            QModelIndex newIndex = TreeModel->AddImplicitCtStructure(dialogData, siblingIndex);
+            QModelIndex newIndex = TreeModel->AddBasicStructure(dialogData, siblingIndex);
             SelectionModel->setCurrentIndex(newIndex, QItemSelectionModel::ClearAndSelect);
         });
     });
 
     connect(CombineWithStructureButton, &QPushButton::clicked, [&]() {
         OpenCreateDialog([&]() {
-            ImplicitCtStructureDetails dialogData = CtStructureCreateDialog->GetImplicitCtStructureData();
-            TreeModel->CombineWithImplicitCtStructure(dialogData);
+            BasicStructureDetails dialogData = CtStructureCreateDialog->GetBasicStructureData();
+            TreeModel->CombineWithBasicStructure(dialogData);
             TreeView->expandAll();
         });
     });
 
     connect(RefineWithStructureButton, &QPushButton::clicked, [&]() {
         OpenCreateDialog([&]() {
-            ImplicitCtStructureDetails dialogData = CtStructureCreateDialog->GetImplicitCtStructureData();
+            BasicStructureDetails dialogData = CtStructureCreateDialog->GetBasicStructureData();
             QModelIndex index = SelectionModel->currentIndex();
-            TreeModel->RefineWithImplicitStructure(dialogData, index);
+            TreeModel->RefineWithBasicStructure(dialogData, index);
             TreeView->expandAll();
         });
     });
 
     connect(RemoveStructureButton, &QPushButton::clicked, [&]() {
         QModelIndex structureIndex = SelectionModel->currentIndex();
-        TreeModel->RemoveImplicitCtStructure(structureIndex);
+        TreeModel->RemoveBasicStructure(structureIndex);
         TreeView->expandAll();
     });
 
     connect(SelectionModel, &QItemSelectionModel::currentChanged, [&](const QModelIndex& current) {
-        bool isImplicitCtStructure = current.data(Qt::UserRole).toBool();
-        AddStructureButton->setEnabled(isImplicitCtStructure || !TreeModel->HasRoot());
+        bool isBasicStructure = current.isValid() && static_cast<CtStructure*>(current.internalPointer())->IsBasicStructure();
+        AddStructureButton->setEnabled(isBasicStructure || !TreeModel->HasRoot());
         CombineWithStructureButton->setEnabled(!current.parent().isValid());
-        RefineWithStructureButton->setEnabled(isImplicitCtStructure);
-        RemoveStructureButton->setEnabled(isImplicitCtStructure);
+        RefineWithStructureButton->setEnabled(isBasicStructure);
+        RemoveStructureButton->setEnabled(isBasicStructure);
     });
 
     connect(TreeModel, &QAbstractItemModel::modelReset, [&]() {
@@ -228,13 +223,14 @@ void ModelingWidget::ConnectButtons() {
 }
 
 void ModelingWidget::DisableButtons() {
-    std::array<QPushButton*, 4> buttons {
-            AddStructureButton,
-            CombineWithStructureButton,
-            RefineWithStructureButton,
-            RemoveStructureButton
-    };
-    std::for_each(buttons.begin(),
-                  buttons.end(),
-                  [](QPushButton* button) { button->setEnabled(false); });
+    for (const auto& button: CtStructureButtons)
+        button->setEnabled(false);
+}
+
+void ModelingWidget::OpenCreateDialog(const std::function<const void()>& onAccepted) {
+    CtStructureCreateDialog = new CtStructureEditDialog(CtStructureEditDialog::CREATE, CtStructure::SubType::BASIC,
+                                                        BasicStructure::ImplicitFunctionType::INVALID, this);
+    CtStructureCreateDialog->show();
+
+    connect(CtStructureCreateDialog, &CtStructureEditDialog::accepted, onAccepted);
 }
