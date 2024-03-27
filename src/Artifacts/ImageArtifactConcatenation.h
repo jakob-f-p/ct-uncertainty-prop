@@ -1,8 +1,9 @@
 #pragma once
 
 #include <vtkObject.h>
-#include "ImageArtifact.h"
-#include "ImageArtifactComposition.h"
+
+class ImageArtifact;
+class ImageArtifactComposition;
 
 class ImageArtifactConcatenation : public vtkObject {
 public:

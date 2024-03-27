@@ -3,6 +3,10 @@
 #include "ImplicitStructureCombination.h"
 #include "tracy/Tracy.hpp"
 
+#include <vtkObject.h>
+
+struct ImplicitCtStructureDetails;
+
 class CtDataCsgTree : public vtkObject {
 public:
     static CtDataCsgTree* New();

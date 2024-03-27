@@ -1,5 +1,8 @@
 #include "CtStructureEditDialog.h"
 
+#include "../ImplicitCtStructure.h"
+#include "../ImplicitStructureCombination.h"
+
 #include <QDialogButtonBox>
 #include <QKeyEvent>
 #include <QLabel>

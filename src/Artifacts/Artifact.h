@@ -2,13 +2,10 @@
 
 #include "../Enum.h"
 
+#include <QLayout>
 #include <QMetaObject>
 
 #include <vtkObject.h>
-
-#include <array>
-#include <string>
-#include <QLayout>
 
 struct ArtifactDetails;
 
@@ -48,18 +45,21 @@ public:
     static std::string SubTypeToString(SubType subType);
     GET_ENUM_VALUES(SubType, false);
 
+    static Artifact* NewArtifact(SubType subType);
+
     virtual Type GetArtifactType() const = 0;
 
     virtual SubType GetArtifactSubType() const = 0;
 
-    static constexpr std::array<SubType, 7> GetImageArtifactTypes() {
+    static constexpr std::array<SubType, 8> GetImageArtifactTypes() {
         return { IMAGE_GAUSSIAN,
                  IMAGE_SALT_PEPPER,
                  IMAGE_RING,
                  IMAGE_CUPPING,
                  IMAGE_WIND_MILL,
                  IMAGE_STAIR_STEP,
-                 IMAGE_STREAKING };
+                 IMAGE_STREAKING,
+                 IMAGE_COMPOSITION };
     };
 
     static constexpr std::array<SubType, 3> GetStructureArtifactTypes(){
@@ -68,7 +68,7 @@ public:
                  STRUCTURE_MOTION };
     };
 
-    void ProvideEditWidgets(QLayout* parentLayout) const;
+    QWidget* GetEditWidget() const;
     void SetEditWidgetData(QWidget* widget, const ArtifactDetails& artifactDetails);
 
     void SetData(const ArtifactDetails& artifactDetails);

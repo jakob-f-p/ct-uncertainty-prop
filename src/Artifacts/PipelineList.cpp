@@ -1,5 +1,9 @@
 #include "PipelineList.h"
 
+#include "Pipeline.h"
+
+#include <QMessageLogger>
+
 #include <vtkObjectFactory.h>
 
 vtkStandardNewMacro(PipelineList)
@@ -13,7 +17,7 @@ bool PipelineList::IsEmpty() const {
 }
 
 int PipelineList::GetSize() const {
-    return Pipelines.size();
+    return static_cast<int>(Pipelines.size());
 }
 
 Pipeline* PipelineList::Get(int idx) const {
@@ -44,6 +48,6 @@ void PipelineList::RemovePipeline(Pipeline* pipeline) {
     pipeline->Delete();
 }
 
-int PipelineList::NumberOfPipelines() {
+int PipelineList::NumberOfPipelines() const {
     return static_cast<int>(Pipelines.size());
 }

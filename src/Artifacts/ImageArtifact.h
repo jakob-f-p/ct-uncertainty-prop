@@ -3,7 +3,7 @@
 #include "Artifact.h"
 
 class ImageArtifactComposition;
-class ImageArtifactDetails;
+struct ImageArtifactDetails;
 
 class ImageArtifact : public Artifact {
 public:

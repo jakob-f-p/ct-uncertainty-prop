@@ -1,5 +1,9 @@
 #include "Artifact.h"
 
+#include "GaussianArtifact.h"
+#include "ImageArtifactComposition.h"
+#include "MotionArtifact.h"
+
 #include <QLabel>
 #include <QVBoxLayout>
 #include <QWidget>
@@ -54,13 +58,36 @@ std::string Artifact::SubTypeToString(Artifact::SubType subType) {
     }
 }
 
+Artifact* Artifact::NewArtifact(Artifact::SubType subType) {
+    switch (subType) {
+        case IMAGE_GAUSSIAN:     return GaussianArtifact::New();
+//        case IMAGE_SALT_PEPPER:
+//        case IMAGE_RING:
+//        case IMAGE_CUPPING:
+//        case IMAGE_WIND_MILL:
+//        case IMAGE_STAIR_STEP:
+//        case IMAGE_STREAKING:
+        case IMAGE_COMPOSITION:  return ImageArtifactComposition::New();
+//        case STRUCTURE_STREAKING:
+//        case STRUCTURE_METALLIC:
+        case STRUCTURE_MOTION:   return MotionArtifact::New();
+        default: {
+            qWarning("TODO: implement");
+            return nullptr;
+        }
+    }
+}
+
 ArtifactDetails Artifact::GetArtifactDetails() const {
     return { QString::fromStdString(Name),
              GetArtifactType(),
              GetArtifactSubType() };
 }
 
-void Artifact::ProvideEditWidgets(QLayout* parentLayout) const {
+QWidget* Artifact::GetEditWidget() const {
+    auto* widget = new QWidget();
+    auto* vLayout = new QVBoxLayout(widget);
+
     auto* nameEditBar = new QWidget();
     nameEditBar->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Maximum);
     auto* nameEditLayout = new QHBoxLayout(nameEditBar);
@@ -71,12 +98,14 @@ void Artifact::ProvideEditWidgets(QLayout* parentLayout) const {
     nameEditLayout->addWidget(nameLineEditLabel);
     nameEditLayout->addSpacing(20);
     nameEditLayout->addWidget(nameLineEdit);
-    parentLayout->addWidget(nameEditBar);
+    vLayout->addWidget(nameEditBar);
 
     auto* childEditWidget = GetChildEditWidget();
     childEditWidget->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Maximum);
     childEditWidget->setObjectName(ChildEditWidgetObjectName);
-    parentLayout->addWidget(childEditWidget);
+    vLayout->addWidget(childEditWidget);
+
+    return widget;
 }
 
 void Artifact::SetEditWidgetData(QWidget* widget, const ArtifactDetails& artifactDetails) {
@@ -123,6 +152,6 @@ ArtifactDetails::ArtifactDetails() :
         Type(Artifact::IMAGE_ARTIFACT),
         SubType(Artifact::IMAGE_GAUSSIAN) {
 }
+const QString Artifact::NameLineEditObjectName = "nameEdit";
 
- const QString Artifact::NameLineEditObjectName = "nameEdit";
 const QString Artifact::ChildEditWidgetObjectName = "childEditWidget";

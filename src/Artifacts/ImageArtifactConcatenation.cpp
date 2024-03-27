@@ -1,5 +1,7 @@
 #include "ImageArtifactConcatenation.h"
 
+#include "ImageArtifactComposition.h"
+
 #include <vtkObjectFactory.h>
 
 vtkStandardNewMacro(ImageArtifactConcatenation)

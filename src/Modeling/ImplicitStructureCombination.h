@@ -1,6 +1,8 @@
 #pragma once
 
-#include "ImplicitCtStructure.h"
+#include "CtStructure.h"
+
+class ImplicitCtStructure;
 
 class ImplicitStructureCombination : public CtStructure {
     Q_GADGET

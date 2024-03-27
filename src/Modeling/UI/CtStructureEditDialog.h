@@ -1,8 +1,5 @@
 #pragma once
 
-#include "../ImplicitCtStructure.h"
-#include "../ImplicitStructureCombination.h"
-
 #include <QAbstractItemModel>
 #include <QComboBox>
 #include <QDialog>
@@ -10,6 +7,10 @@
 #include <QGroupBox>
 #include <QLineEdit>
 #include <QVBoxLayout>
+
+struct CtStructureDetails;
+struct ImplicitCtStructureDetails;
+struct ImplicitStructureCombinationDetails;
 
 class CtStructureEditDialog : public QDialog {
     Q_OBJECT

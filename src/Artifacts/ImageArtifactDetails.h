@@ -1,7 +1,5 @@
 #pragma once
 
-#include <utility>
-
 #include "GaussianArtifact.h"
 #include "ImageArtifactComposition.h"
 

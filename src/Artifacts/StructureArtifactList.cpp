@@ -1,5 +1,7 @@
 #include "StructureArtifactList.h"
 
+#include "StructureArtifact.h"
+
 #include <vtkObjectFactory.h>
 #include <vtkSetGet.h>
 

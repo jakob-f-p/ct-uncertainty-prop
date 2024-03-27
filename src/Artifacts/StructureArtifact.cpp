@@ -1,4 +1,5 @@
 #include "StructureArtifact.h"
+
 #include "MotionArtifact.h"
 
 void StructureArtifact::PrintSelf(std::ostream& os, vtkIndent indent) {

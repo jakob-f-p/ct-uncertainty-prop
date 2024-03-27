@@ -1,4 +1,5 @@
 #include "ImageArtifact.h"
+
 #include "ImageArtifactDetails.h"
 
 void ImageArtifact::PrintSelf(std::ostream& os, vtkIndent indent) {

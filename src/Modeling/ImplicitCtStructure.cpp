@@ -1,5 +1,9 @@
 #include "ImplicitCtStructure.h"
+
 #include "CtStructure.h"
+#include "SimpleTransform.h"
+#include "../Artifacts/StructureArtifactList.h"
+
 #include "tracy/Tracy.hpp"
 
 #include <vtkBox.h>

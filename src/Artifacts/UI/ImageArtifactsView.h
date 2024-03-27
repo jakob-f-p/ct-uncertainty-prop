@@ -3,9 +3,11 @@
 #include <QTreeView>
 #include <QWidget>
 
+class Pipeline;
+
 class ImageArtifactsView : public QTreeView {
 public:
-    explicit ImageArtifactsView(QWidget* parent = nullptr);
+    explicit ImageArtifactsView(Pipeline* pipeline = nullptr, QWidget* parent = nullptr);
 
 protected:
     void drawBranches(QPainter* painter, const QRect& rect, const QModelIndex& index) const override;

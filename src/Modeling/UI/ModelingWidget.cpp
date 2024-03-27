@@ -1,6 +1,11 @@
 #include "ModelingWidget.h"
+
+#include "CtDataCsgTreeModel.h"
 #include "CtStructureEditDialog.h"
 #include "CtStructureDelegate.h"
+#include "../CtDataCsgTree.h"
+#include "../CtDataSource.h"
+#include "../ImplicitCtStructure.h"
 #include "../../App.h"
 
 #include <vtkAxesActor.h>
@@ -18,7 +23,7 @@
 #include <vtkVolume.h>
 #include <vtkVolumeProperty.h>
 
-#include <qdockwidget.h>
+#include <QDockWidget>
 #include <QVBoxLayout>
 #include <QVTKOpenGLNativeWidget.h>
 
@@ -28,12 +33,12 @@ ModelingWidget::ModelingWidget() :
         CombineWithStructureButton(new QPushButton("Combine With Structure")),
         RefineWithStructureButton(new QPushButton("Refine With Structure")),
         RemoveStructureButton(new QPushButton("Remove Structure")),
-        TreeModel(new CtDataCsgTreeModel(*App::GetInstance()->GetCtDataCsgTree())),
+        TreeModel(new CtDataCsgTreeModel(App::GetInstance()->GetCtDataCsgTree())),
         TreeView(new QTreeView()),
         SelectionModel(nullptr),
         CtStructureCreateDialog(nullptr),
         DataSource(nullptr),
-        DataTree(App::GetInstance()->GetCtDataCsgTree()),
+        DataTree(&App::GetInstance()->GetCtDataCsgTree()),
         OrientationMarkerWidget(vtkOrientationMarkerWidget::New()),
         Renderer(vtkOpenGLRenderer::New()),
         RenderWindowInteractor(QVTKInteractor::New()),
@@ -51,7 +56,7 @@ ModelingWidget::~ModelingWidget() {
     RenderWindowInteractor->Delete();
 }
 
-void ModelingWidget::OpenDialog(const std::function<const void()>& onAccepted) {
+void ModelingWidget::OpenCreateDialog(const std::function<const void()>& onAccepted) {
     CtStructureCreateDialog = new CtStructureEditDialog(this, true);
     CtStructureCreateDialog->HideImplicitStructureCombinationSection();
     CtStructureCreateDialog->setModal(true);
@@ -177,7 +182,7 @@ void ModelingWidget::ConnectButtons() {
     });
 
     connect(AddStructureButton, &QPushButton::clicked, [&]() {
-        OpenDialog([&]() {
+        OpenCreateDialog([&]() {
             ImplicitCtStructureDetails dialogData = CtStructureCreateDialog->GetImplicitCtStructureData();
             QModelIndex siblingIndex = SelectionModel->currentIndex();
             QModelIndex newIndex = TreeModel->AddImplicitCtStructure(dialogData, siblingIndex);
@@ -186,7 +191,7 @@ void ModelingWidget::ConnectButtons() {
     });
 
     connect(CombineWithStructureButton, &QPushButton::clicked, [&]() {
-        OpenDialog([&]() {
+        OpenCreateDialog([&]() {
             ImplicitCtStructureDetails dialogData = CtStructureCreateDialog->GetImplicitCtStructureData();
             TreeModel->CombineWithImplicitCtStructure(dialogData);
             TreeView->expandAll();
@@ -194,7 +199,7 @@ void ModelingWidget::ConnectButtons() {
     });
 
     connect(RefineWithStructureButton, &QPushButton::clicked, [&]() {
-        OpenDialog([&]() {
+        OpenCreateDialog([&]() {
             ImplicitCtStructureDetails dialogData = CtStructureCreateDialog->GetImplicitCtStructureData();
             QModelIndex index = SelectionModel->currentIndex();
             TreeModel->RefineWithImplicitStructure(dialogData, index);

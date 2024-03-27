@@ -1,5 +1,7 @@
 #include "CtDataCsgTree.h"
 
+#include "ImplicitCtStructure.h"
+
 #include <vtkCommand.h>
 #include <vtkNew.h>
 #include <vtkObjectFactory.h>

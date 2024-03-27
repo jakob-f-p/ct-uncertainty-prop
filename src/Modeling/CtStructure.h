@@ -1,13 +1,13 @@
 #pragma once
 
-#include "SimpleTransform.h"
-#include "../Artifacts/StructureArtifactList.h"
+#include "../Artifacts/Artifact.h"
 
 #include <QVariant>
 
 #include <vtkObject.h>
 #include <vtkImplicitFunction.h>
 
+class SimpleTransform;
 
 struct CtStructureDetails;
 
@@ -18,7 +18,7 @@ public:
     vtkTypeMacro(CtStructure, vtkObject)
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
-    virtual vtkMTimeType GetMTime() override;
+    vtkMTimeType GetMTime() override;
 
     void SetName(std::string name);
     std::string GetName() const;

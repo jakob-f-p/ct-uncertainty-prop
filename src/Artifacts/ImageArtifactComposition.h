@@ -26,7 +26,7 @@ public:
 
     bool ContainsImageArtifact(const ImageArtifact& artifact);
 
-    void AddImageArtifact(ImageArtifact& artifact);
+    void AddImageArtifact(ImageArtifact& artifact, int idx = -1);
 
     void RemoveImageArtifact(ImageArtifact& artifact);
 
@@ -39,6 +39,8 @@ public:
     QVariant Data() override;
 
     ImageArtifactDetails GetImageArtifactEditWidgetData(QWidget* widget) const override;
+
+    void MoveChildImageArtifact(ImageArtifact* imageArtifact, int newIdx);
 
     ImageArtifactComposition(const ImageArtifactComposition&) = delete;
     void operator=(const ImageArtifactComposition&) = delete;

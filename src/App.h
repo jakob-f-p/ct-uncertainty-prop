@@ -1,10 +1,10 @@
 #pragma once
 
-#include "MainWindow.h"
-#include "Artifacts/PipelineList.h"
-#include "Modeling/CtDataCsgTree.h"
-
 #include <QApplication>
+
+class CtDataCsgTree;
+class PipelineList;
+class MainWindow;
 
 class App {
 public:
@@ -14,9 +14,8 @@ public:
     int Run();
     static int Quit();
 
-    MainWindow* GetMainWindow() const;
-    CtDataCsgTree* GetCtDataCsgTree() const;
-    PipelineList* GetPipelineList() const;
+    CtDataCsgTree& GetCtDataCsgTree() const;
+    PipelineList& GetPipelines() const;
 
     App(const App&) = delete;
     void operator=(const App&) = delete;
@@ -33,9 +32,9 @@ private:
 
     int Argc;
     char** Argv;
-    QApplication* QApp;
 
+    QApplication& QApp;
+    CtDataCsgTree& CtDataTree;
+    PipelineList& Pipelines;
     MainWindow* MainWin;
-    CtDataCsgTree* CtDataTree;
-    PipelineList* Pipelines;
 };

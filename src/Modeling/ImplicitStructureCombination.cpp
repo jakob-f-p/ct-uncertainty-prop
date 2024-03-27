@@ -1,4 +1,8 @@
 #include "ImplicitStructureCombination.h"
+
+#include "ImplicitCtStructure.h"
+#include "SimpleTransform.h"
+
 #include "tracy/Tracy.hpp"
 #include "tracy/TracyC.h"
 

@@ -1,9 +1,9 @@
 #pragma once
 
-#include "ImageArtifactConcatenation.h"
-#include "../Modeling/CtDataCsgTree.h"
-
 #include <vtkObject.h>
+
+class CtDataCsgTree;
+class ImageArtifactConcatenation;
 
 class Pipeline : public vtkObject {
 public:
@@ -14,8 +14,10 @@ public:
 
     std::string GetName() const;
 
-    vtkSetObjectMacro(CtDataTree, CtDataCsgTree);
+    void SetCtDataTree(CtDataCsgTree* ctDataCsgTree);
     vtkGetObjectMacro(CtDataTree, CtDataCsgTree);
+
+    void InitializeWithAppDataTree();
 
     ImageArtifactConcatenation& GetImageArtifactConcatenation();
 

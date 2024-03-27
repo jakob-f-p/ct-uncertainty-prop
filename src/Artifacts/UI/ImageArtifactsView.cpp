@@ -1,13 +1,21 @@
-#include "ImageArtifactsDelegate.h"
 #include "ImageArtifactsView.h"
+
+#include "ImageArtifactsModel.h"
+#include "ImageArtifactsDelegate.h"
 #include "../ImageArtifact.h"
 #include "../ImageArtifactComposition.h"
 
 #include <QPainter>
 
-ImageArtifactsView::ImageArtifactsView(QWidget* parent) : QTreeView(parent) {
+ImageArtifactsView::ImageArtifactsView(Pipeline* pipeline, QWidget* parent) : QTreeView(parent) {
     setIndentation(indentation() + 2);
+
+    setHeaderHidden(true);
+
     setItemDelegate(new ImageArtifactsDelegate());
+
+    if (pipeline)
+        QTreeView::setModel(new ImageArtifactsModel(*pipeline));
 }
 
 void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, const QModelIndex& index) const {
@@ -99,14 +107,12 @@ void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, cons
 
 void ImageArtifactsView::iterate(const QModelIndex& index, const QAbstractItemModel* model,
                                  const std::function<void(const QModelIndex&, int)>& f, int depth) const {
-    if (index.isValid()) {
+    if (index.isValid())
         f(index, depth);
-    }
 
     auto numberOfChildren = model->rowCount(index);
-    for (int i = 0; i < numberOfChildren; ++i) {
+    for (int i = 0; i < numberOfChildren; ++i)
         iterate(model->index(i, 0, index), model, f, depth + 1);
-    }
 }
 
 bool ImageArtifactsView::hasHiddenIndices() const {
@@ -120,8 +126,8 @@ bool ImageArtifactsView::hasHiddenIndices() const {
 
 int ImageArtifactsView::getLevel(const QModelIndex& index) {
     int level = 0;
-    for (QModelIndex current = index.parent(); current.isValid(); current = current.parent()) {
+    for (QModelIndex current = index.parent(); current.isValid(); current = current.parent())
         level++;
-    }
+
     return level;
 }

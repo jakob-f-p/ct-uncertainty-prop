@@ -1,8 +1,10 @@
 #include "ArtifactsWidget.h"
-#include "ImageArtifactConcatenationModel.h"
+
 #include "ImageArtifactsDelegate.h"
+#include "ImageArtifactsModel.h"
+#include "PipelinesWidget.h"
+#include "../ImageArtifactDetails.h"
 #include "../../App.h"
-#include "../../Modeling/UI/CtStructureDelegate.h"
 
 #include <vtkAxesActor.h>
 #include <vtkCallbackCommand.h>
@@ -24,29 +26,17 @@
 #include <QVTKOpenGLNativeWidget.h>
 
 ArtifactsWidget::ArtifactsWidget() :
-        Pipelines(App::GetInstance()->GetPipelineList()),
-        CurrentPipelineIndex(Pipelines->IsEmpty() ? -1 : 0),
-        CurrentPipeline(nullptr),
-        StructureArtifactsViews(new QStackedLayout()),
-        ImageArtifactsViews(new QStackedLayout()),
-        PipelineTitle(new QLabel()),
-        StructureArtifactModelingWidget(new QWidget()),
-        ImageArtifactModelingWidget(new QWidget()),
         ResetCameraButton(new QPushButton("Reset Camera")),
         RenderButton(new QPushButton("Render")),
-        PreviousPipelineButton(new QPushButton("")),
-        NextPipelineButton(new QPushButton("")),
-        AddPipelineButton(new QPushButton(QIcon(QPixmap(":/Plus.png")), "")),
-        RemovePipelineButton(new QPushButton(QIcon(QPixmap(":/Minus.png")), "")),
         OrientationMarkerWidget(vtkOrientationMarkerWidget::New()),
         Renderer(vtkOpenGLRenderer::New()),
         RenderWindowInteractor(QVTKInteractor::New()),
         InitialCameraPosition{ 0.0, 0.5, -1.0 },
         InitialCamera(vtkCamera::New()) {
 
-    SetUpCentralWidgetForRendering();
+    SetUpCentralRenderingWidget();
 
-    SetUpDockWidgetForAddingArtifacts();
+    SetUpDockWidget();
 }
 
 ArtifactsWidget::~ArtifactsWidget() {
@@ -55,7 +45,7 @@ ArtifactsWidget::~ArtifactsWidget() {
     RenderWindowInteractor->Delete();
 }
 
-void ArtifactsWidget::SetUpCentralWidgetForRendering() {
+void ArtifactsWidget::SetUpCentralRenderingWidget() {
 //    DataSource = CtDataSource::New();
 //    DataSource->SetDataTree(DataTree);
     vtkNew<vtkPiecewiseFunction> opacityMappingFunction;
@@ -118,7 +108,7 @@ void ArtifactsWidget::SetUpCentralWidgetForRendering() {
 //    DataTree->AddObserver(vtkCommand::ModifiedEvent, onDataChangedUpdater);
 }
 
-void ArtifactsWidget::SetUpDockWidgetForAddingArtifacts() {
+void ArtifactsWidget::SetUpDockWidget() {
     auto* dockWidget = new QDockWidget();
     dockWidget->setFeatures(
             QDockWidget::DockWidgetFeature::DockWidgetMovable | QDockWidget::DockWidgetFeature::DockWidgetFloatable);
@@ -137,172 +127,20 @@ void ArtifactsWidget::SetUpDockWidgetForAddingArtifacts() {
     renderingHorizontalLayout->addStretch();
     verticalLayout->addWidget(renderingButtonBarWidget);
 
-    auto* line = new QFrame();
-    line->setFrameShape(QFrame::HLine);
-    line->setFrameShadow(QFrame::Sunken);
-    verticalLayout->addWidget(line);
-
-    auto* artifactsTitleBarWidget = new QWidget();
-    auto* artifactsTitleBarHorizontalLayout = new QHBoxLayout(artifactsTitleBarWidget);
-    artifactsTitleBarHorizontalLayout->setContentsMargins(0, 11, 0, 0);
-    PipelineTitle->setStyleSheet("font-size: 14px; font-weight: bold");
-    artifactsTitleBarHorizontalLayout->addWidget(PipelineTitle);
-    artifactsTitleBarHorizontalLayout->addStretch();
-    PreviousPipelineButton->setIcon(GenerateIcon("ArrowLeft"));
-    NextPipelineButton->setIcon(GenerateIcon("ArrowRight"));
-    AddPipelineButton->setIcon(GenerateIcon("Plus"));
-    RemovePipelineButton->setIcon(GenerateIcon("Minus"));
-    artifactsTitleBarHorizontalLayout->addWidget(PreviousPipelineButton);
-    artifactsTitleBarHorizontalLayout->addWidget(NextPipelineButton);
-    artifactsTitleBarHorizontalLayout->addWidget(AddPipelineButton);
-    artifactsTitleBarHorizontalLayout->addWidget(RemovePipelineButton);
-    ConnectButtons();
-    verticalLayout->addWidget(artifactsTitleBarWidget);
-
-    auto* structureArtifactModelingVerticalLayout = new QVBoxLayout(StructureArtifactModelingWidget);
-    auto* structureArtifactModelingTitle = new QLabel("Structure Artifacts");
-    structureArtifactModelingTitle->setStyleSheet("font-size: 14px; font-weight: bold");
-    structureArtifactModelingVerticalLayout->addWidget(structureArtifactModelingTitle);
-    structureArtifactModelingVerticalLayout->addLayout(StructureArtifactsViews);
-    verticalLayout->addWidget(StructureArtifactModelingWidget);
-
-    auto* imageArtifactModelingVerticalLayout = new QVBoxLayout(ImageArtifactModelingWidget);
-    auto* imageArtifactModelingTitle = new QLabel("Image Artifacts");
-    imageArtifactModelingTitle->setStyleSheet("font-size: 14px; font-weight: bold");
-    imageArtifactModelingVerticalLayout->addWidget(imageArtifactModelingTitle);
-    imageArtifactModelingVerticalLayout->addLayout(ImageArtifactsViews);
-    verticalLayout->addWidget(ImageArtifactModelingWidget);
-
-    auto* StructureArtifactsPlaceholderWidget = new QTreeView();
-    StructureArtifactsViews->addWidget(StructureArtifactsPlaceholderWidget);
-    auto* imageArtifactsPlaceholderWidget = new ImageArtifactsView();
-    ImageArtifactsViews->addWidget(imageArtifactsPlaceholderWidget);
-
-    dockWidget->setWidget(dockWidgetContent);
-
-    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dockWidget);
-
-    InitializeViews();
-    UpdatePipelineView();
-}
-
-void ArtifactsWidget::ConnectButtons() {
     connect(ResetCameraButton, &QPushButton::clicked, [&]() {
         Renderer->GetActiveCamera()->DeepCopy(InitialCamera);
         RenderWindowInteractor->Render();
     });
 
-    connect(AddPipelineButton, &QPushButton::clicked, this, &ArtifactsWidget::AddPipeline);
-    connect(RemovePipelineButton, &QPushButton::clicked, this, &ArtifactsWidget::RemovePipeline);
+    auto* line = new QFrame();
+    line->setFrameShape(QFrame::HLine);
+    line->setFrameShadow(QFrame::Sunken);
+    verticalLayout->addWidget(line);
 
-    connect(PreviousPipelineButton, &QPushButton::clicked, this, &ArtifactsWidget::PreviousPipeline);
-    connect(NextPipelineButton, &QPushButton::clicked, this, &ArtifactsWidget::NextPipeline);
-}
+    auto* pipelineWidget = new PipelinesWidget();
+    verticalLayout->addWidget(pipelineWidget);
 
-void ArtifactsWidget::AddPipeline() {
-    auto* newPipeline = Pipeline::New();
+    dockWidget->setWidget(dockWidgetContent);
 
-    auto* newDataTree = CtDataCsgTree::New();
-    newDataTree->DeepCopy(App::GetInstance()->GetCtDataCsgTree());
-    newPipeline->SetCtDataTree(newDataTree);
-    Pipelines->AddPipeline(newPipeline);
-    CurrentPipelineIndex = Pipelines->GetSize() - 1;
-
-    newDataTree->FastDelete();
-    newPipeline->FastDelete();
-
-    CreateArtifactsViewsAndModels(CurrentPipelineIndex);
-
-    UpdatePipelineView();
-}
-
-void ArtifactsWidget::RemovePipeline() {
-    Pipelines->RemovePipeline(CurrentPipeline);
-
-    StructureArtifactsViews->removeWidget(StructureArtifactsViews->widget(CurrentPipelineIndex + 1));
-    ImageArtifactsViews->removeWidget(ImageArtifactsViews->widget(CurrentPipelineIndex + 1));
-
-    if (Pipelines->IsEmpty()) {
-        CurrentPipelineIndex = -1;
-    } else if (CurrentPipelineIndex == Pipelines->GetSize()) {
-        CurrentPipelineIndex--;
-    }
-
-    UpdatePipelineView();
-}
-
-void ArtifactsWidget::UpdatePipelineView() {
-    bool currentPipelineIndexIsValid = CurrentPipelineIndex >= 0 && CurrentPipelineIndex < Pipelines->GetSize();
-    QString pipelineTitleString = !currentPipelineIndexIsValid
-            ? ""
-            : (Pipelines->Get(CurrentPipelineIndex)->GetName().empty()
-                    ? QString::fromStdString("Pipeline " + std::to_string(CurrentPipelineIndex + 1))
-                    : QString::fromStdString(Pipelines->Get(CurrentPipelineIndex)->GetName()));
-    PipelineTitle->setText(pipelineTitleString);
-
-    CurrentPipeline = !currentPipelineIndexIsValid
-            ? nullptr
-            : Pipelines->Get(CurrentPipelineIndex);
-
-    PreviousPipelineButton->setEnabled(CurrentPipelineIndex > 0);
-    NextPipelineButton->setEnabled(CurrentPipelineIndex < Pipelines->GetSize() - 1);
-    AddPipelineButton->setEnabled(Pipelines->GetSize() < 10);
-    RemovePipelineButton->setEnabled(CurrentPipelineIndex > -1);
-
-    StructureArtifactsViews->setCurrentIndex(CurrentPipelineIndex + 1);
-    ImageArtifactsViews->setCurrentIndex(CurrentPipelineIndex + 1);
-}
-
-void ArtifactsWidget::PreviousPipeline() {
-    if (CurrentPipelineIndex == 0) {
-        qWarning("Cannot decrease pipeline index further");
-        return;
-    }
-
-    CurrentPipelineIndex--;
-    UpdatePipelineView();
-}
-
-void ArtifactsWidget::NextPipeline() {
-    if (CurrentPipelineIndex == Pipelines->GetSize() - 1) {
-        qWarning("Cannot decrease pipeline index further");
-        return;
-    }
-
-    CurrentPipelineIndex++;
-    UpdatePipelineView();
-}
-
-QIcon ArtifactsWidget::GenerateIcon(const std::string &filePrefix) {
-    QIcon icon;
-    QString qFilePrefix = QString::fromStdString(filePrefix);
-    icon.addPixmap(QPixmap(":/" + qFilePrefix + "Normal.png"), QIcon::Normal);
-    icon.addPixmap(QPixmap(":/" + qFilePrefix + "Disabled.png"), QIcon::Disabled);
-    return icon;
-}
-
-void ArtifactsWidget::InitializeViews() {
-    for (int i = 0; i < Pipelines->NumberOfPipelines(); ++i) {
-        CreateArtifactsViewsAndModels(i);
-    }
-
-    Pipelines->NumberOfPipelines();
-}
-
-void ArtifactsWidget::CreateArtifactsViewsAndModels(int pipelineIdx) {
-    auto* newStructureArtifactsView = new QTreeView();
-    auto* newStructureArtifactsModel = new CtDataCsgTreeModel(*Pipelines->Get(pipelineIdx)->GetCtDataTree());
-    newStructureArtifactsView->setModel(newStructureArtifactsModel);
-    auto* newCtDataTreeDelegate = new CtStructureDelegate();
-    newStructureArtifactsView->setItemDelegate(newCtDataTreeDelegate);
-    newStructureArtifactsView->setHeaderHidden(true);
-    StructureArtifactsViews->addWidget(newStructureArtifactsView);
-
-    auto* newImageArtifactsView = new ImageArtifactsView();
-    auto* newImageArtifactsModel = new ImageArtifactConcatenationModel(Pipelines->Get(pipelineIdx)->GetImageArtifactConcatenation());
-    newImageArtifactsView->setModel(newImageArtifactsModel);
-    auto* newImageArtifactsDelegate = new ImageArtifactsDelegate();
-    newImageArtifactsView->setItemDelegate(newImageArtifactsDelegate);
-    newImageArtifactsView->setHeaderHidden(true);
-    ImageArtifactsViews->addWidget(newImageArtifactsView);
+    addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dockWidget);
 }

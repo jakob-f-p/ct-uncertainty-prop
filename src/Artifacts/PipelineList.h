@@ -1,8 +1,8 @@
 #pragma once
 
-#include "Pipeline.h"
-
 #include <vtkObject.h>
+
+class Pipeline;
 
 class PipelineList : public vtkObject {
 public:
@@ -21,7 +21,7 @@ public:
 
     void RemovePipeline(Pipeline* pipeline);
 
-    int NumberOfPipelines();
+    int NumberOfPipelines() const;
 
     PipelineList(const PipelineList&) = delete;
     void operator=(const PipelineList&) = delete;

@@ -1,5 +1,7 @@
 #include "CtDataSource.h"
 
+#include "CtDataCsgTree.h"
+
 #include <vtkDataSetAttributes.h>
 #include <vtkFloatArray.h>
 #include <vtkObjectFactory.h>
@@ -25,6 +27,10 @@ vtkMTimeType CtDataSource::GetMTime() {
     vtkMTimeType treeMTime = DataTree ? DataTree->GetMTime() : 0;
 
     return std::max({ mTime, treeMTime });
+}
+
+void CtDataSource::SetDataTree(CtDataCsgTree* ctDataCsgTree) {
+    vtkSetObjectBodyMacro(DataTree, CtDataCsgTree, ctDataCsgTree)
 }
 
 void CtDataSource::SetVolumeDataPhysicalDimensions(float x, float y, float z) {

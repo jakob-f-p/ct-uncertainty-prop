@@ -1,5 +1,8 @@
 #include "CtStructureDelegate.h"
+
 #include "CtStructureEditDialog.h"
+#include "../ImplicitCtStructure.h"
+#include "../ImplicitStructureCombination.h"
 
 #include <QComboBox>
 #include <QDialog>

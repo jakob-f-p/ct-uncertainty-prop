@@ -1,7 +1,15 @@
 #include "CtDataCsgTreeModel.h"
 
+#include "../CtDataCsgTree.h"
+#include "../../Artifacts/Pipeline.h"
+
 CtDataCsgTreeModel::CtDataCsgTreeModel(CtDataCsgTree& csgTree, QObject* parent)
         : Tree(csgTree) {
+    Tree.Register(nullptr);
+}
+
+CtDataCsgTreeModel::CtDataCsgTreeModel(Pipeline* pipeline, QObject* parent)
+        : Tree(*pipeline->GetCtDataTree()) {
     Tree.Register(nullptr);
 }
 

@@ -1,8 +1,9 @@
 #include "ImageArtifactsDelegate.h"
+
+#include "ArtifactsEditDialog.h"
 #include "../ImageArtifactDetails.h"
 
 #include <QDialog>
-#include <QDialogButtonBox>
 #include <QLayout>
 
 QString ImageArtifactsDelegate::displayText(const QVariant& value, const QLocale& locale) const {
@@ -15,34 +16,17 @@ QString ImageArtifactsDelegate::displayText(const QVariant& value, const QLocale
 
 QWidget* ImageArtifactsDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option,
                                               const QModelIndex& index) const {
-    if (!index.isValid()) {
+    if (!index.isValid())
         return nullptr;
-    }
 
     auto* imageArtifact = static_cast<ImageArtifact*>(index.internalPointer());
 
-    auto* editDialog = new QDialog(parent);
-    editDialog->setMinimumSize(200, 100);
-    editDialog->setWindowTitle("Edit");
+    auto* dialog =  new ArtifactsEditDialog(ArtifactsEditDialog::EDIT, parent, imageArtifact);
 
-    auto* vLayout = new QVBoxLayout(editDialog);
-    vLayout->setAlignment(Qt::AlignTop);
-    imageArtifact->ProvideEditWidgets(vLayout);
+    connect(dialog, &ArtifactsEditDialog::accepted, this, &ImageArtifactsDelegate::commitEdit);
+    connect(dialog, &ArtifactsEditDialog::rejected, this, &ImageArtifactsDelegate::discardChanges);
 
-    auto* dialogButtonBar = new QDialogButtonBox();
-    dialogButtonBar->setOrientation(Qt::Horizontal);
-    dialogButtonBar->setStandardButtons(QDialogButtonBox::Cancel | QDialogButtonBox::Ok);
-    vLayout->addStretch();
-    vLayout->addSpacing(20);
-    vLayout->addWidget(dialogButtonBar);
-
-    connect(dialogButtonBar, &QDialogButtonBox::accepted, editDialog, &QDialog::accepted);
-    connect(dialogButtonBar, &QDialogButtonBox::rejected, editDialog, &QDialog::rejected);
-
-    connect(editDialog, &QDialog::accepted, this, &ImageArtifactsDelegate::commitEdit);
-    connect(editDialog, &QDialog::rejected, this, &ImageArtifactsDelegate::discardChanges);
-
-    return editDialog;
+    return dialog;
 }
 
 void ImageArtifactsDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
@@ -61,7 +45,7 @@ void ImageArtifactsDelegate::setModelData(QWidget* editor, QAbstractItemModel* m
 
     ImageArtifactDetails details = imageArtifact->GetImageArtifactEditWidgetData(dialogEditor);
 
-    imageArtifact->SetData(details);
+    model->setData(index, QVariant::fromValue(details));
 }
 
 void ImageArtifactsDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option,

@@ -1,4 +1,5 @@
 #include "ImageArtifactComposition.h"
+
 #include "ImageArtifactDetails.h"
 
 #include <QHBoxLayout>
@@ -39,8 +40,12 @@ bool ImageArtifactComposition::ContainsImageArtifact(const ImageArtifact& artifa
             });
 }
 
-void ImageArtifactComposition::AddImageArtifact(ImageArtifact& artifact) {
-    ImageArtifacts.push_back(&artifact);
+void ImageArtifactComposition::AddImageArtifact(ImageArtifact& artifact, int idx) {
+    if (idx == -1) {
+        ImageArtifacts.push_back(&artifact);
+    } else {
+        ImageArtifacts.insert(std::next(ImageArtifacts.begin(), idx), &artifact);
+    }
     artifact.SetParent(this);
     artifact.Register(this);
 }
@@ -84,6 +89,30 @@ ImageArtifactDetails ImageArtifactComposition::GetImageArtifactEditWidgetData(QW
             { compTypeComboBox->currentData().value<CompositionType>() },
             {}
     };
+}
+
+void ImageArtifactComposition::MoveChildImageArtifact(ImageArtifact* imageArtifact, int newIdx) {
+    if (!imageArtifact || newIdx < 0 || newIdx >= ImageArtifacts.size()) {
+        qWarning("Cannot move given image artifact to index");
+        return;
+    }
+
+    auto currentIt = std::find(ImageArtifacts.begin(), ImageArtifacts.end(), imageArtifact);
+    if (currentIt == ImageArtifacts.end()) {
+        qWarning("Cannot move given image artifact to index");
+        return;
+    }
+    auto currentIdx = std::distance(ImageArtifacts.begin(), currentIt);
+
+    if (currentIdx == newIdx)
+        return;
+
+    auto newIt = std::next(ImageArtifacts.begin(), newIdx);
+    if (currentIdx < newIdx) {
+        std::rotate(currentIt, std::next(currentIt), std::next(newIt));
+    } else {
+        std::rotate(newIt, std::next(newIt), std::next(currentIt));
+    }
 }
 
 ImageArtifactComposition::ImageArtifactComposition() :

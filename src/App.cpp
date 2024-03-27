@@ -1,9 +1,14 @@
 #include "App.h"
+
 #include "MainWindow.h"
+#include "Modeling/CtDataCsgTree.h"
 #include "Modeling/ImplicitCtStructure.h"
 #include "Artifacts/GaussianArtifact.h"
+#include "Artifacts/ImageArtifactConcatenation.h"
+#include "Artifacts/ImageArtifactComposition.h"
+#include "Artifacts/PipelineList.h"
+#include "Artifacts/Pipeline.h"
 
-#include <QApplication>
 #include <QSurfaceFormat>
 #include <QVTKOpenGLNativeWidget.h>
 
@@ -32,19 +37,19 @@ App* App::GetInstance() {
 App::App(int argc, char* argv[]) :
         Argc(argc),
         Argv(argv),
-        QApp(new QApplication(Argc, Argv)),
-        CtDataTree(CtDataCsgTree::New()),
-        Pipelines(PipelineList::New()),
+        QApp(*new QApplication(Argc, Argv)),
+        CtDataTree(*CtDataCsgTree::New()),
+        Pipelines(*PipelineList::New()),
         MainWin(nullptr) {
 }
 
 App::~App() {
-    CtDataTree->Delete();
-    Pipelines->Delete();
-    delete MainWin;
+    CtDataTree.Delete();
+    Pipelines.Delete();
+    delete &MainWin;
 
     QApplication::quit();
-    delete QApp;
+    delete &QApp;
 }
 
 int App::Run() {
@@ -85,15 +90,15 @@ void App::InitializeWithTestData() {
 //    implicitCtStructure3->SetImplicitFunction(ImplicitCtStructure::ImplicitFunctionType::BOX);
 //    implicitCtStructure3->SetTissueType(ImplicitCtStructure::GetTissueOrMaterialTypeByName("Soft Tissue"));
 
-    CtDataTree->AddImplicitCtStructure(*implicitCtStructure1);
-    CtDataTree->CombineWithImplicitCtStructure(*implicitCtStructure2, ImplicitStructureCombination::OperatorType::INTERSECTION);
+    CtDataTree.AddImplicitCtStructure(*implicitCtStructure1);
+    CtDataTree.CombineWithImplicitCtStructure(*implicitCtStructure2, ImplicitStructureCombination::OperatorType::INTERSECTION);
 //    CtDataTree->CombineWithImplicitCtStructure(*implicitCtStructure3, ImplicitStructureCombination::OperatorType::UNION);
 //    CtDataTree->RemoveImplicitCtStructure(*implicitCtStructure2);
 //    CtDataTree->RefineWithImplicitStructure({ "a", "", {}, {}, "Water", {}}, *implicitCtStructure3);
 
     vtkNew<Pipeline> pipeline;
-    pipeline->SetCtDataTree(CtDataTree);
-    Pipelines->AddPipeline(pipeline);
+    pipeline->SetCtDataTree(&CtDataTree);
+    Pipelines.AddPipeline(pipeline);
     ImageArtifactConcatenation& imageArtifactConcatenation = pipeline->GetImageArtifactConcatenation();
 
     vtkNew<GaussianArtifact> gaussianArtifact;
@@ -118,14 +123,10 @@ void App::InitializeWithTestData() {
     imageArtifactConcatenation.AddImageArtifact(*gaussianArtifact4);
 }
 
-MainWindow* App::GetMainWindow() const {
-    return MainWin;
-}
-
-CtDataCsgTree* App::GetCtDataCsgTree() const {
+CtDataCsgTree& App::GetCtDataCsgTree() const {
     return CtDataTree;
 }
 
-PipelineList* App::GetPipelineList() const {
+PipelineList& App::GetPipelines() const {
     return Pipelines;
 }

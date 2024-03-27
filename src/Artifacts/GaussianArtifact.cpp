@@ -1,4 +1,5 @@
 #include "GaussianArtifact.h"
+
 #include "ImageArtifactDetails.h"
 
 #include <QLayout>

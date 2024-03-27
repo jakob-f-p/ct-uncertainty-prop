@@ -1,7 +1,9 @@
+#include "CtStructure.h"
+
+#include "SimpleTransform.h"
+
 #include <vtkObjectFactory.h>
 #include <vtkNew.h>
-#include "ImplicitCtStructure.h"
-#include "CtStructure.h"
 
 #include <utility>
 

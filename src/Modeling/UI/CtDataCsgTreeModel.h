@@ -1,8 +1,10 @@
 #pragma once
 
-#include "../CtDataCsgTree.h"
-
 #include <QAbstractItemModel>
+
+class CtDataCsgTree;
+class Pipeline;
+struct ImplicitCtStructureDetails;
 
 class CtDataCsgTreeModel : public QAbstractItemModel {
     Q_OBJECT
@@ -11,6 +13,8 @@ public:
     Q_DISABLE_COPY_MOVE(CtDataCsgTreeModel)
 
     explicit CtDataCsgTreeModel(CtDataCsgTree& csgTree, QObject* parent = nullptr);
+    explicit CtDataCsgTreeModel(Pipeline* pipeline, QObject* parent = nullptr);
+
     ~CtDataCsgTreeModel() override;
 
     QModelIndex index(int row, int column, const QModelIndex& parent) const override;

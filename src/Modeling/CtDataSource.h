@@ -1,11 +1,11 @@
 #pragma once
 
-#include "CtDataCsgTree.h"
-
 #include <vtkImageAlgorithm.h>
 #include <vtkImageData.h>
 
 #include <tracy/Tracy.hpp>
+
+class CtDataCsgTree;
 
 class CtDataSource : public vtkImageAlgorithm {
 public:
@@ -15,7 +15,7 @@ public:
 
     vtkMTimeType GetMTime() override;
 
-    vtkSetObjectMacro(DataTree, CtDataCsgTree);
+    void SetDataTree(CtDataCsgTree* ctDataCsgTree);
 
     /**
      * Set physical dimensions of the scanned image in mm along each axis.

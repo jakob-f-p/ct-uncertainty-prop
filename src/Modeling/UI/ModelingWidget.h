@@ -1,9 +1,5 @@
 #pragma once
 
-#include "CtDataCsgTreeModel.h"
-#include "CtStructureEditDialog.h"
-#include "../CtDataSource.h"
-
 #include <QItemSelectionModel>
 #include <QMainWindow>
 #include <QPushButton>
@@ -13,6 +9,11 @@
 #include <vtkOpenGLRenderer.h>
 #include <vtkOrientationMarkerWidget.h>
 
+class CtDataCsgTree;
+class CtDataCsgTreeModel;
+class CtDataSource;
+class CtStructureEditDialog;
+
 class ModelingWidget : public QMainWindow {
 Q_OBJECT
 
@@ -21,8 +22,7 @@ public:
     ~ModelingWidget() override;
 
 public slots:
-    void OpenDialog(const std::function<const void()>& onAccepted);
-
+    void OpenCreateDialog(const std::function<const void()>& onAccepted);
 
 private:
     void SetUpCentralWidgetForRendering();

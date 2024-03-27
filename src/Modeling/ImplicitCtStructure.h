@@ -1,7 +1,6 @@
 #pragma once
 
 #include "CtStructure.h"
-#include "../Artifacts/StructureArtifactList.h"
 #include "../Enum.h"
 
 #include <QMetaEnum>
@@ -9,6 +8,7 @@
 #include <vtkImplicitFunction.h>
 
 struct ImplicitCtStructureDetails;
+struct StructureArtifactList;
 
 /**
  * @class ImplicitCtStructure
