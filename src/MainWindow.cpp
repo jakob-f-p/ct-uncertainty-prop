@@ -8,6 +8,8 @@
 MainWindow::MainWindow() {
     resize(1400, 700);
 
+    setWindowTitle("CT Uncertainty Propagation");
+
     auto* tabWidget = new QTabWidget(this);
     tabWidget->setTabPosition(QTabWidget::TabPosition::West);
 

@@ -6,14 +6,6 @@
 #include <QDialog>
 #include <QLayout>
 
-QString ImageArtifactsDelegate::displayText(const QVariant& value, const QLocale& locale) const {
-    if (value.canConvert<ImageArtifactDetails>()) {
-        return value.value<ImageArtifactDetails>().ViewName;
-    }
-
-    return QStyledItemDelegate::displayText(value, locale);
-}
-
 QWidget* ImageArtifactsDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option,
                                               const QModelIndex& index) const {
     if (!index.isValid())
@@ -50,6 +42,14 @@ void ImageArtifactsDelegate::setModelData(QWidget* editor, QAbstractItemModel* m
 
 void ImageArtifactsDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option,
                                                   const QModelIndex& index) const {
+}
+
+QString ImageArtifactsDelegate::displayText(const QVariant& value, const QLocale& locale) const {
+    if (value.canConvert<ImageArtifactDetails>()) {
+        return value.value<ImageArtifactDetails>().ViewName;
+    }
+
+    return QStyledItemDelegate::displayText(value, locale);
 }
 
 void ImageArtifactsDelegate::commitEdit() {

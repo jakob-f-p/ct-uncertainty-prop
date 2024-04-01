@@ -1,7 +1,5 @@
 #pragma once
 
-#include "../BasicStructure.h"
-
 #include <QAbstractItemModel>
 #include <QComboBox>
 #include <QDialog>
@@ -10,32 +8,44 @@
 #include <QLineEdit>
 #include <QVBoxLayout>
 
-struct BasicStructureDetails;
-struct CombinedStructureDetails;
+class BasicStructureUi;
+class CombinedStructureUi;
 
-class CtStructureEditDialog : public QDialog {
-    Q_OBJECT
+struct BasicStructureData;
+struct CombinedStructureData;
 
+class CtStructureDialog : public QDialog {
 public:
-    enum Mode {
+    enum DialogMode {
         EDIT,
-        CREATE
+        CREATE,
     };
 
-    explicit CtStructureEditDialog(Mode mode,
-                                   CtStructure::SubType subType,
-                                   BasicStructure::ImplicitFunctionType functionType,
-                                   QWidget* parent = nullptr);
+protected:
+    explicit CtStructureDialog(DialogMode mode, QWidget* parent = nullptr);
 
-    void SetBasicStructureData(const BasicStructureDetails& basicStructureDetails);
-    void SetCombinedStructureData(const CombinedStructureDetails& combinedStructureDetails);
+    QVBoxLayout* Layout;
+};
 
-    BasicStructureDetails GetBasicStructureData();
-    CombinedStructureDetails GetCombinedStructureData();
+template<typename Ui>
+class SimpleCtStructureDialog : public CtStructureDialog {
+public:
+    explicit SimpleCtStructureDialog(DialogMode mode, QWidget* parent = nullptr);
+};
 
-private:
-    CtStructure::SubType SubType;
-    BasicStructure::ImplicitFunctionType FunctionType;
+typedef SimpleCtStructureDialog<BasicStructureUi> BasicStructureDialog;
+typedef SimpleCtStructureDialog<CombinedStructureUi> CombinedStructureDialog;
 
-    QWidget* EditWidget;
+class BasicAndCombinedStructureCreateDialog : public CtStructureDialog {
+public:
+    explicit BasicAndCombinedStructureCreateDialog(QWidget* parent = nullptr);
+
+    void SetData(const BasicStructureData& basicStructureData, const CombinedStructureData& combinedStructureData);
+
+    BasicStructureData GetBasicStructureData() const;
+    CombinedStructureData GetCombinedStructureData() const;
+
+protected:
+    QWidget* CombinedStructureWidget;
+    QWidget* BasicStructureWidget;
 };

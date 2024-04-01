@@ -23,8 +23,7 @@ vtkMTimeType CtStructureTree::GetMTime() {
     return std::max(thisMTime, nodeMTime);
 }
 
-void CtStructureTree::AddBasicStructure(BasicStructure& basicStructure,
-                                        CombinedStructure* parent) {
+void CtStructureTree::AddBasicStructure(BasicStructure& basicStructure, CombinedStructure* parent) {
     if (!parent) {  // add as root
         if (Root) {
             vtkErrorMacro("Another root is already present. Cannot add implicit structure.");
@@ -47,10 +46,9 @@ void CtStructureTree::AddBasicStructure(BasicStructure& basicStructure,
     parent->AddCtStructure(basicStructure);
 }
 
-void CtStructureTree::AddBasicStructure(const BasicStructureDetails &basicStructureDetails,
-                                        CombinedStructure *parent) {
+void CtStructureTree::AddBasicStructure(const BasicStructureData& basicStructureData, CombinedStructure *parent) {
     vtkNew<BasicStructure> basicStructure;
-    basicStructure->SetData(basicStructureDetails);
+    BasicStructureData::SetData(*basicStructure, basicStructureData);
     AddBasicStructure(*basicStructure, parent);
 
     InvokeEvent(vtkCommand::ModifiedEvent);
@@ -86,15 +84,15 @@ void CtStructureTree::CombineWithBasicStructure(BasicStructure& basicStructure,
     InvokeEvent(vtkCommand::ModifiedEvent);
 }
 
-void CtStructureTree::CombineWithBasicStructure(BasicStructureDetails &basicStructureDetails) {
+void CtStructureTree::CombineWithBasicStructure(BasicStructureData& basicStructureData) {
     vtkNew<BasicStructure> basicStructure;
-    basicStructure->SetData(basicStructureDetails);
+    BasicStructureData::SetData(*basicStructure, basicStructureData);
     CombineWithBasicStructure(*basicStructure, CombinedStructure::OperatorType::UNION);
 
     InvokeEvent(vtkCommand::ModifiedEvent);
 }
 
-void CtStructureTree::RefineWithBasicStructure(const BasicStructureDetails& newStructureDetails,
+void CtStructureTree::RefineWithBasicStructure(const BasicStructureData& newStructureData,
                                                BasicStructure& structureToRefine,
                                                CombinedStructure::OperatorType operatorType) {
     if (!Root) {
@@ -103,7 +101,7 @@ void CtStructureTree::RefineWithBasicStructure(const BasicStructureDetails& newS
     }
 
     vtkNew<BasicStructure> newStructure;
-    newStructure->SetData(newStructureDetails);
+    BasicStructureData::SetData(*newStructure, newStructureData);
 
     auto* parent = dynamic_cast<CombinedStructure*>(structureToRefine.GetParent());
 
@@ -159,7 +157,11 @@ void CtStructureTree::RemoveBasicStructure(BasicStructure& basicStructure) {
 }
 
 void CtStructureTree::SetData(CtStructure* ctStructure, const QVariant& data) {
-    ctStructure->SetData(data);
+    if (ctStructure->IsBasic()) {
+        BasicStructureData::SetData(*dynamic_cast<BasicStructure*>(ctStructure), data);
+    } else {
+        CombinedStructureData::SetData(*dynamic_cast<CombinedStructure*>(ctStructure), data);
+    }
 
     InvokeEvent(vtkCommand::ModifiedEvent);
 }
@@ -188,15 +190,13 @@ void CtStructureTree::DeepCopy(CtStructureTree* source) {
         return;
     }
 
-    if (Root) {
+    if (Root)
         Root->Delete();
-    }
 
-    if (source->Root->GetSubType()) {
+    if (source->Root->IsBasic())
         Root = BasicStructure::New();
-    } else {
+    else
         Root = CombinedStructure::New();
-    }
 
     Root->DeepCopy(source->Root, nullptr);
 }

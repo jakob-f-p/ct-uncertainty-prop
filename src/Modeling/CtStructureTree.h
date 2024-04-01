@@ -5,7 +5,7 @@
 
 #include <vtkObject.h>
 
-struct BasicStructureDetails;
+struct BasicStructureData;
 
 class CtStructureTree : public vtkObject {
 public:
@@ -16,18 +16,15 @@ public:
 
     vtkMTimeType GetMTime() override;
 
-    void AddBasicStructure(BasicStructure& basicStructure,
-                           CombinedStructure* parent = nullptr);
+    void AddBasicStructure(BasicStructure& basicStructure, CombinedStructure* parent = nullptr);
 
-    void AddBasicStructure(const BasicStructureDetails& basicStructureDetails,
-                           CombinedStructure* parent = nullptr);
+    void AddBasicStructure(const BasicStructureData& basicStructureData, CombinedStructure* parent = nullptr);
 
-    void CombineWithBasicStructure(BasicStructure& basicStructure,
-                                   CombinedStructure::OperatorType operatorType);
+    void CombineWithBasicStructure(BasicStructure& basicStructure, CombinedStructure::OperatorType operatorType);
 
-    void CombineWithBasicStructure(BasicStructureDetails& basicStructureDetails);
+    void CombineWithBasicStructure(BasicStructureData& basicStructureData);
 
-    void RefineWithBasicStructure(const BasicStructureDetails& newStructureDetails,
+    void RefineWithBasicStructure(const BasicStructureData& newStructureData,
                                   BasicStructure& structureToRefine,
                                   CombinedStructure::OperatorType operatorType = CombinedStructure::OperatorType::UNION);
 

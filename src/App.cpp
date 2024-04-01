@@ -56,7 +56,7 @@ int App::Run() {
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 
     auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
-    smpToolsApi.SetBackend("STDTHREAD");
+//    smpToolsApi.SetBackend("STDTHREAD");
     qWarning(("Backend: " + std::string(smpToolsApi.GetBackend())).c_str());
 
     InitializeWithTestData();

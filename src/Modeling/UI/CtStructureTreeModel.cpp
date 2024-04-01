@@ -1,15 +1,18 @@
 #include "CtStructureTreeModel.h"
 
+#include "../BasicStructure.h"
 #include "../CtStructureTree.h"
 #include "../../Artifacts/Pipeline.h"
 
-CtStructureTreeModel::CtStructureTreeModel(CtStructureTree& ctStructureTree, QObject* parent)
-        : Tree(ctStructureTree) {
+CtStructureTreeModel::CtStructureTreeModel(CtStructureTree& ctStructureTree, QObject* parent) :
+        QAbstractItemModel(parent),
+        Tree(ctStructureTree) {
     Tree.Register(nullptr);
 }
 
-CtStructureTreeModel::CtStructureTreeModel(Pipeline* pipeline, QObject* parent)
-        : Tree(*pipeline->GetCtDataTree()) {
+CtStructureTreeModel::CtStructureTreeModel(Pipeline* pipeline, QObject* parent) :
+        QAbstractItemModel(parent),
+        Tree(*pipeline->GetCtDataTree()) {
     Tree.Register(nullptr);
 }
 
@@ -23,9 +26,9 @@ QModelIndex CtStructureTreeModel::index(int row, int column, const QModelIndex& 
 
     auto* childStructure = !parent.isValid()
             ? Tree.GetRoot()
-            : static_cast<CtStructure*>(parent.internalPointer())->IsBasicStructure()
+            : CtStructure::IsBasic(parent.internalPointer())
                     ? nullptr
-                    : static_cast<CombinedStructure*>(parent.internalPointer())->ChildAt(row);
+                    : CtStructure::ToCombined(parent.internalPointer())->ChildAt(row);
 
     if (!childStructure)
         return {};
@@ -37,7 +40,7 @@ QModelIndex CtStructureTreeModel::parent(const QModelIndex& child) const {
     if (!child.isValid())
         return {};
 
-    auto* childStructure = static_cast<const CtStructure*>(child.internalPointer());
+    auto* childStructure = CtStructure::FromVoid(child.internalPointer());
 
     CombinedStructure* parentStructure = childStructure->GetParent();
     if (!parentStructure)
@@ -54,11 +57,11 @@ int CtStructureTreeModel::rowCount(const QModelIndex& parent) const {
     if (!parent.isValid())
         return Tree.GetRoot() ? 1 : 0;
 
-    auto* parentItem = static_cast<const CtStructure*>(parent.internalPointer());
-    if (parentItem->IsBasicStructure())
+    auto* parentItem = CtStructure::FromVoid(parent.internalPointer());
+    if (parentItem->IsBasic())
         return 0;
 
-    return dynamic_cast<const CombinedStructure*>(parentItem)->ChildCount();
+    return CtStructure::ToCombined(parentItem)->ChildCount();
 }
 
 int CtStructureTreeModel::columnCount(const QModelIndex& parent) const {
@@ -69,9 +72,9 @@ QVariant CtStructureTreeModel::data(const QModelIndex& index, int role) const {
     if (!index.isValid() || (role != Qt::DisplayRole && role != Qt::EditRole))
         return {};
 
-    auto* item = static_cast<const CtStructure*>(index.internalPointer());
-
-    return item->Data();
+    return CtStructure::IsBasic(index.internalPointer())
+            ? BasicStructureData::GetQVariant(*CtStructure::ToBasic(index.internalPointer()))
+            : CombinedStructureData::GetQVariant(*CtStructure::ToCombined(index.internalPointer()));
 }
 
 QVariant CtStructureTreeModel::headerData(int section, Qt::Orientation orientation, int role) const {
@@ -92,22 +95,22 @@ bool CtStructureTreeModel::setData(const QModelIndex &index, const QVariant &val
     if (!index.isValid())
         return false;
 
-    auto* ctStructure = static_cast<CtStructure*>(index.internalPointer());
+    auto* ctStructure = CtStructure::FromVoid(index.internalPointer());
     Tree.SetData(ctStructure, value);
 
     emit dataChanged(index, index);
     return true;
 }
 
-QModelIndex CtStructureTreeModel::AddBasicStructure(const BasicStructureDetails &basicStructureDetails,
+QModelIndex CtStructureTreeModel::AddBasicStructure(const BasicStructureData &basicStructureData,
                                                     const QModelIndex &siblingIndex) {
     const QModelIndex& parentIndex = siblingIndex.parent();
-    auto* parent = static_cast<CombinedStructure*>(parentIndex.internalPointer());
+    auto* parent = CtStructure::ToCombined(parentIndex.internalPointer());
     int insertionIndex = parent ? parent->ChildCount() : 0;
 
     beginInsertRows(parentIndex, insertionIndex, insertionIndex);
 
-    Tree.AddBasicStructure(basicStructureDetails, parent);
+    Tree.AddBasicStructure(basicStructureData, parent);
 
     endInsertRows();
 
@@ -115,20 +118,20 @@ QModelIndex CtStructureTreeModel::AddBasicStructure(const BasicStructureDetails 
     return newIndex;
 }
 
-void CtStructureTreeModel::CombineWithBasicStructure(BasicStructureDetails& basicStructureDetails) {
+void CtStructureTreeModel::CombineWithBasicStructure(BasicStructureData& basicStructureData) {
     beginResetModel();
 
-    Tree.CombineWithBasicStructure(basicStructureDetails);
+    Tree.CombineWithBasicStructure(basicStructureData);
 
     endResetModel();
 }
 
-void CtStructureTreeModel::RefineWithBasicStructure(const BasicStructureDetails& basicStructureDetails,
+void CtStructureTreeModel::RefineWithBasicStructure(const BasicStructureData& basicStructureData,
                                                     const QModelIndex& index) {
     beginResetModel();
 
-    auto* structureToRefine = static_cast<BasicStructure*>(index.internalPointer());
-    Tree.RefineWithBasicStructure(basicStructureDetails, *structureToRefine);
+    auto* structureToRefine = CtStructure::ToBasic(index.internalPointer());
+    Tree.RefineWithBasicStructure(basicStructureData, *structureToRefine);
 
     endResetModel();
 }
@@ -136,7 +139,7 @@ void CtStructureTreeModel::RefineWithBasicStructure(const BasicStructureDetails&
 void CtStructureTreeModel::RemoveBasicStructure(const QModelIndex &index) {
     beginResetModel();
 
-    auto* basicStructure = static_cast<BasicStructure*>(index.internalPointer());
+    auto* basicStructure = CtStructure::ToBasic(index.internalPointer());
     Tree.RemoveBasicStructure(*basicStructure);
 
     endResetModel();

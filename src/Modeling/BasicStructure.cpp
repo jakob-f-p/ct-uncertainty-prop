@@ -6,6 +6,12 @@
 
 #include "tracy/Tracy.hpp"
 
+#include <QComboBox>
+#include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QGroupBox>
+#include <QLabel>
+#include <QObject>
 #include <QWidget>
 
 #include <vtkBox.h>
@@ -14,15 +20,13 @@
 #include <vtkSphere.h>
 
 #include <utility>
-#include <QLabel>
-#include <QComboBox>
 
 vtkStandardNewMacro(BasicStructure)
 
 void BasicStructure::PrintSelf(ostream &os, vtkIndent indent) {
     Superclass::PrintSelf(os, indent);
 
-    os << indent << "Implicit Function Type:" << ImplicitFunctionTypeToString(ImplicitFType) << "\n";
+    os << indent << "Implicit Function Type:" << ImplicitFunctionTypeToString(FunctionType) << "\n";
     os << indent << "Implicit Function: (" << ImplicitFunction << ")\n";
     os << indent << "Tissue Type: " << Tissue << ")\n";
     os << indent << "Structure Artifact List: " << StructureArtifacts << ")\n";
@@ -35,17 +39,30 @@ vtkMTimeType BasicStructure::GetMTime() {
     return std::max(thisMTime, implicitFunctionMTime);
 }
 
+void BasicStructure::SetTransform(const std::array<std::array<float, 3>, 3>& trs) {
+    if (!this->ImplicitFunction) {
+        vtkErrorMacro("No implicit function specified. Cannot set transform.");
+        return;
+    }
+
+    this->Transform->SetTranslationRotationScaling(trs);
+
+    this->ImplicitFunction->SetTransform(Transform);
+}
+
 std::string
 BasicStructure::ImplicitFunctionTypeToString(BasicStructure::ImplicitFunctionType implicitFunctionType) {
     switch (implicitFunctionType) {
-        case SPHERE: return "Sphere";
-        case BOX:    return "Box";
-        case CONE:   return "Cone";
-        default: {
-            qWarning("No matching implicit function type found");
-            return "";
-        }
+        case ImplicitFunctionType::SPHERE: return "Sphere";
+        case ImplicitFunctionType::BOX:    return "Box";
+        case ImplicitFunctionType::CONE:   return "Cone";
+        default: qWarning("No matching implicit function type found");
     }
+    return "";
+}
+
+BasicStructure::ImplicitFunctionType BasicStructure::GetFunctionType() const {
+    return FunctionType;
 }
 
 void BasicStructure::SetImplicitFunction(BasicStructure::ImplicitFunctionType implicitFunctionType) {
@@ -53,21 +70,21 @@ void BasicStructure::SetImplicitFunction(BasicStructure::ImplicitFunctionType im
         ImplicitFunction->Delete();
     }
 
-    ImplicitFType = implicitFunctionType;
+    FunctionType = implicitFunctionType;
     switch (implicitFunctionType) {
-        case SPHERE: {
+        case ImplicitFunctionType::SPHERE: {
             auto* sphere = vtkSphere::New();
             sphere->SetRadius(25.0f);
             ImplicitFunction = sphere;
             break;
         }
-        case BOX: {
+        case ImplicitFunctionType::BOX: {
             auto* box = vtkBox::New();
             box->SetBounds(-40.0, 40.0, -10.0, 10.0, -10.0, 10.0);
             ImplicitFunction = box;
             break;
         }
-        case CONE: {
+        case ImplicitFunctionType::CONE: {
             qWarning("Todo"); // TODO
         }
 
@@ -99,17 +116,6 @@ QStringList BasicStructure::GetTissueAndMaterialTypeNames() {
     std::transform(TissueTypeMap.cbegin(), TissueTypeMap.cend(), std::back_inserter(names),
                    [](const auto& type) { return QString::fromStdString(type.first); });
     return names;
-}
-
-void BasicStructure::SetTransform(const std::array<std::array<float, 3>, 3>& trs) {
-    if (!this->ImplicitFunction) {
-        vtkErrorMacro("No implicit function specified. Cannot set transform.");
-        return;
-    }
-
-    this->Transform->SetTranslationRotationScaling(trs);
-
-    this->ImplicitFunction->SetTransform(Transform);
 }
 
 void BasicStructure::SetTissueType(BasicStructure::TissueOrMaterialType tissueType) {
@@ -144,18 +150,24 @@ bool BasicStructure::CtStructureExists(const CtStructure* structure) {
     return this == structure;
 }
 
-QVariant BasicStructure::Data() const {
-    BasicStructureDetails basicStructureDetails {
-        GetCtStructureDetails(),
-        ImplicitFType,
-        QString::fromStdString(Tissue.Name),
-    };
-    return QVariant::fromValue(basicStructureDetails);
+CtStructure::SubType BasicStructure::GetSubType() const {
+    return BASIC;
+}
+
+void BasicStructure::DeepCopy(CtStructure* source, CombinedStructure* parent) {
+    Superclass::DeepCopy(source, parent);
+
+    auto* basicStructureSource = dynamic_cast<BasicStructure*>(source);
+    Id = basicStructureSource->Id;
+    FunctionType = basicStructureSource->FunctionType;
+    ImplicitFunction = basicStructureSource->ImplicitFunction;
+    ImplicitFunction->Register(this);
+    Tissue = basicStructureSource->Tissue;
 }
 
 BasicStructure::BasicStructure() :
         Id(++GlobalBasicStructureId),
-        ImplicitFType(INVALID),
+        FunctionType(ImplicitFunctionType::INVALID),
         ImplicitFunction(nullptr),
         Tissue(GetTissueOrMaterialTypeByName("Air")) {
 }
@@ -164,6 +176,10 @@ BasicStructure::~BasicStructure() {
     this->ImplicitFunction->Delete();
 
     this->Modified();
+}
+
+std::string BasicStructure::GetViewName() const {
+    return ImplicitFunctionTypeToString(FunctionType) + (Name.empty() ? "" : " (" + Name + ")");
 }
 
 std::map<std::string, BasicStructure::TissueOrMaterialType> BasicStructure::TissueTypeMap = {
@@ -178,94 +194,253 @@ std::map<std::string, BasicStructure::TissueOrMaterialType> BasicStructure::Tiss
 
 std::atomic<uint16_t> BasicStructure::GlobalBasicStructureId(0);
 
-void BasicStructure::SetData(const QVariant& variant) {
-    auto basicStructureDetails = variant.value<BasicStructureDetails>();
-    SetData(basicStructureDetails);
+void BasicStructureData::AddDerivedData(const BasicStructure& structure, BasicStructureData& data) {
+    data.FunctionType = structure.FunctionType;
+    data.TissueName = QString::fromStdString(structure.Tissue.Name);
+
+    switch (data.FunctionType) {
+        case BasicStructure::ImplicitFunctionType::SPHERE: {
+            auto* sphere = dynamic_cast<vtkSphere*>(structure.ImplicitFunction);
+            data.Sphere.Radius = sphere->GetRadius();
+            sphere->GetCenter(data.Sphere.Center.data());
+            break;
+        }
+
+        case BasicStructure::ImplicitFunctionType::BOX: {
+            auto* box = dynamic_cast<vtkBox*>(structure.ImplicitFunction);
+            box->GetXMin(data.Box.MinPoint.data());
+            box->GetXMax(data.Box.MaxPoint.data());
+            break;
+        }
+
+        case BasicStructure::ImplicitFunctionType::CONE: {
+            qWarning("Todo");
+        }
+
+        default: qWarning("No matching implicit function type");
+    }
 }
 
-void BasicStructure::SetData(const BasicStructureDetails &basicStructureDetails) {
-    SetImplicitFunction(basicStructureDetails.ImplicitFunctionType);
-    SetTissueType(GetTissueOrMaterialTypeByName(basicStructureDetails.TissueName.toStdString()));
+void BasicStructureData::SetDerivedData(BasicStructure& structure, const BasicStructureData& data) {
+    structure.SetImplicitFunction(data.FunctionType);
+    structure.SetTissueType(
+            BasicStructure::GetTissueOrMaterialTypeByName(data.TissueName.toStdString()));
 
-    SetCtStructureDetails(basicStructureDetails);
+    switch (data.FunctionType) {
+        case BasicStructure::ImplicitFunctionType::SPHERE: {
+            auto* sphere = dynamic_cast<vtkSphere*>(structure.ImplicitFunction);
+            sphere->SetRadius(data.Sphere.Radius);
+            sphere->SetCenter(data.Sphere.Center.data());
+            break;
+        }
+
+        case BasicStructure::ImplicitFunctionType::BOX: {
+            auto* box = dynamic_cast<vtkBox*>(structure.ImplicitFunction);
+            std::array<double, 3> minPoint {}, maxPoint {};
+            std::copy(data.Box.MinPoint.begin(), data.Box.MinPoint.end(), minPoint.begin());
+            std::copy(data.Box.MaxPoint.begin(), data.Box.MaxPoint.end(), maxPoint.begin());
+            box->SetXMin(minPoint.data());
+            box->SetXMax(maxPoint.data());
+            break;
+        }
+
+        case BasicStructure::ImplicitFunctionType::CONE: {
+            qWarning("Todo");
+        }
+
+        default: qWarning("No matching implicit function type");
+    }
 }
 
-CtStructure::SubType BasicStructure::GetSubType() const {
-    return BASIC;
+void BasicStructureUi::SetFunctionType(QWidget* widget, BasicStructure::ImplicitFunctionType functionType) {
+    auto* functionTypeComboBox = widget->findChild<QComboBox*>(FunctionTypeComboBoxName);
+    if (int idx = functionTypeComboBox->findData(QVariant::fromValue(functionType));
+            idx != -1)
+        functionTypeComboBox->setCurrentIndex(idx);
 }
 
-QWidget* BasicStructure::GetEditWidget(ImplicitFunctionType functionType) {
-    auto* widget = new QWidget();
-    auto* vLayout = new QVBoxLayout(widget);
-
-    CtStructure::AddNameEditWidget(vLayout);
-
-    auto* basicStructureWidget = new QWidget();
-    auto* basicStructureHLayout = new QHBoxLayout(basicStructureWidget);
-    auto* functionTypeLabel = new QLabel("Structure Type");
-    basicStructureHLayout->addWidget(functionTypeLabel);
+void BasicStructureUi::AddDerivedWidgets(QFormLayout* fLayout) {
     auto* functionTypeComboBox = new QComboBox();
     functionTypeComboBox->setObjectName(FunctionTypeComboBoxName);
-    basicStructureHLayout->addWidget(functionTypeComboBox);
     for (const auto &implicitFunctionAndName : BasicStructure::GetImplicitFunctionTypeValues()) {
-        functionTypeComboBox->addItem(implicitFunctionAndName.Name, implicitFunctionAndName.EnumValue);
+        functionTypeComboBox->addItem(implicitFunctionAndName.Name,
+                                      QVariant::fromValue(implicitFunctionAndName.EnumValue));
     }
+    functionTypeComboBox->setCurrentIndex(0);
 
-    basicStructureHLayout->addSpacing(20);
-
-    auto* tissueTypeLabel = new QLabel("Tissue Type");
-    basicStructureHLayout->addWidget(tissueTypeLabel);
     auto* tissueTypeComboBox = new QComboBox();
     tissueTypeComboBox->setObjectName(TissueTypeComboBoxName);
     tissueTypeComboBox->addItems(BasicStructure::GetTissueAndMaterialTypeNames());
-    basicStructureHLayout->addWidget(tissueTypeComboBox);
-    vLayout->addWidget(basicStructureWidget);
 
-    CtStructure::AddTransformEditWidget(vLayout);
+    fLayout->addRow("Tissue Type", tissueTypeComboBox);
+    fLayout->addRow("Structure Type", functionTypeComboBox);
 
-    return widget;
+    auto* functionGroup = new QGroupBox();
+    functionGroup->setObjectName(FunctionParametersGroupName);
+    fLayout->addRow(functionGroup);
+    UpdateFunctionParametersGroup(fLayout);
+
+    QObject::connect(functionTypeComboBox, &QComboBox::currentIndexChanged,
+                     [&, fLayout]() { UpdateFunctionParametersGroup(fLayout); });
 }
 
-void BasicStructure::SetEditWidgetData(QWidget* widget, const BasicStructureDetails& basicStructureDetails) {
-    CtStructure::SetEditWidgetData(widget, basicStructureDetails);
-
+void BasicStructureUi::AddDerivedWidgetsData(QWidget* widget, BasicStructureData& data) {
     auto* functionTypeComboBox = widget->findChild<QComboBox*>(FunctionTypeComboBoxName);
     auto* tissueTypeComboBox = widget->findChild<QComboBox*>(TissueTypeComboBoxName);
 
-    if (int idx = functionTypeComboBox->findData(basicStructureDetails.ImplicitFunctionType);
+    data.FunctionType = functionTypeComboBox->currentData().value<BasicStructure::ImplicitFunctionType>();
+    data.TissueName = tissueTypeComboBox->currentText();
+
+    switch (data.FunctionType) {
+        case BasicStructure::ImplicitFunctionType::SPHERE: {
+            auto* radiusSpinBox = widget->findChild<QDoubleSpinBox*>(SphereRadiusSpinBoxName);
+            data.Sphere.Radius = radiusSpinBox->value();
+            for (int i = 0; i < data.Sphere.Center.size(); i++) {
+                auto* centerSpinBox = widget->findChild<QDoubleSpinBox*>(
+                        CtStructureUi::GetAxisSpinBoxName(SphereCenterName, AxisNames[i]));
+                data.Sphere.Center[i] = centerSpinBox->value();
+            }
+            break;
+        }
+
+        case BasicStructure::ImplicitFunctionType::BOX: {
+            for (int i = 0; i < data.Box.MinPoint.size(); i++) {
+                auto* minPointSpinBox = widget->findChild<QDoubleSpinBox*>(
+                        CtStructureUi::GetAxisSpinBoxName(BoxMinPointName, AxisNames[i]));
+                data.Box.MinPoint[i] = minPointSpinBox->value();
+
+                auto* maxPointSpinBox = widget->findChild<QDoubleSpinBox*>(
+                        CtStructureUi::GetAxisSpinBoxName(BoxMaxPointName, AxisNames[i]));
+                data.Box.MaxPoint[i] = maxPointSpinBox->value();
+            }
+            break;
+        }
+
+        case BasicStructure::ImplicitFunctionType::CONE: {
+            qWarning("TODO: implement");
+            break;
+        }
+
+        default: qWarning("No matching implicit function type");
+    }
+}
+
+void BasicStructureUi::SetDerivedWidgetsData(QWidget* widget, const BasicStructureData& data) {
+    auto* functionTypeComboBox = widget->findChild<QComboBox*>(FunctionTypeComboBoxName);
+    auto* tissueTypeComboBox = widget->findChild<QComboBox*>(TissueTypeComboBoxName);
+
+    if (int idx = functionTypeComboBox->findData(QVariant::fromValue(data.FunctionType));
             idx != -1)
         functionTypeComboBox->setCurrentIndex(idx);
 
-    if (int idx = tissueTypeComboBox->findText(basicStructureDetails.TissueName);
+    if (int idx = tissueTypeComboBox->findText(data.TissueName);
             idx != -1)
         tissueTypeComboBox->setCurrentIndex(idx);
+
+    UpdateFunctionParametersGroup(widget->findChild<QFormLayout*>());
+
+    switch (data.FunctionType) {
+        case BasicStructure::ImplicitFunctionType::SPHERE: {
+            auto* radiusSpinBox = widget->findChild<QDoubleSpinBox*>(SphereRadiusSpinBoxName);
+            radiusSpinBox->setValue(data.Sphere.Radius);
+            for (int i = 0; i < data.Sphere.Center.size(); i++) {
+                auto* centerSpinBox = widget->findChild<QDoubleSpinBox*>(
+                        CtStructureUi::GetAxisSpinBoxName(SphereCenterName, AxisNames[i]));
+                centerSpinBox->setValue(data.Sphere.Center[i]);
+            }
+            break;
+        }
+
+        case BasicStructure::ImplicitFunctionType::BOX: {
+            for (int i = 0; i < data.Box.MinPoint.size(); i++) {
+                auto* minPointSpinBox = widget->findChild<QDoubleSpinBox*>(
+                        CtStructureUi::GetAxisSpinBoxName(BoxMinPointName, AxisNames[i]));
+                minPointSpinBox->setValue(data.Box.MinPoint[i]);
+
+                auto* maxPointSpinBox = widget->findChild<QDoubleSpinBox*>(
+                        CtStructureUi::GetAxisSpinBoxName(BoxMaxPointName, AxisNames[i]));
+                maxPointSpinBox->setValue(data.Box.MaxPoint[i]);
+            }
+            break;
+        }
+
+        case BasicStructure::ImplicitFunctionType::CONE: {
+            qWarning("TODO: implement");
+            break;
+        }
+
+        default: qWarning("No matching implicit function type");
+    }
 }
 
-BasicStructureDetails BasicStructure::GetEditWidgetData(QWidget* widget) {
-    CtStructureDetails ctStructureDetails = CtStructure::GetEditWidgetData(widget);
+QGroupBox* BasicStructureUi::GetFunctionParametersGroup(BasicStructure::ImplicitFunctionType functionType) {
+    auto* group = new QGroupBox();
+    group->setObjectName(FunctionParametersGroupName);
+    group->setTitle(QString::fromStdString(BasicStructure::ImplicitFunctionTypeToString(functionType)));
+
+    auto* fLayout = new QFormLayout(group);
+    fLayout->setHorizontalSpacing(15);
+
+    switch (functionType) {
+        case BasicStructure::ImplicitFunctionType::SPHERE: {
+            auto* radiusSpinBox = new QDoubleSpinBox();
+            radiusSpinBox->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Minimum);
+            radiusSpinBox->setObjectName(SphereRadiusSpinBoxName);
+            radiusSpinBox->setRange(0.0, 100.0);
+            radiusSpinBox->setSingleStep(1.0);
+            fLayout->addRow("Radius", radiusSpinBox);
+
+            auto* centerCoordinates = GetCoordinatesRow(SphereCenterName, -100.0, 100.0, 1.0);
+            fLayout->addRow("Center", centerCoordinates);
+            break;
+        }
+
+        case BasicStructure::ImplicitFunctionType::BOX: {
+            QWidget* minPointCoordinates = GetCoordinatesRow(BoxMinPointName, -100.0, 100.0, 1.0);
+            QWidget* maxPointCoordinates = GetCoordinatesRow(BoxMaxPointName, -100.0, 100.0, 1.0);
+
+            fLayout->addRow("Min. Point", minPointCoordinates);
+            fLayout->addRow("Max. Point", maxPointCoordinates);
+            break;
+        }
+
+        case BasicStructure::ImplicitFunctionType::CONE: {
+            qWarning("TODO: implement");
+            break;
+        }
+
+        default: qWarning("No matching Function Type");
+    }
+
+    return group;
+}
+
+void BasicStructureUi::UpdateFunctionParametersGroup(QFormLayout* fLayout) {
+    auto* widget = fLayout->parentWidget();
+    auto* oldFunctionParametersGroup = widget->findChild<QGroupBox*>(FunctionParametersGroupName);
+    if (!oldFunctionParametersGroup) {
+        qWarning("No function parameters group exists");
+        return;
+    }
 
     auto* functionTypeComboBox = widget->findChild<QComboBox*>(FunctionTypeComboBoxName);
-    auto* tissueTypeComboBox = widget->findChild<QComboBox*>(TissueTypeComboBoxName);
+    auto functionType = functionTypeComboBox->currentData().value<BasicStructure::ImplicitFunctionType>();
+    auto* newFunctionParametersGroup = GetFunctionParametersGroup(functionType);
 
-    return { ctStructureDetails,
-             functionTypeComboBox->currentData().value<ImplicitFunctionType>(),
-             tissueTypeComboBox->currentText() };
+    fLayout->replaceWidget(oldFunctionParametersGroup, newFunctionParametersGroup);
+    delete oldFunctionParametersGroup;
 }
 
-void BasicStructure::DeepCopy(CtStructure* source, CombinedStructure* parent) {
-    Superclass::DeepCopy(source, parent);
+const QString BasicStructureUi::FunctionTypeComboBoxName = "functionType";
 
-    auto* basicStructureSource = dynamic_cast<BasicStructure*>(source);
-    Id = basicStructureSource->Id;
-    ImplicitFType = basicStructureSource->ImplicitFType;
-    ImplicitFunction = basicStructureSource->ImplicitFunction;
-    ImplicitFunction->Register(this);
-    Tissue = basicStructureSource->Tissue;
-}
-std::string BasicStructure::GetViewName() const {
-    return ImplicitFunctionTypeToString(ImplicitFType) + (Name.empty() ? "" : " (" + Name + ")");
-}
+const QString BasicStructureUi::TissueTypeComboBoxName = "tissueType";
 
-QString BasicStructure::FunctionTypeComboBoxName = "functionType";
+const QString BasicStructureUi::FunctionParametersGroupName = "functionTypeParametersGroup";
 
-QString BasicStructure::TissueTypeComboBoxName = "tissueType";
+const QString BasicStructureUi::SphereRadiusSpinBoxName = "sphereRadius";
+
+const QString BasicStructureUi::SphereCenterName = "sphereCenter";
+
+const QString BasicStructureUi::BoxMinPointName = "boxMinPoint";
+
+const QString BasicStructureUi::BoxMaxPointName = "boxMaxPoint";

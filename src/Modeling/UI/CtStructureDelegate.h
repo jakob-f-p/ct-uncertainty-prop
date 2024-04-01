@@ -4,9 +4,23 @@
 #include <QStyledItemDelegate>
 #include <QVBoxLayout>
 
-class CtStructureDelegate : public QStyledItemDelegate {
-    Q_OBJECT
+class DialogDelegate : public QStyledItemDelegate {
+public:
+    void updateEditorGeometry(QWidget* editor,
+                              const QStyleOptionViewItem& option,
+                              const QModelIndex& index) const override;
 
+protected slots:
+    void commitEdit();
+    void discardChanges();
+
+protected:
+    explicit DialogDelegate(QObject* parent = nullptr);
+
+    bool eventFilter(QObject *object, QEvent *event) override;
+};
+
+class CtStructureDelegate : public DialogDelegate {
 public:
     explicit CtStructureDelegate(QObject* parent = nullptr);
 
@@ -16,16 +30,6 @@ public:
 
     void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override;
 
-    void
-    updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
-
     QString displayText(const QVariant& value, const QLocale& locale) const override;
-
-public slots:
-    void commitEdit();
-    void discardChanges();
-
-protected:
-    bool eventFilter(QObject *object, QEvent *event) override;
 };
 

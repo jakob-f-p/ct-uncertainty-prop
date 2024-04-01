@@ -4,7 +4,8 @@
 
 class CtStructureTree;
 class Pipeline;
-struct BasicStructureDetails;
+
+struct BasicStructureData;
 
 class CtStructureTreeModel : public QAbstractItemModel {
     Q_OBJECT
@@ -33,17 +34,18 @@ public:
 
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 
-    QModelIndex AddBasicStructure(const BasicStructureDetails& basicStructureDetails,
+    QModelIndex AddBasicStructure(const BasicStructureData& basicStructureData,
                                   const QModelIndex& siblingIndex);
 
-    void CombineWithBasicStructure(BasicStructureDetails& basicStructureDetails);
+    void CombineWithBasicStructure(BasicStructureData& basicStructureData);
 
-    void RefineWithBasicStructure(const BasicStructureDetails& basicStructureDetails,
+    void RefineWithBasicStructure(const BasicStructureData& basicStructureData,
                                   const QModelIndex& index);
 
     void RemoveBasicStructure(const QModelIndex& index);
 
     bool HasRoot();
+
 protected:
     CtStructureTree& Tree;
 };

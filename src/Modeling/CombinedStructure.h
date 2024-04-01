@@ -2,9 +2,9 @@
 
 #include "CtStructure.h"
 
-class BasicStructure;
+#include <QFormLayout>
 
-struct CombinedStructureDetails;
+class BasicStructure;
 
 class CombinedStructure : public CtStructure {
     Q_GADGET
@@ -12,24 +12,24 @@ class CombinedStructure : public CtStructure {
 public:
     static CombinedStructure* New();
     vtkTypeMacro(CombinedStructure, CtStructure)
-
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
     vtkMTimeType GetMTime() override;
 
-    enum OperatorType {
+    void SetTransform(const std::array<std::array<float, 3>, 3>& trs) override;
+
+    SubType GetSubType() const override;
+
+    enum class OperatorType {
         UNION,
         INTERSECTION,
-        DIFFERENCE
+        DIFFERENCE,
+        INVALID
     };
     Q_ENUM(OperatorType);
     static std::string OperatorTypeToString(OperatorType operatorType);
-    GET_ENUM_VALUES(OperatorType, false);
-
+    GET_ENUM_VALUES(OperatorType, true);
     void SetOperatorType(OperatorType operatorType);
-    OperatorType GetOperatorType() const;
-
-    void SetTransform(const std::array<std::array<float, 3>, 3>& trs) override;
 
     void EvaluateAtPosition(const double x[3], Result& result) override;
 
@@ -50,17 +50,7 @@ public:
 
     int ChildIndex(const CombinedStructure& child) const;
 
-    QVariant Data() const override;
-
-    void SetData(const QVariant &variant) override;
-
-    SubType GetSubType() const override;
-
-    void ReplaceChild(BasicStructure *oldChild, CombinedStructure *newChild);
-
-    static QWidget* GetEditWidget();
-    static void SetEditWidgetData(QWidget* widget, const CombinedStructureDetails& combinedStructureDetails);
-    static CombinedStructureDetails GetEditWidgetData(QWidget* widget);
+    void ReplaceChild(BasicStructure* oldChild, CombinedStructure* newChild);
 
     void DeepCopy(CtStructure* source, CombinedStructure* parent) override;
 
@@ -71,19 +61,42 @@ protected:
     CombinedStructure();
     ~CombinedStructure() override;
 
+    friend struct CombinedStructureData;
+
     std::string GetViewName() const override;
 
-    OperatorType OpType;
+    OperatorType Operator;
     std::vector<CtStructure*> CtStructures;
 
 private:
     std::string GetOperatorTypeName() const;
 
     void ReplaceConnection(CtStructure* oldChildPointer, CtStructure* newChildPointer);
-
-    static QString OperatorTypeComboBoxName;
 };
 
-struct CombinedStructureDetails : public CtStructureDetails {
-    CombinedStructure::OperatorType OperatorType = CombinedStructure::OperatorType::UNION;
+
+struct CombinedStructureData : public CtStructureData<CombinedStructure, CombinedStructureData> {
+    CombinedStructure::OperatorType Operator = CombinedStructure::OperatorType::INVALID;
+
+protected:
+    friend struct CtStructureData<CombinedStructure, CombinedStructureData>;
+
+    static void AddDerivedData(const CombinedStructure& structure, CombinedStructureData& data);
+
+    static void SetDerivedData(CombinedStructure& structure, const CombinedStructureData& data);
+};
+
+
+class CombinedStructureUi : public CtStructureUi<CombinedStructureUi, CombinedStructureData> {
+protected:
+    friend struct CtStructureUi<CombinedStructureUi, CombinedStructureData>;
+
+    static void AddDerivedWidgets(QFormLayout* fLayout);
+
+    static void AddDerivedWidgetsData(QWidget* widget, CombinedStructureData& data);
+
+    static void SetDerivedWidgetsData(QWidget* widget, const CombinedStructureData& data);
+
+private:
+    static const QString OperatorTypeComboBoxName;
 };

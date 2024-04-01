@@ -3,9 +3,9 @@
 #include "CtStructureTreeModel.h"
 #include "CtStructureEditDialog.h"
 #include "CtStructureDelegate.h"
+#include "../BasicStructure.h"
 #include "../CtStructureTree.h"
 #include "../CtDataSource.h"
-#include "../BasicStructure.h"
 #include "../../App.h"
 
 #include <vtkAxesActor.h>
@@ -178,7 +178,7 @@ void ModelingWidget::ConnectButtons() {
 
     connect(AddStructureButton, &QPushButton::clicked, [&]() {
         OpenCreateDialog([&]() {
-            BasicStructureDetails dialogData = CtStructureCreateDialog->GetBasicStructureData();
+            BasicStructureData dialogData = BasicStructureUi::GetWidgetData(CtStructureCreateDialog);
             QModelIndex siblingIndex = SelectionModel->currentIndex();
             QModelIndex newIndex = TreeModel->AddBasicStructure(dialogData, siblingIndex);
             SelectionModel->setCurrentIndex(newIndex, QItemSelectionModel::ClearAndSelect);
@@ -187,7 +187,7 @@ void ModelingWidget::ConnectButtons() {
 
     connect(CombineWithStructureButton, &QPushButton::clicked, [&]() {
         OpenCreateDialog([&]() {
-            BasicStructureDetails dialogData = CtStructureCreateDialog->GetBasicStructureData();
+            BasicStructureData dialogData = BasicStructureUi::GetWidgetData(CtStructureCreateDialog);
             TreeModel->CombineWithBasicStructure(dialogData);
             TreeView->expandAll();
         });
@@ -195,7 +195,7 @@ void ModelingWidget::ConnectButtons() {
 
     connect(RefineWithStructureButton, &QPushButton::clicked, [&]() {
         OpenCreateDialog([&]() {
-            BasicStructureDetails dialogData = CtStructureCreateDialog->GetBasicStructureData();
+            BasicStructureData dialogData = BasicStructureUi::GetWidgetData(CtStructureCreateDialog);
             QModelIndex index = SelectionModel->currentIndex();
             TreeModel->RefineWithBasicStructure(dialogData, index);
             TreeView->expandAll();
@@ -209,7 +209,7 @@ void ModelingWidget::ConnectButtons() {
     });
 
     connect(SelectionModel, &QItemSelectionModel::currentChanged, [&](const QModelIndex& current) {
-        bool isBasicStructure = current.isValid() && static_cast<CtStructure*>(current.internalPointer())->IsBasicStructure();
+        bool isBasicStructure = current.isValid() && static_cast<CtStructure*>(current.internalPointer())->IsBasic();
         AddStructureButton->setEnabled(isBasicStructure || !TreeModel->HasRoot());
         CombineWithStructureButton->setEnabled(!current.parent().isValid());
         RefineWithStructureButton->setEnabled(isBasicStructure);
@@ -228,9 +228,10 @@ void ModelingWidget::DisableButtons() {
 }
 
 void ModelingWidget::OpenCreateDialog(const std::function<const void()>& onAccepted) {
-    CtStructureCreateDialog = new CtStructureEditDialog(CtStructureEditDialog::CREATE, CtStructure::SubType::BASIC,
-                                                        BasicStructure::ImplicitFunctionType::INVALID, this);
+    CtStructureCreateDialog = new BasicStructureDialog(CtStructureDialog::CREATE, this);
     CtStructureCreateDialog->show();
+//    BasicStructureUi::SetFunctionType(CtStructureCreateDialog, BasicStructure::ImplicitFunctionType::BOX);
+//    BasicStructureUi::SetFunctionType(CtStructureCreateDialog, BasicStructure::ImplicitFunctionType::SPHERE);
 
-    connect(CtStructureCreateDialog, &CtStructureEditDialog::accepted, onAccepted);
+    connect(CtStructureCreateDialog, &CtStructureDialog::accepted, onAccepted);
 }

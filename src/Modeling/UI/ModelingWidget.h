@@ -12,7 +12,7 @@
 class CtStructureTree;
 class CtStructureTreeModel;
 class CtDataSource;
-class CtStructureEditDialog;
+class CtStructureDialog;
 
 class ModelingWidget : public QMainWindow {
 Q_OBJECT
@@ -43,7 +43,7 @@ private:
     QTreeView* TreeView;
     QItemSelectionModel* SelectionModel;
 
-    CtStructureEditDialog* CtStructureCreateDialog;
+    CtStructureDialog* CtStructureCreateDialog;
     CtDataSource* DataSource;
     CtStructureTree* DataTree;
 

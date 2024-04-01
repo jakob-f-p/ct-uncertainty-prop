@@ -1,16 +1,22 @@
 #pragma once
 
 #include "../Artifacts/Artifact.h"
+#include "../Base.h"
 
+#include <QDoubleSpinBox>
+#include <QGroupBox>
+#include <QLabel>
+#include <QLineEdit>
 #include <QVariant>
 
 #include <vtkObject.h>
 #include <vtkImplicitFunction.h>
 
+class BasicStructure;
 class CombinedStructure;
 class SimpleTransform;
 
-struct CtStructureDetails;
+template<typename Structure, typename Data> struct CtStructureData;
 struct StructureArtifactList;
 
 class CtStructure : public vtkObject {
@@ -19,16 +25,33 @@ class CtStructure : public vtkObject {
 public:
     vtkTypeMacro(CtStructure, vtkObject)
     void PrintSelf(ostream& os, vtkIndent indent) override;
-
     vtkMTimeType GetMTime() override;
 
     void SetName(std::string name);
 
     virtual void SetTransform(const std::array<std::array<float, 3>, 3>& trs) = 0;
 
+    CombinedStructure* GetParent() const;
+    void SetParent(CombinedStructure* parent);
+
+    enum SubType {
+        BASIC,
+        COMBINED
+    };
+    virtual SubType GetSubType() const = 0;
+    bool IsBasic() const;
+    static bool IsBasic(void* ctStructure);
+    static BasicStructure* ToBasic(void* basicStructure);
+    static BasicStructure* ToBasic(CtStructure* basicStructure);
+    static CombinedStructure* ToCombined(void* combinedStructure);
+    static CombinedStructure* ToCombined(CtStructure* combinedStructure);
+    static CtStructure* FromVoid(void* ctStructure);
+
+    virtual void DeepCopy(CtStructure* source, CombinedStructure* parent);
+
     struct Result {
-        float FunctionValue;
-        float IntensityValue;
+        float FunctionValue = 0;
+        float IntensityValue = 0;
         std::map<Artifact::SubType, float> ArtifactValueMap;
     };
     virtual void EvaluateAtPosition(const double x[3], Result& result) = 0;
@@ -51,21 +74,6 @@ public:
 
     virtual bool CtStructureExists(const CtStructure* structure) = 0;
 
-    CombinedStructure* GetParent() const;
-    void SetParent(CombinedStructure* parent);
-
-    virtual QVariant Data() const = 0;
-    virtual void SetData(const QVariant& variant) = 0;
-
-    enum SubType : unsigned int {
-        BASIC,
-        COMBINED
-    };
-    virtual SubType GetSubType() const = 0;
-    bool IsBasicStructure() const;
-
-    virtual void DeepCopy(CtStructure* source, CombinedStructure* parent);
-
     CtStructure(const CtStructure&) = delete;
     void operator=(const CtStructure&) = delete;
 
@@ -74,35 +82,52 @@ protected:
     ~CtStructure() override;
 
     virtual std::string GetViewName() const = 0;
-    CtStructureDetails GetCtStructureDetails() const;
-    void SetCtStructureDetails(const CtStructureDetails& ctStructureDetails);
 
-    static void AddNameEditWidget(QLayout* layout);
-    static void AddTransformEditWidget(QLayout* layout);
-    static void SetEditWidgetData(QWidget* widget, const CtStructureDetails& ctStructureDetails);
-    static CtStructureDetails GetEditWidgetData(QWidget* widget);
-
-    friend class CtStructureEditDialog;
+    template<typename Structure, typename Data> friend struct CtStructureData;
 
     std::string Name;
     SimpleTransform* Transform;
     StructureArtifactList* StructureArtifacts;
-    CombinedStructure* Parent;    // always of type implicit structure combination
-
-private:
-    static void CreateTransformationEditGroup(const QString& transformName,
-                                              double stepSize,
-                                              QVBoxLayout* parentLayout);
-    static QString GetSpinBoxName(const QString& transformName, const QString& axisName);
-
-    static QString NameEditObjectName;
-    static QStringList TransformNames;
-    static QStringList AxisNames;
+    CombinedStructure* Parent;
 };
 
-struct CtStructureDetails {
+template<typename Structure, typename Data>
+struct CtStructureData : public BaseData<Structure, Data> {
     QString Name;
     QString ViewName;
-    std::array<std::array<float, 3>, 3> Transform;
+    std::array<std::array<float, 3>, 3> Transform = {};
+
+protected:
+    friend struct BaseData<Structure, Data>;
+
+    static void AddBaseData(const Structure& structure, Data& data);
+
+    static void SetBaseData(Structure& structure, const Data& data);
 };
 
+template<typename Ui, typename Data>
+class CtStructureUi : public BaseUi<Ui, Data> {
+protected:
+    friend struct BaseUi<Ui, Data>;
+
+    using Base = BaseUi<Ui, Data>;
+
+    static void AddBaseWidgets(QWidget* widget);
+
+    static void AddBaseWidgetsData(QWidget* widget, Data& data);
+
+    static void SetBaseWidgetsData(QWidget* widget, const Data& data);
+
+    static void AddCoordinatesRow(const QString& baseName, const QString& labelText,
+                                  double minValue, double maxValue, double stepSize,
+                                  QGridLayout* gridLayout, int gridLayoutRow,
+                                  double defaultValue = 0.0);
+    static QWidget* GetCoordinatesRow(const QString& baseName,
+                                      double minValue, double maxValue, double stepSize);
+    static QString GetAxisSpinBoxName(const QString& transformName, const QString& axisName);
+
+
+private:
+    static const QString NameEditObjectName;
+    static const QStringList TransformNames;
+};
