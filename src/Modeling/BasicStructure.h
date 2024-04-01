@@ -4,6 +4,9 @@
 #include "../Enum.h"
 
 #include <QFormLayout>
+#include <QGroupBox>
+
+#include <vtkImplicitFunction.h>
 
 /**
  * @class BasicStructure
@@ -101,26 +104,23 @@ struct BasicStructureData : public CtStructureData<BasicStructure, BasicStructur
 protected:
     friend struct CtStructureData<BasicStructure, BasicStructureData>;
 
-    static void AddDerivedData(const BasicStructure& structure, BasicStructureData& data);
+    static void AddSubTypeData(const BasicStructure& structure, BasicStructureData& data);
 
-    static void SetDerivedData(BasicStructure& structure, const BasicStructureData& data);
+    static void SetSubTypeData(BasicStructure& structure, const BasicStructureData& data);
 };
 
 
 class BasicStructureUi : public CtStructureUi<BasicStructureUi, BasicStructureData> {
-public:
-    static void SetFunctionType(QWidget* widget, BasicStructure::ImplicitFunctionType functionType);
-
 protected:
     friend struct CtStructureUi<BasicStructureUi, BasicStructureData>;
 
     using CtStructureUi = CtStructureUi<BasicStructureUi, BasicStructureData>;
 
-    static void AddDerivedWidgets(QFormLayout* fLayout);
+    static void AddSubTypeWidgets(QFormLayout* fLayout);
 
-    static void AddDerivedWidgetsData(QWidget* widget, BasicStructureData& data);
+    static void AddSubTypeWidgetsData(QWidget* widget, BasicStructureData& data);
 
-    static void SetDerivedWidgetsData(QWidget* widget, const BasicStructureData& data);
+    static void SetSubTypeWidgetsData(QWidget* widget, const BasicStructureData& data);
 
 private:
     static QGroupBox* GetFunctionParametersGroup(BasicStructure::ImplicitFunctionType functionType);

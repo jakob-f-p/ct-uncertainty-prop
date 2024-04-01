@@ -54,47 +54,50 @@ void CtStructureTree::AddBasicStructure(const BasicStructureData& basicStructure
     InvokeEvent(vtkCommand::ModifiedEvent);
 }
 
-void CtStructureTree::CombineWithBasicStructure(BasicStructure& basicStructure,
-                                                CombinedStructure::OperatorType operatorType) {
+void CtStructureTree::CombineWithBasicStructure(BasicStructure& basicStructure, CombinedStructure& combinedStructure) {
     if (!Root) {
         vtkErrorMacro("No root is present yet. Cannot combine.");
         return;
     }
 
-    if (CtStructureExists(basicStructure)) {
+    if (CtStructureExists(basicStructure) || CtStructureExists(combinedStructure)) {
         vtkErrorMacro("CT structure already exists. Cannot combine existing structure.");
         return;
     }
 
     CtStructure* previousRoot = Root;
 
-    CombinedStructure* newRoot = CombinedStructure::New();
-    newRoot->SetOperatorType(operatorType);
-    newRoot->AddCtStructure(*previousRoot);
-    newRoot->AddCtStructure(basicStructure);
+    combinedStructure.AddCtStructure(*previousRoot);
+    combinedStructure.AddCtStructure(basicStructure);
+
+    combinedStructure.SetParent(nullptr);
+    previousRoot->SetParent(&combinedStructure);
+    basicStructure.SetParent(&combinedStructure);
+
+    Root = &combinedStructure;
 
     previousRoot->UnRegister(this);
-
-    newRoot->SetParent(nullptr);
-    previousRoot->SetParent(newRoot);
-    basicStructure.SetParent(newRoot);
-
-    Root = newRoot;
+    combinedStructure.Register(this);
 
     InvokeEvent(vtkCommand::ModifiedEvent);
 }
 
-void CtStructureTree::CombineWithBasicStructure(BasicStructureData& basicStructureData) {
+void CtStructureTree::CombineWithBasicStructure(const BasicStructureData& basicStructureData,
+                                                const CombinedStructureData& combinedStructureData) {
     vtkNew<BasicStructure> basicStructure;
     BasicStructureData::SetData(*basicStructure, basicStructureData);
-    CombineWithBasicStructure(*basicStructure, CombinedStructure::OperatorType::UNION);
+
+    vtkNew<CombinedStructure> combinedStructure;
+    CombinedStructureData::SetData(*combinedStructure, combinedStructureData);
+
+    CombineWithBasicStructure(*basicStructure, *combinedStructure);
 
     InvokeEvent(vtkCommand::ModifiedEvent);
 }
 
 void CtStructureTree::RefineWithBasicStructure(const BasicStructureData& newStructureData,
-                                               BasicStructure& structureToRefine,
-                                               CombinedStructure::OperatorType operatorType) {
+                                               const CombinedStructureData& combinedStructureData,
+                                               BasicStructure& structureToRefine) {
     if (!Root) {
         vtkErrorMacro("No root is present yet. Cannot refine.");
         return;
@@ -103,22 +106,23 @@ void CtStructureTree::RefineWithBasicStructure(const BasicStructureData& newStru
     vtkNew<BasicStructure> newStructure;
     BasicStructureData::SetData(*newStructure, newStructureData);
 
+    vtkNew<CombinedStructure> combinedStructure;
+    CombinedStructureData::SetData(*combinedStructure, combinedStructureData);
+    combinedStructure->Register(this);
+
     auto* parent = dynamic_cast<CombinedStructure*>(structureToRefine.GetParent());
+    combinedStructure->SetParent(parent);
 
-    CombinedStructure* combination = CombinedStructure::New();
-    combination->SetOperatorType(operatorType);
-    combination->SetParent(parent);
-
-    combination->AddCtStructure(structureToRefine);
-    combination->AddCtStructure(*newStructure);
+    combinedStructure->AddCtStructure(structureToRefine);
+    combinedStructure->AddCtStructure(*newStructure);
 
     if (!parent) {
         structureToRefine.UnRegister(this);
-        Root = combination;
+        Root = combinedStructure;
         Root->Register(this);
         return;
     }
-    parent->ReplaceChild(&structureToRefine, combination);
+    parent->ReplaceChild(&structureToRefine, combinedStructure);
 
     InvokeEvent(vtkCommand::ModifiedEvent);
 }

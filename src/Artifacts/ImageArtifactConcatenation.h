@@ -3,7 +3,7 @@
 #include <vtkObject.h>
 
 class ImageArtifact;
-class ImageArtifactComposition;
+class CompositeArtifact;
 
 class ImageArtifactConcatenation : public vtkObject {
 public:
@@ -14,11 +14,11 @@ public:
 
     bool ContainsImageArtifact(const ImageArtifact& imageArtifact);
 
-    void AddImageArtifact(ImageArtifact& imageArtifact, ImageArtifactComposition* parent = nullptr);
+    void AddImageArtifact(ImageArtifact& imageArtifact, CompositeArtifact* parent = nullptr);
 
     void RemoveImageArtifact(ImageArtifact& imageArtifact);
 
-    ImageArtifactComposition& GetStart();
+    CompositeArtifact& GetStart();
 
     ImageArtifactConcatenation(const ImageArtifactConcatenation&) = delete;
     void operator=(const ImageArtifactConcatenation&) = delete;
@@ -27,5 +27,5 @@ protected:
     ImageArtifactConcatenation();
     ~ImageArtifactConcatenation() override;
 
-    ImageArtifactComposition& Start;
+    CompositeArtifact& Start;
 };

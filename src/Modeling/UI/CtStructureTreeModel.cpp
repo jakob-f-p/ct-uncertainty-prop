@@ -118,20 +118,22 @@ QModelIndex CtStructureTreeModel::AddBasicStructure(const BasicStructureData &ba
     return newIndex;
 }
 
-void CtStructureTreeModel::CombineWithBasicStructure(BasicStructureData& basicStructureData) {
+void CtStructureTreeModel::CombineWithBasicStructure(const BasicStructureData& basicStructureData,
+                                                     const CombinedStructureData& combinedStructureData) {
     beginResetModel();
 
-    Tree.CombineWithBasicStructure(basicStructureData);
+    Tree.CombineWithBasicStructure(basicStructureData, combinedStructureData);
 
     endResetModel();
 }
 
 void CtStructureTreeModel::RefineWithBasicStructure(const BasicStructureData& basicStructureData,
+                                                    const CombinedStructureData& combinedStructureData,
                                                     const QModelIndex& index) {
     beginResetModel();
 
     auto* structureToRefine = CtStructure::ToBasic(index.internalPointer());
-    Tree.RefineWithBasicStructure(basicStructureData, *structureToRefine);
+    Tree.RefineWithBasicStructure(basicStructureData, combinedStructureData, *structureToRefine);
 
     endResetModel();
 }

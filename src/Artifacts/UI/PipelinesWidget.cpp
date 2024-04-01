@@ -1,6 +1,6 @@
 #include "PipelinesWidget.h"
 
-#include "ArtifactsEditDialog.h"
+#include "ArtifactsDialog.h"
 #include "ImageArtifactsModel.h"
 #include "ImageArtifactsView.h"
 #include "ImageArtifactsWidget.h"
@@ -10,9 +10,6 @@
 #include "../../Modeling/UI/CtStructureTreeModel.h"
 #include "../../Modeling/UI/CtStructureDelegate.h"
 
-#include <QLabel>
-#include <QPushButton>
-#include <QStackedLayout>
 #include <QTreeView>
 
 PipelinesWidget::PipelinesWidget() :

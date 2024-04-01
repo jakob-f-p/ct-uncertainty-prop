@@ -1,11 +1,10 @@
 #include "ImageArtifactsWidget.h"
 
-#include "ArtifactsEditDialog.h"
+#include "ArtifactsDialog.h"
 #include "ImageArtifactsModel.h"
 #include "ImageArtifactsView.h"
 #include "PipelinesWidget.h"
-#include "../ImageArtifactDetails.h"
-#include "../PipelineList.h"
+#include "../ImageArtifact.h"
 
 #include <QLabel>
 
@@ -94,14 +93,13 @@ void ImageArtifactsWidget::RemoveCurrentView() {
 }
 
 void ImageArtifactsWidget::AddChildArtifact() {
-    CreateDialog = new ArtifactsEditDialog(ArtifactsEditDialog::CREATE, this);
+    CreateDialog = new ArtifactsDialog(ArtifactsDialog::CREATE, this);
     CreateDialog->show();
 
-    connect(CreateDialog, &ArtifactsEditDialog::accepted, [&]() {
-        auto* newImageArtifact = CreateDialog->GetNewImageArtifact();
-        ImageArtifactDetails details = newImageArtifact->GetImageArtifactEditWidgetData(CreateDialog);
+    connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
+        auto data = ImageArtifactUi::GetWidgetData(CreateDialog);
         QModelIndex parentIndex = GetCurrentSelectionModel()->currentIndex();
-        QModelIndex newIndex = GetCurrentModel()->AddChildImageArtifact(details, parentIndex);
+        QModelIndex newIndex = GetCurrentModel()->AddChildImageArtifact(*data, parentIndex);
 
         GetCurrentSelectionModel()->clear();
         GetCurrentSelectionModel()->setCurrentIndex(newIndex, QItemSelectionModel::SelectionFlag::SelectCurrent);
@@ -110,14 +108,13 @@ void ImageArtifactsWidget::AddChildArtifact() {
 }
 
 void ImageArtifactsWidget::AddSiblingArtifact() {
-    CreateDialog = new ArtifactsEditDialog(ArtifactsEditDialog::CREATE, this);
+    CreateDialog = new ArtifactsDialog(ArtifactsDialog::CREATE, this);
     CreateDialog->show();
 
-    connect(CreateDialog, &ArtifactsEditDialog::accepted, [&]() {
-        auto* newImageArtifact = CreateDialog->GetNewImageArtifact();
-        ImageArtifactDetails details = newImageArtifact->GetImageArtifactEditWidgetData(CreateDialog);
+    connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
+        auto data = ImageArtifactUi::GetWidgetData(CreateDialog);
         QModelIndex siblingIndex = GetCurrentSelectionModel()->currentIndex();
-        QModelIndex newIndex = GetCurrentModel()->AddSiblingImageArtifact(details, siblingIndex);
+        QModelIndex newIndex = GetCurrentModel()->AddSiblingImageArtifact(*data, siblingIndex);
 
         GetCurrentSelectionModel()->clear();
         GetCurrentSelectionModel()->setCurrentIndex(newIndex, QItemSelectionModel::SelectionFlag::SelectCurrent);
@@ -152,7 +149,7 @@ void ImageArtifactsWidget::UpdateButtonStatesOnSelectionChange(const QModelIndex
 
     auto* currentImageArtifact = static_cast<ImageArtifact*>(currentIndex.internalPointer());
     bool isEmptyAndInvalid = !indexIsValid && viewIsEmpty;
-    bool isImageArtifactComposition = indexIsValid && currentImageArtifact->GetArtifactSubType() == Artifact::IMAGE_COMPOSITION;
+    bool isImageArtifactComposition = indexIsValid && currentImageArtifact->GetArtifactSubType() == Artifact::SubType::IMAGE_COMPOSITION;
     bool hasSiblingsBefore = indexIsValid && currentIndex.siblingAtRow(currentIndex.row() - 1).isValid();
     bool hasSiblingsAfter = indexIsValid && currentIndex.siblingAtRow(currentIndex.row() + 1).isValid();
 

@@ -1,48 +1,37 @@
 #include "GaussianArtifact.h"
 
-#include "ImageArtifactDetails.h"
-
+#include <QDoubleSpinBox>
+#include <QGroupBox>
+#include <QLabel>
 #include <QLayout>
 #include <QWidget>
 
 #include <vtkObjectFactory.h>
-#include <QLabel>
-#include <QDoubleSpinBox>
 
 vtkStandardNewMacro(GaussianArtifact)
 
 GaussianArtifact::GaussianArtifact() :
         Mean(0.0f),
-        Sd(1.0f),
-        MeanSpinBoxObjectName("meanSpinBox"),
-        SdSpinBoxObjectName("sdSpinBox") {
+        Sd(1.0f) {
 }
 
 Artifact::SubType GaussianArtifact::GetArtifactSubType() const {
-    return IMAGE_GAUSSIAN;
+    return SubType::IMAGE_GAUSSIAN;
 }
 
-QVariant GaussianArtifact::Data() {
-    ImageArtifactDetails details = GetImageArtifactDetails();
-    details.Gaussian = { Mean, Sd };
-    return QVariant::fromValue(details);
+void GaussianArtifactData::AddSubTypeData(const GaussianArtifact& artifact, GaussianArtifactData& data) {
+    data.Gaussian.Mean = artifact.Mean;
+    data.Gaussian.Sd = artifact.Sd;
 }
 
-ImageArtifactDetails GaussianArtifact::GetImageArtifactEditWidgetData(QWidget* widget) const {
-    auto* meanSpinBox = widget->findChild<QDoubleSpinBox*>(MeanSpinBoxObjectName);
-    auto* sdSpinBox = widget->findChild<QDoubleSpinBox*>(SdSpinBoxObjectName);
-
-    return {
-        GetArtifactEditWidgetData(widget),
-        {},
-        { static_cast<float>(meanSpinBox->value()), static_cast<float>(sdSpinBox->value()) }
-    };
+void GaussianArtifactData::SetSubTypeData(GaussianArtifact& artifact, const GaussianArtifactData& data) {
+    artifact.Mean = data.Gaussian.Mean;
+    artifact.Sd = data.Gaussian.Sd;
 }
 
-QWidget* GaussianArtifact::GetChildEditWidget() const {
-    auto* widget = new QWidget();
-
-    auto* hLayout = new QHBoxLayout(widget);
+void GaussianArtifactUi::AddSubTypeWidgets(QFormLayout* fLayout) {
+    auto* group = new QGroupBox("Gaussian");
+    auto* hLayout = new QHBoxLayout(group);
 
     auto* meanLabel = new QLabel("Mean (μ)");
     meanLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
@@ -65,18 +54,24 @@ QWidget* GaussianArtifact::GetChildEditWidget() const {
     sdSpinBox->setSingleStep(10.0);
     hLayout->addWidget(sdSpinBox);
 
-    return widget;
+    fLayout->addRow(group);
 }
 
-void GaussianArtifact::SetImageArtifactChildEditWidgetData(QWidget* widget, const ImageArtifactDetails& details) const {
+void GaussianArtifactUi::AddSubTypeWidgetsData(QWidget* widget, GaussianArtifactData& data) {
     auto* meanSpinBox = widget->findChild<QDoubleSpinBox*>(MeanSpinBoxObjectName);
-    meanSpinBox->setValue(details.Gaussian.Mean);
-
     auto* sdSpinBox = widget->findChild<QDoubleSpinBox*>(SdSpinBoxObjectName);
-    sdSpinBox->setValue(details.Gaussian.Sd);
+
+    data.Gaussian.Mean = static_cast<float>(meanSpinBox->value());
+    data.Gaussian.Sd = static_cast<float>(sdSpinBox->value());
 }
 
-void GaussianArtifact::SetImageArtifactChildData(const ImageArtifactDetails& details) {
-    Mean = details.Gaussian.Mean;
-    Sd = details.Gaussian.Sd;
+void GaussianArtifactUi::SetSubTypeWidgetsData(QWidget* widget, const GaussianArtifactData& data) {
+    auto* meanSpinBox = widget->findChild<QDoubleSpinBox*>(MeanSpinBoxObjectName);
+    auto* sdSpinBox = widget->findChild<QDoubleSpinBox*>(SdSpinBoxObjectName);
+
+    meanSpinBox->setValue(data.Gaussian.Mean);
+    sdSpinBox->setValue(data.Gaussian.Sd);
 }
+
+const QString GaussianArtifactUi::MeanSpinBoxObjectName = "MeanSpinBox";
+const QString GaussianArtifactUi::SdSpinBoxObjectName = "SdSpinBox";

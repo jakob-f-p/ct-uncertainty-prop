@@ -14,19 +14,40 @@ public:
 
     void DeepCopy(StructureArtifact *source) override;
 
-    StructureArtifactDetails GetStructureArtifactEditWidgetData(QWidget* widget) const override;
-
     MotionArtifact(const MotionArtifact&) = delete;
     void operator=(const MotionArtifact&) = delete;
 
 protected:
     MotionArtifact() = default;
     ~MotionArtifact() override = default;
+};
 
-    QWidget* GetChildEditWidget() const override;
 
-    void
-    SetStructureArtifactChildEditWidgetData(QWidget* widget, const StructureArtifactDetails& details) const override;
 
-    void SetStructureArtifactChildData(const StructureArtifactDetails& details) override;
+struct MotionArtifactData : StructureArtifactData {
+    struct MotionData {
+    };
+    MotionData Motion;
+
+    ~MotionArtifactData() override = default;
+
+protected:
+    friend struct StructureArtifactData;
+
+    static void AddSubTypeData(const MotionArtifact& artifact, MotionArtifactData& data);
+
+    static void SetSubTypeData(MotionArtifact& artifact, const MotionArtifactData& data);
+};
+
+
+
+class MotionArtifactUi : public StructureArtifactUi {
+protected:
+    friend struct StructureArtifactUi;
+
+    static void AddSubTypeWidgets(QFormLayout* fLayout);
+
+    static void AddSubTypeWidgetsData(QWidget* widget, MotionArtifactData& data);
+
+    static void SetSubTypeWidgetsData(QWidget* widget, const MotionArtifactData& data);
 };

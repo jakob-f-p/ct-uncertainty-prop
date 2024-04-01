@@ -1,26 +1,25 @@
-#include "ImageArtifactComposition.h"
+#include "CompositeArtifact.h"
 
-#include "ImageArtifactDetails.h"
-
+#include <QComboBox>
+#include <QGroupBox>
 #include <QHBoxLayout>
+#include <QLabel>
 #include <QWidget>
 
 #include <vtkObjectFactory.h>
-#include <QComboBox>
-#include <QLabel>
 
-vtkStandardNewMacro(ImageArtifactComposition)
+vtkStandardNewMacro(CompositeArtifact)
 
-void ImageArtifactComposition::PrintSelf(ostream &os, vtkIndent indent) {
+void CompositeArtifact::PrintSelf(ostream &os, vtkIndent indent) {
     Superclass::PrintSelf(os, indent);
 }
 
-Artifact::SubType ImageArtifactComposition::GetArtifactSubType() const {
-    return IMAGE_COMPOSITION;
+Artifact::SubType CompositeArtifact::GetArtifactSubType() const {
+    return SubType::IMAGE_COMPOSITION;
 }
 
 std::string
-ImageArtifactComposition::CompositionTypeToString(ImageArtifactComposition::CompositionType compositionType) {
+CompositeArtifact::CompositionTypeToString(CompositeArtifact::CompositionType compositionType) {
     switch (compositionType) {
         case SEQUENTIAL: return "Sequential";
         case PARALLEL:   return "Parallel";
@@ -31,16 +30,16 @@ ImageArtifactComposition::CompositionTypeToString(ImageArtifactComposition::Comp
     }
 }
 
-bool ImageArtifactComposition::ContainsImageArtifact(const ImageArtifact& artifact) {
+bool CompositeArtifact::ContainsImageArtifact(const ImageArtifact& artifact) {
     return this == &artifact
             || std::any_of(ImageArtifacts.begin(), ImageArtifacts.end(), [&](ImageArtifact* a) {
                 return a->IsComposition()
-                        ? dynamic_cast<ImageArtifactComposition*>(a)->ContainsImageArtifact(artifact)
+                        ? dynamic_cast<CompositeArtifact*>(a)->ContainsImageArtifact(artifact)
                         : a == &artifact;
             });
 }
 
-void ImageArtifactComposition::AddImageArtifact(ImageArtifact& artifact, int idx) {
+void CompositeArtifact::AddImageArtifact(ImageArtifact& artifact, int idx) {
     if (idx == -1) {
         ImageArtifacts.push_back(&artifact);
     } else {
@@ -50,7 +49,7 @@ void ImageArtifactComposition::AddImageArtifact(ImageArtifact& artifact, int idx
     artifact.Register(this);
 }
 
-void ImageArtifactComposition::RemoveImageArtifact(ImageArtifact& artifact) {
+void CompositeArtifact::RemoveImageArtifact(ImageArtifact& artifact) {
     auto artifactIt = std::find(ImageArtifacts.begin(), ImageArtifacts.end(), &artifact);
 
     if (artifactIt == ImageArtifacts.end()) {
@@ -62,36 +61,21 @@ void ImageArtifactComposition::RemoveImageArtifact(ImageArtifact& artifact) {
     artifact.Delete();
 }
 
-ImageArtifact* ImageArtifactComposition::ChildArtifact(int idx) {
+ImageArtifact* CompositeArtifact::ChildArtifact(int idx) {
     return ImageArtifacts.at(idx);
 }
 
-int ImageArtifactComposition::GetChildIdx(ImageArtifact& artifact) {
+int CompositeArtifact::GetChildIdx(ImageArtifact& artifact) {
     uint64_t idx = std::distance(ImageArtifacts.begin(),
                                  std::find(ImageArtifacts.begin(), ImageArtifacts.end(), &artifact));
     return static_cast<int>(idx);
 }
 
-int ImageArtifactComposition::NumberOfChildren() {
+int CompositeArtifact::NumberOfChildren() {
     return static_cast<int>(ImageArtifacts.size());
 }
 
-QVariant ImageArtifactComposition::Data() {
-    ImageArtifactDetails details = GetImageArtifactDetails();
-    details.Composition.CompositionType = CompType;
-    return QVariant::fromValue(details);
-}
-
-ImageArtifactDetails ImageArtifactComposition::GetImageArtifactEditWidgetData(QWidget* widget) const {
-    auto* compTypeComboBox = widget->findChild<QComboBox*>(CompTypeComboBoxObjectName);
-    return {
-            GetArtifactEditWidgetData(widget),
-            { compTypeComboBox->currentData().value<CompositionType>() },
-            {}
-    };
-}
-
-void ImageArtifactComposition::MoveChildImageArtifact(ImageArtifact* imageArtifact, int newIdx) {
+void CompositeArtifact::MoveChildImageArtifact(ImageArtifact* imageArtifact, int newIdx) {
     if (!imageArtifact || newIdx < 0 || newIdx >= ImageArtifacts.size()) {
         qWarning("Cannot move given image artifact to index");
         return;
@@ -115,42 +99,52 @@ void ImageArtifactComposition::MoveChildImageArtifact(ImageArtifact* imageArtifa
     }
 }
 
-ImageArtifactComposition::ImageArtifactComposition() :
-        CompType(INVALID),
-        CompTypeComboBoxObjectName("compTypeComboBox") {
+CompositeArtifact::CompositeArtifact() :
+        CompType(INVALID) {
 }
 
-ImageArtifactComposition::~ImageArtifactComposition() {
+CompositeArtifact::~CompositeArtifact() {
     for (const auto& imageArtifact: ImageArtifacts) {
         imageArtifact->Delete();
     }
 }
 
-QWidget* ImageArtifactComposition::GetChildEditWidget() const {
-    auto* widget = new QWidget();
-    auto* hLayout = new QHBoxLayout(widget);
+
+void CompositeArtifactData::AddSubTypeData(const CompositeArtifact& artifact, CompositeArtifactData& data) {
+    data.Composite.CompositionType = artifact.CompType;
+}
+
+void CompositeArtifactData::SetSubTypeData(CompositeArtifact& artifact, const CompositeArtifactData& data) {
+    artifact.CompType = data.Composite.CompositionType;
+}
+
+
+void CompositeArtifactUi::AddSubTypeWidgets(QFormLayout* fLayout) {
+    auto* group = new QGroupBox("Composite");
+    auto* hLayout = new QHBoxLayout(group);
 
     auto* compTypeLabel = new QLabel("Composition Type");
     hLayout->addWidget(compTypeLabel);
     auto* compTypeComboBox = new QComboBox();
     compTypeComboBox->setObjectName(CompTypeComboBoxObjectName);
-    for (const auto &compTypeAndName : GetCompositionTypeValues()) {
+    for (const auto &compTypeAndName : CompositeArtifact::GetCompositionTypeValues()) {
         compTypeComboBox->addItem(compTypeAndName.Name, compTypeAndName.EnumValue);
     }
     hLayout->addWidget(compTypeComboBox);
 
-    return widget;
+    fLayout->addRow(group);
 }
 
-void ImageArtifactComposition::SetImageArtifactChildEditWidgetData(QWidget* widget,
-                                                                   const ImageArtifactDetails& details) const {
+void CompositeArtifactUi::AddSubTypeWidgetsData(QWidget* widget, CompositeArtifactData& data) {
     auto* compTypeComboBox = widget->findChild<QComboBox*>(CompTypeComboBoxObjectName);
-    if (int idx = compTypeComboBox->findData(details.Composition.CompositionType);
-            idx != -1) {
-        compTypeComboBox->setCurrentIndex(idx);
-    }
+    data.Composite.CompositionType = compTypeComboBox->currentData().value<CompositeArtifact::CompositionType>();
 }
 
-void ImageArtifactComposition::SetImageArtifactChildData(const ImageArtifactDetails& details) {
-    CompType = details.Composition.CompositionType;
+void CompositeArtifactUi::SetSubTypeWidgetsData(QWidget* widget, const CompositeArtifactData& data) {
+    auto* compTypeComboBox = widget->findChild<QComboBox*>(CompTypeComboBoxObjectName);
+    if (int idx = compTypeComboBox->findData(data.Composite.CompositionType);
+            idx != -1)
+        compTypeComboBox->setCurrentIndex(idx);
 }
+
+const QString CompositeArtifactUi::CompTypeComboBoxObjectName = "CompositionTypeComboBox";

@@ -1,14 +1,14 @@
 #include "ImageArtifactConcatenation.h"
 
-#include "ImageArtifactComposition.h"
+#include "CompositeArtifact.h"
 
 #include <vtkObjectFactory.h>
 
 vtkStandardNewMacro(ImageArtifactConcatenation)
 
 ImageArtifactConcatenation::ImageArtifactConcatenation() :
-        Start(*ImageArtifactComposition::New()) {
-    Start.SetCompType(ImageArtifactComposition::CompositionType::SEQUENTIAL);
+        Start(*CompositeArtifact::New()) {
+    Start.SetCompType(CompositeArtifact::CompositionType::SEQUENTIAL);
 }
 
 ImageArtifactConcatenation::~ImageArtifactConcatenation() {
@@ -23,7 +23,7 @@ bool ImageArtifactConcatenation::ContainsImageArtifact(const ImageArtifact& imag
     return Start.ContainsImageArtifact(imageArtifact);
 }
 
-void ImageArtifactConcatenation::AddImageArtifact(ImageArtifact& imageArtifact, ImageArtifactComposition* parent) {
+void ImageArtifactConcatenation::AddImageArtifact(ImageArtifact& imageArtifact, CompositeArtifact* parent) {
     if (ContainsImageArtifact(imageArtifact)) {
         qWarning("Cannot add given image artifact because it already exists within this image artifact concatenation");
         return;
@@ -56,6 +56,6 @@ void ImageArtifactConcatenation::RemoveImageArtifact(ImageArtifact& imageArtifac
     imageArtifact.GetParent()->RemoveImageArtifact(imageArtifact);
 }
 
-ImageArtifactComposition& ImageArtifactConcatenation::GetStart() {
+CompositeArtifact& ImageArtifactConcatenation::GetStart() {
     return Start;
 }

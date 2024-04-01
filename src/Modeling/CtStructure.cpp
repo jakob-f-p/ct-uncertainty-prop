@@ -90,25 +90,46 @@ CtStructure::~CtStructure() {
 }
 
 
+
 template struct CtStructureData<BasicStructure, BasicStructureData>;
 template struct CtStructureData<CombinedStructure, CombinedStructureData>;
 
 template<typename Structure, typename Data>
-void CtStructureData<Structure, Data>::AddBaseData(const Structure& structure, Data& data) {
+Data CtStructureData<Structure, Data>::GetData(const Structure& structure) {
+    Data data {};
+
     data.Name = QString::fromStdString(structure.Name);
     data.ViewName = QString::fromStdString(static_cast<const CtStructure&>(structure).GetViewName());
     data.Transform = structure.Transform->GetTranslationRotationScaling();
 
-    Data::AddDerivedData(structure, data);
+    Data::AddSubTypeData(structure, data);
+
+    return data;
 }
 
 template<typename Structure, typename Data>
-void CtStructureData<Structure, Data>::SetBaseData(Structure& structure, const Data& data) {
+QVariant CtStructureData<Structure, Data>::GetQVariant(const Structure& structure) {
+    return QVariant::fromValue(std::move(GetData(structure)));
+}
+
+template<typename Structure, typename Data>
+void CtStructureData<Structure, Data>::SetData(Structure& structure, const Data& data) {
     structure.SetName(data.Name.toStdString());
 
-    Data::SetDerivedData(structure, data);
+    Data::SetSubTypeData(structure, data);
 
     structure.SetTransform(data.Transform);
+}
+
+template<typename Structure, typename Data>
+void CtStructureData<Structure, Data>::SetData(Structure& structure, const QVariant& variant) {
+    if (!variant.canConvert<Data>()) {
+        qWarning("Cannot convert variant to data");
+        return;
+    }
+
+    Data data = variant.value<Data>();
+    SetData(structure, data);
 }
 
 
@@ -117,7 +138,8 @@ template class CtStructureUi<BasicStructureUi, BasicStructureData>;
 template class CtStructureUi<CombinedStructureUi, CombinedStructureData>;
 
 template<typename Ui, typename Data>
-void CtStructureUi<Ui, Data>::AddBaseWidgets(QWidget* widget) {
+QWidget* CtStructureUi<Ui, Data>::GetWidget() {
+    auto* widget = new QWidget();
     auto* fLayout = new QFormLayout(widget);
     fLayout->setFieldGrowthPolicy(QFormLayout::FieldGrowthPolicy::FieldsStayAtSizeHint);
     fLayout->setHorizontalSpacing(15);
@@ -126,7 +148,7 @@ void CtStructureUi<Ui, Data>::AddBaseWidgets(QWidget* widget) {
     nameLineEdit->setObjectName(NameEditObjectName);
     fLayout->addRow("Name", nameLineEdit);
 
-    Ui::AddDerivedWidgets(fLayout);
+    Ui::AddSubTypeWidgets(fLayout);
 
     auto* transformGroup = new QGroupBox("Transform");
     auto* transformGLayout = new QGridLayout(transformGroup);
@@ -139,38 +161,54 @@ void CtStructureUi<Ui, Data>::AddBaseWidgets(QWidget* widget) {
                           transformGLayout, i, i == 2 ? 1.0 : 0.0);
     }
     fLayout->addRow(transformGroup);
+
+    return widget;
 }
 
 template<typename Ui, typename Data>
-void CtStructureUi<Ui, Data>::AddBaseWidgetsData(QWidget* widget, Data& data) {
+Data CtStructureUi<Ui, Data>::GetWidgetData(QWidget* widget) {
+    if (!widget) {
+        qWarning("Given widget was nullptr");
+        return {};
+    }
+
+    Data data {};
+
     auto* nameLineEdit = widget->findChild<QLineEdit*>(NameEditObjectName);
     data.Name = nameLineEdit->text();
 
     for (int i = 0; i < data.Transform.size(); ++i) {
         for (int j = 0; j < data.Transform[0].size(); ++j) {
             auto* spinBox = widget->findChild<QDoubleSpinBox*>(
-                    GetAxisSpinBoxName(TransformNames[i], Base::AxisNames[j]));
+                    GetAxisSpinBoxName(TransformNames[i], AxisNames[j]));
             data.Transform[i][j] = static_cast<float>(spinBox->value());
         }
     }
 
-    Ui::AddDerivedWidgetsData(widget, data);
+    Ui::AddSubTypeWidgetsData(widget, data);
+
+    return data;
 }
 
 template<typename Ui, typename Data>
-void CtStructureUi<Ui, Data>::SetBaseWidgetsData(QWidget* widget, const Data& data) {
+void CtStructureUi<Ui, Data>::SetWidgetData(QWidget* widget, const Data& data) {
+    if (!widget) {
+        qWarning("Given widget was nullptr");
+        return;
+    }
+
     auto* nameLineEdit = widget->findChild<QLineEdit*>(NameEditObjectName);
     nameLineEdit->setText(data.Name);
 
     for (int i = 0; i < data.Transform.size(); ++i) {
         for (int j = 0; j < data.Transform[0].size(); ++j) {
             auto* spinBox = widget->findChild<QDoubleSpinBox*>(
-                    GetAxisSpinBoxName(TransformNames[i], Base::AxisNames[j]));
+                    GetAxisSpinBoxName(TransformNames[i], AxisNames[j]));
             spinBox->setValue(data.Transform[i][j]);
         }
     }
 
-    Ui::SetDerivedWidgetsData(widget, data);
+    Ui::SetSubTypeWidgetsData(widget, data);
 }
 
 template<typename Ui, typename Data>
@@ -181,13 +219,13 @@ void CtStructureUi<Ui, Data>::AddCoordinatesRow(const QString& baseName, const Q
     auto* titleLabel = new QLabel(labelText);
     gridLayout->addWidget(titleLabel, gridLayoutRow, 0);
 
-    for (int i = 0; i < Base::AxisNames.size(); i++) {
-        auto* coordinateLabel = new QLabel(Base::AxisNames[i]);
+    for (int i = 0; i < AxisNames.size(); i++) {
+        auto* coordinateLabel = new QLabel(AxisNames[i]);
         coordinateLabel->setMinimumWidth(15);
         coordinateLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
         gridLayout->addWidget(coordinateLabel, gridLayoutRow, 1 + 2*i);
         auto* coordinateSpinBox = new QDoubleSpinBox();
-        coordinateSpinBox->setObjectName(GetAxisSpinBoxName(baseName, Base::AxisNames[i]));
+        coordinateSpinBox->setObjectName(GetAxisSpinBoxName(baseName, AxisNames[i]));
         coordinateSpinBox->setRange(minValue, maxValue);
         coordinateSpinBox->setSingleStep(stepSize);
         coordinateSpinBox->setValue(defaultValue);
@@ -203,15 +241,15 @@ QWidget* CtStructureUi<Ui, Data>::GetCoordinatesRow(const QString& baseName,
     hLayout->setContentsMargins(0, 0, 0, 0);
     hLayout->addStretch();
 
-    for (int i = 0; i < Base::AxisNames.size(); i++) {
-        auto* coordinateLabel = new QLabel(Base::AxisNames[i]);
+    for (int i = 0; i < AxisNames.size(); i++) {
+        auto* coordinateLabel = new QLabel(AxisNames[i]);
         coordinateLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
         if (i > 0)
             coordinateLabel->setMinimumWidth(15);
         hLayout->addWidget(coordinateLabel);
 
         auto* coordinateSpinBox = new QDoubleSpinBox();
-        coordinateSpinBox->setObjectName(GetAxisSpinBoxName(baseName, Base::AxisNames[i]));
+        coordinateSpinBox->setObjectName(GetAxisSpinBoxName(baseName, AxisNames[i]));
         coordinateSpinBox->setRange(minValue, maxValue);
         coordinateSpinBox->setSingleStep(stepSize);
         hLayout->addWidget(coordinateSpinBox);
@@ -224,6 +262,9 @@ template<typename Ui, typename Data>
 QString CtStructureUi<Ui, Data>::GetAxisSpinBoxName(const QString& transformName, const QString& axisName) {
     return transformName + axisName;
 }
+
+template<typename Ui, typename Data>
+const QStringList CtStructureUi<Ui, Data>::AxisNames = { "x", "y", "z" };
 
 template<typename Ui, typename Data>
 const QString CtStructureUi<Ui, Data>::NameEditObjectName = "NameEdit";

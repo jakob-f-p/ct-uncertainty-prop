@@ -1,43 +1,32 @@
 #include "ImageArtifactsDelegate.h"
 
-#include "ArtifactsEditDialog.h"
-#include "../ImageArtifactDetails.h"
-
-#include <QDialog>
-#include <QLayout>
+#include "ArtifactsDialog.h"
+#include "../ImageArtifact.h"
 
 QWidget* ImageArtifactsDelegate::createEditor(QWidget* parent, const QStyleOptionViewItem& option,
                                               const QModelIndex& index) const {
     if (!index.isValid())
         return nullptr;
 
-    auto* imageArtifact = static_cast<ImageArtifact*>(index.internalPointer());
+    auto* dialog =  new ArtifactsDialog(ArtifactsDialog::EDIT, parent);
 
-    auto* dialog =  new ArtifactsEditDialog(ArtifactsEditDialog::EDIT, parent, imageArtifact);
-
-    connect(dialog, &ArtifactsEditDialog::accepted, this, &ImageArtifactsDelegate::commitEdit);
-    connect(dialog, &ArtifactsEditDialog::rejected, this, &ImageArtifactsDelegate::discardChanges);
+    connect(dialog, &ArtifactsDialog::accepted, this, &ImageArtifactsDelegate::commitEdit);
+    connect(dialog, &ArtifactsDialog::rejected, this, &ImageArtifactsDelegate::discardChanges);
 
     return dialog;
 }
 
 void ImageArtifactsDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
-    auto* imageArtifact = static_cast<ImageArtifact*>(index.internalPointer());
-    auto* dialogEditor = dynamic_cast<QDialog*>(editor);
+    auto* artifact = static_cast<ImageArtifact*>(index.internalPointer());
+    auto data  = ImageArtifactData::GetData(*artifact);
 
-    QVariant data = index.data(Qt::EditRole);
-    auto details = data.value<ImageArtifactDetails>();
-
-    imageArtifact->SetEditWidgetData(dialogEditor, details);
+    ImageArtifactUi::SetWidgetData(editor, *data);
 }
 
 void ImageArtifactsDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const {
-    auto* imageArtifact = static_cast<ImageArtifact*>(index.internalPointer());
-    auto* dialogEditor = dynamic_cast<QDialog*>(editor);
+    auto imageArtifactData = ImageArtifactUi::GetWidgetData(editor);
 
-    ImageArtifactDetails details = imageArtifact->GetImageArtifactEditWidgetData(dialogEditor);
-
-    model->setData(index, QVariant::fromValue(details));
+    model->setData(index, QVariant::fromValue(*imageArtifactData));
 }
 
 void ImageArtifactsDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option,
@@ -45,9 +34,9 @@ void ImageArtifactsDelegate::updateEditorGeometry(QWidget* editor, const QStyleO
 }
 
 QString ImageArtifactsDelegate::displayText(const QVariant& value, const QLocale& locale) const {
-    if (value.canConvert<ImageArtifactDetails>()) {
-        return value.value<ImageArtifactDetails>().ViewName;
-    }
+    auto imageArtifactData = ImageArtifactData::FromQVariant(value);
+    if (imageArtifactData)
+        return imageArtifactData->ViewName;
 
     return QStyledItemDelegate::displayText(value, locale);
 }

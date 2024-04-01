@@ -1,16 +1,8 @@
 #pragma once
 
 #include "../Artifacts/Artifact.h"
-#include "../Base.h"
-
-#include <QDoubleSpinBox>
-#include <QGroupBox>
-#include <QLabel>
-#include <QLineEdit>
-#include <QVariant>
 
 #include <vtkObject.h>
-#include <vtkImplicitFunction.h>
 
 class BasicStructure;
 class CombinedStructure;
@@ -91,33 +83,38 @@ protected:
     CombinedStructure* Parent;
 };
 
+
+
 template<typename Structure, typename Data>
-struct CtStructureData : public BaseData<Structure, Data> {
+struct CtStructureData {
     QString Name;
     QString ViewName;
     std::array<std::array<float, 3>, 3> Transform = {};
 
+    static Data GetData(const Structure& structure);
+
+    static QVariant GetQVariant(const Structure& structure);
+
+    static void SetData(Structure& structure, const Data& data);
+
+    static void SetData(Structure& structure, const QVariant& variant);
+
 protected:
-    friend struct BaseData<Structure, Data>;
-
-    static void AddBaseData(const Structure& structure, Data& data);
-
-    static void SetBaseData(Structure& structure, const Data& data);
+    CtStructureData() = default;
 };
 
+
+
 template<typename Ui, typename Data>
-class CtStructureUi : public BaseUi<Ui, Data> {
+class CtStructureUi {
+public:
+    static QWidget* GetWidget();
+
+    static Data GetWidgetData(QWidget* widget);
+
+    static void SetWidgetData(QWidget* widget, const Data& data);
+
 protected:
-    friend struct BaseUi<Ui, Data>;
-
-    using Base = BaseUi<Ui, Data>;
-
-    static void AddBaseWidgets(QWidget* widget);
-
-    static void AddBaseWidgetsData(QWidget* widget, Data& data);
-
-    static void SetBaseWidgetsData(QWidget* widget, const Data& data);
-
     static void AddCoordinatesRow(const QString& baseName, const QString& labelText,
                                   double minValue, double maxValue, double stepSize,
                                   QGridLayout* gridLayout, int gridLayoutRow,
@@ -126,6 +123,7 @@ protected:
                                       double minValue, double maxValue, double stepSize);
     static QString GetAxisSpinBoxName(const QString& transformName, const QString& axisName);
 
+    static const QStringList AxisNames;
 
 private:
     static const QString NameEditObjectName;

@@ -194,7 +194,7 @@ std::map<std::string, BasicStructure::TissueOrMaterialType> BasicStructure::Tiss
 
 std::atomic<uint16_t> BasicStructure::GlobalBasicStructureId(0);
 
-void BasicStructureData::AddDerivedData(const BasicStructure& structure, BasicStructureData& data) {
+void BasicStructureData::AddSubTypeData(const BasicStructure& structure, BasicStructureData& data) {
     data.FunctionType = structure.FunctionType;
     data.TissueName = QString::fromStdString(structure.Tissue.Name);
 
@@ -221,7 +221,7 @@ void BasicStructureData::AddDerivedData(const BasicStructure& structure, BasicSt
     }
 }
 
-void BasicStructureData::SetDerivedData(BasicStructure& structure, const BasicStructureData& data) {
+void BasicStructureData::SetSubTypeData(BasicStructure& structure, const BasicStructureData& data) {
     structure.SetImplicitFunction(data.FunctionType);
     structure.SetTissueType(
             BasicStructure::GetTissueOrMaterialTypeByName(data.TissueName.toStdString()));
@@ -252,14 +252,7 @@ void BasicStructureData::SetDerivedData(BasicStructure& structure, const BasicSt
     }
 }
 
-void BasicStructureUi::SetFunctionType(QWidget* widget, BasicStructure::ImplicitFunctionType functionType) {
-    auto* functionTypeComboBox = widget->findChild<QComboBox*>(FunctionTypeComboBoxName);
-    if (int idx = functionTypeComboBox->findData(QVariant::fromValue(functionType));
-            idx != -1)
-        functionTypeComboBox->setCurrentIndex(idx);
-}
-
-void BasicStructureUi::AddDerivedWidgets(QFormLayout* fLayout) {
+void BasicStructureUi::AddSubTypeWidgets(QFormLayout* fLayout) {
     auto* functionTypeComboBox = new QComboBox();
     functionTypeComboBox->setObjectName(FunctionTypeComboBoxName);
     for (const auto &implicitFunctionAndName : BasicStructure::GetImplicitFunctionTypeValues()) {
@@ -284,7 +277,7 @@ void BasicStructureUi::AddDerivedWidgets(QFormLayout* fLayout) {
                      [&, fLayout]() { UpdateFunctionParametersGroup(fLayout); });
 }
 
-void BasicStructureUi::AddDerivedWidgetsData(QWidget* widget, BasicStructureData& data) {
+void BasicStructureUi::AddSubTypeWidgetsData(QWidget* widget, BasicStructureData& data) {
     auto* functionTypeComboBox = widget->findChild<QComboBox*>(FunctionTypeComboBoxName);
     auto* tissueTypeComboBox = widget->findChild<QComboBox*>(TissueTypeComboBoxName);
 
@@ -325,7 +318,7 @@ void BasicStructureUi::AddDerivedWidgetsData(QWidget* widget, BasicStructureData
     }
 }
 
-void BasicStructureUi::SetDerivedWidgetsData(QWidget* widget, const BasicStructureData& data) {
+void BasicStructureUi::SetSubTypeWidgetsData(QWidget* widget, const BasicStructureData& data) {
     auto* functionTypeComboBox = widget->findChild<QComboBox*>(FunctionTypeComboBoxName);
     auto* tissueTypeComboBox = widget->findChild<QComboBox*>(TissueTypeComboBoxName);
 

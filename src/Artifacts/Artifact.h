@@ -7,8 +7,6 @@
 
 #include <vtkObject.h>
 
-struct ArtifactDetails;
-
 class Artifact : public vtkObject {
     Q_GADGET
 public:
@@ -16,18 +14,18 @@ public:
 
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
-    std::string GetName();
     void SetName(const std::string& name);
 
-    enum Type {
+    enum class Type {
         IMAGE_ARTIFACT,
-        STRUCTURE_ARTIFACT
+        STRUCTURE_ARTIFACT,
+        INVALID
     };
     Q_ENUM(Type);
     static std::string TypeToString(Type type);
-    GET_ENUM_VALUES(Type, false);
+    GET_ENUM_VALUES(Type, true);
 
-    enum SubType {
+    enum class SubType {
         IMAGE_GAUSSIAN,
         IMAGE_SALT_PEPPER,
         IMAGE_RING,
@@ -39,11 +37,14 @@ public:
 
         STRUCTURE_STREAKING,
         STRUCTURE_METALLIC,
-        STRUCTURE_MOTION
+        STRUCTURE_MOTION,
+
+        INVALID
     };
     Q_ENUM(SubType);
     static std::string SubTypeToString(SubType subType);
-    GET_ENUM_VALUES(SubType, false);
+    GET_ENUM_VALUES(SubType, true);
+    static Type GetType(SubType subType);
 
     static Artifact* NewArtifact(SubType subType);
 
@@ -52,26 +53,21 @@ public:
     virtual SubType GetArtifactSubType() const = 0;
 
     static constexpr std::array<SubType, 8> GetImageArtifactTypes() {
-        return { IMAGE_GAUSSIAN,
-                 IMAGE_SALT_PEPPER,
-                 IMAGE_RING,
-                 IMAGE_CUPPING,
-                 IMAGE_WIND_MILL,
-                 IMAGE_STAIR_STEP,
-                 IMAGE_STREAKING,
-                 IMAGE_COMPOSITION };
+        return { SubType::IMAGE_GAUSSIAN,
+                 SubType::IMAGE_SALT_PEPPER,
+                 SubType::IMAGE_RING,
+                 SubType::IMAGE_CUPPING,
+                 SubType::IMAGE_WIND_MILL,
+                 SubType::IMAGE_STAIR_STEP,
+                 SubType::IMAGE_STREAKING,
+                 SubType::IMAGE_COMPOSITION };
     };
 
     static constexpr std::array<SubType, 3> GetStructureArtifactTypes(){
-        return { STRUCTURE_STREAKING,
-                 STRUCTURE_METALLIC,
-                 STRUCTURE_MOTION };
+        return { SubType::STRUCTURE_STREAKING,
+                 SubType::STRUCTURE_METALLIC,
+                 SubType::STRUCTURE_MOTION };
     };
-
-    QWidget* GetEditWidget() const;
-    void SetEditWidgetData(QWidget* widget, const ArtifactDetails& artifactDetails);
-
-    void SetData(const ArtifactDetails& artifactDetails);
 
     Artifact(const Artifact&) = delete;
     void operator=(const Artifact&) = delete;
@@ -80,26 +76,44 @@ protected:
     Artifact() = default;
     ~Artifact() override = default;
 
-    ArtifactDetails GetArtifactDetails() const;
-
-    virtual QWidget* GetChildEditWidget() const = 0;
-    virtual void SetChildEditWidgetData(QWidget* widget, const ArtifactDetails& artifactDetails) const = 0;
-    ArtifactDetails GetArtifactEditWidgetData(QWidget* widget) const;
-
-    virtual void SetChildData(const ArtifactDetails& artifactDetails) = 0;
+    template<typename TArtifact, typename Data> friend struct ArtifactData;
 
     std::string Name;
-
-    static const QString NameLineEditObjectName;
-    static const QString ChildEditWidgetObjectName;
 };
 
-struct ArtifactDetails {
-    QString Name;
-    Artifact::Type Type;
-    Artifact::SubType SubType;
 
-    ArtifactDetails(QString name, Artifact::Type type, Artifact::SubType subType);
-    ArtifactDetails();
-    virtual ~ArtifactDetails() = default;
+
+template<typename TArtifact, typename TData>
+struct ArtifactData {
+    QString Name;
+    Artifact::Type Type = Artifact::Type::INVALID;
+    Artifact::SubType SubType = Artifact::SubType::INVALID;
+
+    static std::unique_ptr<TData> GetData(const TArtifact& artifact);
+
+    static void SetData(TArtifact& artifact, const TData& data);
+
+    static void SetData(TArtifact& artifact, const QVariant& variant);
+
+protected:
+    ArtifactData() = default;
+    virtual ~ArtifactData() = default;
+};
+
+
+
+template<typename Ui, typename Data>
+class ArtifactUi {
+public:
+    static QWidget* GetWidget(bool showSubTypeComboBox = false);
+
+    static std::unique_ptr<Data> GetWidgetData(QWidget* widget);
+
+    static void SetWidgetData(QWidget* widget, const Data& data);
+
+private:
+    static const QString NameEditObjectName;
+    static const QString TypeComboBoxObjectName;
+    static const QString SubTypeComboBoxObjectName;
+    static const QString SubTypeWidgetName;
 };

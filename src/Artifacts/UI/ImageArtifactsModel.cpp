@@ -1,6 +1,6 @@
 #include "ImageArtifactsModel.h"
 
-#include "../ImageArtifactDetails.h"
+#include "../CompositeArtifact.h"
 #include "../ImageArtifactConcatenation.h"
 #include "../Pipeline.h"
 
@@ -25,7 +25,7 @@ QModelIndex ImageArtifactsModel::index(int row, int column, const QModelIndex& p
     if (!hasIndex(row, column, parent)) return {};
 
     auto* childArtifact = parent.isValid()
-                            ? static_cast<ImageArtifactComposition*>(parent.internalPointer())->ChildArtifact(row)
+                            ? static_cast<CompositeArtifact*>(parent.internalPointer())->ChildArtifact(row)
                             : Concatenation.GetStart().ChildArtifact(row);
 
     return createIndex(row, column, childArtifact);
@@ -36,10 +36,10 @@ QModelIndex ImageArtifactsModel::parent(const QModelIndex& child) const {
 
     auto* childArtifact = static_cast<ImageArtifact*>(child.internalPointer());
 
-    ImageArtifactComposition* parentArtifact = childArtifact->GetParent();
+    CompositeArtifact* parentArtifact = childArtifact->GetParent();
     if (!parentArtifact) return {};
 
-    ImageArtifactComposition* grandparentArtifact = parentArtifact->GetParent();
+    CompositeArtifact* grandparentArtifact = parentArtifact->GetParent();
     if (!grandparentArtifact) return {};
 
     int rowIdx = grandparentArtifact->GetChildIdx(*parentArtifact);
@@ -50,8 +50,8 @@ int ImageArtifactsModel::rowCount(const QModelIndex& parent) const {
     if (!parent.isValid()) return Concatenation.GetStart().NumberOfChildren();
 
     auto* parentArtifact = static_cast<ImageArtifact*>(parent.internalPointer());
-    return parentArtifact->GetArtifactSubType() == Artifact::IMAGE_COMPOSITION
-            ? dynamic_cast<ImageArtifactComposition*>(parentArtifact)->NumberOfChildren()
+    return parentArtifact->IsComposition()
+            ? dynamic_cast<CompositeArtifact*>(parentArtifact)->NumberOfChildren()
             : 0;
 }
 
@@ -64,7 +64,7 @@ QVariant ImageArtifactsModel::data(const QModelIndex& index, int role) const {
 
     auto* artifact = static_cast<ImageArtifact*>(index.internalPointer());
 
-    return artifact->Data();
+    return ImageArtifactData::ToQVariant(*ImageArtifactData::GetData(*artifact));
 }
 
 QVariant ImageArtifactsModel::headerData(int section, Qt::Orientation orientation, int role) const {
@@ -85,26 +85,25 @@ bool ImageArtifactsModel::setData(const QModelIndex& index, const QVariant& valu
     }
 
     auto* imageArtifact = static_cast<ImageArtifact*>(index.internalPointer());
-    auto imageArtifactDetails = value.value<ImageArtifactDetails>();
-    imageArtifact->SetData(imageArtifactDetails);
+    ImageArtifactData::SetData(*imageArtifact, value);
 
     emit dataChanged(index, index);
     return true;
 }
 
-QModelIndex ImageArtifactsModel::AddSiblingImageArtifact(const ImageArtifactDetails& details,
+QModelIndex ImageArtifactsModel::AddSiblingImageArtifact(const ImageArtifactData& data,
                                                          const QModelIndex& siblingIndex) {
     if (!siblingIndex.isValid()) {
         qWarning("Cannot add sibling image artifact. Given index is not valid");
         return {};
     }
 
-    return AddImageArtifact(details, siblingIndex.parent(), siblingIndex.row() + 1);
+    return AddImageArtifact(data, siblingIndex.parent(), siblingIndex.row() + 1);
 }
 
-QModelIndex ImageArtifactsModel::AddChildImageArtifact(const ImageArtifactDetails& details,
+QModelIndex ImageArtifactsModel::AddChildImageArtifact(const ImageArtifactData& data,
                                                        const QModelIndex& parentIndex) {
-    return AddImageArtifact(details, parentIndex);
+    return AddImageArtifact(data, parentIndex);
 }
 
 void ImageArtifactsModel::RemoveImageArtifact(const QModelIndex& index) {
@@ -115,7 +114,7 @@ void ImageArtifactsModel::RemoveImageArtifact(const QModelIndex& index) {
 
     QModelIndex parentIndex = index.parent();
     auto* parentImageArtifactComposition = parentIndex.isValid()
-                                           ? static_cast<ImageArtifactComposition*>(parentIndex.internalPointer())
+                                           ? static_cast<CompositeArtifact*>(parentIndex.internalPointer())
                                            : &Concatenation.GetStart();
     auto* imageArtifact = static_cast<ImageArtifact*>(index.internalPointer());
 
@@ -142,15 +141,15 @@ QModelIndex ImageArtifactsModel::MoveDown(const QModelIndex& index) {
     return Move(index, 1);
 }
 
-QModelIndex ImageArtifactsModel::AddImageArtifact(const ImageArtifactDetails& details,
+QModelIndex ImageArtifactsModel::AddImageArtifact(const ImageArtifactData& data,
                                                   const QModelIndex& parentIndex,
                                                   int insertionIndex) {
     auto* parentImageArtifactComposition = parentIndex.isValid()
-                                           ? static_cast<ImageArtifactComposition*>(parentIndex.internalPointer())
+                                           ? static_cast<CompositeArtifact*>(parentIndex.internalPointer())
                                            : &Concatenation.GetStart();
 
-    auto* newImageArtifact = dynamic_cast<ImageArtifact*>(Artifact::NewArtifact(details.SubType));
-    newImageArtifact->SetData(details);
+    auto* newImageArtifact = dynamic_cast<ImageArtifact*>(Artifact::NewArtifact(data.SubType));
+    ImageArtifactData::SetData(*newImageArtifact, data);
 
     beginResetModel();
     parentImageArtifactComposition->AddImageArtifact(*newImageArtifact, insertionIndex);
@@ -165,7 +164,7 @@ QModelIndex ImageArtifactsModel::AddImageArtifact(const ImageArtifactDetails& de
 QModelIndex ImageArtifactsModel::Move(const QModelIndex& sourceIndex, int displacement) {
     QModelIndex parentIndex = sourceIndex.parent();
     auto* parentImageArtifactComposition = parentIndex.isValid()
-                                           ? static_cast<ImageArtifactComposition*>(parentIndex.internalPointer())
+                                           ? static_cast<CompositeArtifact*>(parentIndex.internalPointer())
                                            : &Concatenation.GetStart();
 
     auto* imageArtifact = static_cast<ImageArtifact*>(sourceIndex.internalPointer());

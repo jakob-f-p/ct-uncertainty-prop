@@ -16,7 +16,7 @@ MainWindow::MainWindow() {
     auto* modelingWidget = new ModelingWidget();
     auto* artifactsWidget = new ArtifactsWidget();
 
-    tabWidget->addTab(modelingWidget, "Implicit Data Modeling");
+    tabWidget->addTab(modelingWidget, "Implicit TData Modeling");
     tabWidget->addTab(artifactsWidget, "Artifacts Widget");
 
     tabWidget->setCurrentIndex(1);

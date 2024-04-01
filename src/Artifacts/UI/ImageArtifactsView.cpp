@@ -3,7 +3,7 @@
 #include "ImageArtifactsModel.h"
 #include "ImageArtifactsDelegate.h"
 #include "../ImageArtifact.h"
-#include "../ImageArtifactComposition.h"
+#include "../CompositeArtifact.h"
 
 #include <QPainter>
 
@@ -60,8 +60,8 @@ void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, cons
         bool isRootLevel = !parent.isValid();
         bool parentIsSequentialComposition = parent.isValid()
                                              && static_cast<ImageArtifact*>(parent.internalPointer())->IsComposition()
-                                             && static_cast<ImageArtifactComposition*>(parent.internalPointer())->GetCompType()
-                                                == ImageArtifactComposition::CompositionType::SEQUENTIAL;
+                                             && static_cast<CompositeArtifact*>(parent.internalPointer())->GetCompType()
+                                                == CompositeArtifact::CompositionType::SEQUENTIAL;
         if (isRootLevel || parentIsSequentialComposition) {
             QFont oldFont(painter->font());
 

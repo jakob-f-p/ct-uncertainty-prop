@@ -5,7 +5,7 @@
 #include "Modeling/BasicStructure.h"
 #include "Artifacts/GaussianArtifact.h"
 #include "Artifacts/ImageArtifactConcatenation.h"
-#include "Artifacts/ImageArtifactComposition.h"
+#include "Artifacts/CompositeArtifact.h"
 #include "Artifacts/PipelineList.h"
 #include "Artifacts/Pipeline.h"
 
@@ -56,7 +56,7 @@ int App::Run() {
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 
     auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
-//    smpToolsApi.SetBackend("STDTHREAD");
+    smpToolsApi.SetBackend("STDTHREAD");
     qWarning(("Backend: " + std::string(smpToolsApi.GetBackend())).c_str());
 
     InitializeWithTestData();
@@ -86,15 +86,11 @@ void App::InitializeWithTestData() {
     basicStructure2->SetImplicitFunction(BasicStructure::ImplicitFunctionType::BOX);
     basicStructure2->SetTissueType(BasicStructure::GetTissueOrMaterialTypeByName("Cortical Bone"));
 
-//    vtkNew<BasicStructure> basicStructure3;
-//    basicStructure3->SetImplicitFunction(BasicStructure::ImplicitFunctionType::BOX);
-//    basicStructure3->SetTissueType(BasicStructure::GetTissueOrMaterialTypeByName("Soft Tissue"));
+    vtkNew<CombinedStructure> combinedStructure2;
+    combinedStructure2->SetOperatorType(CombinedStructure::OperatorType::INTERSECTION);
 
     CtDataTree.AddBasicStructure(*basicStructure1);
-    CtDataTree.CombineWithBasicStructure(*basicStructure2, CombinedStructure::OperatorType::INTERSECTION);
-//    CtDataTree->CombineWithBasicStructure(*basicStructure3, CombinedStructure::OperatorType::UNION);
-//    CtDataTree->RemoveBasicStructure(*basicStructure2);
-//    CtDataTree->RefineWithBasicStructure({ "a", "", {}, {}, "Water", {}}, *basicStructure3);
+    CtDataTree.CombineWithBasicStructure(*basicStructure2, *combinedStructure2);
 
     vtkNew<Pipeline> pipeline;
     pipeline->SetCtDataTree(&CtDataTree);
@@ -105,10 +101,10 @@ void App::InitializeWithTestData() {
     gaussianArtifact->SetName("sequential gaussian");
     imageArtifactConcatenation.AddImageArtifact(*gaussianArtifact);
 
-    vtkNew<ImageArtifactComposition> imageArtifactComposition;
-    imageArtifactComposition->SetCompType(ImageArtifactComposition::CompositionType::PARALLEL);
-    vtkNew<ImageArtifactComposition> imageArtifactComposition1;
-    imageArtifactComposition1->SetCompType(ImageArtifactComposition::CompositionType::SEQUENTIAL);
+    vtkNew<CompositeArtifact> imageArtifactComposition;
+    imageArtifactComposition->SetCompType(CompositeArtifact::CompositionType::PARALLEL);
+    vtkNew<CompositeArtifact> imageArtifactComposition1;
+    imageArtifactComposition1->SetCompType(CompositeArtifact::CompositionType::SEQUENTIAL);
     vtkNew<GaussianArtifact> gaussianArtifact1;
     imageArtifactComposition->AddImageArtifact(*imageArtifactComposition1);
     imageArtifactComposition->AddImageArtifact(*gaussianArtifact1);

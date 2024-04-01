@@ -1,6 +1,6 @@
 #include "CtStructureDelegate.h"
 
-#include "CtStructureEditDialog.h"
+#include "CtStructureDialog.h"
 #include "../BasicStructure.h"
 #include "../CombinedStructure.h"
 

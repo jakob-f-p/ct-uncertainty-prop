@@ -1,29 +1,20 @@
 #include "ArtifactsWidget.h"
 
-#include "ImageArtifactsDelegate.h"
-#include "ImageArtifactsModel.h"
 #include "PipelinesWidget.h"
-#include "../ImageArtifactDetails.h"
-#include "../../App.h"
 
-#include <vtkAxesActor.h>
-#include <vtkCallbackCommand.h>
-#include <vtkCamera.h>
-#include <vtkCaptionActor2D.h>
-#include <vtkColorTransferFunction.h>
-#include <vtkInteractorStyleTrackballCamera.h>
-#include <vtkNew.h>
-#include <vtkGenericOpenGLRenderWindow.h>
-#include <vtkOpenGLGPUVolumeRayCastMapper.h>
-#include <vtkOrientationMarkerWidget.h>
-#include <vtkPiecewiseFunction.h>
-#include <vtkTextActor.h>
-#include <vtkVolume.h>
-#include <vtkVolumeProperty.h>
-
-#include <QDockWidget.h>
+#include <QDockWidget>
+#include <QFrame>
 #include <QVBoxLayout>
 #include <QVTKOpenGLNativeWidget.h>
+
+#include <vtkAxesActor.h>
+#include <vtkCamera.h>
+#include <vtkCallbackCommand.h>
+#include <vtkColorTransferFunction.h>
+#include <vtkGenericOpenGLRenderWindow.h>
+#include <vtkInteractorStyleTrackballCamera.h>
+#include <vtkPiecewiseFunction.h>
+#include <vtkVolumeProperty.h>
 
 ArtifactsWidget::ArtifactsWidget() :
         ResetCameraButton(new QPushButton("Reset Camera")),
@@ -76,7 +67,7 @@ void ArtifactsWidget::SetUpCentralRenderingWidget() {
     InitialCamera->DeepCopy(Renderer->GetActiveCamera());
 
     vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
-    renderWindow->SetWindowName("CT-Data");
+    renderWindow->SetWindowName("CT-TData");
     renderWindow->AddRenderer(Renderer);
 
     renderWindow->SetInteractor(RenderWindowInteractor);

@@ -20,13 +20,14 @@ public:
 
     void AddBasicStructure(const BasicStructureData& basicStructureData, CombinedStructure* parent = nullptr);
 
-    void CombineWithBasicStructure(BasicStructure& basicStructure, CombinedStructure::OperatorType operatorType);
+    void CombineWithBasicStructure(BasicStructure& basicStructure, CombinedStructure& combinedStructure);
 
-    void CombineWithBasicStructure(BasicStructureData& basicStructureData);
+    void CombineWithBasicStructure(const BasicStructureData& basicStructureData,
+                                   const CombinedStructureData& combinedStructureData);
 
     void RefineWithBasicStructure(const BasicStructureData& newStructureData,
-                                  BasicStructure& structureToRefine,
-                                  CombinedStructure::OperatorType operatorType = CombinedStructure::OperatorType::UNION);
+                                  const CombinedStructureData& combinedStructureData,
+                                  BasicStructure& structureToRefine);
 
     void RemoveBasicStructure(BasicStructure& basicStructure);
 

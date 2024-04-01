@@ -1,4 +1,4 @@
-#include "CtStructureEditDialog.h"
+#include "CtStructureDialog.h"
 
 #include "../BasicStructure.h"
 #include "../CombinedStructure.h"
@@ -6,6 +6,7 @@
 #include <QDialogButtonBox>
 #include <QKeyEvent>
 #include <QPushButton>
+#include <QTabWidget>
 
 CtStructureDialog::CtStructureDialog(DialogMode mode, QWidget* parent) :
         QDialog(parent) {

@@ -2,7 +2,7 @@
 
 #include "Artifact.h"
 
-struct StructureArtifactDetails;
+#include <QFormLayout>
 
 class StructureArtifact : public Artifact {
 public:
@@ -19,22 +19,48 @@ public:
 
     virtual void DeepCopy(StructureArtifact* source);
 
-    virtual StructureArtifactDetails GetStructureArtifactEditWidgetData(QWidget* widget) const = 0;
-
     StructureArtifact(const StructureArtifact&) = delete;
     void operator=(const StructureArtifact&) = delete;
 
 protected:
     StructureArtifact() = default;
     ~StructureArtifact() override = default;
-
-    void SetChildEditWidgetData(QWidget* widget, const ArtifactDetails& artifactDetails) const override;
-    void SetChildData(const ArtifactDetails& artifactDetails) override;
-
-    virtual void SetStructureArtifactChildEditWidgetData(QWidget* widget, const StructureArtifactDetails& details) const = 0;
-    virtual void SetStructureArtifactChildData(const StructureArtifactDetails& details) = 0;
 };
 
-struct StructureArtifactDetails : ArtifactDetails {
 
+
+class StructureArtifactUi;
+
+struct StructureArtifactData : ArtifactData<StructureArtifact, StructureArtifactData> {
+
+    ~StructureArtifactData() override = default;
+
+protected:
+    friend struct ArtifactData<StructureArtifact, StructureArtifactData>;
+    friend struct ArtifactUi<StructureArtifactUi, StructureArtifactData>;
+
+    static void AddDerivedData(const StructureArtifact& artifact, StructureArtifactData& data);
+
+    static void SetDerivedData(StructureArtifact& artifact, const StructureArtifactData& data);
+
+    static std::unique_ptr<StructureArtifactData> GetEmpty(const StructureArtifact& artifact);
+
+    static std::unique_ptr<StructureArtifactData> GetEmpty(Artifact::SubType subType);
+
+    static std::unique_ptr<StructureArtifactData> FromQVariant(const QVariant& variant);
+};
+
+
+
+class StructureArtifactUi : public ArtifactUi<StructureArtifactUi, StructureArtifactData> {
+protected:
+    friend struct ArtifactUi<StructureArtifactUi, StructureArtifactData>;
+
+    static void AddDerivedWidgets(QFormLayout* fLayout, Artifact::SubType subType = Artifact::SubType::INVALID);
+
+    static void AddDerivedWidgetsData(QWidget* widget, StructureArtifactData& data);
+
+    static void SetDerivedWidgetsData(QWidget* widget, const StructureArtifactData& data);
+
+    static std::vector<EnumString<Artifact::SubType>> GetSubTypeValues();
 };

@@ -1,18 +1,7 @@
 #pragma once
 
-#include <QAbstractItemModel>
-#include <QComboBox>
 #include <QDialog>
-#include <QDoubleSpinBox>
-#include <QGroupBox>
-#include <QLineEdit>
 #include <QVBoxLayout>
-
-class BasicStructureUi;
-class CombinedStructureUi;
-
-struct BasicStructureData;
-struct CombinedStructureData;
 
 class CtStructureDialog : public QDialog {
 public:
@@ -27,6 +16,11 @@ protected:
     QVBoxLayout* Layout;
 };
 
+
+
+class BasicStructureUi;
+class CombinedStructureUi;
+
 template<typename Ui>
 class SimpleCtStructureDialog : public CtStructureDialog {
 public:
@@ -35,6 +29,11 @@ public:
 
 typedef SimpleCtStructureDialog<BasicStructureUi> BasicStructureDialog;
 typedef SimpleCtStructureDialog<CombinedStructureUi> CombinedStructureDialog;
+
+
+
+struct BasicStructureData;
+struct CombinedStructureData;
 
 class BasicAndCombinedStructureCreateDialog : public CtStructureDialog {
 public:

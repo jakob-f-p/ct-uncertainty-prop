@@ -8,10 +8,6 @@ public:
 
     SubType GetArtifactSubType() const override;
 
-    QVariant Data() override;
-
-    ImageArtifactDetails GetImageArtifactEditWidgetData(QWidget* widget) const override;
-
     GaussianArtifact(const GaussianArtifact&) = delete;
     void operator=(const GaussianArtifact&) = delete;
 
@@ -19,18 +15,44 @@ protected:
     GaussianArtifact();
     ~GaussianArtifact() override = default;
 
-    QWidget* GetChildEditWidget() const override;
-    void SetImageArtifactChildEditWidgetData(QWidget* widget, const ImageArtifactDetails& details) const override;
-    void SetImageArtifactChildData(const ImageArtifactDetails& details) override;
+    friend class GaussianArtifactData;
 
     float Mean;
     float Sd;
-
-    const QString MeanSpinBoxObjectName;
-    const QString SdSpinBoxObjectName;
 };
 
-struct GaussianArtifactDetails {
-    float Mean;
-    float Sd;
+
+
+struct GaussianArtifactData : ImageArtifactData {
+    struct GaussianData {
+        float Mean = 0.0f;
+        float Sd = 0.0f;
+    };
+    GaussianData Gaussian;
+
+    ~GaussianArtifactData() override = default;
+
+protected:
+    friend struct ImageArtifactData;
+
+    static void AddSubTypeData(const GaussianArtifact& artifact, GaussianArtifactData& data);
+
+    static void SetSubTypeData(GaussianArtifact& artifact, const GaussianArtifactData& data);
+};
+
+
+
+class GaussianArtifactUi : public ImageArtifactUi {
+protected:
+    friend struct ImageArtifactUi;
+
+    static void AddSubTypeWidgets(QFormLayout* fLayout);
+
+    static void AddSubTypeWidgetsData(QWidget* widget, GaussianArtifactData& data);
+
+    static void SetSubTypeWidgetsData(QWidget* widget, const GaussianArtifactData& data);
+
+private:
+    static const QString MeanSpinBoxObjectName;
+    static const QString SdSpinBoxObjectName;
 };

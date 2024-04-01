@@ -14,6 +14,9 @@ class CtStructureTreeModel;
 class CtDataSource;
 class CtStructureDialog;
 
+struct BasicStructureData;
+struct CombinedStructureData;
+
 class ModelingWidget : public QMainWindow {
 Q_OBJECT
 
@@ -31,6 +34,8 @@ private:
     void DisableButtons();
 
     void OpenCreateDialog(const std::function<const void()>& onAccepted);
+    void OpenBasicAndCombinedStructureCreateDialog(
+            const std::function<const void(const BasicStructureData&, const CombinedStructureData&)>& onAccepted);
 
     QPushButton* ResetCameraButton;
     QPushButton* AddStructureButton;

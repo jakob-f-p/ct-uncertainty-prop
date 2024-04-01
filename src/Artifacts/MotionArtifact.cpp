@@ -22,21 +22,26 @@ void MotionArtifact::DeepCopy(StructureArtifact *source) {
     StructureArtifact::DeepCopy(source);
 }
 
-QWidget* MotionArtifact::GetChildEditWidget() const {
-    qWarning("Todo");
-    return nullptr;
-}
 
-void MotionArtifact::SetStructureArtifactChildEditWidgetData(QWidget* widget,
-                                                             const StructureArtifactDetails& details) const {
+
+void MotionArtifactData::AddSubTypeData(const MotionArtifact& artifact, MotionArtifactData& data) {
     qWarning("Todo");
 }
 
-void MotionArtifact::SetStructureArtifactChildData(const StructureArtifactDetails& details) {
+void MotionArtifactData::SetSubTypeData(MotionArtifact& artifact, const MotionArtifactData& data) {
     qWarning("Todo");
 }
 
-StructureArtifactDetails MotionArtifact::GetStructureArtifactEditWidgetData(QWidget* widget) const {
+
+
+void MotionArtifactUi::AddSubTypeWidgets(QFormLayout* fLayout) {
     qWarning("Todo");
-    return {};
+}
+
+void MotionArtifactUi::AddSubTypeWidgetsData(QWidget* widget, MotionArtifactData& data) {
+    qWarning("Todo");
+}
+
+void MotionArtifactUi::SetSubTypeWidgetsData(QWidget* widget, const MotionArtifactData& data) {
+    qWarning("Todo");
 }

@@ -5,11 +5,10 @@
 #include <QWidget>
 #include <QStackedLayout>
 
-class ArtifactsEditDialog;
+class ArtifactsDialog;
 class ImageArtifactsModel;
 class ImageArtifactsView;
 class Pipeline;
-class PipelineList;
 
 class ImageArtifactsWidget : public QWidget {
     Q_OBJECT
@@ -38,7 +37,7 @@ private:
 
     QStackedLayout* Views;
 
-    ArtifactsEditDialog* CreateDialog;
+    ArtifactsDialog* CreateDialog;
 
     QPushButton* AddChildButton;
     QPushButton* AddSiblingButton;

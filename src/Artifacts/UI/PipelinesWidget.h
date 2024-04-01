@@ -2,13 +2,10 @@
 
 #include <QIcon>
 #include <QMetaObject>
-#include <QItemSelectionModel>
 #include <QPushButton>
 #include <QLabel>
 #include <QStackedLayout>
 
-class ArtifactsEditDialog;
-class ImageArtifactsModel;
 class ImageArtifactsWidget;
 class Pipeline;
 class PipelineList;

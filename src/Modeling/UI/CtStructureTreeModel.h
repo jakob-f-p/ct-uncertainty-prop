@@ -6,6 +6,7 @@ class CtStructureTree;
 class Pipeline;
 
 struct BasicStructureData;
+struct CombinedStructureData;
 
 class CtStructureTreeModel : public QAbstractItemModel {
     Q_OBJECT
@@ -37,9 +38,11 @@ public:
     QModelIndex AddBasicStructure(const BasicStructureData& basicStructureData,
                                   const QModelIndex& siblingIndex);
 
-    void CombineWithBasicStructure(BasicStructureData& basicStructureData);
+    void CombineWithBasicStructure(const BasicStructureData& basicStructureData,
+                                   const CombinedStructureData& combinedStructureData);
 
     void RefineWithBasicStructure(const BasicStructureData& basicStructureData,
+                                  const CombinedStructureData& combinedStructureData,
                                   const QModelIndex& index);
 
     void RemoveBasicStructure(const QModelIndex& index);

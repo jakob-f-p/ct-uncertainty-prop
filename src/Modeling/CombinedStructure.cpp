@@ -365,15 +365,15 @@ void CombinedStructure::ReplaceConnection(CtStructure* oldChildPointer, CtStruct
     oldChildPointer->Delete();
 }
 
-void CombinedStructureData::AddDerivedData(const CombinedStructure& structure, CombinedStructureData& data) {
+void CombinedStructureData::AddSubTypeData(const CombinedStructure& structure, CombinedStructureData& data) {
     data.Operator = structure.Operator;
 }
 
-void CombinedStructureData::SetDerivedData(CombinedStructure& structure, const CombinedStructureData& data) {
+void CombinedStructureData::SetSubTypeData(CombinedStructure& structure, const CombinedStructureData& data) {
     structure.Operator = data.Operator;
 }
 
-void CombinedStructureUi::AddDerivedWidgets(QFormLayout* fLayout) {
+void CombinedStructureUi::AddSubTypeWidgets(QFormLayout* fLayout) {
     auto* operatorTypeComboBox = new QComboBox();
     operatorTypeComboBox->setObjectName(OperatorTypeComboBoxName);
     for (const auto &operatorAndName : CombinedStructure::GetOperatorTypeValues()) {
@@ -382,13 +382,13 @@ void CombinedStructureUi::AddDerivedWidgets(QFormLayout* fLayout) {
     fLayout->addRow("Operator Type", operatorTypeComboBox);
 }
 
-void CombinedStructureUi::AddDerivedWidgetsData(QWidget* widget, CombinedStructureData& data) {
+void CombinedStructureUi::AddSubTypeWidgetsData(QWidget* widget, CombinedStructureData& data) {
     auto* operatorTypeComboBox = widget->findChild<QComboBox*>(OperatorTypeComboBoxName);
 
     data.Operator = operatorTypeComboBox->currentData().value<CombinedStructure::OperatorType>();
 }
 
-void CombinedStructureUi::SetDerivedWidgetsData(QWidget* widget, const CombinedStructureData& data) {
+void CombinedStructureUi::SetSubTypeWidgetsData(QWidget* widget, const CombinedStructureData& data) {
     auto* operatorTypeComboBox = widget->findChild<QComboBox*>(OperatorTypeComboBoxName);
 
     if (int idx = operatorTypeComboBox->findData(QVariant::fromValue(data.Operator));

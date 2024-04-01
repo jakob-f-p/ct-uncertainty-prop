@@ -81,9 +81,9 @@ struct CombinedStructureData : public CtStructureData<CombinedStructure, Combine
 protected:
     friend struct CtStructureData<CombinedStructure, CombinedStructureData>;
 
-    static void AddDerivedData(const CombinedStructure& structure, CombinedStructureData& data);
+    static void AddSubTypeData(const CombinedStructure& structure, CombinedStructureData& data);
 
-    static void SetDerivedData(CombinedStructure& structure, const CombinedStructureData& data);
+    static void SetSubTypeData(CombinedStructure& structure, const CombinedStructureData& data);
 };
 
 
@@ -91,11 +91,11 @@ class CombinedStructureUi : public CtStructureUi<CombinedStructureUi, CombinedSt
 protected:
     friend struct CtStructureUi<CombinedStructureUi, CombinedStructureData>;
 
-    static void AddDerivedWidgets(QFormLayout* fLayout);
+    static void AddSubTypeWidgets(QFormLayout* fLayout);
 
-    static void AddDerivedWidgetsData(QWidget* widget, CombinedStructureData& data);
+    static void AddSubTypeWidgetsData(QWidget* widget, CombinedStructureData& data);
 
-    static void SetDerivedWidgetsData(QWidget* widget, const CombinedStructureData& data);
+    static void SetSubTypeWidgetsData(QWidget* widget, const CombinedStructureData& data);
 
 private:
     static const QString OperatorTypeComboBoxName;

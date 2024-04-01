@@ -4,7 +4,7 @@
 
 class ImageArtifactConcatenation;
 class Pipeline;
-struct ImageArtifactDetails;
+struct ImageArtifactData;
 
 class ImageArtifactsModel : public QAbstractItemModel {
     Q_OBJECT
@@ -36,9 +36,9 @@ public:
 
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 
-    QModelIndex AddSiblingImageArtifact(const ImageArtifactDetails& details, const QModelIndex& siblingIndex);
+    QModelIndex AddSiblingImageArtifact(const ImageArtifactData& data, const QModelIndex& siblingIndex);
 
-    QModelIndex AddChildImageArtifact(const ImageArtifactDetails& details, const QModelIndex& parentIndex);
+    QModelIndex AddChildImageArtifact(const ImageArtifactData& data, const QModelIndex& parentIndex);
 
     void RemoveImageArtifact(const QModelIndex& index);
 
@@ -47,7 +47,7 @@ public:
     QModelIndex MoveDown(const QModelIndex& index);
 
 protected:
-    QModelIndex AddImageArtifact(const ImageArtifactDetails& details,
+    QModelIndex AddImageArtifact(const ImageArtifactData& data,
                                  const QModelIndex& parentIndex,
                                  int insertionIndex = -1);
 

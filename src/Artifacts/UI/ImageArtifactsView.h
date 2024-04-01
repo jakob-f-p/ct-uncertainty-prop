@@ -1,7 +1,6 @@
 #pragma once
 
 #include <QTreeView>
-#include <QWidget>
 
 class Pipeline;
 
