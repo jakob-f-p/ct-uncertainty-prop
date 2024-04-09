@@ -1,6 +1,7 @@
 #include "PipelineList.h"
 
 #include "Pipeline.h"
+#include "../Modeling/CtStructureTree.h"
 
 #include <QMessageLogger>
 
@@ -30,24 +31,24 @@ void PipelineList::AddPipeline(Pipeline* pipeline) {
         return;
     }
 
-    pipeline->Register(this);
-
-    Pipelines.push_back(pipeline);
+    Pipelines.emplace_back(pipeline);
 }
 
 void PipelineList::RemovePipeline(Pipeline* pipeline) {
-    if (auto search = std::find(Pipelines.begin(), Pipelines.end(), pipeline);
-            search == Pipelines.end()) {
+    auto removeIt = std::find(Pipelines.begin(), Pipelines.end(), pipeline);
+    if (removeIt == Pipelines.end()) {
         vtkWarningMacro("Given pipeline could not be removed because it was not present");
         return;
     }
 
-    auto pastLastIt = std::remove(Pipelines.begin(), Pipelines.end(), pipeline);
-    Pipelines.erase(pastLastIt);
-
-    pipeline->Delete();
+    Pipelines.erase(removeIt);
 }
 
 int PipelineList::NumberOfPipelines() const {
     return static_cast<int>(Pipelines.size());
+}
+
+void PipelineList::ProcessCtStructureTreeEvent(CtStructureTreeEvent event) {
+    for (auto& pipeline: Pipelines)
+        pipeline->ProcessCtStructureTreeEvent(event);
 }

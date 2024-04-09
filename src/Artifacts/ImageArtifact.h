@@ -54,9 +54,9 @@ protected:
 
     static void SetDerivedData(ImageArtifact& artifact, const ImageArtifactData& data);
 
-    static std::unique_ptr<ImageArtifactData> GetEmpty(const ImageArtifact& artifact);
+    static std::unique_ptr<ImageArtifactData> Create(const ImageArtifact& artifact);
 
-    static std::unique_ptr<ImageArtifactData> GetEmpty(Artifact::SubType subType);
+    static std::unique_ptr<ImageArtifactData> Create(Artifact::SubType subType);
 };
 
 

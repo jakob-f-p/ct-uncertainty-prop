@@ -4,8 +4,18 @@
 #include "tracy/Tracy.hpp"
 
 #include <vtkObject.h>
+#include <vtkSmartPointer.h>
+
+class Pipeline;
+class PipelineList;
 
 struct BasicStructureData;
+
+enum class CtStructureTreeEventType : uint { Add, Remove };
+struct CtStructureTreeEvent {
+    CtStructureTreeEventType Type;
+    CtStructure& Structure;
+};
 
 class CtStructureTree : public vtkObject {
 public:
@@ -15,6 +25,8 @@ public:
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
     vtkMTimeType GetMTime() override;
+
+    void SetPipelineList(PipelineList& pipelineList);
 
     void AddBasicStructure(BasicStructure& basicStructure, CombinedStructure* parent = nullptr);
 
@@ -39,20 +51,23 @@ public:
 
     void SetData(CtStructure* ctStructure, const QVariant& data);
 
-    void DeepCopy(CtStructureTree* source);
+    void Iterate(const std::function<void(CtStructure&)>& f) const;
 
     CtStructureTree(const CtStructureTree&) = delete;
     void operator=(const CtStructureTree&) = delete;
 
 protected:
     CtStructureTree();
-    ~CtStructureTree() override;
+    ~CtStructureTree() override = default;
 
-    CtStructure* Root;
-
-private:
     bool CtStructureExists(const CtStructure& ctStructure);
+
+    void EmitEvent(CtStructureTreeEvent event);
+
+    vtkSmartPointer<CtStructure> Root;
+    vtkWeakPointer<PipelineList> Pipelines;
 };
+
 
 void CtStructureTree::EvaluateAtPosition(const double x[3], CtStructure::Result &result) {
     if (!Root) {

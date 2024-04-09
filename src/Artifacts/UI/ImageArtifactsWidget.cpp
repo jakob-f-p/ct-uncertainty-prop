@@ -93,7 +93,7 @@ void ImageArtifactsWidget::RemoveCurrentView() {
 }
 
 void ImageArtifactsWidget::AddChildArtifact() {
-    CreateDialog = new ArtifactsDialog(ArtifactsDialog::CREATE, this);
+    CreateDialog = new ImageArtifactDialog(ArtifactsDialog::CREATE, this);
     CreateDialog->show();
 
     connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
@@ -103,12 +103,11 @@ void ImageArtifactsWidget::AddChildArtifact() {
 
         GetCurrentSelectionModel()->clear();
         GetCurrentSelectionModel()->setCurrentIndex(newIndex, QItemSelectionModel::SelectionFlag::SelectCurrent);
-        GetCurrentView()->expandAll();
     });
 }
 
 void ImageArtifactsWidget::AddSiblingArtifact() {
-    CreateDialog = new ArtifactsDialog(ArtifactsDialog::CREATE, this);
+    CreateDialog = new ImageArtifactDialog(ArtifactsDialog::CREATE, this);
     CreateDialog->show();
 
     connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
@@ -118,15 +117,17 @@ void ImageArtifactsWidget::AddSiblingArtifact() {
 
         GetCurrentSelectionModel()->clear();
         GetCurrentSelectionModel()->setCurrentIndex(newIndex, QItemSelectionModel::SelectionFlag::SelectCurrent);
-        GetCurrentView()->expandAll();
     });
 }
 
 void ImageArtifactsWidget::RemoveArtifact() {
     QModelIndex index = GetCurrentSelectionModel()->currentIndex();
+    QModelIndex parentIndex = index.parent();
     GetCurrentModel()->RemoveImageArtifact(index);
     GetCurrentSelectionModel()->clear();
-    GetCurrentView()->expandAll();
+    GetCurrentSelectionModel()->setCurrentIndex(parentIndex, QItemSelectionModel::SelectionFlag::SelectCurrent);
+    if (!parentIndex.isValid())
+        UpdateButtonStatesOnSelectionChange(parentIndex);
 }
 
 void ImageArtifactsWidget::MoveUp() {

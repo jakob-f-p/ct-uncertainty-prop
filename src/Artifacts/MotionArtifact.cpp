@@ -24,11 +24,13 @@ void MotionArtifact::DeepCopy(StructureArtifact *source) {
 
 
 
-void MotionArtifactData::AddSubTypeData(const MotionArtifact& artifact, MotionArtifactData& data) {
+void MotionArtifactData::AddSubTypeData(const StructureArtifact& structureArtifact) {
+    auto& artifact = dynamic_cast<const MotionArtifact&>(structureArtifact);
     qWarning("Todo");
 }
 
-void MotionArtifactData::SetSubTypeData(MotionArtifact& artifact, const MotionArtifactData& data) {
+void MotionArtifactData::SetSubTypeData(StructureArtifact& structureArtifact) const {
+    auto& artifact = dynamic_cast<MotionArtifact&>(structureArtifact);
     qWarning("Todo");
 }
 

@@ -17,31 +17,33 @@ std::string Pipeline::GetName() const {
 }
 
 void Pipeline::SetCtDataTree(CtStructureTree* ctStructureTree) {
-    vtkSetObjectBodyMacro(CtDataTree, CtStructureTree, ctStructureTree)
+    if (!ctStructureTree || CtDataTree == ctStructureTree)
+        return;
+
+    CtDataTree = ctStructureTree;
+
+    Modified();
 }
 
 
-void Pipeline::InitializeWithAppDataTree() {
-    auto* newDataTree = CtStructureTree::New();
-    newDataTree->DeepCopy(&App::GetInstance()->GetCtDataTree());
-    SetCtDataTree(newDataTree);
-
-    newDataTree->FastDelete();
-}
-
-Pipeline::Pipeline() :
-        CtDataTree(nullptr),
-        ImageArtifactConcatenation(*ImageArtifactConcatenation::New()) {
-}
-
-Pipeline::~Pipeline() {
-    if (CtDataTree) {
-        CtDataTree->Delete();
-    }
-
-    ImageArtifactConcatenation.Delete();
+CtStructureTree* Pipeline::GetCtDataTree() const {
+    return CtDataTree;
 }
 
 ImageArtifactConcatenation& Pipeline::GetImageArtifactConcatenation() {
-    return ImageArtifactConcatenation;
+    return *ImageArtifactConcatenation;
+}
+
+void Pipeline::ProcessCtStructureTreeEvent(CtStructureTreeEvent event) {
+    switch (event.Type) {
+        case CtStructureTreeEventType::Add: {
+            TreeStructureArtifacts->AddStructureArtifactList(event.Structure);
+            break;
+        }
+
+        case CtStructureTreeEventType::Remove: {
+            TreeStructureArtifacts->RemoveStructureArtifactList(event.Structure);
+            break;
+        }
+    }
 }

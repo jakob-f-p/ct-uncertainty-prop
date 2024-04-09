@@ -52,21 +52,23 @@ public:
 
     void ReplaceChild(BasicStructure* oldChild, CombinedStructure* newChild);
 
-    void DeepCopy(CtStructure* source, CombinedStructure* parent) override;
+    void Iterate(const std::function<void(CtStructure&)>& f) override;
 
     CombinedStructure(const CombinedStructure&) = delete;
     void operator=(const CombinedStructure&) = delete;
 
 protected:
-    CombinedStructure();
-    ~CombinedStructure() override;
+    CombinedStructure() = default;
+    ~CombinedStructure() override = default;
 
     friend struct CombinedStructureData;
 
     std::string GetViewName() const override;
 
-    OperatorType Operator;
-    std::vector<CtStructure*> CtStructures;
+    using CtStructureList = std::vector<vtkSmartPointer<CtStructure>>;
+
+    OperatorType Operator = OperatorType::INVALID;
+    CtStructureList ChildStructures;
 
 private:
     std::string GetOperatorTypeName() const;
@@ -77,6 +79,8 @@ private:
 
 struct CombinedStructureData : public CtStructureData<CombinedStructure, CombinedStructureData> {
     CombinedStructure::OperatorType Operator = CombinedStructure::OperatorType::INVALID;
+
+    CombinedStructureData() = default;
 
 protected:
     friend struct CtStructureData<CombinedStructure, CombinedStructureData>;

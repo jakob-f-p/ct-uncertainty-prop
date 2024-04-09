@@ -2,7 +2,6 @@
 
 #include "CtStructure.h"
 #include "SimpleTransform.h"
-#include "../Artifacts/StructureArtifactList.h"
 
 #include "tracy/Tracy.hpp"
 
@@ -29,7 +28,6 @@ void BasicStructure::PrintSelf(ostream &os, vtkIndent indent) {
     os << indent << "Implicit Function Type:" << ImplicitFunctionTypeToString(FunctionType) << "\n";
     os << indent << "Implicit Function: (" << ImplicitFunction << ")\n";
     os << indent << "Tissue Type: " << Tissue << ")\n";
-    os << indent << "Structure Artifact List: " << StructureArtifacts << ")\n";
 }
 
 vtkMTimeType BasicStructure::GetMTime() {
@@ -40,14 +38,14 @@ vtkMTimeType BasicStructure::GetMTime() {
 }
 
 void BasicStructure::SetTransform(const std::array<std::array<float, 3>, 3>& trs) {
-    if (!this->ImplicitFunction) {
+    if (!ImplicitFunction) {
         vtkErrorMacro("No implicit function specified. Cannot set transform.");
         return;
     }
 
-    this->Transform->SetTranslationRotationScaling(trs);
+    Transform->SetTranslationRotationScaling(trs);
 
-    this->ImplicitFunction->SetTransform(Transform);
+    ImplicitFunction->SetTransform(Transform);
 }
 
 std::string
@@ -119,17 +117,15 @@ QStringList BasicStructure::GetTissueAndMaterialTypeNames() {
 }
 
 void BasicStructure::SetTissueType(BasicStructure::TissueOrMaterialType tissueType) {
-    this->Tissue = std::move(tissueType);
+    Tissue = std::move(tissueType);
 
-    this->Modified();
+    Modified();
 }
 
 void BasicStructure::EvaluateAtPosition(const double x[3], CtStructure::Result& result) {
     ZoneScopedN("EvaluateStructure");
-    result.FunctionValue = this->FunctionValue(x);
-    result.IntensityValue = this->Tissue.CtNumber;
-
-    StructureArtifacts->AddArtifactValuesAtPositionToMap(x, result.ArtifactValueMap);
+    result.FunctionValue = FunctionValue(x);
+    result.IntensityValue = Tissue.CtNumber;
 }
 
 const CtStructure::ModelingResult
@@ -138,12 +134,12 @@ BasicStructure::EvaluateImplicitModel(const double x[3]) const {
 }
 
 float BasicStructure::FunctionValue(const double x[3]) const {
-    if (!this->ImplicitFunction) {
+    if (!ImplicitFunction) {
         vtkErrorMacro("No implicit function specified. Cannot calculate function value.");
         return 0.0;
     }
 
-    return static_cast<float>(this->ImplicitFunction->FunctionValue(x));
+    return static_cast<float>(ImplicitFunction->FunctionValue(x));
 }
 
 bool BasicStructure::CtStructureExists(const CtStructure* structure) {
@@ -154,15 +150,8 @@ CtStructure::SubType BasicStructure::GetSubType() const {
     return BASIC;
 }
 
-void BasicStructure::DeepCopy(CtStructure* source, CombinedStructure* parent) {
-    Superclass::DeepCopy(source, parent);
-
-    auto* basicStructureSource = dynamic_cast<BasicStructure*>(source);
-    Id = basicStructureSource->Id;
-    FunctionType = basicStructureSource->FunctionType;
-    ImplicitFunction = basicStructureSource->ImplicitFunction;
-    ImplicitFunction->Register(this);
-    Tissue = basicStructureSource->Tissue;
+void BasicStructure::Iterate(const std::function<void(CtStructure&)>& f) {
+    f(*this);
 }
 
 BasicStructure::BasicStructure() :
@@ -173,9 +162,9 @@ BasicStructure::BasicStructure() :
 }
 
 BasicStructure::~BasicStructure() {
-    this->ImplicitFunction->Delete();
+    ImplicitFunction->Delete();
 
-    this->Modified();
+    BasicStructure::Modified();
 }
 
 std::string BasicStructure::GetViewName() const {

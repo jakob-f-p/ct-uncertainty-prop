@@ -47,9 +47,7 @@ public:
     QModelIndex MoveDown(const QModelIndex& index);
 
 protected:
-    QModelIndex AddImageArtifact(const ImageArtifactData& data,
-                                 const QModelIndex& parentIndex,
-                                 int insertionIndex = -1);
+    QModelIndex AddImageArtifact(const ImageArtifactData& data, const QModelIndex& parentIndex, int insertionIndex);
 
     QModelIndex Move(const QModelIndex& sourceIndex, int displacement);
 

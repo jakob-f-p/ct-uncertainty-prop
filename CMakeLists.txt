@@ -2,7 +2,7 @@ cmake_minimum_required(VERSION 3.27)
 
 project(uncertainty_propagation)
 
-set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD 20)
 
 #option(TRACY_ENABLE 0)
 #option(TRACY_ONLY_LOCALHOST 1)

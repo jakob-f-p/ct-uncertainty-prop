@@ -1,6 +1,8 @@
 #include "CtStructureTree.h"
 
 #include "BasicStructure.h"
+#include "../Artifacts/PipelineList.h"
+#include "../App.h"
 
 #include <vtkCommand.h>
 #include <vtkNew.h>
@@ -23,32 +25,38 @@ vtkMTimeType CtStructureTree::GetMTime() {
     return std::max(thisMTime, nodeMTime);
 }
 
+void CtStructureTree::SetPipelineList(PipelineList& pipelineList) {
+    Pipelines = &pipelineList;
+}
+
 void CtStructureTree::AddBasicStructure(BasicStructure& basicStructure, CombinedStructure* parent) {
     if (!parent) {  // add as root
         if (Root) {
-            vtkErrorMacro("Another root is already present. Cannot add implicit structure.");
+            vtkErrorMacro("Another root is already present. Cannot add implicit Structure.");
             return;
         }
 
         Root = &basicStructure;
         Root->SetParent(nullptr);
-        Root->Register(this);
+        EmitEvent({ CtStructureTreeEventType::Add, *Root });
 
-        this->Modified();
+        Modified();
         return;
     }
 
     // add as child
     if (CtStructureExists(basicStructure)) {
-        vtkErrorMacro("CT structure already exists. Cannot add existing structure.");
+        vtkErrorMacro("CT Structure already exists. Cannot add existing Structure.");
         return;
     }
     parent->AddCtStructure(basicStructure);
+    EmitEvent({ CtStructureTreeEventType::Add, basicStructure });
 }
 
 void CtStructureTree::AddBasicStructure(const BasicStructureData& basicStructureData, CombinedStructure *parent) {
     vtkNew<BasicStructure> basicStructure;
     BasicStructureData::SetData(*basicStructure, basicStructureData);
+
     AddBasicStructure(*basicStructure, parent);
 
     InvokeEvent(vtkCommand::ModifiedEvent);
@@ -61,23 +69,20 @@ void CtStructureTree::CombineWithBasicStructure(BasicStructure& basicStructure, 
     }
 
     if (CtStructureExists(basicStructure) || CtStructureExists(combinedStructure)) {
-        vtkErrorMacro("CT structure already exists. Cannot combine existing structure.");
+        vtkErrorMacro("CT Structure already exists. Cannot combine existing Structure.");
         return;
     }
 
-    CtStructure* previousRoot = Root;
-
-    combinedStructure.AddCtStructure(*previousRoot);
+    combinedStructure.AddCtStructure(*Root);
     combinedStructure.AddCtStructure(basicStructure);
+    EmitEvent({ CtStructureTreeEventType::Add, combinedStructure });
+    EmitEvent({ CtStructureTreeEventType::Add, basicStructure });
 
     combinedStructure.SetParent(nullptr);
-    previousRoot->SetParent(&combinedStructure);
+    Root->SetParent(&combinedStructure);
     basicStructure.SetParent(&combinedStructure);
 
     Root = &combinedStructure;
-
-    previousRoot->UnRegister(this);
-    combinedStructure.Register(this);
 
     InvokeEvent(vtkCommand::ModifiedEvent);
 }
@@ -108,33 +113,31 @@ void CtStructureTree::RefineWithBasicStructure(const BasicStructureData& newStru
 
     vtkNew<CombinedStructure> combinedStructure;
     CombinedStructureData::SetData(*combinedStructure, combinedStructureData);
-    combinedStructure->Register(this);
 
     auto* parent = dynamic_cast<CombinedStructure*>(structureToRefine.GetParent());
     combinedStructure->SetParent(parent);
 
     combinedStructure->AddCtStructure(structureToRefine);
     combinedStructure->AddCtStructure(*newStructure);
+    EmitEvent({ CtStructureTreeEventType::Add, structureToRefine });
+    EmitEvent({ CtStructureTreeEventType::Add, *newStructure });
 
-    if (!parent) {
-        structureToRefine.UnRegister(this);
+    if (!parent)
         Root = combinedStructure;
-        Root->Register(this);
-        return;
-    }
-    parent->ReplaceChild(&structureToRefine, combinedStructure);
+    else
+        parent->ReplaceChild(&structureToRefine, combinedStructure);
 
     InvokeEvent(vtkCommand::ModifiedEvent);
 }
 
 void CtStructureTree::RemoveBasicStructure(BasicStructure& basicStructure) {
     if (!CtStructureExists(basicStructure)) {
-        vtkErrorMacro("CT structure to remove does not exist. Cannot remove non-existing structure");
+        vtkErrorMacro("CT Structure to remove does not exist. Cannot remove non-existing Structure");
         return;
     }
 
     if (Root == &basicStructure) {
-        Root->UnRegister(this);
+        EmitEvent({ CtStructureTreeEventType::Add, *Root });
         Root = nullptr;
         InvokeEvent(vtkCommand::ModifiedEvent);
         return;
@@ -149,10 +152,9 @@ void CtStructureTree::RemoveBasicStructure(BasicStructure& basicStructure) {
 
     auto* grandParent = dynamic_cast<CombinedStructure*>(parent->GetParent());
 
+    EmitEvent({ CtStructureTreeEventType::Add, *parent });
     CtStructure* newRoot = parent->RemoveBasicStructure(&basicStructure, grandParent);
     if (newRoot) {
-        newRoot->Register(this);
-        Root->Delete();
         Root = newRoot;
         newRoot->SetParent(nullptr);
     }
@@ -161,23 +163,12 @@ void CtStructureTree::RemoveBasicStructure(BasicStructure& basicStructure) {
 }
 
 void CtStructureTree::SetData(CtStructure* ctStructure, const QVariant& data) {
-    if (ctStructure->IsBasic()) {
+    if (ctStructure->IsBasic())
         BasicStructureData::SetData(*dynamic_cast<BasicStructure*>(ctStructure), data);
-    } else {
+    else
         CombinedStructureData::SetData(*dynamic_cast<CombinedStructure*>(ctStructure), data);
-    }
 
     InvokeEvent(vtkCommand::ModifiedEvent);
-}
-
-CtStructureTree::CtStructureTree() {
-    Root = nullptr;
-}
-
-CtStructureTree::~CtStructureTree() {
-    if (Root) {
-        Root->Delete();
-    }
 }
 
 CtStructure* CtStructureTree::GetRoot() const {
@@ -188,19 +179,22 @@ bool CtStructureTree::CtStructureExists(const CtStructure& ctStructure) {
     return Root && Root->CtStructureExists(&ctStructure);
 }
 
-void CtStructureTree::DeepCopy(CtStructureTree* source) {
-    if (!source->Root) {
-        Root = nullptr;
+void CtStructureTree::Iterate(const std::function<void(CtStructure&)>& f) const {
+    if (!Root) return;
+
+    Root->Iterate(f);
+}
+
+void CtStructureTree::EmitEvent(CtStructureTreeEvent event) {
+    if (!Pipelines) {
+        vtkWarningMacro("Pipeline must not be nullptr");
         return;
     }
 
-    if (Root)
-        Root->Delete();
+    Pipelines->ProcessCtStructureTreeEvent(event);
+}
 
-    if (source->Root->IsBasic())
-        Root = BasicStructure::New();
-    else
-        Root = CombinedStructure::New();
-
-    Root->DeepCopy(source->Root, nullptr);
+CtStructureTree::CtStructureTree() :
+        Root(),
+        Pipelines() {
 }

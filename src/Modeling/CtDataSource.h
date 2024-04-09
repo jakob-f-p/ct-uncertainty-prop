@@ -34,7 +34,7 @@ protected:
     CtDataSource();
     ~CtDataSource() override;
 
-    vtkExecutive *CreateDefaultExecutive() override;
+    vtkExecutive* CreateDefaultExecutive() override;
 
     int RequestInformation(vtkInformation *request,
                            vtkInformationVector **inputVector,

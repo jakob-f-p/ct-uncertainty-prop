@@ -38,14 +38,13 @@ App::App(int argc, char* argv[]) :
         Argc(argc),
         Argv(argv),
         QApp(*new QApplication(Argc, Argv)),
-        CtDataTree(*CtStructureTree::New()),
-        Pipelines(*PipelineList::New()),
+        CtDataTree(),
+        Pipelines(),
         MainWin(nullptr) {
+    CtDataTree->SetPipelineList(*Pipelines);
 }
 
 App::~App() {
-    CtDataTree.Delete();
-    Pipelines.Delete();
     delete &MainWin;
 
     QApplication::quit();
@@ -89,12 +88,12 @@ void App::InitializeWithTestData() {
     vtkNew<CombinedStructure> combinedStructure2;
     combinedStructure2->SetOperatorType(CombinedStructure::OperatorType::INTERSECTION);
 
-    CtDataTree.AddBasicStructure(*basicStructure1);
-    CtDataTree.CombineWithBasicStructure(*basicStructure2, *combinedStructure2);
+    CtDataTree->AddBasicStructure(*basicStructure1);
+    CtDataTree->CombineWithBasicStructure(*basicStructure2, *combinedStructure2);
 
     vtkNew<Pipeline> pipeline;
-    pipeline->SetCtDataTree(&CtDataTree);
-    Pipelines.AddPipeline(pipeline);
+    pipeline->SetCtDataTree(CtDataTree);
+    Pipelines->AddPipeline(pipeline);
     ImageArtifactConcatenation& imageArtifactConcatenation = pipeline->GetImageArtifactConcatenation();
 
     vtkNew<GaussianArtifact> gaussianArtifact;
@@ -120,9 +119,9 @@ void App::InitializeWithTestData() {
 }
 
 CtStructureTree& App::GetCtDataTree() const {
-    return CtDataTree;
+    return *CtDataTree;
 }
 
 PipelineList& App::GetPipelines() const {
-    return Pipelines;
+    return *Pipelines;
 }

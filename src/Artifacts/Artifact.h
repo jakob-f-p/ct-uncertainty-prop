@@ -81,6 +81,15 @@ protected:
     std::string Name;
 };
 
+#define FOR_EACH_IMAGE_ARTIFACT(DO) \
+    DO(IMAGE_GAUSSIAN, Gaussian) \
+    DO(IMAGE_COMPOSITION, Composite)
+//    DO(IMAGE_SALT_PEPPER, SaltPepper) \
+//    DO(IMAGE_RING, Ring) \
+//    DO(IMAGE_CUPPING, Cupping) \
+//    DO(IMAGE_WIND_MILL, WindMill) \
+//    DO(IMAGE_STAIR_STEP, StairStep) \
+//    DO(IMAGE_STREAKING, Streaking) \
 
 
 template<typename TArtifact, typename TData>
@@ -98,6 +107,10 @@ struct ArtifactData {
 protected:
     ArtifactData() = default;
     virtual ~ArtifactData() = default;
+
+    virtual void AddSubTypeData(const TArtifact& artifact) = 0;
+
+    virtual void SetSubTypeData(TArtifact& artifact) const = 0;
 };
 
 

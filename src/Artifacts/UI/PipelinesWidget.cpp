@@ -64,7 +64,7 @@ PipelinesWidget::PipelinesWidget() :
 
 void PipelinesWidget::AddPipeline() {
     auto* newPipeline = Pipeline::New();
-    newPipeline->InitializeWithAppDataTree();
+    newPipeline->SetCtDataTree(&App::GetInstance()->GetCtDataTree());
 
     Pipelines.AddPipeline(newPipeline);
     newPipeline->FastDelete();

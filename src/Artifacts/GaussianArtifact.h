@@ -33,11 +33,9 @@ struct GaussianArtifactData : ImageArtifactData {
     ~GaussianArtifactData() override = default;
 
 protected:
-    friend struct ImageArtifactData;
+    void AddSubTypeData(const ImageArtifact& imageArtifact) override;
 
-    static void AddSubTypeData(const GaussianArtifact& artifact, GaussianArtifactData& data);
-
-    static void SetSubTypeData(GaussianArtifact& artifact, const GaussianArtifactData& data);
+    void SetSubTypeData(ImageArtifact& imageArtifact) const override;
 };
 
 

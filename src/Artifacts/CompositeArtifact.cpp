@@ -110,12 +110,14 @@ CompositeArtifact::~CompositeArtifact() {
 }
 
 
-void CompositeArtifactData::AddSubTypeData(const CompositeArtifact& artifact, CompositeArtifactData& data) {
-    data.Composite.CompositionType = artifact.CompType;
+void CompositeArtifactData::AddSubTypeData(const ImageArtifact& imageArtifact) {
+    auto& artifact = dynamic_cast<const CompositeArtifact&>(imageArtifact);
+    Composite.CompositionType = artifact.CompType;
 }
 
-void CompositeArtifactData::SetSubTypeData(CompositeArtifact& artifact, const CompositeArtifactData& data) {
-    artifact.CompType = data.Composite.CompositionType;
+void CompositeArtifactData::SetSubTypeData(ImageArtifact& imageArtifact) const {
+    auto& artifact = dynamic_cast<CompositeArtifact&>(imageArtifact);
+    artifact.CompType = Composite.CompositionType;
 }
 
 

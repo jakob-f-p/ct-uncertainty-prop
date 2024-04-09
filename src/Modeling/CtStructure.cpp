@@ -3,13 +3,11 @@
 #include "BasicStructure.h"
 #include "CombinedStructure.h"
 #include "SimpleTransform.h"
-#include "../Artifacts/StructureArtifactList.h"
 
 #include <QLabel>
 #include <QLineEdit>
 #include <QWidget>
 
-#include <vtkNew.h>
 #include <QGroupBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
@@ -31,7 +29,7 @@ vtkMTimeType CtStructure::GetMTime() {
 void CtStructure::SetName(std::string name) {
     Name = std::move(name);
 
-    this->Modified();
+    Modified();
 }
 
 CombinedStructure* CtStructure::GetParent() const {
@@ -70,25 +68,6 @@ CtStructure* CtStructure::FromVoid(void* ctStructure) {
     return static_cast<CtStructure*>(ctStructure);
 }
 
-void CtStructure::DeepCopy(CtStructure* source, CombinedStructure* parent) {
-    Name = source->Name;
-    Transform->DeepCopy(source->Transform);
-    Parent = parent;
-    StructureArtifacts = StructureArtifactList::New();
-    StructureArtifacts->DeepCopy(source->StructureArtifacts);
-}
-
-CtStructure::CtStructure() :
-        Transform(SimpleTransform::New()),
-        StructureArtifacts(StructureArtifactList::New()),
-        Parent(nullptr) {
-}
-
-CtStructure::~CtStructure() {
-    Transform->Delete();
-    StructureArtifacts->Delete();
-}
-
 
 
 template struct CtStructureData<BasicStructure, BasicStructureData>;
@@ -124,7 +103,7 @@ void CtStructureData<Structure, Data>::SetData(Structure& structure, const Data&
 template<typename Structure, typename Data>
 void CtStructureData<Structure, Data>::SetData(Structure& structure, const QVariant& variant) {
     if (!variant.canConvert<Data>()) {
-        qWarning("Cannot convert variant to data");
+        qWarning("Cannot convert variant to rData");
         return;
     }
 

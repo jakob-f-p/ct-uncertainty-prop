@@ -52,14 +52,14 @@ CtDataSource::CtDataSource() :
     float defaultPhysicalDimensionsLength = 100.0f;
     std::fill(PhysicalDimensions.begin(), PhysicalDimensions.end(), defaultPhysicalDimensionsLength);
 
-    this->SetNumberOfInputPorts(0);
+    CtDataSource::SetNumberOfInputPorts(0);
 }
 
 CtDataSource::~CtDataSource() {
     DataTree->Delete();
 }
 
-vtkExecutive *CtDataSource::CreateDefaultExecutive() {
+vtkExecutive* CtDataSource::CreateDefaultExecutive() {
     return vtkStreamingDemandDrivenPipeline::New();
 }
 

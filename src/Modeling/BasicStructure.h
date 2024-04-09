@@ -10,9 +10,9 @@
 
 /**
  * @class BasicStructure
- * @brief class representing implicit CT structures with structure Artifacts
+ * @brief class representing implicit CT structures with Structure Artifacts
  *
- * This class is used in CtStructureTree as an implicit source of data.
+ * This class is used in CtStructureTree as an implicit source of rData.
  */
 class BasicStructure : public CtStructure {
     Q_GADGET
@@ -38,7 +38,7 @@ public:
     ImplicitFunctionType GetFunctionType() const;
     /**
      * Set/Get the implicit function separating the function domain into position inside, on, and outside of the
-     * surface. The domain on and inside the surface (f(x,y,z) <= 0) constitutes the structure.
+     * surface. The domain on and inside the surface (f(x,y,z) <= 0) constitutes the Structure.
      */
     void SetImplicitFunction(ImplicitFunctionType implicitFunctionType);
 
@@ -62,7 +62,7 @@ public:
 
     SubType GetSubType() const override;
 
-    void DeepCopy(CtStructure* source, CombinedStructure* parent) override;
+    void Iterate(const std::function<void(CtStructure&)>& f) override;
 
     BasicStructure(const BasicStructure&) = delete;
     void operator=(const BasicStructure&) = delete;
@@ -100,6 +100,8 @@ struct BasicStructureData : public CtStructureData<BasicStructure, BasicStructur
     QString TissueName;
     SphereData Sphere {};
     BoxData Box {};
+
+    BasicStructureData() = default;
 
 protected:
     friend struct CtStructureData<BasicStructure, BasicStructureData>;

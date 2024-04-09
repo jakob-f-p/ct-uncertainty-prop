@@ -10,26 +10,27 @@
 #include <QComboBox>
 
 #include <vtkObjectFactory.h>
+#include <vtkSmartPointer.h>
 
 vtkStandardNewMacro(CombinedStructure);
 
 void CombinedStructure::PrintSelf(ostream& os, vtkIndent indent) {
-    this->Superclass::PrintSelf(os, indent);
+    Superclass::PrintSelf(os, indent);
 
     os << indent << "Operator Type: " << GetOperatorTypeName() << "\n";
 
     os << indent << "Ct Structures:\n";
     auto nextIndent = indent.GetNextIndent();
-    for (const auto& ctStructure: CtStructures) {
+    for (const auto& ctStructure: ChildStructures) {
         ctStructure->PrintSelf(os, nextIndent);
     }
 }
 
 vtkMTimeType CombinedStructure::GetMTime() {
-    vtkMTimeType thisMTime = this->CtStructure::GetMTime();
+    vtkMTimeType thisMTime = CtStructure::GetMTime();
 
-    std::vector<vtkMTimeType> childrenMTimes(CtStructures.size());
-    std::transform(CtStructures.begin(), CtStructures.end(), childrenMTimes.begin(),
+    std::vector<vtkMTimeType> childrenMTimes(ChildStructures.size());
+    std::transform(ChildStructures.begin(), ChildStructures.end(), childrenMTimes.begin(),
                    [](CtStructure* child) { return child->GetMTime(); });
     auto maxMTimeChild = std::max_element(childrenMTimes.begin(), childrenMTimes.end());
     vtkMTimeType maxChildMTime = maxMTimeChild == childrenMTimes.end() ? 0 : *maxMTimeChild;
@@ -39,7 +40,7 @@ vtkMTimeType CombinedStructure::GetMTime() {
 
 
 void CombinedStructure::SetTransform(const std::array<std::array<float, 3>, 3>& trs) {
-    this->Transform->SetTranslationRotationScaling(trs);
+    Transform->SetTranslationRotationScaling(trs);
 }
 
 CtStructure::SubType CombinedStructure::GetSubType() const {
@@ -60,25 +61,25 @@ CombinedStructure::OperatorTypeToString(CombinedStructure::OperatorType operator
 }
 
 void CombinedStructure::SetOperatorType(CombinedStructure::OperatorType operatorType) {
-    this->Operator = operatorType;
+    Operator = operatorType;
 
-    this->Modified();
+    Modified();
 }
 
 void CombinedStructure::EvaluateAtPosition(const double x[3], CtStructure::Result& result) {
     TracyCZoneN(evaluateCombinationA, "EvaluateCombinationA", true)
-    if (CtStructures.empty()) {
+    if (ChildStructures.empty()) {
         vtkErrorMacro("CtStructureList is empty. Cannot evaluate");
         return;
     }
 
-//    TODO: Implement correct artifact evaluation (add artifact values that ignore when they are covered by another structure)
-    const size_t size = CtStructures.size();
+//    TODO: Implement correct artifact evaluation (add artifact values that ignore when they are covered by another Structure)
+    const size_t size = ChildStructures.size();
     auto results = std::vector<Result>(size);
     TracyCZoneEnd(evaluateCombinationA)
 
-    for (int i = 0; i < CtStructures.size(); ++i) {
-        CtStructures[i]->EvaluateAtPosition(x, results[i]);
+    for (int i = 0; i < ChildStructures.size(); ++i) {
+        ChildStructures[i]->EvaluateAtPosition(x, results[i]);
     }
 
     TracyCZoneN(evaluateCombinationB, "EvaluateCombinationB", true)
@@ -148,7 +149,7 @@ void CombinedStructure::EvaluateAtPosition(const double x[3], CtStructure::Resul
 
 const CtStructure::ModelingResult
 CombinedStructure::EvaluateImplicitModel(const double x[3]) const {
-    if (CtStructures.empty()) {
+    if (ChildStructures.empty()) {
         vtkErrorMacro("CtStructureList is empty. Cannot calculate function value and radiodensity");
         return {};
     }
@@ -159,7 +160,7 @@ CombinedStructure::EvaluateImplicitModel(const double x[3]) const {
     switch (Operator) {
         case OperatorType::UNION: {
             ModelingResult min { VTK_FLOAT_MAX, VTK_FLOAT_MAX };
-            for (const auto* ctStructure: CtStructures) {
+            for (const auto& ctStructure: ChildStructures) {
                 ModelingResult current = ctStructure->EvaluateImplicitModel(transformedPoint);
                 if (current.FunctionValue < min.FunctionValue) {
                     min = current;
@@ -170,7 +171,7 @@ CombinedStructure::EvaluateImplicitModel(const double x[3]) const {
 
         case OperatorType::INTERSECTION: {
             ModelingResult max { VTK_FLOAT_MIN, VTK_FLOAT_MIN };
-            for (const auto* ctStructure: CtStructures) {
+            for (const auto& ctStructure: ChildStructures) {
                 ModelingResult current = ctStructure->EvaluateImplicitModel(transformedPoint);
                 if (current.FunctionValue > max.FunctionValue) {
                     max = current;
@@ -180,9 +181,9 @@ CombinedStructure::EvaluateImplicitModel(const double x[3]) const {
         }
 
         case OperatorType::DIFFERENCE: {
-            ModelingResult result = CtStructures[0]->EvaluateImplicitModel(transformedPoint);
-            for (int i = 1; i < CtStructures.size(); ++i) {
-                float functionValue = -CtStructures[i]->FunctionValue(transformedPoint);
+            ModelingResult result = ChildStructures[0]->EvaluateImplicitModel(transformedPoint);
+            for (int i = 1; i < ChildStructures.size(); ++i) {
+                float functionValue = -ChildStructures[i]->FunctionValue(transformedPoint);
                 if (functionValue > result.FunctionValue) {
                     result.FunctionValue = functionValue;
                 }
@@ -195,7 +196,7 @@ CombinedStructure::EvaluateImplicitModel(const double x[3]) const {
 }
 
 float CombinedStructure::FunctionValue(const double x[3]) const {
-    if (CtStructures.empty()) {
+    if (ChildStructures.empty()) {
         vtkErrorMacro("CtStructureList is empty. Cannot evaluate");
         return 0.0f;
     }
@@ -204,7 +205,7 @@ float CombinedStructure::FunctionValue(const double x[3]) const {
     switch (Operator) {
         case OperatorType::UNION: {
             auto min = VTK_FLOAT_MAX;
-            for (const auto& ctStructure: CtStructures) {
+            for (const auto& ctStructure: ChildStructures) {
                 f = ctStructure->FunctionValue(x);
                 if (f < min) {
                     min = f;
@@ -215,7 +216,7 @@ float CombinedStructure::FunctionValue(const double x[3]) const {
 
         case OperatorType::INTERSECTION: {
             auto max = VTK_FLOAT_MIN;
-            for (const auto& ctStructure: CtStructures) {
+            for (const auto& ctStructure: ChildStructures) {
                 f = ctStructure->FunctionValue(x);
                 if (f < max) {
                     max = f;
@@ -225,9 +226,9 @@ float CombinedStructure::FunctionValue(const double x[3]) const {
         }
 
         case OperatorType::DIFFERENCE: {
-            float result = CtStructures[0]->FunctionValue(x);
-            for (int i = 1; i < CtStructures.size(); ++i) {
-                f = -CtStructures[i]->FunctionValue(x);
+            float result = ChildStructures[0]->FunctionValue(x);
+            for (int i = 1; i < ChildStructures.size(); ++i) {
+                f = -ChildStructures[i]->FunctionValue(x);
                 if (f > result) {
                     result = f;
                 }
@@ -240,34 +241,30 @@ float CombinedStructure::FunctionValue(const double x[3]) const {
 }
 
 void CombinedStructure::AddCtStructure(CtStructure& ctStructure) {
-    if (auto search = std::find(CtStructures.begin(), CtStructures.end(), &ctStructure);
-            search != CtStructures.end()) {
-        vtkWarningMacro("Trying to add implicit CT structure which is already present");
+    if (auto search = std::find(ChildStructures.begin(), ChildStructures.end(), &ctStructure);
+            search != ChildStructures.end()) {
+        vtkWarningMacro("Trying to add implicit CT Structure which is already present");
     }
 
-    CtStructures.push_back(&ctStructure);
+    ChildStructures.emplace_back(&ctStructure);
     ctStructure.SetParent(this);
-    ctStructure.Register(this);
 
-    this->Modified();
+    Modified();
 }
 
 CtStructure* CombinedStructure::RemoveBasicStructure(BasicStructure* basicStructure,
                                                      CombinedStructure* grandParent) {
-    if (auto search = std::find(CtStructures.begin(), CtStructures.end(), basicStructure);
-            search == CtStructures.end()) {
-        vtkWarningMacro("Given structure could not be removed because it was not present");
+    auto removeIt = std::find(ChildStructures.begin(), ChildStructures.end(), basicStructure);
+    if (removeIt == ChildStructures.end()) {
+        vtkWarningMacro("Given Structure could not be removed because it was not present");
         return nullptr;
     }
 
-    auto pastLastIt = std::remove(CtStructures.begin(), CtStructures.end(), basicStructure);
-    CtStructures.erase(pastLastIt);
-
-    basicStructure->Delete();
+    ChildStructures.erase(removeIt);
 
 
-    if (CtStructures.size() == 1) {
-        CtStructure* remainingStructure = CtStructures[0];
+    if (ChildStructures.size() == 1) {
+        auto remainingStructure = ChildStructures[0];
 
         if (!grandParent) {     // this node is root
             return remainingStructure;
@@ -282,37 +279,27 @@ CtStructure* CombinedStructure::RemoveBasicStructure(BasicStructure* basicStruct
 
 bool CombinedStructure::CtStructureExists(const CtStructure* structure) {
     return this == structure
-            || std::any_of(CtStructures.begin(),
-                           CtStructures.end(),
+            || std::any_of(ChildStructures.begin(),
+                           ChildStructures.end(),
                            [structure](CtStructure* child) {
                 return child->CtStructureExists(structure);
             });
 }
 
 int CombinedStructure::ChildCount() const {
-    return static_cast<int>(CtStructures.size());
+    return static_cast<int>(ChildStructures.size());
 }
 
 const CtStructure* CombinedStructure::ChildAt(int idx) const {
-    return CtStructures.at(idx);
+    return ChildStructures.at(idx);
 }
 
 int CombinedStructure::ChildIndex(const CombinedStructure& child) const {
-    auto searchIt = std::find(CtStructures.begin(), CtStructures.end(), &child);
-    if(searchIt == CtStructures.end())
-        qWarning("Given structure is not contained in children");
+    auto searchIt = std::find(ChildStructures.begin(), ChildStructures.end(), &child);
+    if(searchIt == ChildStructures.end())
+        qWarning("Given Structure is not contained in children");
 
-    return static_cast<int>(std::distance(CtStructures.begin(), searchIt));
-}
-
-CombinedStructure::CombinedStructure() :
-        Operator(OperatorType::INVALID) {
-}
-
-CombinedStructure::~CombinedStructure() {
-    for (const auto& structure : CtStructures) {
-        structure->Delete();
-    }
+    return static_cast<int>(std::distance(ChildStructures.begin(), searchIt));
 }
 
 std::string CombinedStructure::GetViewName() const {
@@ -324,42 +311,24 @@ std::string CombinedStructure::GetOperatorTypeName() const {
 }
 
 void CombinedStructure::ReplaceChild(BasicStructure* oldChild, CombinedStructure* newChild) {
-    auto oldStructure = std::find(CtStructures.begin(), CtStructures.end(), oldChild);
-    if (oldStructure == CtStructures.end()){
-        qWarning("Given pointer to old child is not a child of this structure");
+    auto oldIt = std::find(ChildStructures.begin(), ChildStructures.end(), oldChild);
+    if (oldIt == ChildStructures.end()){
+        qWarning("Given pointer to old child is not a child of this Structure");
         return;
     }
 
-    *oldStructure = newChild;
-
-    oldChild->UnRegister(this);
-    newChild->Register(this);
+    *oldIt = newChild;
 }
 
-void CombinedStructure::DeepCopy(CtStructure* source, CombinedStructure* parent) {
-    Superclass::DeepCopy(source, parent);
+void CombinedStructure::Iterate(const std::function<void(CtStructure&)>& f) {
+    f(*this);
 
-    const auto* combinedStructureSource = dynamic_cast<CombinedStructure*>(source);
-    Operator = combinedStructureSource->Operator;
-
-    for (const auto &ctStructure: CtStructures) {
-        ctStructure->Delete();
-    }
-    CtStructures.clear();
-
-    for (const auto &ctStructure: combinedStructureSource->CtStructures) {
-        CtStructure* newCtStructure;
-        if (ctStructure->IsBasic())
-            newCtStructure = BasicStructure::New();
-        else
-            newCtStructure = CombinedStructure::New();
-        newCtStructure->DeepCopy(ctStructure, this);
-        CtStructures.push_back(newCtStructure);
-    }
+    std::for_each(ChildStructures.begin(), ChildStructures.end(),
+                  [&](CtStructure* structure) { f(*structure); });
 }
 
 void CombinedStructure::ReplaceConnection(CtStructure* oldChildPointer, CtStructure* newChildPointer) {
-    std::replace(CtStructures.begin(), CtStructures.end(), oldChildPointer, newChildPointer);
+    std::replace(ChildStructures.begin(), ChildStructures.end(), oldChildPointer, newChildPointer);
 
     newChildPointer->Register(this);
     oldChildPointer->Delete();

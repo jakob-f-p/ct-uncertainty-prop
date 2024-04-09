@@ -64,9 +64,9 @@ struct CompositeArtifactData : ImageArtifactData {
 protected:
     friend struct ImageArtifactData;
 
-    static void AddSubTypeData(const CompositeArtifact& artifact, CompositeArtifactData& data);
+    void AddSubTypeData(const ImageArtifact& imageArtifact) override;
 
-    static void SetSubTypeData(CompositeArtifact& artifact, const CompositeArtifactData& data);
+    void SetSubTypeData(ImageArtifact& imageArtifact) const override;
 };
 
 

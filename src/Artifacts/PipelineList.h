@@ -4,6 +4,8 @@
 
 class Pipeline;
 
+struct CtStructureTreeEvent;
+
 class PipelineList : public vtkObject {
 public:
     static PipelineList* New();
@@ -23,6 +25,8 @@ public:
 
     int NumberOfPipelines() const;
 
+    void ProcessCtStructureTreeEvent(CtStructureTreeEvent event);
+
     PipelineList(const PipelineList&) = delete;
     void operator=(const PipelineList&) = delete;
 
@@ -30,5 +34,5 @@ protected:
     PipelineList() = default;
     ~PipelineList() override = default;
 
-    std::vector<Pipeline*> Pipelines;
+    std::vector<vtkSmartPointer<Pipeline>> Pipelines;
 };

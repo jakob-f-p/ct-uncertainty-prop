@@ -34,9 +34,9 @@ struct MotionArtifactData : StructureArtifactData {
 protected:
     friend struct StructureArtifactData;
 
-    static void AddSubTypeData(const MotionArtifact& artifact, MotionArtifactData& data);
+    void AddSubTypeData(const StructureArtifact& structureArtifact) override;
 
-    static void SetSubTypeData(MotionArtifact& artifact, const MotionArtifactData& data);
+    void SetSubTypeData(StructureArtifact& structureArtifact) const override;
 };
 
 

@@ -2,14 +2,13 @@
 
 #include "../Artifacts/Artifact.h"
 
+#include <vtkNew.h>
 #include <vtkObject.h>
+#include <vtkWeakPointer.h>
 
 class BasicStructure;
 class CombinedStructure;
 class SimpleTransform;
-
-template<typename Structure, typename Data> struct CtStructureData;
-struct StructureArtifactList;
 
 class CtStructure : public vtkObject {
     Q_GADGET
@@ -39,8 +38,6 @@ public:
     static CombinedStructure* ToCombined(CtStructure* combinedStructure);
     static CtStructure* FromVoid(void* ctStructure);
 
-    virtual void DeepCopy(CtStructure* source, CombinedStructure* parent);
-
     struct Result {
         float FunctionValue = 0;
         float IntensityValue = 0;
@@ -66,21 +63,22 @@ public:
 
     virtual bool CtStructureExists(const CtStructure* structure) = 0;
 
+    virtual void Iterate(const std::function<void(CtStructure&)>& f) = 0;
+
     CtStructure(const CtStructure&) = delete;
     void operator=(const CtStructure&) = delete;
 
 protected:
-    CtStructure();
-    ~CtStructure() override;
+    CtStructure() = default;
+    ~CtStructure() override = default;
 
     virtual std::string GetViewName() const = 0;
 
     template<typename Structure, typename Data> friend struct CtStructureData;
 
     std::string Name;
-    SimpleTransform* Transform;
-    StructureArtifactList* StructureArtifacts;
-    CombinedStructure* Parent;
+    vtkNew<SimpleTransform> Transform;
+    vtkWeakPointer<CombinedStructure> Parent;
 };
 
 

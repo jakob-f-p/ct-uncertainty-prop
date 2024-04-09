@@ -85,7 +85,7 @@ template class ArtifactData<StructureArtifact, StructureArtifactData>;
 
 template<typename TArtifact, typename TData>
 std::unique_ptr<TData> ArtifactData<TArtifact, TData>::GetData(const TArtifact& artifact) {
-    std::unique_ptr<TData> data = TData::GetEmpty(artifact);
+    std::unique_ptr<TData> data = TData::Create(artifact);
 
     data->Name = QString::fromStdString(artifact.Name);
     data->Type = artifact.GetArtifactType();
@@ -178,7 +178,7 @@ std::unique_ptr<Data> ArtifactUi<Ui, Data>::GetWidgetData(QWidget* widget) {
     auto* subTypeComboBox = widget->findChild<QComboBox*>(SubTypeComboBoxObjectName);
     auto subType = subTypeComboBox->currentData().value<Artifact::SubType>();
 
-    std::unique_ptr<Data> data = Data::GetEmpty(subType);
+    std::unique_ptr<Data> data = Data::Create(subType);
 
     auto* nameLineEdit = widget->findChild<QLineEdit*>(NameEditObjectName);
     data->Name = nameLineEdit->text();

@@ -43,9 +43,9 @@ protected:
 
     static void SetDerivedData(StructureArtifact& artifact, const StructureArtifactData& data);
 
-    static std::unique_ptr<StructureArtifactData> GetEmpty(const StructureArtifact& artifact);
+    static std::unique_ptr<StructureArtifactData> Create(const StructureArtifact& artifact);
 
-    static std::unique_ptr<StructureArtifactData> GetEmpty(Artifact::SubType subType);
+    static std::unique_ptr<StructureArtifactData> Create(Artifact::SubType subType);
 
     static std::unique_ptr<StructureArtifactData> FromQVariant(const QVariant& variant);
 };

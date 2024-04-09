@@ -103,7 +103,7 @@ QModelIndex ImageArtifactsModel::AddSiblingImageArtifact(const ImageArtifactData
 
 QModelIndex ImageArtifactsModel::AddChildImageArtifact(const ImageArtifactData& data,
                                                        const QModelIndex& parentIndex) {
-    return AddImageArtifact(data, parentIndex);
+    return AddImageArtifact(data, parentIndex, rowCount(parentIndex));
 }
 
 void ImageArtifactsModel::RemoveImageArtifact(const QModelIndex& index) {
@@ -118,9 +118,9 @@ void ImageArtifactsModel::RemoveImageArtifact(const QModelIndex& index) {
                                            : &Concatenation.GetStart();
     auto* imageArtifact = static_cast<ImageArtifact*>(index.internalPointer());
 
-    beginResetModel();
+    beginRemoveRows(parentIndex, index.row(), index.row());
     parentImageArtifactComposition->RemoveImageArtifact(*imageArtifact);
-    endResetModel();
+    endRemoveRows();
 }
 
 QModelIndex ImageArtifactsModel::MoveUp(const QModelIndex& index) {
@@ -151,9 +151,9 @@ QModelIndex ImageArtifactsModel::AddImageArtifact(const ImageArtifactData& data,
     auto* newImageArtifact = dynamic_cast<ImageArtifact*>(Artifact::NewArtifact(data.SubType));
     ImageArtifactData::SetData(*newImageArtifact, data);
 
-    beginResetModel();
+    beginInsertRows(parentIndex, insertionIndex, insertionIndex);
     parentImageArtifactComposition->AddImageArtifact(*newImageArtifact, insertionIndex);
-    endResetModel();
+    endInsertRows();
 
     newImageArtifact->Delete();
 

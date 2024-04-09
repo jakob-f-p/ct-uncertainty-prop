@@ -19,14 +19,16 @@ Artifact::SubType GaussianArtifact::GetArtifactSubType() const {
     return SubType::IMAGE_GAUSSIAN;
 }
 
-void GaussianArtifactData::AddSubTypeData(const GaussianArtifact& artifact, GaussianArtifactData& data) {
-    data.Gaussian.Mean = artifact.Mean;
-    data.Gaussian.Sd = artifact.Sd;
+void GaussianArtifactData::AddSubTypeData(const ImageArtifact& imageArtifact) {
+    auto& artifact = dynamic_cast<const GaussianArtifact&>(imageArtifact);
+    Gaussian.Mean = artifact.Mean;
+    Gaussian.Sd = artifact.Sd;
 }
 
-void GaussianArtifactData::SetSubTypeData(GaussianArtifact& artifact, const GaussianArtifactData& data) {
-    artifact.Mean = data.Gaussian.Mean;
-    artifact.Sd = data.Gaussian.Sd;
+void GaussianArtifactData::SetSubTypeData(ImageArtifact& imageArtifact) const {
+    auto& artifact = dynamic_cast<GaussianArtifact&>(imageArtifact);
+    artifact.Mean = Gaussian.Mean;
+    artifact.Sd = Gaussian.Sd;
 }
 
 void GaussianArtifactUi::AddSubTypeWidgets(QFormLayout* fLayout) {
