@@ -69,12 +69,23 @@ int CtStructureTreeModel::columnCount(const QModelIndex& parent) const {
 }
 
 QVariant CtStructureTreeModel::data(const QModelIndex& index, int role) const {
-    if (!index.isValid() || (role != Qt::DisplayRole && role != Qt::EditRole))
+    if (!index.isValid())
         return {};
 
-    return CtStructure::IsBasic(index.internalPointer())
-            ? BasicStructureData::GetQVariant(*CtStructure::ToBasic(index.internalPointer()))
-            : CombinedStructureData::GetQVariant(*CtStructure::ToCombined(index.internalPointer()));
+    auto* structure = static_cast<CtStructure*>(index.internalPointer());
+
+    switch (role) {
+        case Qt::DisplayRole:
+            return QString::fromStdString(structure->GetViewName());
+
+        case Qt::UserRole: {
+            return CtStructure::IsBasic(index.internalPointer())
+                   ? BasicStructureData::GetQVariant(*CtStructure::ToBasic(index.internalPointer()))
+                   : CombinedStructureData::GetQVariant(*CtStructure::ToCombined(index.internalPointer()));
+        }
+
+        default: return {};
+    }
 }
 
 QVariant CtStructureTreeModel::headerData(int section, Qt::Orientation orientation, int role) const {

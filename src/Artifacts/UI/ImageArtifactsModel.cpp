@@ -2,23 +2,11 @@
 
 #include "../CompositeArtifact.h"
 #include "../ImageArtifactConcatenation.h"
-#include "../Pipeline.h"
 
 ImageArtifactsModel::ImageArtifactsModel(ImageArtifactConcatenation& imageArtifactConcatenation,
                                          QObject* parent) :
         QAbstractItemModel(parent),
         Concatenation(imageArtifactConcatenation) {
-    Concatenation.Register(nullptr);
-}
-
-ImageArtifactsModel::ImageArtifactsModel(Pipeline& pipeline, QObject* parent) :
-        QAbstractItemModel(parent),
-        Concatenation(pipeline.GetImageArtifactConcatenation()) {
-    Concatenation.Register(nullptr);
-}
-
-ImageArtifactsModel::~ImageArtifactsModel() {
-    Concatenation.Delete();
 }
 
 QModelIndex ImageArtifactsModel::index(int row, int column, const QModelIndex& parent) const {
@@ -60,11 +48,12 @@ int ImageArtifactsModel::columnCount(const QModelIndex& parent) const {
 }
 
 QVariant ImageArtifactsModel::data(const QModelIndex& index, int role) const {
-    if (!index.isValid() || (role != Qt::DisplayRole && role != Qt::EditRole)) return {};
+    if (!index.isValid() || role != Qt::DisplayRole)
+        return {};
 
-    auto* artifact = static_cast<ImageArtifact*>(index.internalPointer());
+    const auto* artifact = static_cast<ImageArtifact*>(index.internalPointer());
 
-    return ImageArtifactData::ToQVariant(*ImageArtifactData::GetData(*artifact));
+    return QString::fromStdString(artifact->GetViewName());
 }
 
 QVariant ImageArtifactsModel::headerData(int section, Qt::Orientation orientation, int role) const {

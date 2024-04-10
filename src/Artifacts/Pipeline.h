@@ -1,12 +1,13 @@
 #pragma once
 
-#include "StructureWrapper.h"
-
 #include <vtkObject.h>
 #include <vtkSmartPointer.h>
 
+class ArtifactStructureWrapper;
+class CtStructure;
 class CtStructureTree;
 class ImageArtifactConcatenation;
+class TreeStructureArtifactCollection;
 
 struct CtStructureTreeEvent;
 
@@ -25,7 +26,9 @@ public:
     void SetCtDataTree(CtStructureTree* ctStructureTree);
     [[nodiscard]] CtStructureTree* GetCtDataTree() const;
 
-    ImageArtifactConcatenation& GetImageArtifactConcatenation();
+    [[nodiscard]] ArtifactStructureWrapper& GetArtifactStructureWrapper(const CtStructure& structure) const;
+
+    [[nodiscard]] ImageArtifactConcatenation& GetImageArtifactConcatenation();
 
     void ProcessCtStructureTreeEvent(CtStructureTreeEvent event);
 

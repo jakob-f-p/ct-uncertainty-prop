@@ -69,6 +69,8 @@ public:
                  SubType::STRUCTURE_MOTION };
     };
 
+    std::string GetViewName() const;
+
     Artifact(const Artifact&) = delete;
     void operator=(const Artifact&) = delete;
 
@@ -81,22 +83,17 @@ protected:
     std::string Name;
 };
 
-#define FOR_EACH_IMAGE_ARTIFACT(DO) \
-    DO(IMAGE_GAUSSIAN, Gaussian) \
-    DO(IMAGE_COMPOSITION, Composite)
-//    DO(IMAGE_SALT_PEPPER, SaltPepper) \
-//    DO(IMAGE_RING, Ring) \
-//    DO(IMAGE_CUPPING, Cupping) \
-//    DO(IMAGE_WIND_MILL, WindMill) \
-//    DO(IMAGE_STAIR_STEP, StairStep) \
-//    DO(IMAGE_STREAKING, Streaking) \
-
 
 template<typename TArtifact, typename TData>
 struct ArtifactData {
     QString Name;
+    QString ViewName;
     Artifact::Type Type = Artifact::Type::INVALID;
     Artifact::SubType SubType = Artifact::SubType::INVALID;
+
+    static std::unique_ptr<TData> FromQVariant(const QVariant& variant);
+
+    static QVariant ToQVariant(const TData& data);
 
     static std::unique_ptr<TData> GetData(const TArtifact& artifact);
 
@@ -106,7 +103,9 @@ struct ArtifactData {
 
 protected:
     ArtifactData() = default;
-    virtual ~ArtifactData() = default;
+    ~ArtifactData() = default;
+
+    static std::unique_ptr<TData> Create(const TArtifact& artifact);
 
     virtual void AddSubTypeData(const TArtifact& artifact) = 0;
 
@@ -130,3 +129,10 @@ private:
     static const QString SubTypeComboBoxObjectName;
     static const QString SubTypeWidgetName;
 };
+
+
+#define ARTIFACT_DATA_TYPE(ArtifactType) \
+    ArtifactType##ArtifactData
+
+#define ARTIFACT_UI_TYPE(ArtifactType) \
+    ArtifactType##ArtifactUi

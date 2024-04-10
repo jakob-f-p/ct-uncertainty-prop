@@ -7,26 +7,36 @@
 class CtStructure;
 class StructureArtifact;
 
-class ArtifactStructureWrapper {
+class ArtifactStructureWrapper : public vtkObject {
 public:
-    explicit ArtifactStructureWrapper(CtStructure& structure);
-    ArtifactStructureWrapper(const ArtifactStructureWrapper&) = delete;
-    ArtifactStructureWrapper(ArtifactStructureWrapper&&) = default;
-    ArtifactStructureWrapper& operator=(const ArtifactStructureWrapper&) = delete;
-    ArtifactStructureWrapper& operator=(ArtifactStructureWrapper&&) = default;
+    static ArtifactStructureWrapper* New();
+    vtkTypeMacro(ArtifactStructureWrapper, vtkObject)
 
-    [[nodiscard]] vtkMTimeType GetMTime() const;
+    void SetCtStructure(CtStructure& structure);
 
-    void AddStructureArtifact(StructureArtifact& structureArtifact);
+    vtkMTimeType GetMTime() override;
+
+    [[nodiscard]] StructureArtifact& Get(int idx);
+
+    [[nodiscard]] int GetNumberOfArtifacts() const;
+
+    void AddStructureArtifact(StructureArtifact& structureArtifact, int insertionIdx = -1);
 
     void RemoveStructureArtifact(StructureArtifact& structureArtifact);
+
+    void MoveStructureArtifact(StructureArtifact* artifact, int newIdx);
 
     using TypeToStructureArtifactsMap = std::map<Artifact::SubType, std::vector<StructureArtifact*>>;
     TypeToStructureArtifactsMap GetStructureArtifactMap();
 
     void AddArtifactValuesAtPositionToMap(const double x[3], std::map<Artifact::SubType, float>& artifactValueMap);
 
+    [[nodiscard]] std::string GetViewName() const;
+
 private:
+    ArtifactStructureWrapper() = default;
+    ~ArtifactStructureWrapper() override = default;
+
     friend class TreeStructureArtifactCollection;
 
     using StructureArtifactList = std::vector<vtkSmartPointer<StructureArtifact>>;
@@ -43,17 +53,19 @@ public:
     static TreeStructureArtifactCollection* New();
     vtkTypeMacro(TreeStructureArtifactCollection, vtkObject)
 
+    vtkMTimeType GetMTime() override;
+
+    ArtifactStructureWrapper* GetForCtStructure(const CtStructure& structure);
+
     void AddStructureArtifactList(CtStructure& structure);
 
     void RemoveStructureArtifactList(CtStructure& structure);
-
-    vtkMTimeType GetMTime() override;
 
 protected:
     TreeStructureArtifactCollection() = default;
     ~TreeStructureArtifactCollection() override = default;
 
 private:
-    using StructureArtifactLists = std::vector<ArtifactStructureWrapper>;
+    using StructureArtifactLists = std::vector<vtkSmartPointer<ArtifactStructureWrapper>>;
     StructureArtifactLists ArtifactLists;
 };

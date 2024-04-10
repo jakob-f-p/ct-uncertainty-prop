@@ -5,20 +5,22 @@
 #include <QStackedLayout>
 
 class ArtifactsDialog;
+class ArtifactStructureWrapper;
+class StructureArtifactsModel;
 
-class StructureArtifactsDialog : public QDialog {
+class StructureArtifactsWidgetDialog : public QDialog {
 public:
-    explicit StructureArtifactsDialog(QWidget* parent = nullptr);
+    explicit StructureArtifactsWidgetDialog(ArtifactStructureWrapper& structureWrapper, QWidget* parent = nullptr);
 
 protected slots:
     void AddArtifact();
     void RemoveArtifact();
     void MoveUp();
     void MoveDown();
-    void UpdateButtonStatesOnSelectionChange(const QModelIndex& currentIndex);
+    void UpdateButtonStatesOnSelectionChange(const QItemSelection& selected, const QItemSelection& deselected);
 
 private:
-    void DisableImageArtifactButtons();
+    void DisableButtons();
 
     ArtifactsDialog* CreateDialog;
 
@@ -29,6 +31,6 @@ private:
     std::array<QPushButton*, 4> Buttons;
 
     QListView* View;
-    QAbstractItemModel* Model;
+    StructureArtifactsModel* Model;
     QItemSelectionModel* SelectionModel;
 };

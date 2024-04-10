@@ -49,6 +49,8 @@ int PipelineList::NumberOfPipelines() const {
 }
 
 void PipelineList::ProcessCtStructureTreeEvent(CtStructureTreeEvent event) {
-    for (auto& pipeline: Pipelines)
+    for (auto& pipeline: Pipelines) {
         pipeline->ProcessCtStructureTreeEvent(event);
+        Modified();
+    }
 }

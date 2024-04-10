@@ -7,18 +7,9 @@ class Pipeline;
 struct ImageArtifactData;
 
 class ImageArtifactsModel : public QAbstractItemModel {
-    Q_OBJECT
-
 public:
-    Q_DISABLE_COPY_MOVE(ImageArtifactsModel)
-
     explicit ImageArtifactsModel(ImageArtifactConcatenation& imageArtifactConcatenation,
                                  QObject* parent = nullptr);
-
-    explicit ImageArtifactsModel(Pipeline& pipeline,
-                                 QObject* parent = nullptr);
-
-    ~ImageArtifactsModel() override;
 
     QModelIndex index(int row, int column, const QModelIndex& parent) const override;
 

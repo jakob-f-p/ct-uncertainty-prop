@@ -1,5 +1,6 @@
 #pragma once
 
+#include <vtkNew.h>
 #include <vtkObject.h>
 
 class ImageArtifact;
@@ -25,7 +26,7 @@ public:
 
 protected:
     ImageArtifactConcatenation();
-    ~ImageArtifactConcatenation() override;
+    ~ImageArtifactConcatenation() override = default;
 
-    CompositeArtifact& Start;
+    vtkNew<CompositeArtifact> Start;
 };

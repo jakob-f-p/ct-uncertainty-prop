@@ -33,14 +33,6 @@ void ImageArtifactsDelegate::updateEditorGeometry(QWidget* editor, const QStyleO
                                                   const QModelIndex& index) const {
 }
 
-QString ImageArtifactsDelegate::displayText(const QVariant& value, const QLocale& locale) const {
-    auto imageArtifactData = ImageArtifactData::FromQVariant(value);
-    if (imageArtifactData)
-        return imageArtifactData->ViewName;
-
-    return QStyledItemDelegate::displayText(value, locale);
-}
-
 void ImageArtifactsDelegate::commitEdit() {
     auto* editDialog = qobject_cast<QDialog*>(sender());
 

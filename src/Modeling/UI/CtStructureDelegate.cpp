@@ -24,7 +24,6 @@ void DialogDelegate::commitEdit() {
 void DialogDelegate::discardChanges() {
     auto* ctStructureEditDialog = qobject_cast<QDialog*>(sender());
 
-    emit commitData(ctStructureEditDialog);
     emit closeEditor(ctStructureEditDialog);
 }
 
@@ -59,10 +58,11 @@ QWidget* CtStructureDelegate::createEditor(QWidget* parent,
 }
 
 void CtStructureDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
-    QVariant data = index.data(Qt::EditRole);
-    if (CtStructure::IsBasic(index.internalPointer()))
+    QVariant data = index.data(Qt::UserRole);
+
+    if (data.canConvert<BasicStructureData>())
         BasicStructureUi::SetWidgetData(editor, data.value<BasicStructureData>());
-    else
+    else if (data.canConvert<CombinedStructureData>())
         CombinedStructureUi::SetWidgetData(editor, data.value<CombinedStructureData>());
 }
 
@@ -72,16 +72,4 @@ void CtStructureDelegate::setModelData(QWidget* editor, QAbstractItemModel* mode
             : QVariant::fromValue(CombinedStructureUi::GetWidgetData(editor));
 
     model->setData(index, editedData);
-}
-
-QString CtStructureDelegate::displayText(const QVariant& value, const QLocale& locale) const {
-    if (value.canConvert<BasicStructureData>()) {
-        return value.value<BasicStructureData>().ViewName;
-    }
-
-    if (value.canConvert<CombinedStructureData>()) {
-        return value.value<CombinedStructureData>().ViewName;
-    }
-
-    return QStyledItemDelegate::displayText(value, locale);
 }

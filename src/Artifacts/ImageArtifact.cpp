@@ -30,33 +30,37 @@ bool ImageArtifact::IsComposition() const {
     return GetArtifactSubType() == SubType::IMAGE_COMPOSITION;
 }
 
-std::string ImageArtifact::GetViewName() const {
-    std::string subTypeFullName = SubTypeToString(GetArtifactSubType());
-    std::string subTypeViewName = subTypeFullName.erase(0, subTypeFullName.find(' ') + 1);
-    std::string viewName = subTypeViewName + (Name.empty() ? "" : (" (" + Name + ")"));
-    return viewName;
-}
 
 
+#define FOR_EACH_IMAGE_ARTIFACT(DO)   \
+    DO(IMAGE_GAUSSIAN, Gaussian)      \
+    DO(IMAGE_COMPOSITION, Composite)  \
+//    DO(IMAGE_SALT_PEPPER, SaltPepper) \
+//    DO(IMAGE_RING, Ring)              \
+//    DO(IMAGE_CUPPING, Cupping)        \
+//    DO(IMAGE_WIND_MILL, WindMill)     \
+//    DO(IMAGE_STAIR_STEP, StairStep)   \
+//    DO(IMAGE_STREAKING, Streaking)    \
 
-#define CONVERT_TO_IMAGE_ARTIFACT_DATA(Enum, ClassName) \
-    if (variant.canConvert<ClassName##ArtifactData>())\
-        return std::make_unique<ClassName##ArtifactData>(variant.value<ClassName##ArtifactData>());
 
-#define CONVERT_TO_Q_VARIANT(Enum, ClassName) \
-    case Artifact::SubType::Enum: return QVariant::fromValue(dynamic_cast<const ClassName##ArtifactData&>(data));
+#define CONVERT_TO_IMAGE_ARTIFACT_DATA(Enum, Type) \
+    if (variant.canConvert<ARTIFACT_DATA_TYPE(Type)>())\
+        return std::make_unique<ARTIFACT_DATA_TYPE(Type)>(variant.value<ARTIFACT_DATA_TYPE(Type)>());
 
-#define CREATE_IMAGE_ARTIFACT_DATA(Enum, ClassName) \
-    case Artifact::SubType::Enum: return std::make_unique<ClassName##ArtifactData>();
+#define CONVERT_TO_Q_VARIANT(Enum, Type) \
+    case Artifact::SubType::Enum: return QVariant::fromValue(dynamic_cast<const ARTIFACT_DATA_TYPE(Type)&>(data));
 
-std::unique_ptr<ImageArtifactData> ImageArtifactData::FromQVariant(const QVariant& variant) {
+#define CREATE_IMAGE_ARTIFACT_DATA(Enum, Type) \
+    case Artifact::SubType::Enum: return std::make_unique<ARTIFACT_DATA_TYPE(Type)>();
+
+std::unique_ptr<ImageArtifactData> ImageArtifactData::QVariantToData(const QVariant& variant) {
     FOR_EACH_IMAGE_ARTIFACT(CONVERT_TO_IMAGE_ARTIFACT_DATA)
 
     qWarning("No matching image artifact type");
     return {};
 }
 
-QVariant ImageArtifactData::ToQVariant(const ImageArtifactData& data) {
+QVariant ImageArtifactData::DataToQVariant(const ImageArtifactData& data) {
     switch (data.SubType) {
         FOR_EACH_IMAGE_ARTIFACT(CONVERT_TO_Q_VARIANT)
         default: {
@@ -67,17 +71,11 @@ QVariant ImageArtifactData::ToQVariant(const ImageArtifactData& data) {
 }
 
 void ImageArtifactData::AddDerivedData(const ImageArtifact& artifact, ImageArtifactData& data) {
-    data.ViewName = QString::fromStdString(artifact.GetViewName());
     data.AddSubTypeData(artifact);
 }
 
 void ImageArtifactData::SetDerivedData(ImageArtifact& artifact, const ImageArtifactData& data) {
     data.SetSubTypeData(artifact);
-}
-
-std::unique_ptr<ImageArtifactData> ImageArtifactData::Create(const ImageArtifact& artifact) {
-    auto data = Create(artifact.GetArtifactSubType());
-    return data;
 }
 
 std::unique_ptr<ImageArtifactData> ImageArtifactData::Create(Artifact::SubType subType) {
@@ -96,17 +94,17 @@ std::unique_ptr<ImageArtifactData> ImageArtifactData::Create(Artifact::SubType s
 
 
 
-#define ADD_SUB_TYPE_WIDGETS(Enum, ClassName) \
+#define ADD_SUB_TYPE_WIDGETS(Enum, Type) \
     case Artifact::SubType::Enum:             \
-        return ClassName##ArtifactUi::AddSubTypeWidgets(fLayout);
+    return ARTIFACT_UI_TYPE(Type)::AddSubTypeWidgets(fLayout);
 
-#define ADD_SUB_TYPE_WIDGETS_DATA(Enum, ClassName) \
+#define ADD_SUB_TYPE_WIDGETS_DATA(Enum, Type) \
     case Artifact::SubType::Enum:                  \
-        return ClassName##ArtifactUi::AddSubTypeWidgetsData(widget, dynamic_cast<ClassName##ArtifactData&>(data));
+        return ARTIFACT_UI_TYPE(Type)::AddSubTypeWidgetsData(widget, dynamic_cast<ARTIFACT_DATA_TYPE(Type)&>(data));
 
-#define ADD_DERIVED_WIDGETS_DATA(Enum, ClassName) \
+#define ADD_DERIVED_WIDGETS_DATA(Enum, Type) \
     case Artifact::SubType::Enum:                 \
-        return ClassName##ArtifactUi::SetSubTypeWidgetsData(widget, dynamic_cast<const ClassName##ArtifactData&>(data));
+        return ARTIFACT_UI_TYPE(Type)::SetSubTypeWidgetsData(widget, dynamic_cast<const ARTIFACT_DATA_TYPE(Type)&>(data));
 
 void ImageArtifactUi::AddDerivedWidgets(QFormLayout* fLayout, Artifact::SubType subType) {
     switch (subType) {
@@ -129,18 +127,20 @@ void ImageArtifactUi::SetDerivedWidgetsData(QWidget* widget, const ImageArtifact
     }
 }
 
-#undef ADD_SUB_TYPE_WIDGETS
-#undef ADD_SUB_TYPE_WIDGETS_DATA
-#undef ADD_DERIVED_WIDGETS_DATA
-
 std::vector<EnumString<Artifact::SubType>> ImageArtifactUi::GetSubTypeValues() {
     auto imageArtifactTypes = Artifact::GetImageArtifactTypes();
     auto enumStrings = Artifact::GetSubTypeValues();
     std::vector<EnumString<Artifact::SubType>> filtered;
     std::copy_if(enumStrings.begin(), enumStrings.end(), std::back_inserter(filtered),
                  [imageArtifactTypes](const EnumString<Artifact::SubType>& enumString) {
-        auto it = std::find(imageArtifactTypes.begin(), imageArtifactTypes.end(), enumString.EnumValue);
-        return it != imageArtifactTypes.end();
-    });
+                     auto it = std::find(imageArtifactTypes.begin(), imageArtifactTypes.end(), enumString.EnumValue);
+                     return it != imageArtifactTypes.end();
+                 });
     return filtered;
 }
+
+#undef ADD_SUB_TYPE_WIDGETS
+#undef ADD_SUB_TYPE_WIDGETS_DATA
+#undef ADD_DERIVED_WIDGETS_DATA
+
+#undef FOR_EACH_IMAGE_ARTIFACT

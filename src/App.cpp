@@ -6,8 +6,10 @@
 #include "Artifacts/GaussianArtifact.h"
 #include "Artifacts/ImageArtifactConcatenation.h"
 #include "Artifacts/CompositeArtifact.h"
+#include "Artifacts/MotionArtifact.h"
 #include "Artifacts/PipelineList.h"
 #include "Artifacts/Pipeline.h"
+#include "Artifacts/StructureWrapper.h"
 
 #include <QSurfaceFormat>
 #include <QVTKOpenGLNativeWidget.h>
@@ -76,6 +78,10 @@ int App::Quit() {
 }
 
 void App::InitializeWithTestData() {
+    vtkNew<Pipeline> pipeline;
+    pipeline->SetCtDataTree(CtDataTree);
+    Pipelines->AddPipeline(pipeline);
+
     vtkNew<BasicStructure> basicStructure1;
     basicStructure1->SetImplicitFunction(BasicStructure::ImplicitFunctionType::SPHERE);
     basicStructure1->SetTissueType(BasicStructure::GetTissueOrMaterialTypeByName("Cancellous Bone"));
@@ -91,9 +97,17 @@ void App::InitializeWithTestData() {
     CtDataTree->AddBasicStructure(*basicStructure1);
     CtDataTree->CombineWithBasicStructure(*basicStructure2, *combinedStructure2);
 
-    vtkNew<Pipeline> pipeline;
-    pipeline->SetCtDataTree(CtDataTree);
-    Pipelines->AddPipeline(pipeline);
+    vtkNew<MotionArtifact> motionArtifact1;
+    motionArtifact1->SetName("1");
+
+    vtkNew<MotionArtifact> motionArtifact2;
+    motionArtifact2->SetName("2");
+
+    auto& basicStructure1Artifacts = pipeline->GetArtifactStructureWrapper(*basicStructure1);
+    basicStructure1Artifacts.AddStructureArtifact(*motionArtifact1);
+    basicStructure1Artifacts.AddStructureArtifact(*motionArtifact2);
+
+
     ImageArtifactConcatenation& imageArtifactConcatenation = pipeline->GetImageArtifactConcatenation();
 
     vtkNew<GaussianArtifact> gaussianArtifact;

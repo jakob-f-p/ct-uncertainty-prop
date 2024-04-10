@@ -29,8 +29,6 @@ protected:
 
     friend struct ImageArtifactData;
 
-    std::string GetViewName() const;
-
     CompositeArtifact* Parent;
 };
 
@@ -39,22 +37,19 @@ protected:
 class ImageArtifactUi;
 
 struct ImageArtifactData : ArtifactData<ImageArtifact, ImageArtifactData> {
-    QString ViewName;
+    virtual ~ImageArtifactData() = default;
 
-    static std::unique_ptr<ImageArtifactData> FromQVariant(const QVariant& variant);
-    static QVariant ToQVariant(const ImageArtifactData& data);
-
-    ~ImageArtifactData() override = default;
-
-protected:
+private:
     friend struct ArtifactData<ImageArtifact, ImageArtifactData>;
     friend struct ArtifactUi<ImageArtifactUi, ImageArtifactData>;
+
+    static std::unique_ptr<ImageArtifactData> QVariantToData(const QVariant& variant);
+
+    static QVariant DataToQVariant(const ImageArtifactData& data);
 
     static void AddDerivedData(const ImageArtifact& artifact, ImageArtifactData& data);
 
     static void SetDerivedData(ImageArtifact& artifact, const ImageArtifactData& data);
-
-    static std::unique_ptr<ImageArtifactData> Create(const ImageArtifact& artifact);
 
     static std::unique_ptr<ImageArtifactData> Create(Artifact::SubType subType);
 };

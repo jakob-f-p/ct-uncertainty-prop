@@ -1,6 +1,7 @@
 #include "Pipeline.h"
 
 #include "ImageArtifactConcatenation.h"
+#include "StructureWrapper.h"
 #include "../App.h"
 #include "../Modeling/CtStructureTree.h"
 
@@ -22,12 +23,20 @@ void Pipeline::SetCtDataTree(CtStructureTree* ctStructureTree) {
 
     CtDataTree = ctStructureTree;
 
+    CtDataTree->Iterate([&](CtStructure& structure) {
+        TreeStructureArtifacts->AddStructureArtifactList(structure);
+    });
+
     Modified();
 }
 
 
 CtStructureTree* Pipeline::GetCtDataTree() const {
     return CtDataTree;
+}
+
+ArtifactStructureWrapper& Pipeline::GetArtifactStructureWrapper(const CtStructure& structure) const {
+    return *TreeStructureArtifacts->GetForCtStructure(structure);
 }
 
 ImageArtifactConcatenation& Pipeline::GetImageArtifactConcatenation() {

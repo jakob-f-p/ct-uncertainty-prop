@@ -28,6 +28,39 @@ void StructureArtifact::DeepCopy(StructureArtifact* source) {
 
 
 
+#define FOR_EACH_STRUCTURE_ARTIFACT(DO) \
+    DO(STRUCTURE_MOTION, Motion)        \
+//    DO(STRUCTURE_STREAKING, Streaking)  \
+//    DO(STRUCTURE_METALLIC, Metallic)    \
+
+
+#define CONVERT_TO_STRUCTURE_ARTIFACT_DATA(Enum, Type) \
+    if (variant.canConvert<ARTIFACT_DATA_TYPE(Type)>())\
+        return std::make_unique<ARTIFACT_DATA_TYPE(Type)>(variant.value<ARTIFACT_DATA_TYPE(Type)>());
+
+#define CONVERT_TO_Q_VARIANT(Enum, Type) \
+    case Artifact::SubType::Enum: return QVariant::fromValue(dynamic_cast<const ARTIFACT_DATA_TYPE(Type)&>(data));
+
+#define CREATE_STRUCTURE_ARTIFACT_DATA(Enum, Type) \
+    case Artifact::SubType::Enum: return std::make_unique<ARTIFACT_DATA_TYPE(Type)>();
+
+std::unique_ptr<StructureArtifactData> StructureArtifactData::QVariantToData(const QVariant& variant) {
+    FOR_EACH_STRUCTURE_ARTIFACT(CONVERT_TO_STRUCTURE_ARTIFACT_DATA)
+
+    qWarning("No matching structure artifact type");
+    return {};
+}
+
+QVariant StructureArtifactData::DataToQVariant(const StructureArtifactData& data) {
+    switch (data.SubType) {
+        FOR_EACH_STRUCTURE_ARTIFACT(CONVERT_TO_Q_VARIANT)
+        default: {
+            qWarning("No matching structure artifact type");
+            return {};
+        }
+    }
+}
+
 void StructureArtifactData::AddDerivedData(const StructureArtifact& artifact, StructureArtifactData& data) {
     data.AddSubTypeData(artifact);
 }
@@ -36,68 +69,52 @@ void StructureArtifactData::SetDerivedData(StructureArtifact& artifact, const St
     data.SetSubTypeData(artifact);
 }
 
-std::unique_ptr<StructureArtifactData> StructureArtifactData::Create(const StructureArtifact& artifact) {
-    auto data = Create(artifact.GetArtifactSubType());
-    return data;
-}
-
 std::unique_ptr<StructureArtifactData> StructureArtifactData::Create(Artifact::SubType subType) {
     switch (subType) {
-//        case Artifact::SubType::STRUCTURE_STREAKING:
-//            return std::make_unique<StreakingArtifactData>(StreakingArtifactData{});
-//        case Artifact::SubType::STRUCTURE_METALLIC:
-//            return std::make_unique<MetallicArtifactData>(MetallicArtifactData{});
-        case Artifact::SubType::STRUCTURE_MOTION:
-            return std::make_unique<MotionArtifactData>(MotionArtifactData{});
+        FOR_EACH_STRUCTURE_ARTIFACT(CREATE_STRUCTURE_ARTIFACT_DATA)
         default: {
-            qWarning("Not a supported Structure artifact subtype");
+            qWarning("No matching structure artifact type");
             return {};
         }
     }
 }
 
-std::unique_ptr<StructureArtifactData> StructureArtifactData::FromQVariant(const QVariant& variant) {
-//    if (variant.canConvert<StreakingArtifactData>())
-//        return std::make_unique<StreakingArtifactData>(variant.value<StreakingArtifactData>(variant));
-//    if (variant.canConvert<MetallicArtifactData>())
-//        return std::make_unique<MetallicArtifactData>(variant.value<MetallicArtifactData>(variant));
-    if (variant.canConvert<MotionArtifactData>())
-        return std::make_unique<MotionArtifactData>(variant.value<MotionArtifactData>());
+#undef CONVERT_TO_IMAGE_ARTIFACT_DATA
+#undef CONVERT_TO_Q_VARIANT
+#undef CREATE_IMAGE_ARTIFACT_DATA
 
-    qWarning("Not a supported Structure artifact subtype");
-    return {};
-}
+
+
+#define ADD_SUB_TYPE_WIDGETS(Enum, Type) \
+    case Artifact::SubType::Enum:             \
+    return ARTIFACT_UI_TYPE(Type)::AddSubTypeWidgets(fLayout);
+
+#define ADD_SUB_TYPE_WIDGETS_DATA(Enum, Type) \
+    case Artifact::SubType::Enum:                  \
+        return ARTIFACT_UI_TYPE(Type)::AddSubTypeWidgetsData(widget, dynamic_cast<ARTIFACT_DATA_TYPE(Type)&>(data));
+
+#define ADD_DERIVED_WIDGETS_DATA(Enum, Type) \
+    case Artifact::SubType::Enum:                 \
+        return ARTIFACT_UI_TYPE(Type)::SetSubTypeWidgetsData(widget, dynamic_cast<const ARTIFACT_DATA_TYPE(Type)&>(data));
 
 void StructureArtifactUi::AddDerivedWidgets(QFormLayout* fLayout, Artifact::SubType subType) {
     switch (subType) {
-//        case Artifact::SubType::STRUCTURE_STREAKING: return StreakingArtifactUi::AddSubTypeWidgets(fLayout);
-//        case Artifact::SubType::STRUCTURE_METALLIC:  return MetallicArtifactUi::AddSubTypeWidgets(fLayout);
-        case Artifact::SubType::STRUCTURE_MOTION:    return MotionArtifactUi::AddSubTypeWidgets(fLayout);
-        default: qInfo("Not a supported Structure artifact subtype");
+        FOR_EACH_STRUCTURE_ARTIFACT(ADD_SUB_TYPE_WIDGETS)
+        default: qInfo("No matching structure artifact type");
     }
 }
 
 void StructureArtifactUi::AddDerivedWidgetsData(QWidget* widget, StructureArtifactData& data) {
     switch (data.SubType) {
-//        case Artifact::SubType::STRUCTURE_STREAKING:
-//            return StreakingArtifactUi::AddSubTypeWidgetsData(widget, dynamic_cast<StreakingArtifactData&>(rData));
-//        case Artifact::SubType::STRUCTURE_METALLIC:
-//            return MetallicArtifactUi::AddSubTypeWidgetsData(widget, dynamic_cast<MetallicArtifactData&>(rData));
-        case Artifact::SubType::STRUCTURE_MOTION:
-            return MotionArtifactUi::AddSubTypeWidgetsData(widget, dynamic_cast<MotionArtifactData&>(data));
-        default: qWarning("Not a supported Structure artifact subtype");
+        FOR_EACH_STRUCTURE_ARTIFACT(ADD_SUB_TYPE_WIDGETS_DATA)
+        default: qWarning("No matching structure artifact type");
     }
 }
 
 void StructureArtifactUi::SetDerivedWidgetsData(QWidget* widget, const StructureArtifactData& data) {
     switch (data.SubType) {
-//        case Artifact::SubType::STRUCTURE_STREAKING:
-//            return StreakingArtifactUi::SetSubTypeWidgetsData(widget, dynamic_cast<const StreakingArtifactData&>(rData));
-//        case Artifact::SubType::STRUCTURE_METALLIC:
-//            return MetallicArtifactUi::SetSubTypeWidgetsData(widget, dynamic_cast<const MetallicArtifactData&>(rData));
-        case Artifact::SubType::STRUCTURE_MOTION:
-            return MotionArtifactUi::SetSubTypeWidgetsData(widget, dynamic_cast<const MotionArtifactData&>(data));
-        default: qWarning("Not a supported Structure artifact subtype");
+        FOR_EACH_STRUCTURE_ARTIFACT(ADD_DERIVED_WIDGETS_DATA)
+        default: qWarning("No matching structure artifact type");
     }
 }
 
@@ -112,3 +129,9 @@ std::vector<EnumString<Artifact::SubType>> StructureArtifactUi::GetSubTypeValues
     });
     return filtered;
 }
+
+#undef ADD_SUB_TYPE_WIDGETS
+#undef ADD_SUB_TYPE_WIDGETS_DATA
+#undef ADD_DERIVED_WIDGETS_DATA
+
+#undef FOR_EACH_STRUCTURE_ARTIFACT

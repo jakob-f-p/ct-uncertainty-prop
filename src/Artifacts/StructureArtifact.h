@@ -32,22 +32,21 @@ protected:
 class StructureArtifactUi;
 
 struct StructureArtifactData : ArtifactData<StructureArtifact, StructureArtifactData> {
+    virtual ~StructureArtifactData() = default;
 
-    ~StructureArtifactData() override = default;
-
-protected:
+private:
     friend struct ArtifactData<StructureArtifact, StructureArtifactData>;
     friend struct ArtifactUi<StructureArtifactUi, StructureArtifactData>;
+
+    static std::unique_ptr<StructureArtifactData> QVariantToData(const QVariant& variant);
+
+    static QVariant DataToQVariant(const StructureArtifactData& data);
 
     static void AddDerivedData(const StructureArtifact& artifact, StructureArtifactData& data);
 
     static void SetDerivedData(StructureArtifact& artifact, const StructureArtifactData& data);
 
-    static std::unique_ptr<StructureArtifactData> Create(const StructureArtifact& artifact);
-
     static std::unique_ptr<StructureArtifactData> Create(Artifact::SubType subType);
-
-    static std::unique_ptr<StructureArtifactData> FromQVariant(const QVariant& variant);
 };
 
 

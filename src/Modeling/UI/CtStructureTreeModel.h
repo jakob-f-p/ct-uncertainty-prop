@@ -50,5 +50,7 @@ public:
     bool HasRoot();
 
 protected:
+    friend class StructureArtifactsWidget;
+
     CtStructureTree& Tree;
 };

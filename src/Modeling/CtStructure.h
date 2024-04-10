@@ -65,6 +65,8 @@ public:
 
     virtual void Iterate(const std::function<void(CtStructure&)>& f) = 0;
 
+    virtual std::string GetViewName() const = 0;
+
     CtStructure(const CtStructure&) = delete;
     void operator=(const CtStructure&) = delete;
 
@@ -72,7 +74,6 @@ protected:
     CtStructure() = default;
     ~CtStructure() override = default;
 
-    virtual std::string GetViewName() const = 0;
 
     template<typename Structure, typename Data> friend struct CtStructureData;
 

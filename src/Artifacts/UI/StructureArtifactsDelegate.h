@@ -2,7 +2,7 @@
 
 #include <QStyledItemDelegate>
 
-class ImageArtifactsDelegate : public QStyledItemDelegate {
+class StructureArtifactsDelegate : public QStyledItemDelegate {
     Q_OBJECT
 
 public:

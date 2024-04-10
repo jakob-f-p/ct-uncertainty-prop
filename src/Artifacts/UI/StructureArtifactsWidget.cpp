@@ -2,6 +2,7 @@
 
 #include "ImageArtifactsView.h"
 #include "PipelinesWidget.h"
+#include "StructureArtifactsWidgetDelegate.h"
 #include "../../App.h"
 #include "../../Modeling/UI/CtStructureTreeModel.h"
 
@@ -33,9 +34,18 @@ void StructureArtifactsWidget::SetCurrentView(int pipelineIdx) {
 }
 
 void StructureArtifactsWidget::AddView(Pipeline* pipeline) {
+    if (!pipeline) {
+        qWarning("Given pipeline was nullptr");
+        return;
+    }
+
     auto* newView = new QTreeView();
+    auto* newDelegate = new StructureArtifactsWidgetDelegate(*pipeline);
+    newView->setItemDelegate(newDelegate);
     auto* newModel = new CtStructureTreeModel(App::GetInstance()->GetCtDataTree());
+    newView->setModel(newModel);
     newView->setHeaderHidden(true);
+
     Views->addWidget(newView);
 }
 
@@ -48,15 +58,11 @@ void StructureArtifactsWidget::RemoveCurrentView() {
     Views->removeWidget(Views->currentWidget());
 }
 
-QTreeView* StructureArtifactsWidget::GetCurrentView() {
-    return dynamic_cast<QTreeView*>(Views->currentWidget());
+void StructureArtifactsWidget::ResetModel() {
+    for (int i = 1; i < Views->count(); i++) {
+        auto* view = dynamic_cast<QTreeView*>(Views->widget(i));
+        auto* model = dynamic_cast<CtStructureTreeModel*>(view->model());
+        model->beginResetModel();
+        model->endResetModel();
+    }
 }
-
-CtStructureTreeModel* StructureArtifactsWidget::GetCurrentModel() {
-    return dynamic_cast<CtStructureTreeModel*>(GetCurrentView()->model());
-}
-
-QItemSelectionModel* StructureArtifactsWidget::GetCurrentSelectionModel() {
-    return GetCurrentView()->selectionModel();
-}
-

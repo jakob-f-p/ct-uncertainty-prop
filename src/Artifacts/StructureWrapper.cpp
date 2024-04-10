@@ -8,12 +8,39 @@
 #include <vtkObjectFactory.h>
 
 
-ArtifactStructureWrapper::ArtifactStructureWrapper(CtStructure& structure) :
-        Structure(&structure) {
+vtkStandardNewMacro(ArtifactStructureWrapper)
+
+void ArtifactStructureWrapper::SetCtStructure(CtStructure& structure) {
+    Structure = &structure;
 }
 
-void ArtifactStructureWrapper::AddStructureArtifact(StructureArtifact& structureArtifact) {
-    StructureArtifacts.emplace_back(&structureArtifact);
+vtkMTimeType ArtifactStructureWrapper::GetMTime() {
+    if (StructureArtifacts.empty())
+        return 0;
+
+    std::vector<vtkMTimeType> artifactMTimes(StructureArtifacts.size());
+    std::transform(StructureArtifacts.begin(), StructureArtifacts.end(), std::back_inserter(artifactMTimes),
+                   [](StructureArtifact* artifact) { return artifact->GetMTime(); });
+    return *std::max_element(artifactMTimes.begin(), artifactMTimes.end());
+}
+
+
+StructureArtifact& ArtifactStructureWrapper::Get(int idx) {
+    if (idx < 0 || idx >= StructureArtifacts.size())
+        qWarning("Structure artifact index out of range");
+
+    return *StructureArtifacts.at(idx);
+}
+
+int ArtifactStructureWrapper::GetNumberOfArtifacts() const {
+    return static_cast<int>(StructureArtifacts.size());
+}
+
+void ArtifactStructureWrapper::AddStructureArtifact(StructureArtifact& structureArtifact, int insertionIdx) {
+    if (insertionIdx == -1)
+        StructureArtifacts.emplace_back(&structureArtifact);
+    else
+        StructureArtifacts.emplace(std::next(StructureArtifacts.begin(), insertionIdx), &structureArtifact);
 
     std::sort(StructureArtifacts.begin(), StructureArtifacts.end(),
               [](const auto& a, const auto b) {
@@ -44,21 +71,39 @@ ArtifactStructureWrapper::TypeToStructureArtifactsMap ArtifactStructureWrapper::
     return map;
 }
 
+void ArtifactStructureWrapper::MoveStructureArtifact(StructureArtifact* artifact, int newIdx) {
+    if (!artifact || newIdx < 0 || newIdx >= StructureArtifacts.size()) {
+        qWarning("Cannot move given image artifact to index");
+        return;
+    }
+
+    auto previousIt = std::find(StructureArtifacts.begin(), StructureArtifacts.end(), artifact);
+    if (previousIt == StructureArtifacts.end()) {
+        qWarning("Cannot move given image artifact to index");
+        return;
+    }
+    auto currentIdx = std::distance(StructureArtifacts.begin(), previousIt);
+
+    if (currentIdx == newIdx)
+        return;
+
+    auto newIt = std::next(StructureArtifacts.begin(), newIdx);
+    if (currentIdx < newIdx)
+        std::rotate(previousIt, std::next(previousIt), std::next(newIt));
+    else
+        std::rotate(newIt, std::next(newIt), std::next(previousIt));
+}
+
 void ArtifactStructureWrapper::AddArtifactValuesAtPositionToMap(const double* x,
                                                                 std::map<Artifact::SubType, float>& artifactValueMap) {
     for (const auto& artifact : StructureArtifacts)
         artifactValueMap[artifact->GetArtifactSubType()] += artifact->EvaluateAtPosition(x);
 }
 
-vtkMTimeType ArtifactStructureWrapper::GetMTime() const {
-    if (StructureArtifacts.empty())
-        return 0;
-
-    std::vector<vtkMTimeType> artifactMTimes(StructureArtifacts.size());
-    std::transform(StructureArtifacts.begin(), StructureArtifacts.end(), std::back_inserter(artifactMTimes),
-                   [](StructureArtifact* artifact) { return artifact->GetMTime(); });
-    return *std::max_element(artifactMTimes.begin(), artifactMTimes.end());
+std::string ArtifactStructureWrapper::GetViewName() const {
+    return Structure->GetViewName();
 }
+
 
 vtkStandardNewMacro(TreeStructureArtifactCollection)
 
@@ -68,17 +113,31 @@ vtkMTimeType TreeStructureArtifactCollection::GetMTime() {
 
     std::vector<vtkMTimeType> artifactMTimes(ArtifactLists.size());
     std::transform(ArtifactLists.begin(), ArtifactLists.end(), std::back_inserter(artifactMTimes),
-                   [](const auto& wrapper) { return wrapper.GetMTime(); });
+                   [](const auto& wrapper) { return wrapper->GetMTime(); });
     return *std::max_element(artifactMTimes.begin(), artifactMTimes.end());
 }
 
+ArtifactStructureWrapper* TreeStructureArtifactCollection::GetForCtStructure(const CtStructure& structure) {
+    auto it = std::find_if(ArtifactLists.begin(), ArtifactLists.end(),
+                           [&](const auto& wrapper) { return wrapper->Structure == &structure; });
+    if (it == ArtifactLists.end()) {
+        vtkWarningMacro("No artifact structure wrapper for the given structure exists within this collection");
+        return nullptr;
+    }
+
+    return *it;
+}
+
 void TreeStructureArtifactCollection::AddStructureArtifactList(CtStructure& ctStructure) {
-    ArtifactLists.emplace_back(ctStructure);
+    vtkNew<ArtifactStructureWrapper> wrapper;
+    wrapper->SetCtStructure(ctStructure);
+
+    ArtifactLists.emplace_back(wrapper);
 }
 
 void TreeStructureArtifactCollection::RemoveStructureArtifactList(CtStructure& structure) {
     auto removeIt = std::find_if(ArtifactLists.begin(), ArtifactLists.end(),
-                              [&](const auto& wrapper) { return wrapper.Structure == &structure; });
+                              [&](const auto& wrapper) { return wrapper->Structure == &structure; });
     if (removeIt == ArtifactLists.end()) {
         vtkWarningMacro("Cannot remove structure artifact list. Given structure is not associated with a stored list");
         return;

@@ -9,6 +9,7 @@
 class ImageArtifactsWidget;
 class Pipeline;
 class PipelineList;
+class StructureArtifactsWidget;
 
 class PipelinesWidget : public QWidget {
     Q_OBJECT
@@ -42,7 +43,6 @@ private:
     QPushButton* AddPipelineButton;
     QPushButton* RemovePipelineButton;
 
-    QWidget* StructureArtifactModelingWidget;
-    QStackedLayout* StructureArtifactsViews;
+    StructureArtifactsWidget* StructureArtifactModelingWidget;
     ImageArtifactsWidget* ImageArtifactModelingWidget;
 };

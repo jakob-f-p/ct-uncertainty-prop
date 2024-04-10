@@ -193,8 +193,3 @@ void CtStructureTree::EmitEvent(CtStructureTreeEvent event) {
 
     Pipelines->ProcessCtStructureTreeEvent(event);
 }
-
-CtStructureTree::CtStructureTree() :
-        Root(),
-        Pipelines() {
-}

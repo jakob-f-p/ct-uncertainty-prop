@@ -2,8 +2,9 @@
 
 #include "ImageArtifactsModel.h"
 #include "ImageArtifactsDelegate.h"
-#include "../ImageArtifact.h"
 #include "../CompositeArtifact.h"
+#include "../ImageArtifact.h"
+#include "../Pipeline.h"
 
 #include <QPainter>
 
@@ -15,7 +16,7 @@ ImageArtifactsView::ImageArtifactsView(Pipeline* pipeline, QWidget* parent) : QT
     setItemDelegate(new ImageArtifactsDelegate());
 
     if (pipeline)
-        QTreeView::setModel(new ImageArtifactsModel(*pipeline));
+        QTreeView::setModel(new ImageArtifactsModel(pipeline->GetImageArtifactConcatenation()));
 }
 
 void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, const QModelIndex& index) const {

@@ -4,13 +4,13 @@
 #include "ImageArtifactsModel.h"
 #include "ImageArtifactsView.h"
 #include "ImageArtifactsWidget.h"
+#include "StructureArtifactsWidget.h"
 #include "../Pipeline.h"
 #include "../PipelineList.h"
 #include "../../App.h"
-#include "../../Modeling/UI/CtStructureTreeModel.h"
-#include "../../Modeling/UI/CtStructureDelegate.h"
 
-#include <QTreeView>
+#include <vtkCallbackCommand.h>
+#include <vtkNew.h>
 
 PipelinesWidget::PipelinesWidget() :
         Pipelines(App::GetInstance()->GetPipelines()),
@@ -20,8 +20,7 @@ PipelinesWidget::PipelinesWidget() :
         NextPipelineButton(new QPushButton("")),
         AddPipelineButton(new QPushButton("")),
         RemovePipelineButton(new QPushButton("")),
-        StructureArtifactModelingWidget(new QWidget()),
-        StructureArtifactsViews(new QStackedLayout()),
+        StructureArtifactModelingWidget(new StructureArtifactsWidget()),
         ImageArtifactModelingWidget(new ImageArtifactsWidget()) {
 
     auto* vLayout = new QVBoxLayout(this);
@@ -41,20 +40,19 @@ PipelinesWidget::PipelinesWidget() :
     pipelineTitleBarHLayout->addWidget(AddPipelineButton);
     pipelineTitleBarHLayout->addWidget(RemovePipelineButton);
     vLayout->addWidget(pipelineTitleBarWidget);
-
     connect(AddPipelineButton, &QPushButton::clicked, this, &PipelinesWidget::AddPipeline);
     connect(RemovePipelineButton, &QPushButton::clicked, this, &PipelinesWidget::RemovePipeline);
     connect(PreviousPipelineButton, &QPushButton::clicked, this, &PipelinesWidget::PreviousPipeline);
     connect(NextPipelineButton, &QPushButton::clicked, this, &PipelinesWidget::NextPipeline);
 
-    auto* structureArtifactVLayout = new QVBoxLayout(StructureArtifactModelingWidget);
-    auto* structureArtifactTitle = new QLabel("Structure Artifacts");
-    structureArtifactTitle->setStyleSheet(GetHeaderStyleSheet());
-    structureArtifactVLayout->addWidget(structureArtifactTitle);
-    structureArtifactVLayout->addLayout(StructureArtifactsViews);
-    auto* structureArtifactsPlaceholderWidget = new QTreeView();
-    StructureArtifactsViews->addWidget(structureArtifactsPlaceholderWidget);
     vLayout->addWidget(StructureArtifactModelingWidget);
+    vtkNew<vtkCallbackCommand> pipelineListObserver;
+    pipelineListObserver->SetClientData(StructureArtifactModelingWidget);
+    pipelineListObserver->SetCallback([](vtkObject*, unsigned long, void* clientData, void*) {
+        auto* structureArtifactModelingWidget = static_cast<StructureArtifactsWidget*>(clientData);
+        structureArtifactModelingWidget->ResetModel();
+    });
+    Pipelines.AddObserver(vtkCommand::ModifiedEvent, pipelineListObserver);
 
     vLayout->addWidget(ImageArtifactModelingWidget);
 
@@ -63,11 +61,10 @@ PipelinesWidget::PipelinesWidget() :
 }
 
 void PipelinesWidget::AddPipeline() {
-    auto* newPipeline = Pipeline::New();
+    vtkNew<Pipeline> newPipeline;
     newPipeline->SetCtDataTree(&App::GetInstance()->GetCtDataTree());
 
     Pipelines.AddPipeline(newPipeline);
-    newPipeline->FastDelete();
 
     CurrentPipelineIndex = Pipelines.GetSize() - 1;
 
@@ -79,7 +76,7 @@ void PipelinesWidget::AddPipeline() {
 void PipelinesWidget::RemovePipeline() {
     Pipelines.RemovePipeline(GetCurrentPipeline());
 
-    StructureArtifactsViews->removeWidget(StructureArtifactsViews->widget(CurrentPipelineIndex + 1));
+    StructureArtifactModelingWidget->RemoveCurrentView();
     ImageArtifactModelingWidget->RemoveCurrentView();
 
     if (Pipelines.IsEmpty()) {
@@ -126,7 +123,7 @@ void PipelinesWidget::UpdatePipelineView() {
     AddPipelineButton->setEnabled(Pipelines.GetSize() < 10);
     RemovePipelineButton->setEnabled(CurrentPipelineIndex > -1);
 
-    StructureArtifactsViews->setCurrentIndex(CurrentPipelineIndex + 1);
+    StructureArtifactModelingWidget->SetCurrentView(CurrentPipelineIndex);
     ImageArtifactModelingWidget->SetCurrentView(CurrentPipelineIndex);
 }
 
@@ -140,27 +137,13 @@ QIcon PipelinesWidget::GenerateIcon(const std::string &filePrefix) {
 
 void PipelinesWidget::InitializeViews() {
     for (int i = 0; i < Pipelines.GetSize(); ++i) {
-        auto* newStructureArtifactsView = new QTreeView();
-        auto* newStructureArtifactsModel = new CtStructureTreeModel(Pipelines.Get(i));
-        newStructureArtifactsView->setModel(newStructureArtifactsModel);
-        auto* newCtDataTreeDelegate = new CtStructureDelegate();
-        newStructureArtifactsView->setItemDelegate(newCtDataTreeDelegate);
-        newStructureArtifactsView->setHeaderHidden(true);
-        StructureArtifactsViews->addWidget(newStructureArtifactsView);
-
+        StructureArtifactModelingWidget->AddView(Pipelines.Get(i));
         ImageArtifactModelingWidget->AddView(Pipelines.Get(i));
     }
 }
 
 void PipelinesWidget::CreateArtifactsViewsForCurrentPipeline() {
-    auto* newStructureArtifactsView = new QTreeView();
-    auto* newStructureArtifactsModel = new CtStructureTreeModel(GetCurrentPipeline());
-    newStructureArtifactsView->setModel(newStructureArtifactsModel);
-    auto* newCtDataTreeDelegate = new CtStructureDelegate();
-    newStructureArtifactsView->setItemDelegate(newCtDataTreeDelegate);
-    newStructureArtifactsView->setHeaderHidden(true);
-    StructureArtifactsViews->addWidget(newStructureArtifactsView);
-
+    StructureArtifactModelingWidget->AddView(GetCurrentPipeline());
     ImageArtifactModelingWidget->AddView(GetCurrentPipeline());
 }
 

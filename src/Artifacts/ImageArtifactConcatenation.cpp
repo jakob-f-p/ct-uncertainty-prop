@@ -7,12 +7,8 @@
 vtkStandardNewMacro(ImageArtifactConcatenation)
 
 ImageArtifactConcatenation::ImageArtifactConcatenation() :
-        Start(*CompositeArtifact::New()) {
-    Start.SetCompType(CompositeArtifact::CompositionType::SEQUENTIAL);
-}
-
-ImageArtifactConcatenation::~ImageArtifactConcatenation() {
-    Start.Delete();
+        Start() {
+    Start->SetCompType(CompositeArtifact::CompositionType::SEQUENTIAL);
 }
 
 void ImageArtifactConcatenation::PrintSelf(ostream &os, vtkIndent indent) {
@@ -20,7 +16,7 @@ void ImageArtifactConcatenation::PrintSelf(ostream &os, vtkIndent indent) {
 }
 
 bool ImageArtifactConcatenation::ContainsImageArtifact(const ImageArtifact& imageArtifact) {
-    return Start.ContainsImageArtifact(imageArtifact);
+    return Start->ContainsImageArtifact(imageArtifact);
 }
 
 void ImageArtifactConcatenation::AddImageArtifact(ImageArtifact& imageArtifact, CompositeArtifact* parent) {
@@ -30,7 +26,7 @@ void ImageArtifactConcatenation::AddImageArtifact(ImageArtifact& imageArtifact, 
     }
 
     if (!parent) {
-        Start.AddImageArtifact(imageArtifact);
+        Start->AddImageArtifact(imageArtifact);
         return;
     }
 
@@ -48,7 +44,7 @@ void ImageArtifactConcatenation::RemoveImageArtifact(ImageArtifact& imageArtifac
         return;
     }
 
-    if (static_cast<ImageArtifact*>(&Start) == &imageArtifact) {
+    if (static_cast<ImageArtifact*>(Start) == &imageArtifact) {
         qWarning("Cannot remove root image artifact");
         return;
     }
@@ -57,5 +53,5 @@ void ImageArtifactConcatenation::RemoveImageArtifact(ImageArtifact& imageArtifac
 }
 
 CompositeArtifact& ImageArtifactConcatenation::GetStart() {
-    return Start;
+    return *Start;
 }

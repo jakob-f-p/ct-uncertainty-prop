@@ -57,7 +57,7 @@ public:
     void operator=(const CtStructureTree&) = delete;
 
 protected:
-    CtStructureTree();
+    CtStructureTree() = default;
     ~CtStructureTree() override = default;
 
     bool CtStructureExists(const CtStructure& ctStructure);

@@ -2,11 +2,10 @@
 
 #include <QStackedLayout>
 #include <QWidget>
-#include <QTreeView>
 
 class CtStructureTreeModel;
 class Pipeline;
-class StructureArtifactsDialog;
+class StructureArtifactsWidgetDialog;
 
 class StructureArtifactsWidget : public QWidget {
     Q_OBJECT
@@ -18,12 +17,11 @@ public:
     void AddView(Pipeline* pipeline);
     void RemoveCurrentView();
 
-private:
-    QTreeView* GetCurrentView();
-    CtStructureTreeModel* GetCurrentModel();
-    QItemSelectionModel* GetCurrentSelectionModel();
+public slots:
+    void ResetModel();
 
+private:
     QStackedLayout* Views;
 
-    StructureArtifactsDialog* Dialog;
+    StructureArtifactsWidgetDialog* Dialog;
 };

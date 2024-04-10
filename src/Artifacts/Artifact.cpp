@@ -79,15 +79,24 @@ Artifact::Type Artifact::GetType(Artifact::SubType subType) {
     return Artifact::Type::STRUCTURE_ARTIFACT;
 }
 
+std::string Artifact::GetViewName() const {
+    std::string subTypeFullName = SubTypeToString(GetArtifactSubType());
+    std::string subTypeViewName = subTypeFullName.erase(0, subTypeFullName.find(' ') + 1);
+    std::string viewName = subTypeViewName + (Name.empty() ? "" : (" (" + Name + ")"));
+    return viewName;
+}
+
+
 
 template class ArtifactData<ImageArtifact, ImageArtifactData>;
 template class ArtifactData<StructureArtifact, StructureArtifactData>;
 
 template<typename TArtifact, typename TData>
 std::unique_ptr<TData> ArtifactData<TArtifact, TData>::GetData(const TArtifact& artifact) {
-    std::unique_ptr<TData> data = TData::Create(artifact);
+    std::unique_ptr<TData> data = TData::Create(artifact.GetArtifactSubType());
 
     data->Name = QString::fromStdString(artifact.Name);
+    data->ViewName = QString::fromStdString(artifact.GetViewName());
     data->Type = artifact.GetArtifactType();
     data->SubType = artifact.GetArtifactSubType();
 
@@ -109,6 +118,22 @@ void ArtifactData<TArtifact, TData>::SetData(TArtifact& artifact, const QVariant
 
     if (data)
         SetData(artifact, *data);
+}
+
+template<typename TArtifact, typename TData>
+std::unique_ptr<TData> ArtifactData<TArtifact, TData>::FromQVariant(const QVariant& variant) {
+    return TData::QVariantToData(variant);
+}
+
+template<typename TArtifact, typename TData>
+QVariant ArtifactData<TArtifact, TData>::ToQVariant(const TData& data) {
+    return TData::DataToQVariant(data);
+}
+
+template<typename TArtifact, typename TData>
+std::unique_ptr<TData> ArtifactData<TArtifact, TData>::Create(const TArtifact& artifact) {
+    auto data = TData::Create(artifact.GetArtifactSubType());
+    return data;
 }
 
 
