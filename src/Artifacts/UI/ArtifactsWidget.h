@@ -12,7 +12,7 @@ class ArtifactsWidget : public QMainWindow {
 
 public:
     ArtifactsWidget();
-    ~ArtifactsWidget() override;
+    ~ArtifactsWidget() override = default;
 
 private:
     void SetUpCentralRenderingWidget();
@@ -21,9 +21,8 @@ private:
     QPushButton* ResetCameraButton;
     QPushButton* RenderButton;
 
-    vtkOrientationMarkerWidget* OrientationMarkerWidget;
-    vtkOpenGLRenderer* Renderer;
-    QVTKInteractor* RenderWindowInteractor;
-    std::array<double, 3> InitialCameraPosition;
-    vtkCamera* InitialCamera;
+    vtkNew<vtkOrientationMarkerWidget> OrientationMarkerWidget;
+    vtkNew<vtkOpenGLRenderer> Renderer;
+    vtkNew<QVTKInteractor> RenderWindowInteractor;
+//    vtkNew<vtkCamera> InitialCamera;
 };

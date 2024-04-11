@@ -1,41 +1,34 @@
 #pragma once
 
-#include <QItemSelectionModel>
 #include <QMainWindow>
-#include <QPushButton>
-#include <QTreeView>
-#include <QVTKInteractor.h>
-
-#include <vtkOpenGLRenderer.h>
-#include <vtkOrientationMarkerWidget.h>
 
 class CtStructureTree;
 class CtStructureTreeModel;
 class CtDataSource;
 class CtStructureDialog;
+class ModelingRenderWidget;
 
 struct BasicStructureData;
 struct CombinedStructureData;
 
-class ModelingWidget : public QMainWindow {
-Q_OBJECT
+class QItemSelectionModel;
+class QPushButton;
+class QTreeView;
 
+class ModelingWidget : public QMainWindow {
 public:
-    ModelingWidget();
-    ~ModelingWidget() override;
+    explicit ModelingWidget(QWidget* parent = nullptr);
+    ~ModelingWidget() override = default;
 
 private:
-    void SetUpCentralWidgetForRendering();
-
-    void SetUpDockWidgetForImplicitCtDataModeling();
-
     void ConnectButtons();
 
     void DisableButtons();
 
-    void OpenCreateDialog(const std::function<const void()>& onAccepted);
     void OpenBasicAndCombinedStructureCreateDialog(
             const std::function<const void(const BasicStructureData&, const CombinedStructureData&)>& onAccepted);
+
+    ModelingRenderWidget* RenderWidget;
 
     QPushButton* ResetCameraButton;
     QPushButton* AddStructureButton;
@@ -49,12 +42,4 @@ private:
     QItemSelectionModel* SelectionModel;
 
     CtStructureDialog* CtStructureCreateDialog;
-    CtDataSource* DataSource;
-    CtStructureTree* DataTree;
-
-    vtkOrientationMarkerWidget* OrientationMarkerWidget;
-    vtkOpenGLRenderer* Renderer;
-    QVTKInteractor* RenderWindowInteractor;
-    std::array<double, 3> InitialCameraPosition;
-    vtkCamera* InitialCamera;
 };

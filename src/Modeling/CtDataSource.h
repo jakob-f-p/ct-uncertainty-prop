@@ -2,6 +2,7 @@
 
 #include <vtkImageAlgorithm.h>
 #include <vtkImageData.h>
+#include <vtkSmartPointer.h>
 
 #include <tracy/Tracy.hpp>
 
@@ -32,7 +33,7 @@ public:
 
 protected:
     CtDataSource();
-    ~CtDataSource() override;
+    ~CtDataSource() override = default;
 
     vtkExecutive* CreateDefaultExecutive() override;
 
@@ -67,5 +68,5 @@ protected:
 
     std::array<float, 3> PhysicalDimensions;
     std::array<int, 3> NumberOfVoxels;
-    CtStructureTree* DataTree;
+    vtkSmartPointer<CtStructureTree> DataTree;
 };

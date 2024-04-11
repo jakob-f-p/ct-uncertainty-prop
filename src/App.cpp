@@ -3,6 +3,7 @@
 #include "MainWindow.h"
 #include "Modeling/CtStructureTree.h"
 #include "Modeling/BasicStructure.h"
+#include "Modeling/CombinedStructure.h"
 #include "Artifacts/GaussianArtifact.h"
 #include "Artifacts/ImageArtifactConcatenation.h"
 #include "Artifacts/CompositeArtifact.h"
@@ -11,6 +12,7 @@
 #include "Artifacts/Pipeline.h"
 #include "Artifacts/StructureWrapper.h"
 
+#include <QApplication>
 #include <QSurfaceFormat>
 #include <QVTKOpenGLNativeWidget.h>
 

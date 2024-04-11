@@ -7,7 +7,6 @@
 #include <QComboBox>
 #include <QDialog>
 #include <QEvent>
-#include <QSpinBox>
 
 void DialogDelegate::updateEditorGeometry(QWidget* editor,
                                           const QStyleOptionViewItem& option,

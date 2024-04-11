@@ -43,8 +43,7 @@ void CtDataSource::SetVolumeNumberOfVoxels(int x, int y, int z) {
 
 CtDataSource::CtDataSource() :
         PhysicalDimensions{},
-        NumberOfVoxels{},
-        DataTree(nullptr) {
+        NumberOfVoxels{} {
 
     int defaultResolution = 128; //256;
     std::fill(NumberOfVoxels.begin(), NumberOfVoxels.end(), defaultResolution);
@@ -53,10 +52,6 @@ CtDataSource::CtDataSource() :
     std::fill(PhysicalDimensions.begin(), PhysicalDimensions.end(), defaultPhysicalDimensionsLength);
 
     CtDataSource::SetNumberOfInputPorts(0);
-}
-
-CtDataSource::~CtDataSource() {
-    DataTree->Delete();
 }
 
 vtkExecutive* CtDataSource::CreateDefaultExecutive() {

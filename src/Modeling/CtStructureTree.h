@@ -1,17 +1,25 @@
 #pragma once
 
-#include "CombinedStructure.h"
-#include "tracy/Tracy.hpp"
+#include "CtStructure.h"
 
 #include <vtkObject.h>
 #include <vtkSmartPointer.h>
+#include <vtkWeakPointer.h>
 
+#include "tracy/Tracy.hpp"
+
+class BasicStructure;
+class CtStructure;
+class CombinedStructure;
 class Pipeline;
 class PipelineList;
 
 struct BasicStructureData;
+struct CombinedStructureData;
 
-enum class CtStructureTreeEventType : uint { Add, Remove };
+class QVariant;
+
+enum class CtStructureTreeEventType { Add, Remove };
 struct CtStructureTreeEvent {
     CtStructureTreeEventType Type;
     CtStructure& Structure;
@@ -45,9 +53,9 @@ public:
 
     CtStructure* GetRoot() const;
 
-    inline void EvaluateAtPosition(const double x[3], CtStructure::Result& result);
+//    inline void EvaluateAtPosition(const double x[3], CtStructure::Result& result);
 
-    inline CtStructure::ModelingResult FunctionValueAndRadiodensity(const double x[3]);
+    CtStructure::ModelingResult FunctionValueAndRadiodensity(const double x[3]);
 
     void SetData(CtStructure* ctStructure, const QVariant& data);
 
@@ -69,20 +77,3 @@ protected:
 };
 
 
-void CtStructureTree::EvaluateAtPosition(const double x[3], CtStructure::Result &result) {
-    if (!Root) {
-        qWarning("Tree does not have a root. Cannot evaluate");
-        return;
-    }
-
-    return Root->EvaluateAtPosition(x, result);
-}
-
-inline CtStructure::ModelingResult CtStructureTree::FunctionValueAndRadiodensity(const double x[3]) {
-    if (!Root) {
-        qWarning("Tree does not have a root. Cannot evaluate");
-        return {};
-    }
-
-    return Root->EvaluateImplicitModel(x);
-}

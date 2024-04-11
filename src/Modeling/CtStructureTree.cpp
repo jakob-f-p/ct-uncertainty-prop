@@ -1,8 +1,8 @@
 #include "CtStructureTree.h"
 
 #include "BasicStructure.h"
+#include "CombinedStructure.h"
 #include "../Artifacts/PipelineList.h"
-#include "../App.h"
 
 #include <vtkCommand.h>
 #include <vtkNew.h>
@@ -137,7 +137,7 @@ void CtStructureTree::RemoveBasicStructure(BasicStructure& basicStructure) {
     }
 
     if (Root == &basicStructure) {
-        EmitEvent({ CtStructureTreeEventType::Add, *Root });
+        EmitEvent({ CtStructureTreeEventType::Remove, *Root });
         Root = nullptr;
         InvokeEvent(vtkCommand::ModifiedEvent);
         return;
@@ -152,7 +152,7 @@ void CtStructureTree::RemoveBasicStructure(BasicStructure& basicStructure) {
 
     auto* grandParent = dynamic_cast<CombinedStructure*>(parent->GetParent());
 
-    EmitEvent({ CtStructureTreeEventType::Add, *parent });
+    EmitEvent({ CtStructureTreeEventType::Remove, *parent });
     CtStructure* newRoot = parent->RemoveBasicStructure(&basicStructure, grandParent);
     if (newRoot) {
         Root = newRoot;
@@ -160,6 +160,15 @@ void CtStructureTree::RemoveBasicStructure(BasicStructure& basicStructure) {
     }
 
     Modified();
+}
+
+CtStructure::ModelingResult CtStructureTree::FunctionValueAndRadiodensity(const double* x) {
+    if (!Root) {
+        qWarning("Tree does not have a root. Cannot evaluate");
+        return {};
+    }
+
+    return Root->EvaluateImplicitModel(x);
 }
 
 void CtStructureTree::SetData(CtStructure* ctStructure, const QVariant& data) {

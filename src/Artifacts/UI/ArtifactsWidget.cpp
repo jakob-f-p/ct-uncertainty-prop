@@ -15,25 +15,15 @@
 #include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkPiecewiseFunction.h>
 #include <vtkVolumeProperty.h>
+#include <vtkOpenGLGPUVolumeRayCastMapper.h>
 
 ArtifactsWidget::ArtifactsWidget() :
         ResetCameraButton(new QPushButton("Reset Camera")),
-        RenderButton(new QPushButton("Render")),
-        OrientationMarkerWidget(vtkOrientationMarkerWidget::New()),
-        Renderer(vtkOpenGLRenderer::New()),
-        RenderWindowInteractor(QVTKInteractor::New()),
-        InitialCameraPosition{ 0.0, 0.5, -1.0 },
-        InitialCamera(vtkCamera::New()) {
+        RenderButton(new QPushButton("Render")) {
 
     SetUpCentralRenderingWidget();
 
     SetUpDockWidget();
-}
-
-ArtifactsWidget::~ArtifactsWidget() {
-    OrientationMarkerWidget->Delete();
-    Renderer->Delete();
-    RenderWindowInteractor->Delete();
 }
 
 void ArtifactsWidget::SetUpCentralRenderingWidget() {
@@ -64,7 +54,7 @@ void ArtifactsWidget::SetUpCentralRenderingWidget() {
     Renderer->AddVolume(volume);
     Renderer->SetBackground(0.2, 0.2, 0.2);
     Renderer->ResetCamera();
-    InitialCamera->DeepCopy(Renderer->GetActiveCamera());
+//    InitialCamera->DeepCopy(Renderer->GetActiveCamera());
 
     vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
     renderWindow->SetWindowName("CT-TData");
@@ -77,8 +67,8 @@ void ArtifactsWidget::SetUpCentralRenderingWidget() {
 
     auto* renderingWidget = new QVTKOpenGLNativeWidget();
     renderingWidget->setRenderWindow(renderWindow);
-
-    renderWindow->Render();
+//
+//    renderWindow->Render();
 
     vtkNew<vtkAxesActor> axesActor;
     axesActor->SetTotalLength(20.0, 20.0, 20.0);
@@ -119,7 +109,7 @@ void ArtifactsWidget::SetUpDockWidget() {
     verticalLayout->addWidget(renderingButtonBarWidget);
 
     connect(ResetCameraButton, &QPushButton::clicked, [&]() {
-        Renderer->GetActiveCamera()->DeepCopy(InitialCamera);
+//        Renderer->GetActiveCamera()->DeepCopy(InitialCamera);
         RenderWindowInteractor->Render();
     });
 

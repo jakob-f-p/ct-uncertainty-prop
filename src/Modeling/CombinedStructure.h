@@ -1,6 +1,7 @@
 #pragma once
 
-#include "CtStructure.h"
+//#include "CtStructure.h"
+#include "BasicStructure.h"
 
 #include <QFormLayout>
 

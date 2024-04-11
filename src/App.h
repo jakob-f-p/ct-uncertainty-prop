@@ -1,12 +1,12 @@
 #pragma once
 
-#include <QApplication>
-
 #include <vtkNew.h>
 
 class CtStructureTree;
 class PipelineList;
 class MainWindow;
+
+class QApplication;
 
 class App {
 public:

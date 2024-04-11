@@ -4,30 +4,21 @@
 #include "CtStructureDialog.h"
 #include "CtStructureDelegate.h"
 #include "../BasicStructure.h"
-#include "../CtStructureTree.h"
-#include "../CtDataSource.h"
+#include "../CombinedStructure.h"
+#include "ModelingRenderWidget.h"
 #include "../../App.h"
 
-#include <vtkAxesActor.h>
-#include <vtkCallbackCommand.h>
-#include <vtkCamera.h>
-#include <vtkCaptionActor2D.h>
-#include <vtkColorTransferFunction.h>
-#include <vtkInteractorStyleTrackballCamera.h>
-#include <vtkNew.h>
-#include <vtkGenericOpenGLRenderWindow.h>
-#include <vtkOpenGLGPUVolumeRayCastMapper.h>
-#include <vtkOrientationMarkerWidget.h>
-#include <vtkPiecewiseFunction.h>
-#include <vtkTextActor.h>
-#include <vtkVolume.h>
-#include <vtkVolumeProperty.h>
-
+#include <QItemSelectionModel>
 #include <QDockWidget>
+#include <QMainWindow>
+#include <QPushButton>
+#include <QTreeView>
 #include <QVBoxLayout>
-#include <QVTKOpenGLNativeWidget.h>
 
-ModelingWidget::ModelingWidget() :
+
+ModelingWidget::ModelingWidget(QWidget* parent) :
+        QMainWindow(parent),
+        RenderWidget(new ModelingRenderWidget()),
         ResetCameraButton(new QPushButton("Reset Camera")),
         AddStructureButton(new QPushButton("Add Structure")),
         CombineWithStructureButton(new QPushButton("Combine With Structure")),
@@ -40,90 +31,10 @@ ModelingWidget::ModelingWidget() :
         TreeModel(new CtStructureTreeModel(App::GetInstance()->GetCtDataTree())),
         TreeView(new QTreeView()),
         SelectionModel(nullptr),
-        CtStructureCreateDialog(nullptr),
-        DataSource(nullptr),
-        DataTree(&App::GetInstance()->GetCtDataTree()),
-        OrientationMarkerWidget(vtkOrientationMarkerWidget::New()),
-        Renderer(vtkOpenGLRenderer::New()),
-        RenderWindowInteractor(QVTKInteractor::New()),
-        InitialCameraPosition { 0.0, 0.5, -1.0 },
-        InitialCamera(vtkCamera::New()) {
+        CtStructureCreateDialog(nullptr) {
 
-    SetUpCentralWidgetForRendering();
+    setCentralWidget(RenderWidget);
 
-    SetUpDockWidgetForImplicitCtDataModeling();
-}
-
-ModelingWidget::~ModelingWidget() {
-    OrientationMarkerWidget->Delete();
-    Renderer->Delete();
-    RenderWindowInteractor->Delete();
-}
-
-void ModelingWidget::SetUpCentralWidgetForRendering() {
-    DataSource = CtDataSource::New();
-    DataSource->SetDataTree(DataTree);
-    vtkNew<vtkPiecewiseFunction> opacityMappingFunction;
-    opacityMappingFunction->AddPoint(-1000.0, 0.005);
-    opacityMappingFunction->AddPoint(2000.0, 0.05);
-
-    vtkNew<vtkColorTransferFunction> colorTransferFunction;
-    colorTransferFunction->AddRGBPoint(-1000.0, 0.0, 0.0, 0.0);
-    colorTransferFunction->AddRGBPoint(2000.0, 3 * 1.0, 3 * 1.0, 3 * 1.0);
-
-    vtkNew<vtkVolumeProperty> volumeProperty;
-    volumeProperty->SetColor(colorTransferFunction.GetPointer());
-    volumeProperty->SetScalarOpacity(opacityMappingFunction.GetPointer());
-    volumeProperty->ShadeOn();
-    volumeProperty->SetInterpolationTypeToLinear();
-    volumeProperty->SetAmbient(0.3);
-
-    vtkNew<vtkOpenGLGPUVolumeRayCastMapper> volumeMapper;
-    volumeMapper->SetInputConnection(DataSource->GetOutputPort());
-
-    vtkNew<vtkVolume> volume;
-    volume->SetMapper(volumeMapper);
-    volume->SetProperty(volumeProperty);
-
-    Renderer->AddVolume(volume);
-    Renderer->SetBackground(0.2, 0.2, 0.2);
-    Renderer->ResetCamera();
-    InitialCamera->DeepCopy(Renderer->GetActiveCamera());
-
-    vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
-    renderWindow->SetWindowName("CT-TData");
-    renderWindow->AddRenderer(Renderer);
-
-    renderWindow->SetInteractor(RenderWindowInteractor);
-    RenderWindowInteractor->Initialize();
-    vtkNew<vtkInteractorStyleTrackballCamera> trackballCameraStyle;
-    RenderWindowInteractor->SetInteractorStyle(trackballCameraStyle);
-
-    auto* renderingWidget = new QVTKOpenGLNativeWidget();
-    renderingWidget->setRenderWindow(renderWindow);
-
-    renderWindow->Render();
-
-    vtkNew<vtkAxesActor> axesActor;
-    axesActor->SetTotalLength(20.0, 20.0, 20.0);
-    OrientationMarkerWidget->SetOrientationMarker(axesActor);
-    OrientationMarkerWidget->SetViewport(0.8, 0.0, 1.0, 0.2);
-    OrientationMarkerWidget->SetInteractor(RenderWindowInteractor);
-    OrientationMarkerWidget->EnabledOn();
-    OrientationMarkerWidget->InteractiveOff();
-
-    setCentralWidget(renderingWidget);
-
-    vtkNew<vtkCallbackCommand> onDataChangedUpdater;
-    onDataChangedUpdater->SetClientData(RenderWindowInteractor);
-    onDataChangedUpdater->SetCallback([](vtkObject*, unsigned long, void* rwi, void*) {
-        auto* renderWindowInteractor = static_cast<QVTKInteractor*>(rwi);
-        renderWindowInteractor->Render();
-    });
-    DataTree->AddObserver(vtkCommand::ModifiedEvent, onDataChangedUpdater);
-}
-
-void ModelingWidget::SetUpDockWidgetForImplicitCtDataModeling() {
     auto* dockWidget = new QDockWidget();
     dockWidget->setFeatures(
             QDockWidget::DockWidgetFeature::DockWidgetMovable | QDockWidget::DockWidgetFeature::DockWidgetFloatable);
@@ -171,10 +82,7 @@ void ModelingWidget::SetUpDockWidgetForImplicitCtDataModeling() {
 }
 
 void ModelingWidget::ConnectButtons() {
-    connect(ResetCameraButton, &QPushButton::clicked, [&]() {
-        Renderer->GetActiveCamera()->DeepCopy(InitialCamera);
-        RenderWindowInteractor->Render();
-    });
+    connect(ResetCameraButton, &QPushButton::clicked, [&]() { RenderWidget->ResetCamera(); });
 
     connect(AddStructureButton, &QPushButton::clicked, [&]() {
         CtStructureCreateDialog = new BasicStructureDialog(CtStructureDialog::CREATE, this);

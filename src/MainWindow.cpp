@@ -3,8 +3,6 @@
 #include "Modeling/UI/ModelingWidget.h"
 #include "Artifacts/UI/ArtifactsWidget.h"
 
-#include <QStatusBar>
-
 MainWindow::MainWindow() {
     resize(1400, 700);
 
@@ -16,7 +14,7 @@ MainWindow::MainWindow() {
     auto* modelingWidget = new ModelingWidget();
     auto* artifactsWidget = new ArtifactsWidget();
 
-    tabWidget->addTab(modelingWidget, "Implicit TData Modeling");
+    tabWidget->addTab(modelingWidget, "Implicit Modeling");
     tabWidget->addTab(artifactsWidget, "Artifacts Widget");
 
     tabWidget->setCurrentIndex(1);

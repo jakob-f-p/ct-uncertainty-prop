@@ -2,6 +2,7 @@
 
 #include "../BasicStructure.h"
 #include "../CtStructureTree.h"
+#include "../CombinedStructure.h"
 #include "../../Artifacts/Pipeline.h"
 
 CtStructureTreeModel::CtStructureTreeModel(CtStructureTree& ctStructureTree, QObject* parent) :
