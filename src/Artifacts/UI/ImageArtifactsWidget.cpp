@@ -61,8 +61,8 @@ void ImageArtifactsWidget::SetCurrentView(int pipelineIdx) {
     UpdateButtonStatesOnSelectionChange(QModelIndex());
 }
 
-void ImageArtifactsWidget::AddView(Pipeline* pipeline) {
-    auto* newView = new ImageArtifactsView(pipeline);
+void ImageArtifactsWidget::AddView(Pipeline& pipeline) {
+    auto* newView = new ImageArtifactsView(&pipeline);
     auto* newModel = newView->model();
     newView->setHeaderHidden(true);
     Views->addWidget(newView);

@@ -16,16 +16,16 @@ public:
 
     void SetName(const std::string& name);
 
-    enum class Type {
+    enum struct Type {
         IMAGE_ARTIFACT,
         STRUCTURE_ARTIFACT,
         INVALID
     };
     Q_ENUM(Type);
     static std::string TypeToString(Type type);
-    GET_ENUM_VALUES(Type, true);
+    ENUM_GET_VALUES(Type, true);
 
-    enum class SubType {
+    enum struct SubType {
         IMAGE_GAUSSIAN,
         IMAGE_SALT_PEPPER,
         IMAGE_RING,
@@ -43,7 +43,7 @@ public:
     };
     Q_ENUM(SubType);
     static std::string SubTypeToString(SubType subType);
-    GET_ENUM_VALUES(SubType, true);
+    ENUM_GET_VALUES(SubType, true);
     static Type GetType(SubType subType);
 
     static Artifact* NewArtifact(SubType subType);

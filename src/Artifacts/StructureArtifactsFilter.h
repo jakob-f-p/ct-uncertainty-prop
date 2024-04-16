@@ -2,7 +2,6 @@
 
 #include <vtkImageAlgorithm.h>
 #include <vtkImageData.h>
-#include <vtkSmartPointer.h>
 
 class TreeStructureArtifactCollection;
 
@@ -49,5 +48,5 @@ protected:
 
     void ExecuteDataWithInformation(vtkDataObject *output, vtkInformation *outInfo) override;
 
-    vtkSmartPointer<TreeStructureArtifactCollection> StructureArtifactCollection;
+    TreeStructureArtifactCollection* StructureArtifactCollection = nullptr;
 };

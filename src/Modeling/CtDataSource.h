@@ -1,10 +1,10 @@
 #pragma once
 
 #include <vtkImageAlgorithm.h>
-#include <vtkImageData.h>
-#include <vtkSmartPointer.h>
 
-#include <tracy/Tracy.hpp>
+#include <array>
+
+class vtkImageData;
 
 class CtStructureTree;
 
@@ -68,5 +68,5 @@ protected:
 
     std::array<float, 3> PhysicalDimensions;
     std::array<int, 3> NumberOfVoxels;
-    vtkSmartPointer<CtStructureTree> DataTree;
+    CtStructureTree* DataTree = nullptr;
 };

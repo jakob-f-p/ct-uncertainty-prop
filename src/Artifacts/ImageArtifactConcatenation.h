@@ -1,32 +1,28 @@
 #pragma once
 
+#include "CompositeArtifact.h"
+
 #include <vtkNew.h>
-#include <vtkObject.h>
 
 class ImageArtifact;
 class CompositeArtifact;
 
-class ImageArtifactConcatenation : public vtkObject {
+class ImageArtifactConcatenation {
 public:
-    static ImageArtifactConcatenation* New();
-    vtkTypeMacro(ImageArtifactConcatenation, vtkObject);
+    ImageArtifactConcatenation() noexcept;
 
-    void PrintSelf(std::ostream& os, vtkIndent indent) override;
+    [[nodiscard]] auto
+    ContainsImageArtifact(const ImageArtifact& imageArtifact) const noexcept -> bool;
 
-    bool ContainsImageArtifact(const ImageArtifact& imageArtifact);
+    auto
+    AddImageArtifact(ImageArtifact& imageArtifact, CompositeArtifact* parent = nullptr) -> void;
 
-    void AddImageArtifact(ImageArtifact& imageArtifact, CompositeArtifact* parent = nullptr);
+    auto
+    RemoveImageArtifact(ImageArtifact& imageArtifact) -> void;
 
-    void RemoveImageArtifact(ImageArtifact& imageArtifact);
+    [[nodiscard]] auto
+    GetStart() noexcept -> CompositeArtifact&;
 
-    CompositeArtifact& GetStart();
-
-    ImageArtifactConcatenation(const ImageArtifactConcatenation&) = delete;
-    void operator=(const ImageArtifactConcatenation&) = delete;
-
-protected:
-    ImageArtifactConcatenation();
-    ~ImageArtifactConcatenation() override = default;
-
+private:
     vtkNew<CompositeArtifact> Start;
 };

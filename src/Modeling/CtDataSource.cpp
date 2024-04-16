@@ -3,11 +3,13 @@
 #include "CtStructureTree.h"
 
 #include <vtkDataSetAttributes.h>
+#include <vtkDataObject.h>
 #include <vtkFloatArray.h>
-#include <vtkObjectFactory.h>
-#include <vtkPointData.h>
+#include <vtkImageData.h>
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
+#include <vtkObjectFactory.h>
+#include <vtkPointData.h>
 #include <vtkSMPTools.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
 #include <vtkTypeUInt16Array.h>
@@ -30,7 +32,7 @@ vtkMTimeType CtDataSource::GetMTime() {
 }
 
 void CtDataSource::SetDataTree(CtStructureTree* ctStructureTree) {
-    vtkSetObjectBodyMacro(DataTree, CtStructureTree, ctStructureTree)
+    DataTree = ctStructureTree;
 }
 
 void CtDataSource::SetVolumeDataPhysicalDimensions(float x, float y, float z) {
@@ -45,7 +47,7 @@ CtDataSource::CtDataSource() :
         PhysicalDimensions{},
         NumberOfVoxels{} {
 
-    int defaultResolution = 128; //256;
+    int defaultResolution = 64; //256;
     std::fill(NumberOfVoxels.begin(), NumberOfVoxels.end(), defaultResolution);
 
     float defaultPhysicalDimensionsLength = 100.0f;
@@ -79,8 +81,6 @@ int CtDataSource::RequestInformation(vtkInformation* vtkNotUsed(request),
 }
 
 void CtDataSource::ExecuteDataWithInformation(vtkDataObject *output, vtkInformation *outInfo) {
-    ZoneScopedN("ExecuteDataWithInformation");
-
     vtkImageData* data = vtkImageData::SafeDownCast(output);
     int* updateExtent = outInfo->Get(vtkStreamingDemandDrivenPipeline::UPDATE_EXTENT());
     data->SetExtent(updateExtent);
@@ -110,8 +110,12 @@ void CtDataSource::ExecuteDataWithInformation(vtkDataObject *output, vtkInformat
     basicStructureIdArray->Delete();
     uint16_t* basicStructureIds = basicStructureIdArray->WritePointer(0, numberOfPoints);
 
-    SampleAlgorithm sampleAlgorithm(this, data, DataTree, radiodensities, functionValues, basicStructureIds);
+    if (!DataTree->HasRoot()) {
+        vtkDebugMacro("Ct data tree has 0 nodes. Cannot evaluate");
+        return;
+    }
 
+    SampleAlgorithm sampleAlgorithm(this, data, DataTree, radiodensities, functionValues, basicStructureIds);
     vtkSMPTools::For(0, numberOfPoints, sampleAlgorithm);
 }
 
@@ -162,7 +166,6 @@ CtDataSource::SampleAlgorithm::SampleAlgorithm(CtDataSource* self,
 }
 
 void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endPointId) const {
-    ZoneScopedN("SampleAlgorithm");
     double point[3];
     Self->CheckAbort();
 
@@ -174,7 +177,8 @@ void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endP
 
         VolumeData->GetPoint(pointId, point);
 
-        CtStructure::ModelingResult result = Tree->FunctionValueAndRadiodensity(point);
+        const CtStructureBase::ModelingResult result = Tree->FunctionValueAndRadiodensity(
+                reinterpret_cast<const std::array<double, 3>&>(point));
 
         bool pointIsWithinStructure = result.FunctionValue < 0;
         FunctionValues[pointId] = result.FunctionValue;

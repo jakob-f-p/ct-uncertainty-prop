@@ -1,16 +1,18 @@
 #pragma once
 
-#include <QVTKInteractor.h>
 #include <QVTKOpenGLNativeWidget.h>
-#include <vtkOrientationMarkerWidget.h>
-#include <vtkOpenGLRenderer.h>
+
+class QVTKInteractor;
+class vtkCamera;
+class vtkOrientationMarkerWidget;
+class vtkOpenGLRenderer;
 
 class CtDataSource;
 class CtStructureTree;
 
 class ModelingRenderWidget : public QVTKOpenGLNativeWidget {
 public:
-    explicit ModelingRenderWidget(QWidget* parent = nullptr);
+    explicit ModelingRenderWidget(CtStructureTree& dataTree, QWidget* parent = nullptr);
 
     void ResetCamera() const;
 

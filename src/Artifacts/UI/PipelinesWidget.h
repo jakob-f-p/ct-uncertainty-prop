@@ -1,24 +1,28 @@
 #pragma once
 
-#include <QIcon>
-#include <QMetaObject>
-#include <QPushButton>
-#include <QLabel>
-#include <QStackedLayout>
+#include <QWidget>
 
 class ImageArtifactsWidget;
 class Pipeline;
 class PipelineList;
 class StructureArtifactsWidget;
 
+class QIcon;
+class QPushButton;
+class QLabel;
+class QStackedLayout;
+
 class PipelinesWidget : public QWidget {
     Q_OBJECT
 
 public:
-    PipelinesWidget();
+    explicit PipelinesWidget(QWidget* parent = nullptr);
 
-    static QString GetHeaderStyleSheet();
-    static QIcon GenerateIcon(const std::string& filePrefix);
+    [[nodiscard]] static auto
+    GetHeaderStyleSheet() noexcept -> QString;
+
+    [[nodiscard]] static auto
+    GenerateIcon(const std::string& filePrefix) noexcept -> QIcon;
 
 private slots:
     void AddPipeline();
@@ -32,7 +36,7 @@ private:
 
     void CreateArtifactsViewsForCurrentPipeline();
 
-    Pipeline* GetCurrentPipeline();
+    Pipeline& GetCurrentPipeline();
 
     PipelineList& Pipelines;
     int CurrentPipelineIndex;

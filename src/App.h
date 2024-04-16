@@ -2,6 +2,8 @@
 
 #include <vtkNew.h>
 
+#include <memory>
+
 class CtStructureTree;
 class PipelineList;
 class MainWindow;
@@ -10,14 +12,19 @@ class QApplication;
 
 class App {
 public:
-    static App* CreateInstance(int argc, char* argv[]);
-    static App* GetInstance();
+    [[nodiscard]] static
+    auto CreateInstance(int argc, char* argv[]) -> App*;
 
-    int Run();
-    static int Quit();
+    [[nodiscard]] static
+    auto GetInstance() -> App*;
 
-    [[nodiscard]] CtStructureTree& GetCtDataTree() const;
-    [[nodiscard]] PipelineList& GetPipelines() const;
+    auto Run() -> int;
+    static auto Quit() -> int;
+
+    [[nodiscard]] auto
+    GetCtDataTree() const -> CtStructureTree&;
+    [[nodiscard]] auto
+    GetPipelines() const -> PipelineList&;
 
     App(const App&) = delete;
     void operator=(const App&) = delete;
@@ -36,7 +43,7 @@ private:
     char** Argv;
 
     QApplication& QApp;
-    vtkNew<CtStructureTree> CtDataTree;
-    vtkNew<PipelineList> Pipelines;
+    std::unique_ptr<CtStructureTree> CtDataTree;
+    std::unique_ptr<PipelineList> Pipelines;
     MainWindow* MainWin;
 };

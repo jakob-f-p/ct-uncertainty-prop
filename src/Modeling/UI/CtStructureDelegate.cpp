@@ -1,8 +1,8 @@
 #include "CtStructureDelegate.h"
 
 #include "CtStructureDialog.h"
-#include "../BasicStructure.h"
-#include "../CombinedStructure.h"
+#include "CtStructureTreeModel.h"
+#include "../CtStructureTree.h"
 
 #include <QComboBox>
 #include <QDialog>
@@ -44,11 +44,11 @@ QWidget* CtStructureDelegate::createEditor(QWidget* parent,
     if (!index.isValid())
         return nullptr;
 
-    CtStructureDialog* dialog;
-    if (CtStructure::IsBasic(index.internalPointer()))
-        dialog = new BasicStructureDialog(CtStructureDialog::EDIT);
-    else
-        dialog = new CombinedStructureDialog(CtStructureDialog::EDIT);
+    const auto& dataVariant = index.data(Qt::UserRole).value<StructureDataVariant>();
+    CtStructureDialog* dialog = std::visit(Overload{
+        [](const CombinedStructureData&) -> CtStructureDialog* { return new CombinedStructureDialog(CtStructureDialog::EDIT); },
+        [](const auto&) -> CtStructureDialog* { return new BasicStructureDialog(CtStructureDialog::EDIT); },
+    }, dataVariant);
 
     connect(dialog, &CtStructureDialog::accepted, this, &CtStructureDelegate::commitEdit);
     connect(dialog, &CtStructureDialog::rejected, this, &CtStructureDelegate::discardChanges);
@@ -57,16 +57,13 @@ QWidget* CtStructureDelegate::createEditor(QWidget* parent,
 }
 
 void CtStructureDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
-    QVariant data = index.data(Qt::UserRole);
+    const auto& dataVariant = index.data(Qt::UserRole).value<StructureDataVariant>();
 
-    if (data.canConvert<BasicStructureData>())
-        BasicStructureUi::SetWidgetData(editor, data.value<BasicStructureData>());
-    else if (data.canConvert<CombinedStructureData>())
-        CombinedStructureUi::SetWidgetData(editor, data.value<CombinedStructureData>());
+    std::visit([&](auto& data) { data.PopulateWidget(editor); }, dataVariant);
 }
 
 void CtStructureDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const {
-    QVariant editedData = CtStructure::IsBasic(index.internalPointer())
+    const QVariant editedData = index.data(TreeModelRoles::IS_BASIC_STRUCTURE).toBool()
             ? QVariant::fromValue(BasicStructureUi::GetWidgetData(editor))
             : QVariant::fromValue(CombinedStructureUi::GetWidgetData(editor));
 

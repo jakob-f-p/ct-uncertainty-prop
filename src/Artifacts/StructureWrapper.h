@@ -2,70 +2,62 @@
 
 #include "Artifact.h"
 
-#include <vtkWeakPointer.h>
+#include <vtkSmartPointer.h>
 
-class CtStructure;
+class CtStructureTree;
 class StructureArtifact;
 
-class ArtifactStructureWrapper : public vtkObject {
+using StructureIdx = uint16_t;
+
+class StructureArtifacts {
 public:
-    static ArtifactStructureWrapper* New();
-    vtkTypeMacro(ArtifactStructureWrapper, vtkObject)
+    [[nodiscard]] auto
+    GetMTime() const noexcept -> vtkMTimeType;
 
-    void SetCtStructure(CtStructure& structure);
+    [[nodiscard]] auto
+    Get(int idx) const -> StructureArtifact&;
 
-    vtkMTimeType GetMTime() override;
+    [[nodiscard]] auto
+    GetNumberOfArtifacts() const noexcept -> StructureIdx;
 
-    [[nodiscard]] StructureArtifact& Get(int idx);
+    auto
+    AddStructureArtifact(StructureArtifact& structureArtifact, int insertionIdx = -1) -> void;
 
-    [[nodiscard]] int GetNumberOfArtifacts() const;
+    auto
+    RemoveStructureArtifact(StructureArtifact& structureArtifact) -> void;
 
-    void AddStructureArtifact(StructureArtifact& structureArtifact, int insertionIdx = -1);
-
-    void RemoveStructureArtifact(StructureArtifact& structureArtifact);
-
-    void MoveStructureArtifact(StructureArtifact* artifact, int newIdx);
+    auto
+    MoveStructureArtifact(StructureArtifact* artifact, int newIdx) -> void;
 
     using TypeToStructureArtifactsMap = std::map<Artifact::SubType, std::vector<StructureArtifact*>>;
     TypeToStructureArtifactsMap GetStructureArtifactMap();
 
-    void AddArtifactValuesAtPositionToMap(const double x[3], std::map<Artifact::SubType, float>& artifactValueMap);
-
-    [[nodiscard]] std::string GetViewName() const;
+    auto
+    AddArtifactValuesAtPositionToMap(const double x[3], std::map<Artifact::SubType, float>& artifactValueMap) -> void;
 
 private:
-    ArtifactStructureWrapper() = default;
-    ~ArtifactStructureWrapper() override = default;
-
     friend class TreeStructureArtifactCollection;
 
     using StructureArtifactList = std::vector<vtkSmartPointer<StructureArtifact>>;
 
-    vtkWeakPointer<CtStructure> Structure;
     StructureArtifactList StructureArtifacts;
 };
 
 
-class CtStructureTree;
-
-class TreeStructureArtifactCollection : public vtkObject {
+class TreeStructureArtifactCollection {
 public:
-    static TreeStructureArtifactCollection* New();
-    vtkTypeMacro(TreeStructureArtifactCollection, vtkObject)
+    [[nodiscard]] auto
+    GetMTime() -> vtkMTimeType;
 
-    vtkMTimeType GetMTime() override;
+    [[nodiscard]] auto
+    GetForCtStructureIdx(StructureIdx structureIdx) -> StructureArtifacts&;
 
-    ArtifactStructureWrapper* GetForCtStructure(const CtStructure& structure);
+    auto
+    AddStructureArtifactList(StructureIdx insertionIdx) -> void;
 
-    void AddStructureArtifactList(CtStructure& structure);
-
-    void RemoveStructureArtifactList(CtStructure& structure);
-
-protected:
-    TreeStructureArtifactCollection() = default;
-    ~TreeStructureArtifactCollection() override = default;
+    auto
+    RemoveStructureArtifactList(StructureIdx removeIdx) -> void;
 
 private:
-    using StructureArtifactLists = std::vector<vtkSmartPointer<ArtifactStructureWrapper>>;
-    StructureArtifactLists ArtifactLists;
+    std::vector<StructureArtifacts> ArtifactLists;
 };

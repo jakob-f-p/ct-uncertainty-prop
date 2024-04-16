@@ -1,23 +1,22 @@
+#include "../CtStructureTree.h"
+#include "../CtDataSource.h"
+
 #include "ModelingRenderWidget.h"
 
-#include "../CtDataSource.h"
-#include "../CtStructureTree.h"
-#include "../../App.h"
-
-#include <QVBoxLayout>
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
-#include <vtkCallbackCommand.h>
 #include <vtkColorTransferFunction.h>
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkOpenGLGPUVolumeRayCastMapper.h>
+#include <vtkOpenGLRenderer.h>
+#include <vtkOrientationMarkerWidget.h>
 #include <vtkPiecewiseFunction.h>
 #include <vtkVolumeProperty.h>
 
-ModelingRenderWidget::ModelingRenderWidget(QWidget* parent) :
+ModelingRenderWidget::ModelingRenderWidget(CtStructureTree& dataTree, QWidget* parent) :
         QVTKOpenGLNativeWidget(parent),
-        DataTree(App::GetInstance()->GetCtDataTree()) {
+        DataTree(dataTree) {
 
     DataSource->SetDataTree(&DataTree);
 
@@ -69,13 +68,9 @@ ModelingRenderWidget::ModelingRenderWidget(QWidget* parent) :
     OrientationMarkerWidget->EnabledOn();
     OrientationMarkerWidget->InteractiveOff();
 
-    vtkNew<vtkCallbackCommand> onDataChangedUpdater;
-    onDataChangedUpdater->SetClientData(RenderWindowInteractor);
-    onDataChangedUpdater->SetCallback([](vtkObject*, unsigned long, void* rwi, void*) {
-        auto* renderWindowInteractor = static_cast<QVTKInteractor*>(rwi);
-        renderWindowInteractor->Render();
-    });
-    DataTree.AddObserver(vtkCommand::ModifiedEvent, onDataChangedUpdater);
+    // update on tree event
+    DataTree.AddTreeEventCallback([renderWindowInteractor = RenderWindowInteractor.Get()](const CtStructureTreeEvent&)
+                                  { renderWindowInteractor->Render(); });
 }
 
 void ModelingRenderWidget::ResetCamera() const {

@@ -33,14 +33,9 @@ void StructureArtifactsWidget::SetCurrentView(int pipelineIdx) {
     Views->setCurrentIndex(pipelineIdx + 1);
 }
 
-void StructureArtifactsWidget::AddView(Pipeline* pipeline) {
-    if (!pipeline) {
-        qWarning("Given pipeline was nullptr");
-        return;
-    }
-
+void StructureArtifactsWidget::AddView(Pipeline& pipeline) {
     auto* newView = new QTreeView();
-    auto* newDelegate = new StructureArtifactsWidgetDelegate(*pipeline);
+    auto* newDelegate = new StructureArtifactsWidgetDelegate(pipeline);
     newView->setItemDelegate(newDelegate);
     auto* newModel = new CtStructureTreeModel(App::GetInstance()->GetCtDataTree());
     newView->setModel(newModel);

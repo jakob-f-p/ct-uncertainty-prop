@@ -5,12 +5,14 @@
 #include <QStackedLayout>
 
 class ArtifactsDialog;
-class ArtifactStructureWrapper;
+class StructureArtifacts;
 class StructureArtifactsModel;
 
 class StructureArtifactsWidgetDialog : public QDialog {
 public:
-    explicit StructureArtifactsWidgetDialog(ArtifactStructureWrapper& structureWrapper, QWidget* parent = nullptr);
+    explicit StructureArtifactsWidgetDialog(StructureArtifacts& structureWrapper,
+                                            std::string& title,
+                                            QWidget* parent = nullptr);
 
 protected slots:
     void AddArtifact();

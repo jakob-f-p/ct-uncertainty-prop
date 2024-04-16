@@ -5,7 +5,7 @@
 
 #include <vtkSmartPointer.h>
 
-StructureArtifactsModel::StructureArtifactsModel(ArtifactStructureWrapper& structureWrapper,
+StructureArtifactsModel::StructureArtifactsModel(StructureArtifacts& structureWrapper,
                                                  QObject* parent) :
         QAbstractItemModel(parent),
         StructureWrapper(structureWrapper) {

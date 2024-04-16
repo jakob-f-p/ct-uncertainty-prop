@@ -1,5 +1,8 @@
 #pragma once
 
+#include "../BasicStructure.h"
+#include "../CombinedStructure.h"
+
 #include <QDialog>
 #include <QVBoxLayout>
 
@@ -18,33 +21,25 @@ protected:
 
 
 
-class BasicStructureUi;
-class CombinedStructureUi;
-
 template<typename Ui>
 class SimpleCtStructureDialog : public CtStructureDialog {
 public:
     explicit SimpleCtStructureDialog(DialogMode mode, QWidget* parent = nullptr);
 };
 
-typedef SimpleCtStructureDialog<BasicStructureUi> BasicStructureDialog;
-typedef SimpleCtStructureDialog<CombinedStructureUi> CombinedStructureDialog;
+using BasicStructureDialog = SimpleCtStructureDialog<BasicStructureUi>;
+using CombinedStructureDialog = SimpleCtStructureDialog<CombinedStructureUi>;
 
 
-
-struct BasicStructureData;
-struct CombinedStructureData;
 
 class BasicAndCombinedStructureCreateDialog : public CtStructureDialog {
 public:
     explicit BasicAndCombinedStructureCreateDialog(QWidget* parent = nullptr);
 
-    void SetData(const BasicStructureData& basicStructureData, const CombinedStructureData& combinedStructureData);
+    [[nodiscard]] BasicStructureDataVariant GetBasicStructureData() const;
+    [[nodiscard]] CombinedStructureData GetCombinedStructureData() const;
 
-    BasicStructureData GetBasicStructureData() const;
-    CombinedStructureData GetCombinedStructureData() const;
-
-protected:
+private:
     QWidget* CombinedStructureWidget;
     QWidget* BasicStructureWidget;
 };

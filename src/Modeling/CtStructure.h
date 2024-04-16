@@ -1,130 +1,294 @@
 #pragma once
 
-#include "../Artifacts/Artifact.h"
+#include "SimpleTransform.h"
+#include "../Concepts.h"
+#include "../Enum.h"
 
-#include <vtkNew.h>
-#include <vtkObject.h>
-#include <vtkWeakPointer.h>
+#include <QDoubleSpinBox>
+#include <QFormLayout>
+#include <QGroupBox>
+#include <QLabel>
+#include <QLineEdit>
+#include <QString>
+#include <QWidget>
 
-class BasicStructure;
-class CombinedStructure;
-class SimpleTransform;
+using StructureId = int32_t;
+using StructureIdx = uint16_t;
 
-class CtStructure : public vtkObject {
+namespace CtStructure {
+    auto
+    AddCoordinatesRow(const QString& baseName, const QString& labelText,
+                      double minValue, double maxValue, double stepSize,
+                      QGridLayout* gridLayout, int gridLayoutRow,
+                      double defaultValue) noexcept -> void;
+
+    [[nodiscard]] auto
+    GetCoordinatesRow(const QString& baseName,
+                      double minValue, double maxValue, double stepSize) noexcept -> QWidget*;
+
+    [[nodiscard]] auto
+    GetAxisSpinBoxName(const QString& transformName, const QString& axisName) noexcept -> QString;
+
+    const QStringList AxisNames = { "x", "y", "z" };
+
+    const QStringList TransformNames { "Translate", "Rotate", "Scale" };
+}
+
+
+template<typename T>
+concept CtStructureLike = requires(T structure,
+                                   Point position,
+                                   SimpleTransformData transformData,
+                                   StructureId structureId,
+                                   T::Data data) {
+    typename T::Data;
+
+    structure.SetTransformData(transformData);
+    { structure.GetTransformData() } -> std::same_as<SimpleTransformData>;
+
+    structure.SetParentIdx(structureId);
+    { structure.GetParentIdx() } -> std::same_as<StructureId>;
+
+    structure.IncrementParentIdx();
+    structure.DecrementParentIdx();
+
+    { structure.GetData() } -> std::same_as<typename T::Data>;
+
+    structure.SetData(data);
+};
+
+template<typename T>
+concept TCtStructure = CtStructureLike<T>
+                        && HasMTime<T>
+                        && IsNamed<T>;
+
+class QFormLayout;
+class QWidget;
+
+template<typename T>
+concept TStructureData = requires(T derivedData,
+                                  T::Structure structure,
+                                  QFormLayout* fLayout,
+                                  QWidget* widget) {
+    derivedData.PopulateDerivedStructure(structure);
+    derivedData.PopulateFromDerivedStructure(structure);
+
+    T::AddSubTypeWidgets(fLayout);
+    derivedData.PopulateStructureWidget(widget);
+    derivedData.PopulateFromStructureWidget(widget);
+};
+
+
+
+class CtStructureBase {
     Q_GADGET
-
 public:
-    vtkTypeMacro(CtStructure, vtkObject)
-    void PrintSelf(ostream& os, vtkIndent indent) override;
-    vtkMTimeType GetMTime() override;
+    [[nodiscard]] auto
+    GetMTime() const noexcept -> vtkMTimeType { return Transform.GetMTime(); };
 
-    void SetName(std::string name);
+    auto
+    Modified() noexcept -> void { return Transform.Modified(); };
 
-    virtual void SetTransform(const std::array<std::array<float, 3>, 3>& trs) = 0;
+    auto
+    SetName(std::string&& name) noexcept -> void { Name = std::move(name); };
 
-    CombinedStructure* GetParent() const;
-    void SetParent(CombinedStructure* parent);
+    [[nodiscard]] auto
+    GetName() const -> std::string { return Name; };
 
-    enum SubType {
-        BASIC,
-        COMBINED
-    };
-    virtual SubType GetSubType() const = 0;
-    bool IsBasic() const;
-    static bool IsBasic(void* ctStructure);
-    static BasicStructure* ToBasic(void* basicStructure);
-    static BasicStructure* ToBasic(CtStructure* basicStructure);
-    static CombinedStructure* ToCombined(void* combinedStructure);
-    static CombinedStructure* ToCombined(CtStructure* combinedStructure);
-    static CtStructure* FromVoid(void* ctStructure);
+    [[nodiscard]] auto
+    GetTransformedPoint(Point point) const noexcept -> Point { return Transform.TransformPoint(point); }
 
-    struct Result {
-        float FunctionValue = 0;
-        float IntensityValue = 0;
-        std::map<Artifact::SubType, float> ArtifactValueMap;
-    };
-    virtual void EvaluateAtPosition(const double x[3], Result& result) = 0;
+    [[nodiscard]] auto
+    GetTransformData() const noexcept -> SimpleTransformData { return Transform.GetData(); };
+
+    auto
+    SetTransformData(const SimpleTransformData& transformData) noexcept -> void { Transform.SetData(transformData); }
+
+    auto
+    SetParentIdx(StructureId parentId) noexcept -> void { ParentIdx = parentId; }
+
+    [[nodiscard]] auto
+    GetParentIdx() const noexcept -> StructureId { return ParentIdx; }
+
+    auto
+    IncrementParentIdx() noexcept -> StructureIdx { return ++ParentIdx; };
+
+    auto
+    DecrementParentIdx() noexcept -> StructureIdx { return --ParentIdx; };
 
     struct ModelingResult {
         float FunctionValue;
         float Radiodensity;
-        int BasicCtStructureId;
+        StructureId BasicCtStructureId;
     };
-    virtual const ModelingResult EvaluateImplicitModel(const double x[3]) const = 0;
 
-    /**
-     * Return f(x, y z) where f > 0 is outside of the surface, f = 0 is on the surface, and f < 0 is inside the surface.
-     * Additionally, the distance to the surface is positively correlated with the function value at a given position.
-     * Function takes the transform of the object into account.
-     * @param x the input position vector consisting of x, y, and z coordinates
-     * @return the function value f(x, y, z) at position x
-     */
-    virtual float FunctionValue(const double x[3]) const = 0;
+    enum struct FunctionType : uint8_t {
+        SPHERE,
+        BOX,
+        CONE,
+        INVALID
+    };
+    Q_ENUM(FunctionType);
 
-    virtual bool CtStructureExists(const CtStructure* structure) = 0;
+    [[nodiscard]] auto static
+    FunctionTypeToString(FunctionType functionType) noexcept -> std::string;
+    ENUM_GET_VALUES(FunctionType, true)
 
-    virtual void Iterate(const std::function<void(CtStructure&)>& f) = 0;
+    struct TissueType {
+        std::string Name;
+        float CtNumber = 0.0; // value on the Hounsfield scale
 
-    virtual std::string GetViewName() const = 0;
+        auto
+        operator==(const TissueType& other) const noexcept -> bool { return Name == other.Name && CtNumber == other.CtNumber; }
 
-    CtStructure(const CtStructure&) = delete;
-    void operator=(const CtStructure&) = delete;
+        friend auto operator<<(std::ostream& stream, const TissueType& type) noexcept -> std::ostream&;
+    };
+    static std::map<std::string, TissueType> TissueTypeMap;
+
+    [[nodiscard]] auto static
+    GetTissueTypeByName(const std::string& tissueName) noexcept -> TissueType;
+
+    [[nodiscard]] auto static
+    GetTissueTypeNames() noexcept -> QStringList;
+
+    enum struct OperatorType : uint8_t {
+        UNION,
+        INTERSECTION,
+        DIFFERENCE,
+        INVALID
+    };
+    Q_ENUM(OperatorType);
+
+    [[nodiscard]] auto static
+    OperatorTypeToString(OperatorType operatorType) noexcept-> std::string;
+    ENUM_GET_VALUES(OperatorType, true);
 
 protected:
-    CtStructure() = default;
-    ~CtStructure() override = default;
+    template<TStructureData StructureData> friend class CtStructureBaseData;
 
+    CtStructureBase() = default;
 
-    template<typename Structure, typename Data> friend struct CtStructureData;
-
+    SimpleTransform Transform;
     std::string Name;
-    vtkNew<SimpleTransform> Transform;
-    vtkWeakPointer<CombinedStructure> Parent;
+
+    StructureId ParentIdx = -1;
+
+    static std::atomic<StructureId> GlobalBasicStructureId;
 };
 
 
 
-template<typename Structure, typename Data>
-struct CtStructureData {
+template<TStructureData StructureData>
+class CtStructureBaseData {
+    using Structure = StructureData::Structure;
+
+public:
     QString Name;
     QString ViewName;
-    std::array<std::array<float, 3>, 3> Transform = {};
+    SimpleTransformData Transform = {};
+    StructureData Data;
 
-    static Data GetData(const Structure& structure);
+    auto
+    PopulateStructure(Structure& structure) const -> void;
 
-    static QVariant GetQVariant(const Structure& structure);
+    auto
+    PopulateFromStructure(const Structure& structure) -> void;
 
-    static void SetData(Structure& structure, const Data& data);
+    [[nodiscard]] static auto
+    GetWidget() noexcept -> QWidget*;
 
-    static void SetData(Structure& structure, const QVariant& variant);
+    auto
+    PopulateWidget(QWidget* widget) const -> void;
 
-protected:
-    CtStructureData() = default;
-};
-
-
-
-template<typename Ui, typename Data>
-class CtStructureUi {
-public:
-    static QWidget* GetWidget();
-
-    static Data GetWidgetData(QWidget* widget);
-
-    static void SetWidgetData(QWidget* widget, const Data& data);
-
-protected:
-    static void AddCoordinatesRow(const QString& baseName, const QString& labelText,
-                                  double minValue, double maxValue, double stepSize,
-                                  QGridLayout* gridLayout, int gridLayoutRow,
-                                  double defaultValue = 0.0);
-    static QWidget* GetCoordinatesRow(const QString& baseName,
-                                      double minValue, double maxValue, double stepSize);
-    static QString GetAxisSpinBoxName(const QString& transformName, const QString& axisName);
-
-    static const QStringList AxisNames;
+    auto
+    PopulateFromWidget(QWidget* widget) -> void;
 
 private:
     static const QString NameEditObjectName;
-    static const QStringList TransformNames;
 };
+
+template<TStructureData StructureData>
+auto CtStructureBaseData<StructureData>::PopulateStructure(Structure& structure) const -> void {
+    structure.SetName(Name.toStdString());
+    structure.SetTransformData(Transform);
+
+    Data.PopulateDerivedStructure(structure);
+}
+
+template<TStructureData StructureData>
+auto CtStructureBaseData<StructureData>::PopulateFromStructure(const Structure& structure) -> void {
+    Name = QString::fromStdString(structure.Name);
+    ViewName = QString::fromStdString(structure.GetViewName());
+    Transform = structure.GetTransformData();
+
+    Data.PopulateFromDerivedStructure(structure);
+}
+
+template<TStructureData StructureData>
+auto CtStructureBaseData<StructureData>::GetWidget() noexcept -> QWidget* {
+    auto* widget = new QWidget();
+    auto* fLayout = new QFormLayout(widget);
+    fLayout->setFieldGrowthPolicy(QFormLayout::FieldGrowthPolicy::FieldsStayAtSizeHint);
+    fLayout->setHorizontalSpacing(15);
+
+    auto* nameLineEdit = new QLineEdit();
+    nameLineEdit->setObjectName(NameEditObjectName);
+    fLayout->addRow("Name", nameLineEdit);
+
+    StructureData::AddSubTypeWidgets(fLayout);
+
+    auto* transformGroup = new QGroupBox("Transform");
+    auto* transformGLayout = new QGridLayout(transformGroup);
+    transformGLayout->setColumnStretch(0, 1);
+    std::array<std::array<double, 2>, 3> transformRanges { -100.0, 100.0, 0.0, 360.0, -10.0, 10.0 };
+    std::array<double, 3> transformStepSizes { 2.0, 1.0, 0.1 };
+    for (int i = 0; i < CtStructure::TransformNames.size(); i++) {
+        CtStructure::AddCoordinatesRow(CtStructure::TransformNames[i], CtStructure::TransformNames[i],
+                                       transformRanges[i][0], transformRanges[i][1], transformStepSizes[i],
+                                       transformGLayout, i, i == 2 ? 1.0 : 0.0);
+    }
+    fLayout->addRow(transformGroup);
+
+    return widget;
+}
+
+template<TStructureData StructureData>
+auto CtStructureBaseData<StructureData>::PopulateWidget(QWidget* widget) const -> void {
+    if (!widget)
+        throw std::runtime_error("Given widget was nullptr");
+
+    auto* nameLineEdit = widget->findChild<QLineEdit*>(NameEditObjectName);
+    nameLineEdit->setText(Name);
+
+    for (int i = 0; i < Transform.size(); ++i) {
+        for (int j = 0; j < Transform[0].size(); ++j) {
+            auto* spinBox = widget->findChild<QDoubleSpinBox*>(
+                    CtStructure::GetAxisSpinBoxName(CtStructure::TransformNames[i], CtStructure::AxisNames[j]));
+            spinBox->setValue(Transform[i][j]);
+        }
+    }
+
+    Data.PopulateStructureWidget(widget);
+}
+
+template<TStructureData StructureData>
+auto CtStructureBaseData<StructureData>::PopulateFromWidget(QWidget* widget) -> void {
+    if (!widget)
+        throw std::runtime_error("Given widget was nullptr");
+
+    auto* nameLineEdit = widget->findChild<QLineEdit*>(NameEditObjectName);
+    Name = nameLineEdit->text();
+
+    for (int i = 0; i < Transform.size(); ++i) {
+        for (int j = 0; j < Transform[0].size(); ++j) {
+            auto* spinBox = widget->findChild<QDoubleSpinBox*>(
+                    CtStructure::GetAxisSpinBoxName(CtStructure::TransformNames[i], CtStructure::AxisNames[j]));
+            Transform[i][j] = static_cast<float>(spinBox->value());
+        }
+    }
+
+    Data.PopulateFromStructureWidget(widget);
+}
+
+template<TStructureData StructureData>
+const QString CtStructureBaseData<StructureData>::NameEditObjectName = "NameEdit";

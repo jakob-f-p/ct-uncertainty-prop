@@ -1,25 +1,21 @@
 #pragma once
 
+#include "../CtStructureTree.h"
+
 #include <QAbstractItemModel>
 
-class CtStructureTree;
 class Pipeline;
 
-struct BasicStructureData;
-struct CombinedStructureData;
+enum TreeModelRoles : uint16_t {
+    STRUCTURE_DATA_VARIANT = Qt::UserRole,
+    IS_BASIC_STRUCTURE
+};
 
 class CtStructureTreeModel : public QAbstractItemModel {
-    Q_OBJECT
-
 public:
-    Q_DISABLE_COPY_MOVE(CtStructureTreeModel)
-
     explicit CtStructureTreeModel(CtStructureTree& ctStructureTree, QObject* parent = nullptr);
-    explicit CtStructureTreeModel(Pipeline* pipeline, QObject* parent = nullptr);
 
-    ~CtStructureTreeModel() override;
-
-    QModelIndex index(int row, int column, const QModelIndex& parent) const override;
+    QModelIndex index(int row, int column, const QModelIndex& parentIndex) const override;
 
     QModelIndex parent(const QModelIndex& child) const override;
 
@@ -35,13 +31,13 @@ public:
 
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 
-    QModelIndex AddBasicStructure(const BasicStructureData& basicStructureData,
+    QModelIndex AddBasicStructure(const BasicStructureDataVariant& basicStructureDataVariant,
                                   const QModelIndex& siblingIndex);
 
-    void CombineWithBasicStructure(const BasicStructureData& basicStructureData,
+    void CombineWithBasicStructure(const BasicStructureDataVariant& basicStructureDataVariant,
                                    const CombinedStructureData& combinedStructureData);
 
-    void RefineWithBasicStructure(const BasicStructureData& basicStructureData,
+    void RefineWithBasicStructure(const BasicStructureDataVariant& basicStructureDataVariant,
                                   const CombinedStructureData& combinedStructureData,
                                   const QModelIndex& index);
 

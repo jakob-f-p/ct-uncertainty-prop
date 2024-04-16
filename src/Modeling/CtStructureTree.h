@@ -1,79 +1,118 @@
 #pragma once
 
 #include "CtStructure.h"
+#include "BasicStructure.h"
+#include "CombinedStructure.h"
 
-#include <vtkObject.h>
-#include <vtkSmartPointer.h>
-#include <vtkWeakPointer.h>
+#include <vtkTimeStamp.h>
 
-#include "tracy/Tracy.hpp"
+#include <variant>
+#include <vector>
 
-class BasicStructure;
-class CtStructure;
-class CombinedStructure;
-class Pipeline;
 class PipelineList;
-
-struct BasicStructureData;
-struct CombinedStructureData;
 
 class QVariant;
 
-enum class CtStructureTreeEventType { Add, Remove };
-struct CtStructureTreeEvent {
-    CtStructureTreeEventType Type;
-    CtStructure& Structure;
+using StructureVariant = std::variant<SphereStructure, BoxStructure, CombinedStructure>;
+using StructureDataVariant = std::variant<SphereData, BoxData, CombinedStructureData>;
+
+enum struct CtStructureTreeEventType : uint8_t {
+    Add,
+    Remove,
+    Edit
 };
 
-class CtStructureTree : public vtkObject {
+struct CtStructureTreeEvent {
+    CtStructureTreeEventType Type;
+    StructureIdx Idx;
+
+    constexpr CtStructureTreeEvent(CtStructureTreeEventType type, StructureIdx idx) noexcept : Type(type), Idx(idx) {};
+};
+
+class CtStructureTree {
 public:
-    static CtStructureTree* New();
-    vtkTypeMacro(CtStructureTree, vtkObject)
+    [[nodiscard]] auto
+    GetMTime() const -> vtkMTimeType;
 
-    void PrintSelf(ostream& os, vtkIndent indent) override;
+    auto
+    AddBasicStructure(BasicStructureVariant&& boxStructure, CombinedStructure* parent = nullptr) -> void;
 
-    vtkMTimeType GetMTime() override;
+    auto
+    AddBasicStructure(const BasicStructureDataVariant& basicStructureData,
+                      CombinedStructure* parent = nullptr) -> void;
 
-    void SetPipelineList(PipelineList& pipelineList);
+    auto
+    CombineWithBasicStructure(BasicStructureVariant&& basicStructureVariant,
+                              CombinedStructure&& combinedStructure) -> void;
 
-    void AddBasicStructure(BasicStructure& basicStructure, CombinedStructure* parent = nullptr);
+    auto
+    CombineWithBasicStructure(const BasicStructureDataVariant& basicStructureDataVariant,
+                              const CombinedStructureData& combinedStructureData) -> void;
 
-    void AddBasicStructure(const BasicStructureData& basicStructureData, CombinedStructure* parent = nullptr);
+    auto
+    RefineWithBasicStructure(const BasicStructureDataVariant& newStructureDataVariant,
+                             const CombinedStructureData& combinedStructureData,
+                             StructureIdx structureToRefineIdx) -> void;
 
-    void CombineWithBasicStructure(BasicStructure& basicStructure, CombinedStructure& combinedStructure);
+    auto
+    RemoveBasicStructure(StructureIdx structureToRemoveIdx) -> void;
 
-    void CombineWithBasicStructure(const BasicStructureData& basicStructureData,
-                                   const CombinedStructureData& combinedStructureData);
+    [[nodiscard]] auto
+    HasRoot() const noexcept -> bool;
 
-    void RefineWithBasicStructure(const BasicStructureData& newStructureData,
-                                  const CombinedStructureData& combinedStructureData,
-                                  BasicStructure& structureToRefine);
+    [[nodiscard]] auto
+    GetRoot() const -> const StructureVariant&;
 
-    void RemoveBasicStructure(BasicStructure& basicStructure);
+    [[nodiscard]] auto
+    GetStructureAt(StructureIdx idx) const -> const StructureVariant&;
 
-    CtStructure* GetRoot() const;
+    [[nodiscard]] auto
+    GetStructureAt(StructureIdx idx) -> StructureVariant&;
 
-//    inline void EvaluateAtPosition(const double x[3], CtStructure::Result& result);
+    [[nodiscard]] auto
+    StructureCount() const noexcept -> StructureIdx;
 
-    CtStructure::ModelingResult FunctionValueAndRadiodensity(const double x[3]);
+    [[nodiscard]] auto
+    FunctionValueAndRadiodensity(Point point) const -> CtStructureBase::ModelingResult;
 
-    void SetData(CtStructure* ctStructure, const QVariant& data);
+    void SetData(StructureIdx structureIdx, const QVariant& data);
 
-    void Iterate(const std::function<void(CtStructure&)>& f) const;
+    using TreeEventCallback = std::function<void(const CtStructureTreeEvent&)>;
+    void AddTreeEventCallback(TreeEventCallback&& treeEventCallback);
 
-    CtStructureTree(const CtStructureTree&) = delete;
-    void operator=(const CtStructureTree&) = delete;
+    auto GetRootIdx() const noexcept -> StructureId;
 
-protected:
-    CtStructureTree() = default;
-    ~CtStructureTree() override = default;
+private:
+    template<TCtStructure TStructure>
+    [[nodiscard]] auto
+    CtStructureExists(const TStructure& ctStructure) const -> bool;
 
-    bool CtStructureExists(const CtStructure& ctStructure);
+    [[nodiscard]] auto
+    CtStructureExists(const BasicStructureVariant& basicStructureVariant) const -> bool;
 
-    void EmitEvent(CtStructureTreeEvent event);
+    [[nodiscard]] auto
+    StructureIdxExists(StructureId idx) const noexcept -> bool;
 
-    vtkSmartPointer<CtStructure> Root;
-    vtkWeakPointer<PipelineList> Pipelines;
+    auto
+    EmitEvent(CtStructureTreeEvent event) noexcept -> void;
+
+    template<TCtStructure TStructure>
+    [[nodiscard]] auto
+    FindIndexOf(const TStructure& structure) const -> StructureIdx;
+
+    [[nodiscard]] auto
+    GetParentIdxOf(const TCtStructure auto& ctStructure) const -> StructureId;
+
+    auto
+    IncrementParentAndChildIndices(StructureIdx startIdx) -> void;
+
+    auto
+    DecrementParentAndChildIndices(StructureIdx startIdx) -> void;
+
+    StructureId RootIdx = -1;
+    std::vector<StructureVariant> Structures;
+    vtkTimeStamp MTime;
+    std::vector<TreeEventCallback> TreeEventCallbacks;
 };
 
 

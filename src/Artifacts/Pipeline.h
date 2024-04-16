@@ -1,43 +1,38 @@
 #pragma once
 
-#include <vtkObject.h>
-#include <vtkSmartPointer.h>
+#include "ImageArtifactConcatenation.h"
+#include "StructureWrapper.h"
 
-class ArtifactStructureWrapper;
-class CtStructure;
-class CtStructureTree;
+#include <cstdint>
+#include <memory>
+#include <string>
+
+class StructureArtifacts;
 class ImageArtifactConcatenation;
 class TreeStructureArtifactCollection;
 
 struct CtStructureTreeEvent;
 
-class Pipeline : public vtkObject {
+using StructureIdx = uint16_t;
+
+class Pipeline {
 public:
-    Pipeline(const Pipeline&) = delete;
-    void operator=(const Pipeline&) = delete;
+    explicit Pipeline(StructureIdx structureCount);
 
-    static Pipeline* New();
-    vtkTypeMacro(Pipeline, vtkObject);
+    [[nodiscard]] auto
+    GetName() const noexcept -> std::string;
 
-    void PrintSelf(std::ostream& os, vtkIndent indent) override;
+    [[nodiscard]] auto
+    GetArtifactStructureWrapper(StructureIdx structureIdx) const -> StructureArtifacts&;
 
-    std::string GetName() const;
+    [[nodiscard]] auto
+    GetImageArtifactConcatenation() const -> ImageArtifactConcatenation&;
 
-    void SetCtDataTree(CtStructureTree* ctStructureTree);
-    [[nodiscard]] CtStructureTree* GetCtDataTree() const;
+    auto ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) -> void;
 
-    [[nodiscard]] ArtifactStructureWrapper& GetArtifactStructureWrapper(const CtStructure& structure) const;
-
-    [[nodiscard]] ImageArtifactConcatenation& GetImageArtifactConcatenation();
-
-    void ProcessCtStructureTreeEvent(CtStructureTreeEvent event);
-
-protected:
-    Pipeline() = default;
-    ~Pipeline() override = default;
+    auto operator==(const Pipeline& other) const noexcept -> bool;
 
     std::string Name;
-    vtkSmartPointer<CtStructureTree> CtDataTree;
-    vtkNew<TreeStructureArtifactCollection> TreeStructureArtifacts;
-    vtkNew<ImageArtifactConcatenation> ImageArtifactConcatenation;
+    std::unique_ptr<TreeStructureArtifactCollection> TreeStructureArtifacts;
+    std::unique_ptr<ImageArtifactConcatenation> ImageArtifactConcat;
 };

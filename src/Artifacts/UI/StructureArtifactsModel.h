@@ -2,12 +2,12 @@
 
 #include <QAbstractItemModel>
 
-class ArtifactStructureWrapper;
+class StructureArtifacts;
 class StructureArtifactData;
 
 class StructureArtifactsModel : public QAbstractItemModel {
 public:
-    explicit StructureArtifactsModel(ArtifactStructureWrapper& structureWrapper,
+    explicit StructureArtifactsModel(StructureArtifacts& structureWrapper,
                                      QObject* parent = nullptr);
 
     QModelIndex index(int row, int column, const QModelIndex& parent) const override;
@@ -35,5 +35,5 @@ public:
 protected:
     QModelIndex Move(const QModelIndex& sourceIndex, int displacement);
 
-    ArtifactStructureWrapper& StructureWrapper;
+    StructureArtifacts& StructureWrapper;
 };

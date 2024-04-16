@@ -3,8 +3,6 @@
 #include "CtStructureTreeModel.h"
 #include "CtStructureDialog.h"
 #include "CtStructureDelegate.h"
-#include "../BasicStructure.h"
-#include "../CombinedStructure.h"
 #include "ModelingRenderWidget.h"
 #include "../../App.h"
 
@@ -18,7 +16,7 @@
 
 ModelingWidget::ModelingWidget(QWidget* parent) :
         QMainWindow(parent),
-        RenderWidget(new ModelingRenderWidget()),
+        RenderWidget(new ModelingRenderWidget(App::GetInstance()->GetCtDataTree())),
         ResetCameraButton(new QPushButton("Reset Camera")),
         AddStructureButton(new QPushButton("Add Structure")),
         CombineWithStructureButton(new QPushButton("Combine With Structure")),
@@ -89,46 +87,44 @@ void ModelingWidget::ConnectButtons() {
         CtStructureCreateDialog->show();
 
         connect(CtStructureCreateDialog, &CtStructureDialog::accepted, [&]() {
-            BasicStructureData dialogData = BasicStructureUi::GetWidgetData(CtStructureCreateDialog);
-            QModelIndex siblingIndex = SelectionModel->currentIndex();
-            QModelIndex newIndex = TreeModel->AddBasicStructure(dialogData, siblingIndex);
-            SelectionModel->setCurrentIndex(newIndex, QItemSelectionModel::ClearAndSelect);
+            const BasicStructureDataVariant dialogData = BasicStructureUi::GetWidgetData(CtStructureCreateDialog);
+            const QModelIndex siblingIndex = SelectionModel->currentIndex();
+            const QModelIndex newIndex = TreeModel->AddBasicStructure(dialogData, siblingIndex);
+            SelectionModel->clearSelection();
+            SelectionModel->select(newIndex, QItemSelectionModel::SelectionFlag::Select);
         });
     });
 
     connect(CombineWithStructureButton, &QPushButton::clicked, [&]() {
-        OpenBasicAndCombinedStructureCreateDialog([&](const BasicStructureData& basicStructureData,
+        OpenBasicAndCombinedStructureCreateDialog([&](const BasicStructureDataVariant& basicStructureDataVariant,
                                                       const CombinedStructureData& combinedStructureData) {
-            TreeModel->CombineWithBasicStructure(basicStructureData, combinedStructureData);
+            TreeModel->CombineWithBasicStructure(basicStructureDataVariant, combinedStructureData);
         });
     });
 
     connect(RefineWithStructureButton, &QPushButton::clicked, [&]() {
-        OpenBasicAndCombinedStructureCreateDialog([&](const BasicStructureData& basicStructureData,
+        OpenBasicAndCombinedStructureCreateDialog([&](const BasicStructureDataVariant& basicStructureDataVariant,
                                                       const CombinedStructureData& combinedStructureData) {
-            QModelIndex index = SelectionModel->currentIndex();
-            TreeModel->RefineWithBasicStructure(basicStructureData, combinedStructureData, index);
+            const QModelIndex index = SelectionModel->currentIndex();
+            TreeModel->RefineWithBasicStructure(basicStructureDataVariant, combinedStructureData, index);
         });
     });
 
     connect(RemoveStructureButton, &QPushButton::clicked, [&]() {
-        QModelIndex structureIndex = SelectionModel->currentIndex();
+        const QModelIndex structureIndex = SelectionModel->currentIndex();
+        const QModelIndex parentIndex = structureIndex.parent();
         TreeModel->RemoveBasicStructure(structureIndex);
+        SelectionModel->clearSelection();
+
+        if (parentIndex.isValid())
+            SelectionModel->select(parentIndex, QItemSelectionModel::SelectionFlag::Select);
+        else
+            UpdateButtonStates({}, {});
+
         TreeView->expandAll();
     });
 
-    connect(SelectionModel, &QItemSelectionModel::currentChanged, [&](const QModelIndex& current) {
-        bool isBasicStructure = current.isValid() && static_cast<CtStructure*>(current.internalPointer())->IsBasic();
-        AddStructureButton->setEnabled(isBasicStructure || !TreeModel->HasRoot());
-        CombineWithStructureButton->setEnabled(!current.parent().isValid());
-        RefineWithStructureButton->setEnabled(isBasicStructure);
-        RemoveStructureButton->setEnabled(isBasicStructure);
-    });
-
-    connect(TreeModel, &QAbstractItemModel::modelReset, [&]() {
-        DisableButtons();
-        SelectionModel->clear();
-    });
+    connect(SelectionModel, &QItemSelectionModel::selectionChanged, this, &ModelingWidget::UpdateButtonStates);
 }
 
 void ModelingWidget::DisableButtons() {
@@ -137,17 +133,34 @@ void ModelingWidget::DisableButtons() {
 }
 
 void ModelingWidget::OpenBasicAndCombinedStructureCreateDialog(
-        const std::function<const void(const BasicStructureData&, const CombinedStructureData&)>& onAccepted) {
+        const std::function<const void(const BasicStructureDataVariant&, const CombinedStructureData&)>& onAccepted) {
     auto* dialog = new BasicAndCombinedStructureCreateDialog(this);
     CtStructureCreateDialog = dialog;
     CtStructureCreateDialog->show();
 
     connect(CtStructureCreateDialog, &CtStructureDialog::accepted, [&, dialog, onAccepted]() {
-        BasicStructureData basicStructureData = dialog->GetBasicStructureData();
+        BasicStructureDataVariant basicStructureData = dialog->GetBasicStructureData();
         CombinedStructureData combinedStructureData = dialog->GetCombinedStructureData();
 
         onAccepted(basicStructureData, combinedStructureData);
 
         TreeView->expandAll();
     });
+}
+
+void ModelingWidget::UpdateButtonStates(const QItemSelection& selected, const QItemSelection&) {
+    auto modelIndexList = selected.indexes();
+    if (modelIndexList.size() > 1)
+        throw std::runtime_error("Invalid selection");
+
+    const QModelIndex selectedIndex = modelIndexList.size() == 1
+                                ? selected.indexes()[0]
+                                : QModelIndex();
+
+    const bool isBasicStructure = selectedIndex.isValid()
+                                  && selectedIndex.data(TreeModelRoles::IS_BASIC_STRUCTURE).toBool();
+    AddStructureButton->setEnabled((isBasicStructure && selectedIndex.parent().isValid()) || !TreeModel->HasRoot());
+    CombineWithStructureButton->setEnabled(selectedIndex.isValid() && !selectedIndex.parent().isValid());
+    RefineWithStructureButton->setEnabled(isBasicStructure);
+    RemoveStructureButton->setEnabled(isBasicStructure);
 }

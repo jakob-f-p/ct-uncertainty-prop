@@ -47,7 +47,7 @@ SimpleCtStructureDialog<Ui>::SimpleCtStructureDialog(CtStructureDialog::DialogMo
 
 BasicAndCombinedStructureCreateDialog::BasicAndCombinedStructureCreateDialog(QWidget* parent) :
         CtStructureDialog(CREATE, parent),
-        CombinedStructureWidget(CombinedStructureUi::GetWidget()),
+        CombinedStructureWidget(CombinedStructureData::GetWidget()),
         BasicStructureWidget(BasicStructureUi::GetWidget()) {
 
     auto* tabWidget = new QTabWidget();
@@ -56,16 +56,12 @@ BasicAndCombinedStructureCreateDialog::BasicAndCombinedStructureCreateDialog(QWi
     Layout->insertWidget(0, tabWidget);
 }
 
-void BasicAndCombinedStructureCreateDialog::SetData(const BasicStructureData& basicStructureData,
-                                                    const CombinedStructureData& combinedStructureData) {
-    BasicStructureUi::SetWidgetData(BasicStructureWidget, basicStructureData);
-    CombinedStructureUi::SetWidgetData(CombinedStructureWidget, combinedStructureData);
-}
-
-BasicStructureData BasicAndCombinedStructureCreateDialog::GetBasicStructureData() const {
+BasicStructureDataVariant BasicAndCombinedStructureCreateDialog::GetBasicStructureData() const {
     return BasicStructureUi::GetWidgetData(BasicStructureWidget);
 }
 
 CombinedStructureData BasicAndCombinedStructureCreateDialog::GetCombinedStructureData() const {
-    return CombinedStructureUi::GetWidgetData(CombinedStructureWidget);
+    CombinedStructureData data {};
+    data.PopulateFromWidget(CombinedStructureWidget);
+    return data;
 }

@@ -2,14 +2,13 @@
 
 #include <QStyledItemDelegate>
 
-class CtStructure;
 class Pipeline;
 
 class StructureArtifactsWidgetDelegate : public QStyledItemDelegate {
 public:
     explicit StructureArtifactsWidgetDelegate(const Pipeline& pipeline, QWidget* parent = nullptr);
 
-    QWidget* createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const override;
+    auto createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const -> QWidget* override;
 
     void setEditorData(QWidget* editor, const QModelIndex& index) const override;
 
@@ -19,7 +18,7 @@ public:
                               const QStyleOptionViewItem& option,
                               const QModelIndex& index) const override;
 protected:
-    bool eventFilter(QObject *object, QEvent *event) override;
+    auto eventFilter(QObject *object, QEvent *event) -> bool override;
 
     const Pipeline& APipeline;
 };

@@ -29,7 +29,7 @@ vtkMTimeType StructureArtifactsFilter::GetMTime() {
 
 void StructureArtifactsFilter::SetTreeStructureArtifactCollection(
         TreeStructureArtifactCollection* structureArtifactCollection) {
-    vtkSetObjectBodyMacro(StructureArtifactCollection, TreeStructureArtifactCollection, structureArtifactCollection);
+    StructureArtifactCollection = structureArtifactCollection;
 }
 
 vtkExecutive* StructureArtifactsFilter::CreateDefaultExecutive() {

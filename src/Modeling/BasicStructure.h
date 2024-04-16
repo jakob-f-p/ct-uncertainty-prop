@@ -1,139 +1,123 @@
 #pragma once
 
+#include "BasicStructures.h"
 #include "CtStructure.h"
-#include "../Enum.h"
 
-#include <QFormLayout>
-#include <QGroupBox>
 
-#include <vtkImplicitFunction.h>
+class QFormLayout;
+class QGroupBox;
 
-/**
- * @class BasicStructure
- * @brief class representing implicit CT structures with Structure Artifacts
- *
- * This class is used in CtStructureTree as an implicit source of rData.
- */
-class BasicStructure : public CtStructure {
-    Q_GADGET
+template<class... Ts>
+struct Overload : Ts... { using Ts::operator()...; };
 
-public:
-    static BasicStructure* New();
-    vtkTypeMacro(BasicStructure, CtStructure);
-    void PrintSelf(ostream& os, vtkIndent indent) override;
 
-    vtkMTimeType GetMTime() override;
+template<TBasicStructure StructureImpl> class BasicStructureBase;
 
-    void SetTransform(const std::array<std::array<float, 3>, 3>& trs) override;
-
-    enum class ImplicitFunctionType {
-        SPHERE,
-        BOX,
-        CONE,
-        INVALID
-    };
-    Q_ENUM(ImplicitFunctionType);
-    static std::string ImplicitFunctionTypeToString(ImplicitFunctionType implicitFunctionType);
-    GET_ENUM_VALUES(ImplicitFunctionType, true);
-    ImplicitFunctionType GetFunctionType() const;
-    /**
-     * Set/Get the implicit function separating the function domain into position inside, on, and outside of the
-     * surface. The domain on and inside the surface (f(x,y,z) <= 0) constitutes the Structure.
-     */
-    void SetImplicitFunction(ImplicitFunctionType implicitFunctionType);
-
-    struct TissueOrMaterialType {
-        std::string Name;
-        float CtNumber = 0.0f; // value on the Hounsfield scale
-
-        friend std::ostream& operator<< (std::ostream& stream, const TissueOrMaterialType& type);
-    };
-    static TissueOrMaterialType GetTissueOrMaterialTypeByName(const std::string& tissueName);
-    static QStringList GetTissueAndMaterialTypeNames();
-    void SetTissueType(TissueOrMaterialType tissueType);
-
-    void EvaluateAtPosition(const double x[3], Result& result) override;
-
-    const ModelingResult EvaluateImplicitModel(const double x[3]) const override;
-
-    float FunctionValue(const double x[3]) const override;
-
-    bool CtStructureExists(const CtStructure* structure) override;
-
-    SubType GetSubType() const override;
-
-    void Iterate(const std::function<void(CtStructure&)>& f) override;
-
-    BasicStructure(const BasicStructure&) = delete;
-    void operator=(const BasicStructure&) = delete;
-
+class BasicStructureBaseUi {
 protected:
-    BasicStructure();
-    ~BasicStructure() override;
-
-    friend struct BasicStructureData;
-
-    std::string GetViewName() const override;
-
-    int Id;
-    ImplicitFunctionType FunctionType;
-    vtkImplicitFunction* ImplicitFunction;
-    TissueOrMaterialType Tissue;
-
-    static std::map<std::string, TissueOrMaterialType> TissueTypeMap;
-    static std::atomic<uint16_t> GlobalBasicStructureId;
-};
-
-
-struct BasicStructureData : public CtStructureData<BasicStructure, BasicStructureData> {
-    struct SphereData {
-        double Radius;
-        std::array<double, 3> Center;
-    };
-
-    struct BoxData {
-        std::array<double, 3> MinPoint;
-        std::array<double, 3> MaxPoint;
-    };
-
-    BasicStructure::ImplicitFunctionType FunctionType = BasicStructure::ImplicitFunctionType::INVALID;
-    QString TissueName;
-    SphereData Sphere {};
-    BoxData Box {};
-
-    BasicStructureData() = default;
-
-protected:
-    friend struct CtStructureData<BasicStructure, BasicStructureData>;
-
-    static void AddSubTypeData(const BasicStructure& structure, BasicStructureData& data);
-
-    static void SetSubTypeData(BasicStructure& structure, const BasicStructureData& data);
-};
-
-
-class BasicStructureUi : public CtStructureUi<BasicStructureUi, BasicStructureData> {
-protected:
-    friend struct CtStructureUi<BasicStructureUi, BasicStructureData>;
-
-    using CtStructureUi = CtStructureUi<BasicStructureUi, BasicStructureData>;
-
-    static void AddSubTypeWidgets(QFormLayout* fLayout);
-
-    static void AddSubTypeWidgetsData(QWidget* widget, BasicStructureData& data);
-
-    static void SetSubTypeWidgetsData(QWidget* widget, const BasicStructureData& data);
-
-private:
-    static QGroupBox* GetFunctionParametersGroup(BasicStructure::ImplicitFunctionType functionType);
-
-    static void UpdateFunctionParametersGroup(QFormLayout* fLayout);
+    friend class BasicStructureUi;
 
     static const QString FunctionTypeComboBoxName;
     static const QString TissueTypeComboBoxName;
     static const QString FunctionParametersGroupName;
-    static const QString SphereRadiusSpinBoxName;
-    static const QString SphereCenterName;
-    static const QString BoxMinPointName;
-    static const QString BoxMaxPointName;
+};
+
+template<TBasicStructure Impl>
+struct BasicStructureBaseData : BasicStructureBaseUi {
+    using Structure = BasicStructureBase<Impl>;
+
+    CtStructureBase::FunctionType FunctionType = Impl::GetFunctionType();
+    QString TissueName;
+    Impl::Data Data;
+
+    auto
+    PopulateDerivedStructure(Structure& structure) const noexcept -> void;
+
+    auto
+    PopulateFromDerivedStructure(const Structure& structure) noexcept -> void;
+
+    static auto
+    AddSubTypeWidgets(QFormLayout* fLayout) -> void;
+
+    auto
+    PopulateStructureWidget(QWidget* widget) const -> void;
+
+    auto
+    PopulateFromStructureWidget(QWidget* widget) -> void;
+
+private:
+    [[nodiscard]] static auto
+    GetFunctionParametersGroup(CtStructureBase::FunctionType functionType) -> QGroupBox*;
+
+    static auto
+    UpdateFunctionParametersGroup(QFormLayout* fLayout) -> void;
+};
+
+using SphereData = CtStructureBaseData<BasicStructureBaseData<SphereStructureImpl>>;
+using BoxData = CtStructureBaseData<BasicStructureBaseData<BoxStructureImpl>>;
+using BasicStructureDataVariant = std::variant<SphereData, BoxData>;
+
+
+template<TBasicStructure Impl>
+class BasicStructureBase : public CtStructureBase {
+public:
+    using Data = CtStructureBaseData<BasicStructureBaseData<Impl>>;
+
+    [[nodiscard]] auto
+    GetViewName() const noexcept -> std::string;
+
+    [[nodiscard]] auto
+    GetFunctionType() const noexcept -> FunctionType;
+
+    auto
+    SetTissueType(TissueType tissueType) noexcept -> void;
+
+    [[nodiscard]] inline auto
+    FunctionValue(Point point) const noexcept -> float;
+
+    auto
+    GetData() const noexcept -> Data;
+
+    auto
+    SetData(const Data& data) noexcept -> void;
+
+    auto
+    operator==(const BasicStructureBase& other) const noexcept -> bool { return Id == other.Id && Tissue == other.Tissue; }
+
+private:
+    using Base = CtStructureBase;
+
+    friend struct EvaluateImplicitStructures;
+    template<TBasicStructure BasicStructureImpl> friend class BasicStructureBaseData;
+
+    StructureId Id = ++GlobalBasicStructureId;
+    TissueType Tissue = GetTissueTypeByName("Air");
+    Impl BasicStructureImpl {};
+};
+
+template<TBasicStructure BasicStructureImpl>
+auto BasicStructureBase<BasicStructureImpl>::FunctionValue(Point point) const noexcept -> float {
+    Point transformedPoint = Transform.TransformPoint(point);
+
+    return BasicStructureImpl.EvaluateFunction(transformedPoint);
+}
+
+using SphereStructure = BasicStructureBase<SphereStructureImpl>;
+using BoxStructure = BasicStructureBase<BoxStructureImpl>;
+using BasicStructureVariant = std::variant<SphereStructure, BoxStructure>;
+
+
+
+namespace BasicStructure {
+    [[nodiscard]] auto
+    CreateBasicStructure(const BasicStructureDataVariant& dataVariant) -> BasicStructureVariant;
+}
+
+class BasicStructureUi {
+public:
+    [[nodiscard]] auto static
+    GetWidgetData(QWidget* widget) -> BasicStructureDataVariant;
+
+    [[nodiscard]] auto static
+    GetWidget() -> QWidget*;
 };

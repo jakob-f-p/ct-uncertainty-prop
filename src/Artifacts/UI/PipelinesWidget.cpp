@@ -9,10 +9,16 @@
 #include "../PipelineList.h"
 #include "../../App.h"
 
+#include <QIcon>
+#include <QPushButton>
+#include <QLabel>
+#include <QStackedLayout>
+
 #include <vtkCallbackCommand.h>
 #include <vtkNew.h>
 
-PipelinesWidget::PipelinesWidget() :
+PipelinesWidget::PipelinesWidget(QWidget* parent) :
+        QWidget(parent),
         Pipelines(App::GetInstance()->GetPipelines()),
         CurrentPipelineIndex(Pipelines.IsEmpty() ? -1 : 0),
         PipelineTitle(new QLabel()),
@@ -46,13 +52,8 @@ PipelinesWidget::PipelinesWidget() :
     connect(NextPipelineButton, &QPushButton::clicked, this, &PipelinesWidget::NextPipeline);
 
     vLayout->addWidget(StructureArtifactModelingWidget);
-    vtkNew<vtkCallbackCommand> pipelineListObserver;
-    pipelineListObserver->SetClientData(StructureArtifactModelingWidget);
-    pipelineListObserver->SetCallback([](vtkObject*, unsigned long, void* clientData, void*) {
-        auto* structureArtifactModelingWidget = static_cast<StructureArtifactsWidget*>(clientData);
-        structureArtifactModelingWidget->ResetModel();
-    });
-    Pipelines.AddObserver(vtkCommand::ModifiedEvent, pipelineListObserver);
+
+    Pipelines.AddPipelineEventCallback([widget = StructureArtifactModelingWidget]() { widget->ResetModel(); });
 
     vLayout->addWidget(ImageArtifactModelingWidget);
 
@@ -61,10 +62,7 @@ PipelinesWidget::PipelinesWidget() :
 }
 
 void PipelinesWidget::AddPipeline() {
-    vtkNew<Pipeline> newPipeline;
-    newPipeline->SetCtDataTree(&App::GetInstance()->GetCtDataTree());
-
-    Pipelines.AddPipeline(newPipeline);
+    Pipelines.AddPipeline();
 
     CurrentPipelineIndex = Pipelines.GetSize() - 1;
 
@@ -89,20 +87,16 @@ void PipelinesWidget::RemovePipeline() {
 }
 
 void PipelinesWidget::PreviousPipeline() {
-    if (CurrentPipelineIndex == 0) {
-        qWarning("Cannot decrease pipeline index further");
-        return;
-    }
+    if (CurrentPipelineIndex == 0)
+        throw std::runtime_error("Cannot decrease pipeline index further");
 
     CurrentPipelineIndex--;
     UpdatePipelineView();
 }
 
 void PipelinesWidget::NextPipeline() {
-    if (CurrentPipelineIndex == Pipelines.GetSize() - 1) {
-        qWarning("Cannot increase pipeline index further");
-        return;
-    }
+    if (CurrentPipelineIndex == Pipelines.GetSize() - 1)
+        throw std::runtime_error("Cannot increase pipeline index further");
 
     CurrentPipelineIndex++;
     UpdatePipelineView();
@@ -110,12 +104,10 @@ void PipelinesWidget::NextPipeline() {
 
 void PipelinesWidget::UpdatePipelineView() {
     QString pipelineTitleString = "";
-    if (GetCurrentPipeline()) {
-        std::string pipelineName = GetCurrentPipeline()->GetName();
-        pipelineTitleString = pipelineName.empty()
-                               ? QString::fromStdString("Pipeline " + std::to_string(CurrentPipelineIndex + 1))
-                               : QString::fromStdString(pipelineName);
-    }
+    std::string pipelineName = GetCurrentPipeline().GetName();
+    pipelineTitleString = pipelineName.empty()
+                           ? QString::fromStdString("Pipeline " + std::to_string(CurrentPipelineIndex + 1))
+                           : QString::fromStdString(pipelineName);
     PipelineTitle->setText(pipelineTitleString);
 
     PreviousPipelineButton->setEnabled(CurrentPipelineIndex > 0);
@@ -127,12 +119,16 @@ void PipelinesWidget::UpdatePipelineView() {
     ImageArtifactModelingWidget->SetCurrentView(CurrentPipelineIndex);
 }
 
-QIcon PipelinesWidget::GenerateIcon(const std::string &filePrefix) {
+QIcon PipelinesWidget::GenerateIcon(const std::string &filePrefix) noexcept {
     QIcon icon;
     QString qFilePrefix = QString::fromStdString(filePrefix);
     icon.addPixmap(QPixmap(":/" + qFilePrefix + "Normal.png"), QIcon::Normal);
     icon.addPixmap(QPixmap(":/" + qFilePrefix + "Disabled.png"), QIcon::Disabled);
     return icon;
+}
+
+QString PipelinesWidget::GetHeaderStyleSheet() noexcept {
+    return "font-size: 14px; font-weight: bold";
 }
 
 void PipelinesWidget::InitializeViews() {
@@ -147,10 +143,6 @@ void PipelinesWidget::CreateArtifactsViewsForCurrentPipeline() {
     ImageArtifactModelingWidget->AddView(GetCurrentPipeline());
 }
 
-Pipeline* PipelinesWidget::GetCurrentPipeline() {
+Pipeline& PipelinesWidget::GetCurrentPipeline() {
     return Pipelines.Get(CurrentPipelineIndex);
-}
-
-QString PipelinesWidget::GetHeaderStyleSheet() {
-    return "font-size: 14px; font-weight: bold";
 }

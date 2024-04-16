@@ -14,7 +14,7 @@ public:
     explicit StructureArtifactsWidget(QWidget* parent = nullptr);
 
     void SetCurrentView(int pipelineIdx);
-    void AddView(Pipeline* pipeline);
+    void AddView(Pipeline& pipeline);
     void RemoveCurrentView();
 
 public slots:

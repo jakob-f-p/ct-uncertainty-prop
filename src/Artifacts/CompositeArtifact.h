@@ -20,7 +20,7 @@ public:
     };
     Q_ENUM(CompositionType);
     static std::string CompositionTypeToString(CompositionType compositionType);
-    GET_ENUM_VALUES(CompositionType, true);
+    ENUM_GET_VALUES(CompositionType, true);
     vtkSetEnumMacro(CompType, CompositionType);
     vtkGetEnumMacro(CompType, CompositionType);
 

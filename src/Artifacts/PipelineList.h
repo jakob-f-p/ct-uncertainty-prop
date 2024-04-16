@@ -1,38 +1,40 @@
 #pragma once
 
-#include <vtkObject.h>
+#include "Pipeline.h"
 
-class Pipeline;
+#include <vector>
 
 struct CtStructureTreeEvent;
 
-class PipelineList : public vtkObject {
+class PipelineList {
 public:
-    static PipelineList* New();
-    vtkTypeMacro(PipelineList, vtkObject)
+    PipelineList(CtStructureTree& structureTree);
 
-    void PrintSelf(std::ostream& os, vtkIndent indent) override;
+    [[nodiscard]] auto
+    IsEmpty() const noexcept -> bool;
 
-    bool IsEmpty() const;
+    [[nodiscard]] auto
+    GetSize() const noexcept -> int;
 
-    int GetSize() const;
+    [[nodiscard]] auto
+    Get(int idx) noexcept -> Pipeline&;
 
-    Pipeline* Get(int idx) const;
+    [[nodiscard]] auto
+    NumberOfPipelines() const noexcept -> int;
 
-    void AddPipeline(Pipeline* pipeline);
+    auto
+    AddPipeline() noexcept -> Pipeline&;
 
-    void RemovePipeline(Pipeline* pipeline);
+    auto
+    RemovePipeline(Pipeline& pipeline) -> void;
 
-    int NumberOfPipelines() const;
+    using PipelineEventCallback = std::function<void()>;
+    void AddPipelineEventCallback(PipelineEventCallback&& pipelineEventCallback);
 
-    void ProcessCtStructureTreeEvent(CtStructureTreeEvent event);
-
-    PipelineList(const PipelineList&) = delete;
-    void operator=(const PipelineList&) = delete;
+    auto
+    ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) -> void;
 
 protected:
-    PipelineList() = default;
-    ~PipelineList() override = default;
-
-    std::vector<vtkSmartPointer<Pipeline>> Pipelines;
+    std::vector<Pipeline> Pipelines;
+    std::vector<PipelineEventCallback> PipelineEventCallbacks;
 };

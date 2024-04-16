@@ -5,12 +5,13 @@
 #include "StructureArtifactsDelegate.h"
 #include "StructureArtifactsModel.h"
 #include "../StructureArtifact.h"
-#include "../StructureWrapper.h"
 
 #include <QLabel>
 #include <QPushButton>
 
-StructureArtifactsWidgetDialog::StructureArtifactsWidgetDialog(ArtifactStructureWrapper& structureWrapper, QWidget* parent) :
+StructureArtifactsWidgetDialog::StructureArtifactsWidgetDialog(StructureArtifacts& structureWrapper,
+                                                               std::string& title,
+                                                               QWidget* parent) :
         QDialog(parent),
         CreateDialog(nullptr),
         View(new QListView()),
@@ -32,7 +33,7 @@ StructureArtifactsWidgetDialog::StructureArtifactsWidgetDialog(ArtifactStructure
     auto* vLayout = new QVBoxLayout(this);
 
     auto* titleBarHLayout = new QHBoxLayout();
-    auto* titleLabel = new QLabel(QString::fromStdString(structureWrapper.GetViewName()));
+    auto* titleLabel = new QLabel(QString::fromStdString(title));
     titleLabel->setStyleSheet(PipelinesWidget::GetHeaderStyleSheet());
     titleBarHLayout->addWidget(titleLabel);
 
@@ -106,11 +107,9 @@ void StructureArtifactsWidgetDialog::MoveDown() {
 void StructureArtifactsWidgetDialog::UpdateButtonStatesOnSelectionChange(const QItemSelection& selected,
                                                                          const QItemSelection&) {
     auto modelIndexList = selected.indexes();
-    std::cout << "hi" << std::endl;
-    if (modelIndexList.size() > 1) {
-        qWarning("Invalid selection");
-        return;
-    }
+    if (modelIndexList.size() > 1)
+        throw std::runtime_error("Invalid selection");
+
     QModelIndex selectedIndex = modelIndexList.size() == 1
             ? selected.indexes()[0]
             : QModelIndex();

@@ -1,200 +1,61 @@
 #include "CtStructure.h"
 
-#include "BasicStructure.h"
-#include "CombinedStructure.h"
-#include "SimpleTransform.h"
-
-#include <QLabel>
-#include <QLineEdit>
-#include <QWidget>
-
-#include <QGroupBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
+#include <QLabel>
+#include <QWidget>
 
-void CtStructure::PrintSelf(ostream &os, vtkIndent indent) {
-    Superclass::PrintSelf(os, indent);
-
-    os << indent << "Name: " << Name << "\n";
-    os << indent << "View Name: " << GetViewName() << "\n";
-    os << indent << "Transform: " << "\n";
-    Transform->PrintSelf(os, indent.GetNextIndent());
-    os << indent << "Parent: " << Parent << std::endl;
-}
-
-vtkMTimeType CtStructure::GetMTime() {
-    return std::max({ Superclass::GetMTime(), Transform->GetMTime() });
-}
-
-void CtStructure::SetName(std::string name) {
-    Name = std::move(name);
-
-    Modified();
-}
-
-CombinedStructure* CtStructure::GetParent() const {
-    return Parent;
-}
-
-void CtStructure::SetParent(CombinedStructure* parent) {
-    Parent = parent;
-}
-
-bool CtStructure::IsBasic() const {
-    return GetSubType() == BASIC;
-}
-
-bool CtStructure::IsBasic(void* ctStructure) {
-    return FromVoid(ctStructure)->IsBasic();
-}
-
-BasicStructure* CtStructure::ToBasic(void* basicStructure) {
-    return dynamic_cast<BasicStructure*>(FromVoid(basicStructure));
-}
-
-BasicStructure* CtStructure::ToBasic(CtStructure* basicStructure) {
-    return dynamic_cast<BasicStructure*>(basicStructure);
-}
-
-CombinedStructure* CtStructure::ToCombined(void* combinedStructure) {
-    return dynamic_cast<CombinedStructure*>(FromVoid(combinedStructure));
-}
-
-CombinedStructure* CtStructure::ToCombined(CtStructure* combinedStructure) {
-    return dynamic_cast<CombinedStructure*>(combinedStructure);
-}
-
-CtStructure* CtStructure::FromVoid(void* ctStructure) {
-    return static_cast<CtStructure*>(ctStructure);
-}
-
-
-
-template struct CtStructureData<BasicStructure, BasicStructureData>;
-template struct CtStructureData<CombinedStructure, CombinedStructureData>;
-
-template<typename Structure, typename Data>
-Data CtStructureData<Structure, Data>::GetData(const Structure& structure) {
-    Data data {};
-
-    data.Name = QString::fromStdString(structure.Name);
-    data.ViewName = QString::fromStdString(static_cast<const CtStructure&>(structure).GetViewName());
-    data.Transform = structure.Transform->GetTranslationRotationScaling();
-
-    Data::AddSubTypeData(structure, data);
-
-    return data;
-}
-
-template<typename Structure, typename Data>
-QVariant CtStructureData<Structure, Data>::GetQVariant(const Structure& structure) {
-    return QVariant::fromValue(std::move(GetData(structure)));
-}
-
-template<typename Structure, typename Data>
-void CtStructureData<Structure, Data>::SetData(Structure& structure, const Data& data) {
-    structure.SetName(data.Name.toStdString());
-
-    Data::SetSubTypeData(structure, data);
-
-    structure.SetTransform(data.Transform);
-}
-
-template<typename Structure, typename Data>
-void CtStructureData<Structure, Data>::SetData(Structure& structure, const QVariant& variant) {
-    if (!variant.canConvert<Data>()) {
-        qWarning("Cannot convert variant to rData");
-        return;
+auto CtStructureBase::FunctionTypeToString(FunctionType functionType) noexcept -> std::string {
+    switch (functionType) {
+        case FunctionType::SPHERE: return "Sphere";
+        case FunctionType::BOX:    return "Box";
+        case FunctionType::CONE:   return "Cone";
+        default: { qWarning("No matching implicit function type found"); return ""; }
     }
-
-    Data data = variant.value<Data>();
-    SetData(structure, data);
 }
 
-
-
-template class CtStructureUi<BasicStructureUi, BasicStructureData>;
-template class CtStructureUi<CombinedStructureUi, CombinedStructureData>;
-
-template<typename Ui, typename Data>
-QWidget* CtStructureUi<Ui, Data>::GetWidget() {
-    auto* widget = new QWidget();
-    auto* fLayout = new QFormLayout(widget);
-    fLayout->setFieldGrowthPolicy(QFormLayout::FieldGrowthPolicy::FieldsStayAtSizeHint);
-    fLayout->setHorizontalSpacing(15);
-
-    auto* nameLineEdit = new QLineEdit();
-    nameLineEdit->setObjectName(NameEditObjectName);
-    fLayout->addRow("Name", nameLineEdit);
-
-    Ui::AddSubTypeWidgets(fLayout);
-
-    auto* transformGroup = new QGroupBox("Transform");
-    auto* transformGLayout = new QGridLayout(transformGroup);
-    transformGLayout->setColumnStretch(0, 1);
-    std::array<std::array<double, 2>, 3> transformRanges { -100.0, 100.0, 0.0, 360.0, -10.0, 10.0 };
-    std::array<double, 3> transformStepSizes { 2.0, 1.0, 0.1 };
-    for (int i = 0; i < TransformNames.size(); i++) {
-        AddCoordinatesRow(TransformNames[i], TransformNames[i],
-                          transformRanges[i][0], transformRanges[i][1], transformStepSizes[i],
-                          transformGLayout, i, i == 2 ? 1.0 : 0.0);
+auto CtStructureBase::OperatorTypeToString(OperatorType operatorType) noexcept-> std::string {
+    switch (operatorType) {
+        case OperatorType::UNION:        return "Union";
+        case OperatorType::INTERSECTION: return "Intersection";
+        case OperatorType::DIFFERENCE:   return "Difference";
+        default: { qWarning("No string representation for this operator exists"); return ""; }
     }
-    fLayout->addRow(transformGroup);
-
-    return widget;
 }
 
-template<typename Ui, typename Data>
-Data CtStructureUi<Ui, Data>::GetWidgetData(QWidget* widget) {
-    if (!widget) {
-        qWarning("Given widget was nullptr");
-        return {};
-    }
+auto CtStructureBase::GetTissueTypeByName(const std::string& tissueName) noexcept -> TissueType {
+    if (auto search = TissueTypeMap.find(tissueName);
+            search != TissueTypeMap.end())
+        return search->second;
 
-    Data data {};
+    qWarning("No tissue type with requested name present. Returning 'Air'");
 
-    auto* nameLineEdit = widget->findChild<QLineEdit*>(NameEditObjectName);
-    data.Name = nameLineEdit->text();
-
-    for (int i = 0; i < data.Transform.size(); ++i) {
-        for (int j = 0; j < data.Transform[0].size(); ++j) {
-            auto* spinBox = widget->findChild<QDoubleSpinBox*>(
-                    GetAxisSpinBoxName(TransformNames[i], AxisNames[j]));
-            data.Transform[i][j] = static_cast<float>(spinBox->value());
-        }
-    }
-
-    Ui::AddSubTypeWidgetsData(widget, data);
-
-    return data;
+    return TissueTypeMap.at("Air");
 }
 
-template<typename Ui, typename Data>
-void CtStructureUi<Ui, Data>::SetWidgetData(QWidget* widget, const Data& data) {
-    if (!widget) {
-        qWarning("Given widget was nullptr");
-        return;
-    }
-
-    auto* nameLineEdit = widget->findChild<QLineEdit*>(NameEditObjectName);
-    nameLineEdit->setText(data.Name);
-
-    for (int i = 0; i < data.Transform.size(); ++i) {
-        for (int j = 0; j < data.Transform[0].size(); ++j) {
-            auto* spinBox = widget->findChild<QDoubleSpinBox*>(
-                    GetAxisSpinBoxName(TransformNames[i], AxisNames[j]));
-            spinBox->setValue(data.Transform[i][j]);
-        }
-    }
-
-    Ui::SetSubTypeWidgetsData(widget, data);
+auto CtStructureBase::GetTissueTypeNames() noexcept -> QStringList {
+    QStringList names;
+    std::transform(TissueTypeMap.cbegin(), TissueTypeMap.cend(), std::back_inserter(names),
+                   [](const auto& type) { return QString::fromStdString(type.first); });
+    return names;
 }
 
-template<typename Ui, typename Data>
-void CtStructureUi<Ui, Data>::AddCoordinatesRow(const QString& baseName, const QString& labelText,
-                                                double minValue, double maxValue, double stepSize,
-                                                QGridLayout* gridLayout, int gridLayoutRow,
-                                                double defaultValue) {
+std::map<std::string, CtStructureBase::TissueType> CtStructureBase::TissueTypeMap = {
+        { "Air",             { "Air",            -1000.0f } },
+        { "Fat",             { "Fat",             -100.0f } },
+        { "Water",           { "Water",              0.0f } },
+        { "Soft Tissue",     { "Soft Tissue",      200.0f } },
+        { "Cancellous Bone", { "Cancellous Bone",  350.0f } },
+        { "Cortical Bone",   { "Cortical Bone",    800.0f } },
+        { "Metal",           { "Metal",          15000.0f } }
+};
+
+std::atomic<StructureId> CtStructureBase::GlobalBasicStructureId = 0;
+
+auto CtStructure::AddCoordinatesRow(const QString& baseName, const QString& labelText,
+                                    double minValue, double maxValue, double stepSize,
+                                    QGridLayout* gridLayout, int gridLayoutRow,
+                                    double defaultValue) noexcept -> void {
     auto* titleLabel = new QLabel(labelText);
     gridLayout->addWidget(titleLabel, gridLayoutRow, 0);
 
@@ -212,9 +73,8 @@ void CtStructureUi<Ui, Data>::AddCoordinatesRow(const QString& baseName, const Q
     }
 }
 
-template<typename Ui, typename Data>
-QWidget* CtStructureUi<Ui, Data>::GetCoordinatesRow(const QString& baseName,
-                                                    double minValue, double maxValue, double stepSize) {
+auto CtStructure::GetCoordinatesRow(const QString& baseName,
+                                    double minValue, double maxValue, double stepSize) noexcept -> QWidget* {
     auto* widget = new QWidget();
     auto* hLayout = new QHBoxLayout(widget);
     hLayout->setContentsMargins(0, 0, 0, 0);
@@ -237,16 +97,6 @@ QWidget* CtStructureUi<Ui, Data>::GetCoordinatesRow(const QString& baseName,
     return widget;
 }
 
-template<typename Ui, typename Data>
-QString CtStructureUi<Ui, Data>::GetAxisSpinBoxName(const QString& transformName, const QString& axisName) {
+auto CtStructure::GetAxisSpinBoxName(const QString& transformName, const QString& axisName) noexcept -> QString {
     return transformName + axisName;
 }
-
-template<typename Ui, typename Data>
-const QStringList CtStructureUi<Ui, Data>::AxisNames = { "x", "y", "z" };
-
-template<typename Ui, typename Data>
-const QString CtStructureUi<Ui, Data>::NameEditObjectName = "NameEdit";
-
-template<typename Ui, typename Data>
-const QStringList CtStructureUi<Ui, Data>::TransformNames { "Translate", "Rotate", "Scale" };

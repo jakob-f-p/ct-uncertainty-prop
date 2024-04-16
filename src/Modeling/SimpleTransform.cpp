@@ -1,56 +1,37 @@
 #include "SimpleTransform.h"
 
-#include <vtkObjectFactory.h>
+#include <vtkMatrix4x4.h>
 
-vtkStandardNewMacro(SimpleTransform)
-
-void SimpleTransform::PrintSelf(ostream& os, vtkIndent indent) {
-    os << indent << "Translation: [" << TranslationValues[0] << ", " << TranslationValues[1] << ", " << TranslationValues[2] << "]\n";
-    os << indent << "Rotation: [" << RotationAngles[0] << ", " << RotationAngles[1] << ", " << RotationAngles[2] << "]\n";
-    os << indent << "Scale: [" << ScaleFactors[0] << ", " << ScaleFactors[1] << ", " << ScaleFactors[2] << "]\n";
+auto SimpleTransform::GetMTime() const noexcept -> vtkMTimeType {
+    return Transform->GetMTime();
 }
 
-SimpleTransform::SimpleTransform() :
-    TranslationValues{ 0.0f, 0.0f, 0.0f },
-    RotationAngles   { 0.0f, 0.0f, 0.0f },
-    ScaleFactors     { 1.0f, 1.0f, 1.0f } {
+auto SimpleTransform::Modified() noexcept -> void {
+    return Transform->Modified();
 }
 
-std::array<std::array<float, 3>, 3> SimpleTransform::GetTranslationRotationScaling() {
-    std::array<std::array<float, 3>, 3> trs {};
-    trs[0] = TranslationValues;
-    trs[1] = RotationAngles;
-    trs[2] = ScaleFactors;
-
-    return trs;
+auto SimpleTransform::GetData() const noexcept -> SimpleTransformData {
+    return { TranslationValues, RotationAngles, ScaleFactors };
 }
 
-void SimpleTransform::SetTranslationRotationScaling(const std::array<std::array<float, 3>, 3>& trs) {
-    TranslationValues = trs[0];
-    RotationAngles =    trs[1];
-    ScaleFactors =      trs[2];
+auto SimpleTransform::SetData(const SimpleTransformData& transformData) noexcept -> void {
+    TranslationValues = transformData[0];
+    RotationAngles =    transformData[1];
+    ScaleFactors =      transformData[2];
 
-    Modified();
-}
+    Transform->Identity();
+    Transform->Translate(TranslationValues.data());
+    Transform->RotateX(RotationAngles[0]);
+    Transform->RotateY(RotationAngles[1]);
+    Transform->RotateZ(RotationAngles[2]);
+    Transform->Scale(ScaleFactors.data());
+    Transform->Inverse();
 
-void SimpleTransform::InternalDeepCopy(vtkAbstractTransform* copy) {
-    auto* transform = dynamic_cast<SimpleTransform*>(copy);
+    Transform->Update();
 
-    SetTranslationRotationScaling(transform->GetTranslationRotationScaling());
+    vtkNew<vtkMatrix4x4> vtkMatrix;
+    Transform->GetMatrix(vtkMatrix);
 
-    Superclass::InternalDeepCopy(copy);
-}
-
-//------------------------------------------------------------------------------
-void SimpleTransform::InternalUpdate() {
-    Superclass::Identity();
-
-    Translate(TranslationValues.data());
-    RotateX(RotationAngles[0]);
-    RotateY(RotationAngles[1]);
-    RotateZ(RotationAngles[2]);
-    Scale(ScaleFactors.data());
-    Inverse();
-
-    Superclass::InternalUpdate();
+    const double* doubleMatrix = vtkMatrix->GetData();
+    std::copy(doubleMatrix, std::next(doubleMatrix, N4x4), Matrix.data()->data());
 }

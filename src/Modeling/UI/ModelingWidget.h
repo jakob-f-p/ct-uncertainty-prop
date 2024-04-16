@@ -1,5 +1,8 @@
 #pragma once
 
+#include "../BasicStructure.h"
+#include "../CombinedStructure.h"
+
 #include <QMainWindow>
 
 class CtStructureTree;
@@ -8,9 +11,7 @@ class CtDataSource;
 class CtStructureDialog;
 class ModelingRenderWidget;
 
-struct BasicStructureData;
-struct CombinedStructureData;
-
+class QItemSelection;
 class QItemSelectionModel;
 class QPushButton;
 class QTreeView;
@@ -26,19 +27,21 @@ private:
     void DisableButtons();
 
     void OpenBasicAndCombinedStructureCreateDialog(
-            const std::function<const void(const BasicStructureData&, const CombinedStructureData&)>& onAccepted);
+            const std::function<const void(const BasicStructureDataVariant&, const CombinedStructureData&)>& onAccepted);
 
-    ModelingRenderWidget* RenderWidget;
+    void UpdateButtonStates(const QItemSelection& selected, const QItemSelection&);
 
-    QPushButton* ResetCameraButton;
-    QPushButton* AddStructureButton;
-    QPushButton* CombineWithStructureButton;
-    QPushButton* RefineWithStructureButton;
-    QPushButton* RemoveStructureButton;
-    std::array<QPushButton*, 4> CtStructureButtons;
+    ModelingRenderWidget* const RenderWidget;
 
-    CtStructureTreeModel* TreeModel;
-    QTreeView* TreeView;
+    QPushButton* const ResetCameraButton;
+    QPushButton* const AddStructureButton;
+    QPushButton* const CombineWithStructureButton;
+    QPushButton* const RefineWithStructureButton;
+    QPushButton* const RemoveStructureButton;
+    const std::array<QPushButton* const, 4> CtStructureButtons;
+
+    CtStructureTreeModel* const TreeModel;
+    QTreeView* const TreeView;
     QItemSelectionModel* SelectionModel;
 
     CtStructureDialog* CtStructureCreateDialog;

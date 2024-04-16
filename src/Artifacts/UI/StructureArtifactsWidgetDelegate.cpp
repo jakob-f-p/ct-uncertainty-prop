@@ -9,18 +9,19 @@ StructureArtifactsWidgetDelegate::StructureArtifactsWidgetDelegate(const Pipelin
         APipeline(pipeline) {
 }
 
-QWidget* StructureArtifactsWidgetDelegate::createEditor(QWidget* parent,
-                                                        const QStyleOptionViewItem& option,
-                                                        const QModelIndex& index) const {
+auto StructureArtifactsWidgetDelegate::createEditor(QWidget* parent,
+                                                    const QStyleOptionViewItem& option,
+                                                    const QModelIndex& index) const -> QWidget* {
     if (!index.isValid())
         return nullptr;
 
-    auto* structure = static_cast<CtStructure*>(index.internalPointer());
-    if (!structure)
-        return nullptr;
+    const auto structureIdx = static_cast<StructureId>(index.internalId());
+    if (structureIdx < 0)
+        throw std::runtime_error("Invalid internal id");
 
-    auto& structureWrapper = APipeline.GetArtifactStructureWrapper(*structure);
-    auto* dialog = new StructureArtifactsWidgetDialog(structureWrapper, parent);
+    auto& structureWrapper = APipeline.GetArtifactStructureWrapper(structureIdx);
+    auto title = index.data().toString().toStdString();
+    auto* dialog = new StructureArtifactsWidgetDialog(structureWrapper, title, parent);
 
     return dialog;
 }
@@ -35,6 +36,6 @@ void StructureArtifactsWidgetDelegate::updateEditorGeometry(QWidget* editor,
                                                             const QStyleOptionViewItem& option,
                                                             const QModelIndex& index) const {}
 
-bool StructureArtifactsWidgetDelegate::eventFilter(QObject* object, QEvent* event) {
+auto StructureArtifactsWidgetDelegate::eventFilter(QObject* object, QEvent* event) -> bool {
     return false;
 }
