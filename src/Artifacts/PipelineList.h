@@ -8,7 +8,7 @@ struct CtStructureTreeEvent;
 
 class PipelineList {
 public:
-    PipelineList(CtStructureTree& structureTree);
+    explicit PipelineList(CtStructureTree& structureTree);
 
     [[nodiscard]] auto
     IsEmpty() const noexcept -> bool;
@@ -23,7 +23,7 @@ public:
     NumberOfPipelines() const noexcept -> int;
 
     auto
-    AddPipeline() noexcept -> Pipeline&;
+    AddPipeline() -> Pipeline&;
 
     auto
     RemovePipeline(Pipeline& pipeline) -> void;

@@ -22,7 +22,7 @@ auto PipelineList::Get(int idx) noexcept -> Pipeline& {
     return Pipelines.at(idx);
 }
 
-auto PipelineList::AddPipeline() noexcept -> Pipeline& {
+auto PipelineList::AddPipeline() -> Pipeline& {
     return Pipelines.emplace_back(App::GetInstance()->GetCtDataTree().StructureCount());
 }
 

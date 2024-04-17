@@ -13,7 +13,8 @@
 #include <QWidget>
 
 using StructureId = int32_t;
-using StructureIdx = uint16_t;
+using uidx_t = uint16_t;
+using idx_t = int32_t;
 
 namespace CtStructure {
     auto
@@ -39,15 +40,15 @@ template<typename T>
 concept CtStructureLike = requires(T structure,
                                    Point position,
                                    SimpleTransformData transformData,
-                                   StructureId structureId,
+                                   idx_t structureIdx,
                                    T::Data data) {
     typename T::Data;
 
     structure.SetTransformData(transformData);
     { structure.GetTransformData() } -> std::same_as<SimpleTransformData>;
 
-    structure.SetParentIdx(structureId);
-    { structure.GetParentIdx() } -> std::same_as<StructureId>;
+    structure.SetParentIdx(structureIdx);
+    { structure.GetParentIdx() } -> std::same_as<idx_t>;
 
     structure.IncrementParentIdx();
     structure.DecrementParentIdx();
@@ -105,16 +106,16 @@ public:
     SetTransformData(const SimpleTransformData& transformData) noexcept -> void { Transform.SetData(transformData); }
 
     auto
-    SetParentIdx(StructureId parentId) noexcept -> void { ParentIdx = parentId; }
+    SetParentIdx(idx_t parentId) noexcept -> void { ParentIdx = parentId; }
 
     [[nodiscard]] auto
-    GetParentIdx() const noexcept -> StructureId { return ParentIdx; }
+    GetParentIdx() const noexcept -> idx_t { return ParentIdx; }
 
     auto
-    IncrementParentIdx() noexcept -> StructureIdx { return ++ParentIdx; };
+    IncrementParentIdx() noexcept -> uidx_t { return ++ParentIdx; };
 
     auto
-    DecrementParentIdx() noexcept -> StructureIdx { return --ParentIdx; };
+    DecrementParentIdx() noexcept -> uidx_t { return --ParentIdx; };
 
     struct ModelingResult {
         float FunctionValue;
@@ -171,7 +172,7 @@ protected:
     SimpleTransform Transform;
     std::string Name;
 
-    StructureId ParentIdx = -1;
+    idx_t ParentIdx = -1;
 
     static std::atomic<StructureId> GlobalBasicStructureId;
 };

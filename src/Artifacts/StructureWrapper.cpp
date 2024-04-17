@@ -21,7 +21,7 @@ auto StructureArtifacts::Get(int idx) const -> StructureArtifact& {
     return *StructureArtifacts.at(idx);
 }
 
-auto StructureArtifacts::GetNumberOfArtifacts() const noexcept -> StructureIdx {
+auto StructureArtifacts::GetNumberOfArtifacts() const noexcept -> uidx_t {
     return static_cast<int>(StructureArtifacts.size());
 }
 
@@ -100,21 +100,21 @@ auto TreeStructureArtifactCollection::GetMTime() -> vtkMTimeType {
     return *std::max_element(artifactMTimes.begin(), artifactMTimes.end());
 }
 
-StructureArtifacts& TreeStructureArtifactCollection::GetForCtStructureIdx(StructureIdx structureIdx) {
+StructureArtifacts& TreeStructureArtifactCollection::GetForCtStructureIdx(uidx_t structureIdx) {
     if (structureIdx >= ArtifactLists.size())
         throw std::runtime_error("No artifact structure wrapper for the given structure exists within this collection");
 
     return ArtifactLists[structureIdx];
 }
 
-void TreeStructureArtifactCollection::AddStructureArtifactList(StructureIdx insertionIdx) {
+void TreeStructureArtifactCollection::AddStructureArtifactList(uidx_t insertionIdx) {
     if (insertionIdx > ArtifactLists.size())
         throw std::runtime_error("Cannot add structure wrapper. Given index is  larger then the current size.");
 
     ArtifactLists.emplace_back();
 }
 
-void TreeStructureArtifactCollection::RemoveStructureArtifactList(StructureIdx removeIdx) {
+void TreeStructureArtifactCollection::RemoveStructureArtifactList(uidx_t removeIdx) {
     if (removeIdx >= ArtifactLists.size())
         throw std::runtime_error("Cannot remove structure artifact list. No structure exists at given index");
 

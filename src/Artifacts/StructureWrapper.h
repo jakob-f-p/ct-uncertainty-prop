@@ -7,7 +7,7 @@
 class CtStructureTree;
 class StructureArtifact;
 
-using StructureIdx = uint16_t;
+using uidx_t = uint16_t;
 
 class StructureArtifacts {
 public:
@@ -18,7 +18,7 @@ public:
     Get(int idx) const -> StructureArtifact&;
 
     [[nodiscard]] auto
-    GetNumberOfArtifacts() const noexcept -> StructureIdx;
+    GetNumberOfArtifacts() const noexcept -> uidx_t;
 
     auto
     AddStructureArtifact(StructureArtifact& structureArtifact, int insertionIdx = -1) -> void;
@@ -50,13 +50,13 @@ public:
     GetMTime() -> vtkMTimeType;
 
     [[nodiscard]] auto
-    GetForCtStructureIdx(StructureIdx structureIdx) -> StructureArtifacts&;
+    GetForCtStructureIdx(uidx_t structureIdx) -> StructureArtifacts&;
 
     auto
-    AddStructureArtifactList(StructureIdx insertionIdx) -> void;
+    AddStructureArtifactList(uidx_t insertionIdx) -> void;
 
     auto
-    RemoveStructureArtifactList(StructureIdx removeIdx) -> void;
+    RemoveStructureArtifactList(uidx_t removeIdx) -> void;
 
 private:
     std::vector<StructureArtifacts> ArtifactLists;

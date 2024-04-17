@@ -20,7 +20,6 @@
 ArtifactsWidget::ArtifactsWidget() :
         ResetCameraButton(new QPushButton("Reset Camera")),
         RenderButton(new QPushButton("Render")) {
-
     SetUpCentralRenderingWidget();
 
     SetUpDockWidget();
@@ -67,8 +66,8 @@ void ArtifactsWidget::SetUpCentralRenderingWidget() {
 
     auto* renderingWidget = new QVTKOpenGLNativeWidget();
     renderingWidget->setRenderWindow(renderWindow);
-//
-//    renderWindow->Render();
+
+    renderWindow->Render();
 
     vtkNew<vtkAxesActor> axesActor;
     axesActor->SetTotalLength(20.0, 20.0, 20.0);

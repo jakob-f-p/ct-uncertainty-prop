@@ -21,7 +21,7 @@
 
 App* App::Self = nullptr;
 
-App* App::CreateInstance(int argc, char* argv[]) {
+auto App::CreateInstance(int argc, char* argv[]) -> App* {
     if (Self)
         throw std::runtime_error("App already exists. Cannot create new instance.");
 
@@ -29,7 +29,7 @@ App* App::CreateInstance(int argc, char* argv[]) {
     return Self;
 }
 
-App* App::GetInstance() {
+auto App::GetInstance() -> App* {
     if (!Self)
         throw std::runtime_error("No instance exists. Instance needs to be created first.");
 
@@ -39,7 +39,7 @@ App* App::GetInstance() {
 App::App(int argc, char* argv[]) :
         Argc(argc),
         Argv(argv),
-        QApp(*new QApplication(Argc, Argv)),
+        QApp(new QApplication(Argc, Argv)),
         CtDataTree(new CtStructureTree()),
         Pipelines(new PipelineList(*CtDataTree)),
         MainWin(nullptr) {
@@ -49,10 +49,10 @@ App::~App() {
     delete &MainWin;
 
     QApplication::quit();
-    delete &QApp;
+    delete QApp;
 }
 
-int App::Run() {
+auto App::Run() -> int {
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 
     auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
@@ -127,10 +127,10 @@ void App::InitializeWithTestData() {
     imageArtifactConcatenation.AddImageArtifact(*gaussianArtifact4);
 }
 
-CtStructureTree& App::GetCtDataTree() const {
+auto App::GetCtDataTree() const -> CtStructureTree& {
     return *CtDataTree;
 }
 
-PipelineList& App::GetPipelines() const {
+auto App::GetPipelines() const -> PipelineList& {
     return *Pipelines;
 }

@@ -24,9 +24,9 @@ enum struct CtStructureTreeEventType : uint8_t {
 
 struct CtStructureTreeEvent {
     CtStructureTreeEventType Type;
-    StructureIdx Idx;
+    uidx_t Idx;
 
-    constexpr CtStructureTreeEvent(CtStructureTreeEventType type, StructureIdx idx) noexcept : Type(type), Idx(idx) {};
+    constexpr CtStructureTreeEvent(CtStructureTreeEventType type, uidx_t idx) noexcept : Type(type), Idx(idx) {};
 };
 
 class CtStructureTree {
@@ -52,10 +52,10 @@ public:
     auto
     RefineWithBasicStructure(const BasicStructureDataVariant& newStructureDataVariant,
                              const CombinedStructureData& combinedStructureData,
-                             StructureIdx structureToRefineIdx) -> void;
+                             uidx_t structureToRefineIdx) -> void;
 
     auto
-    RemoveBasicStructure(StructureIdx structureToRemoveIdx) -> void;
+    RemoveBasicStructure(uidx_t structureToRemoveIdx) -> void;
 
     [[nodiscard]] auto
     HasRoot() const noexcept -> bool;
@@ -64,23 +64,23 @@ public:
     GetRoot() const -> const StructureVariant&;
 
     [[nodiscard]] auto
-    GetStructureAt(StructureIdx idx) const -> const StructureVariant&;
+    GetStructureAt(uidx_t idx) const -> const StructureVariant&;
 
     [[nodiscard]] auto
-    GetStructureAt(StructureIdx idx) -> StructureVariant&;
+    GetStructureAt(uidx_t idx) -> StructureVariant&;
 
     [[nodiscard]] auto
-    StructureCount() const noexcept -> StructureIdx;
+    StructureCount() const noexcept -> uidx_t;
 
     [[nodiscard]] auto
     FunctionValueAndRadiodensity(Point point) const -> CtStructureBase::ModelingResult;
 
-    void SetData(StructureIdx structureIdx, const QVariant& data);
+    void SetData(uidx_t structureIdx, const QVariant& data);
 
     using TreeEventCallback = std::function<void(const CtStructureTreeEvent&)>;
     void AddTreeEventCallback(TreeEventCallback&& treeEventCallback);
 
-    auto GetRootIdx() const noexcept -> StructureId;
+    auto GetRootIdx() const noexcept -> idx_t;
 
 private:
     template<TCtStructure TStructure>
@@ -91,25 +91,25 @@ private:
     CtStructureExists(const BasicStructureVariant& basicStructureVariant) const -> bool;
 
     [[nodiscard]] auto
-    StructureIdxExists(StructureId idx) const noexcept -> bool;
+    StructureIdxExists(idx_t idx) const noexcept -> bool;
 
     auto
     EmitEvent(CtStructureTreeEvent event) noexcept -> void;
 
     template<TCtStructure TStructure>
     [[nodiscard]] auto
-    FindIndexOf(const TStructure& structure) const -> StructureIdx;
+    FindIndexOf(const TStructure& structure) const -> uidx_t;
 
     [[nodiscard]] auto
-    GetParentIdxOf(const TCtStructure auto& ctStructure) const -> StructureId;
+    GetParentIdxOf(const TCtStructure auto& ctStructure) const -> idx_t;
 
     auto
-    IncrementParentAndChildIndices(StructureIdx startIdx) -> void;
+    IncrementParentAndChildIndices(uidx_t startIdx) -> void;
 
     auto
-    DecrementParentAndChildIndices(StructureIdx startIdx) -> void;
+    DecrementParentAndChildIndices(uidx_t startIdx) -> void;
 
-    StructureId RootIdx = -1;
+    idx_t RootIdx = -1;
     std::vector<StructureVariant> Structures;
     vtkTimeStamp MTime;
     std::vector<TreeEventCallback> TreeEventCallbacks;

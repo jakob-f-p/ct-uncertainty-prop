@@ -13,17 +13,17 @@ class TreeStructureArtifactCollection;
 
 struct CtStructureTreeEvent;
 
-using StructureIdx = uint16_t;
+using uidx_t = uint16_t;
 
 class Pipeline {
 public:
-    explicit Pipeline(StructureIdx structureCount);
+    explicit Pipeline(uidx_t structureCount);
 
     [[nodiscard]] auto
     GetName() const noexcept -> std::string;
 
     [[nodiscard]] auto
-    GetArtifactStructureWrapper(StructureIdx structureIdx) const -> StructureArtifacts&;
+    GetArtifactStructureWrapper(uidx_t structureIdx) const -> StructureArtifacts&;
 
     [[nodiscard]] auto
     GetImageArtifactConcatenation() const -> ImageArtifactConcatenation&;

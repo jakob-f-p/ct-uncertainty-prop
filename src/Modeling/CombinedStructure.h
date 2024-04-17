@@ -43,35 +43,31 @@ public:
     SetOperatorType(OperatorType operatorType) noexcept-> void;
 
     auto
-    AddStructureIndex(StructureIdx idx) -> void;
+    AddStructureIndex(uidx_t idx) -> void;
 
     auto
-    RemoveStructureIndex(StructureIdx idx) -> void;
-
-    template<typename C, typename U>
-    auto
-    UpdateIndices(C check, StructureIdx threshold, U update, StructureId change) noexcept -> void;
+    RemoveStructureIndex(uidx_t idx) -> void;
 
     [[nodiscard]] auto
-    GetChildIndices() const noexcept -> const std::vector<StructureIdx>&;
+    GetChildIndices() const noexcept -> const std::vector<uidx_t>&;
 
     auto
-    UpdateChildIndicesGreaterThanOrEqualToBy(StructureIdx startIdx, int8_t change) noexcept -> void;
+    UpdateChildIndicesGreaterThanOrEqualToBy(uidx_t startIdx, int8_t change) noexcept -> void;
 
     [[nodiscard]] auto
-    StructureCount() const noexcept -> StructureIdx;
+    StructureCount() const noexcept -> uidx_t;
 
     [[nodiscard]] auto
-    StructureIdxAt(StructureIdx positionIdx) const -> StructureIdx;
+    StructureIdxAt(uidx_t positionIdx) const -> uidx_t;
 
     [[nodiscard]] auto
-    PositionIndex(StructureIdx childIdx) const -> int;
+    PositionIndex(uidx_t childIdx) const -> int;
 
     [[nodiscard]] auto
-    HasStructureIndex(StructureIdx childIdx) const noexcept -> bool;
+    HasStructureIndex(uidx_t childIdx) const noexcept -> bool;
 
     auto
-    ReplaceChild(StructureId oldIdx, StructureId newIdx) -> void;
+    ReplaceChild(idx_t oldIdx, idx_t newIdx) -> void;
 
     [[nodiscard]] auto
     GetViewName() const noexcept -> std::string;
@@ -93,7 +89,7 @@ private:
     friend struct EvaluateImplicitStructures;
 
     OperatorType Operator = OperatorType::INVALID;
-    std::vector<StructureIdx> ChildStructureIndices;
+    std::vector<uidx_t> ChildStructureIndices;
 };
 
 

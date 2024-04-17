@@ -83,7 +83,12 @@ set(VTK_COMPONENTS
         RenderingVolumeOpenGL2
 )
 
-find_package(VTK REQUIRED COMPONENTS ${VTK_COMPONENTS})
+if (NOT CMAKE_BUILD_TYPE STREQUAL Debug)
+    set(CMAKE_IGNORE_PATH "C:/Program Files (x86)/VTK/build")
+endif ()
+find_package(VTK REQUIRED COMPONENTS ${VTK_COMPONENTS} PATHS "C:/Program Files (x86)/VTK/release-build")
+message(STATUS "VTK_DIR=${VTK_DIR}")
+
 foreach (vtk_component IN LISTS VTK_COMPONENTS)
     list(APPEND VTK_MODULES "VTK::${vtk_component}")
 endforeach ()
@@ -94,3 +99,14 @@ vtk_module_autoinit(
         TARGETS uncertainty_propagation
         MODULES ${VTK_MODULES}
 )
+
+get_cmake_property(_variableNames VARIABLES)
+list (SORT _variableNames)
+foreach (_variableName ${_variableNames})
+    message(STATUS "${_variableName}=${${_variableName}}")
+endforeach()
+
+
+if (CMAKE_BUILD_TYPE STREQUAL Debug)
+    target_compile_definitions(uncertainty_propagation PUBLIC BUILD_TYPE_DEBUG=TRUE)
+endif ()

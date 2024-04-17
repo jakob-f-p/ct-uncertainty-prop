@@ -45,11 +45,11 @@ void CombinedStructure::SetOperatorType(CtStructureBase::OperatorType operatorTy
     Modified();
 }
 
-auto CombinedStructure::AddStructureIndex(StructureIdx idx) -> void {
+auto CombinedStructure::AddStructureIndex(uidx_t idx) -> void {
     ChildStructureIndices.push_back(idx);
 }
 
-auto CombinedStructure::RemoveStructureIndex(StructureIdx idx) -> void {
+auto CombinedStructure::RemoveStructureIndex(uidx_t idx) -> void {
     auto removeIt = std::find(ChildStructureIndices.begin(), ChildStructureIndices.end(), idx);
     if (removeIt == ChildStructureIndices.end())
         throw std::runtime_error("Given index could not be removed because it was not present");
@@ -57,43 +57,31 @@ auto CombinedStructure::RemoveStructureIndex(StructureIdx idx) -> void {
     ChildStructureIndices.erase(removeIt);
 }
 
-template<typename C, typename U>
-auto CombinedStructure::UpdateIndices(C check, StructureIdx threshold, U update, StructureId change) noexcept -> void {
-    for (auto& idx: ChildStructureIndices) {
-        if (check(idx, threshold))
-            update(idx, change);
-    }
-
-    auto parentIdx = GetParentIdx();
-    if (check(parentIdx, threshold))
-        update(parentIdx, change);
-}
-
-auto CombinedStructure::GetChildIndices() const noexcept -> const std::vector<StructureIdx>& {
+auto CombinedStructure::GetChildIndices() const noexcept -> const std::vector<uidx_t>& {
     return ChildStructureIndices;
 }
 
-auto CombinedStructure::UpdateChildIndicesGreaterThanOrEqualToBy(StructureIdx startIdx, int8_t change) noexcept -> void {
+auto CombinedStructure::UpdateChildIndicesGreaterThanOrEqualToBy(uidx_t startIdx, int8_t change) noexcept -> void {
     for (auto& childIdx : ChildStructureIndices) {
         if (childIdx >= startIdx)
             childIdx += change;
     }
 }
 
-auto CombinedStructure::StructureCount() const noexcept -> StructureIdx {
-    return static_cast<StructureIdx>(ChildStructureIndices.size());
+auto CombinedStructure::StructureCount() const noexcept -> uidx_t {
+    return static_cast<uidx_t>(ChildStructureIndices.size());
 }
 
-auto CombinedStructure::StructureIdxAt(StructureIdx positionIdx) const -> StructureIdx {
+auto CombinedStructure::StructureIdxAt(uidx_t positionIdx) const -> uidx_t {
     return ChildStructureIndices.at(positionIdx);
 }
 
-auto CombinedStructure::HasStructureIndex(StructureIdx childIdx) const noexcept -> bool {
+auto CombinedStructure::HasStructureIndex(uidx_t childIdx) const noexcept -> bool {
     return std::find(ChildStructureIndices.begin(), ChildStructureIndices.end(), childIdx)
            != ChildStructureIndices.end();
 }
 
-auto CombinedStructure::PositionIndex(StructureIdx childIdx) const -> int {
+auto CombinedStructure::PositionIndex(uidx_t childIdx) const -> int {
     auto searchIt = std::find(ChildStructureIndices.begin(), ChildStructureIndices.end(), childIdx);
     if(searchIt == ChildStructureIndices.end())
         throw std::runtime_error("Given Structure is not contained in children");
@@ -109,7 +97,7 @@ auto CombinedStructure::GetOperatorTypeName() const -> std::string {
     return OperatorTypeToString(Operator);
 }
 
-auto CombinedStructure::ReplaceChild(StructureId oldIdx, StructureId newIdx) -> void {
+auto CombinedStructure::ReplaceChild(idx_t oldIdx, idx_t newIdx) -> void {
     auto oldIt = std::find(ChildStructureIndices.begin(), ChildStructureIndices.end(), oldIdx);
     if (oldIt == ChildStructureIndices.end())
         throw std::runtime_error("Given old child index is not a child index of this structure");

@@ -15,7 +15,7 @@ auto StructureArtifactsWidgetDelegate::createEditor(QWidget* parent,
     if (!index.isValid())
         return nullptr;
 
-    const auto structureIdx = static_cast<StructureId>(index.internalId());
+    const auto structureIdx = static_cast<idx_t>(index.internalId());
     if (structureIdx < 0)
         throw std::runtime_error("Invalid internal id");
 

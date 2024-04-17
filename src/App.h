@@ -1,5 +1,7 @@
 #pragma once
 
+#include <QGuiApplication>
+
 #include <vtkNew.h>
 
 #include <memory>
@@ -7,8 +9,6 @@
 class CtStructureTree;
 class PipelineList;
 class MainWindow;
-
-class QApplication;
 
 class App {
 public:
@@ -42,7 +42,7 @@ private:
     int Argc;
     char** Argv;
 
-    QApplication& QApp;
+    QApplication* QApp;
     std::unique_ptr<CtStructureTree> CtDataTree;
     std::unique_ptr<PipelineList> Pipelines;
     MainWindow* MainWin;

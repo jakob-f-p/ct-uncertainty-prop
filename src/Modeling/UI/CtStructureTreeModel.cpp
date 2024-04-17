@@ -12,11 +12,11 @@ auto CtStructureTreeModel::index(int row, int column, const QModelIndex& parentI
     if (!hasIndex(row, column, parentIndex))
         return {};
 
-    StructureIdx childStructureIdx;
+    uidx_t childStructureIdx;
     if (!parentIndex.isValid())
         childStructureIdx = Tree.GetRootIdx();
     else {
-        const StructureIdx parentIdx = parentIndex.internalId();
+        const uidx_t parentIdx = parentIndex.internalId();
         const StructureVariant& parentVariant = Tree.GetStructureAt(parentIdx);
         if (!holds_alternative<CombinedStructure>(parentVariant))
             throw std::runtime_error("Parent has to be a combined structure");
@@ -32,24 +32,24 @@ QModelIndex CtStructureTreeModel::parent(const QModelIndex& child) const {
     if (!child.isValid())
         return {};
 
-    const auto childIdx = static_cast<StructureIdx>(child.internalId());
+    const auto childIdx = static_cast<uidx_t>(child.internalId());
     if (childIdx == Tree.GetRootIdx())
         return {};
 
     const auto& childVariant = Tree.GetStructureAt(childIdx);
 
-    const StructureIdx parentIdx = std::visit([](auto& structure) { return structure.GetParentIdx(); }, childVariant);
+    const uidx_t parentIdx = std::visit([](auto& structure) { return structure.GetParentIdx(); }, childVariant);
     const auto& parentVariant = Tree.GetStructureAt(parentIdx);
     const auto& parentStructure = std::get<CombinedStructure>(parentVariant);
 
-    const StructureId grandParentIdx = parentStructure.GetParentIdx();
+    const idx_t grandParentIdx = parentStructure.GetParentIdx();
     if (grandParentIdx < 0)
         return createIndex(Tree.GetRootIdx(), 0, parentIdx);
 
     const auto& grandParentVariant = Tree.GetStructureAt(grandParentIdx);
     const auto& grandParentStructure = std::get<CombinedStructure>(grandParentVariant);
 
-    const StructureIdx parentChildIdx = grandParentStructure.PositionIndex(parentIdx);
+    const uidx_t parentChildIdx = grandParentStructure.PositionIndex(parentIdx);
     return createIndex(parentChildIdx, 0, parentIdx);
 }
 
@@ -57,11 +57,11 @@ auto CtStructureTreeModel::rowCount(const QModelIndex& parent) const -> int {
     if (!parent.isValid())
         return Tree.HasRoot() ? 1 : 0;
 
-    const StructureIdx parentIdx = parent.internalId();
+    const uidx_t parentIdx = parent.internalId();
     const auto& parentVariant = Tree.GetStructureAt(parentIdx);
     return std::visit(Overload {
             [](const CombinedStructure& combinedStructure) { return combinedStructure.StructureCount(); },
-            [](const auto&) -> StructureIdx { return 0; }
+            [](const auto&) -> uidx_t { return 0; }
         }, parentVariant);
 }
 
@@ -73,7 +73,7 @@ auto CtStructureTreeModel::data(const QModelIndex& index, int role) const -> QVa
     if (!index.isValid())
         return {};
 
-    const StructureIdx structureIdx = index.internalId();
+    const uidx_t structureIdx = index.internalId();
     const auto& structureVariant = Tree.GetStructureAt(structureIdx);
 
     switch (role) {
@@ -155,7 +155,7 @@ void CtStructureTreeModel::CombineWithBasicStructure(const BasicStructureDataVar
 void CtStructureTreeModel::RefineWithBasicStructure(const BasicStructureDataVariant& basicStructureDataVariant,
                                                     const CombinedStructureData& combinedStructureData,
                                                     const QModelIndex& structureToRefineIndex) {
-    const StructureIdx structureToRefineIdx = structureToRefineIndex.internalId();
+    const uidx_t structureToRefineIdx = structureToRefineIndex.internalId();
 
     beginResetModel();
     Tree.RefineWithBasicStructure(basicStructureDataVariant, combinedStructureData, structureToRefineIdx);
@@ -163,7 +163,7 @@ void CtStructureTreeModel::RefineWithBasicStructure(const BasicStructureDataVari
 }
 
 void CtStructureTreeModel::RemoveBasicStructure(const QModelIndex &index) {
-    const StructureIdx structureToRemoveIdx = index.internalId();
+    const uidx_t structureToRemoveIdx = index.internalId();
 
     beginResetModel();
     Tree.RemoveBasicStructure(structureToRemoveIdx);

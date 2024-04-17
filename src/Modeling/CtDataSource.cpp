@@ -46,11 +46,14 @@ void CtDataSource::SetVolumeNumberOfVoxels(int x, int y, int z) {
 CtDataSource::CtDataSource() :
         PhysicalDimensions{},
         NumberOfVoxels{} {
-
-    int defaultResolution = 64; //256;
+#ifdef BUILD_TYPE_DEBUG
+    int defaultResolution = 64;
+#else
+    int defaultResolution = 256;
+#endif
     std::fill(NumberOfVoxels.begin(), NumberOfVoxels.end(), defaultResolution);
 
-    float defaultPhysicalDimensionsLength = 100.0f;
+    float defaultPhysicalDimensionsLength = 100.0F;
     std::fill(PhysicalDimensions.begin(), PhysicalDimensions.end(), defaultPhysicalDimensionsLength);
 
     CtDataSource::SetNumberOfInputPorts(0);
@@ -119,7 +122,7 @@ void CtDataSource::ExecuteDataWithInformation(vtkDataObject *output, vtkInformat
     vtkSMPTools::For(0, numberOfPoints, sampleAlgorithm);
 }
 
-std::array<double, 3> CtDataSource::GetSpacing() {
+auto CtDataSource::GetSpacing() -> std::array<double, 3> {
     std::array<double, 3> spacing {};
 
     for (int i = 0; i < spacing.size(); ++i) {
@@ -169,11 +172,10 @@ void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endP
     double point[3];
     Self->CheckAbort();
 
-    while (pointId < endPointId) {
+    for (; pointId < endPointId; pointId++) {
 
-        if (Self->GetAbortOutput()) {
+        if (Self->GetAbortOutput())
             return;
-        }
 
         VolumeData->GetPoint(pointId, point);
 
@@ -188,7 +190,5 @@ void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endP
         BasicStructureIds[pointId] = pointIsWithinStructure
                                             ? result.BasicCtStructureId
                                             : 0;
-
-        pointId++;
     }
 }

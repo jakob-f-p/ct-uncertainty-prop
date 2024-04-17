@@ -1,11 +1,11 @@
 #include "Pipeline.h"
 #include "../Modeling/CtStructureTree.h"
 
-Pipeline::Pipeline(StructureIdx structureCount) :
+Pipeline::Pipeline(uidx_t structureCount) :
         TreeStructureArtifacts(new TreeStructureArtifactCollection()),
         ImageArtifactConcat(new ImageArtifactConcatenation()) {
 
-    for (StructureIdx i = 0; i < structureCount; ++i)
+    for (uidx_t i = 0; i < structureCount; ++i)
         TreeStructureArtifacts->AddStructureArtifactList(i);
 };
 
@@ -13,7 +13,7 @@ auto Pipeline::GetName() const noexcept -> std::string {
     return Name;
 }
 
-auto Pipeline::GetArtifactStructureWrapper(StructureIdx structureIdx) const -> StructureArtifacts& {
+auto Pipeline::GetArtifactStructureWrapper(uidx_t structureIdx) const -> StructureArtifacts& {
     return TreeStructureArtifacts->GetForCtStructureIdx(structureIdx);
 }
 

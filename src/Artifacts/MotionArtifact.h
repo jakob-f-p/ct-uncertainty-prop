@@ -6,11 +6,11 @@ class MotionArtifact : public StructureArtifact {
 public:
     static MotionArtifact* New();
 
-    SubType GetArtifactSubType() const override;
+    auto GetArtifactSubType() const -> SubType override;
 
-    float EvaluateAtPosition(const double* x) override;
+    auto EvaluateAtPosition(const double* x) -> float override;
 
-    bool IgnoreCompetingStructures() override;
+    auto IgnoreCompetingStructures() -> bool override;
 
     void DeepCopy(StructureArtifact *source) override;
 
