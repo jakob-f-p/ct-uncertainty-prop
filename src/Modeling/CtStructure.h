@@ -126,14 +126,13 @@ public:
     enum struct FunctionType : uint8_t {
         SPHERE,
         BOX,
-        CONE,
-        INVALID
+        CONE
     };
     Q_ENUM(FunctionType);
 
     [[nodiscard]] auto static
     FunctionTypeToString(FunctionType functionType) noexcept -> std::string;
-    ENUM_GET_VALUES(FunctionType, true)
+    ENUM_GET_VALUES(FunctionType, false)
 
     struct TissueType {
         std::string Name;

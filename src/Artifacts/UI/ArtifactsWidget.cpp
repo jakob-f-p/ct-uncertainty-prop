@@ -1,9 +1,12 @@
 #include "ArtifactsWidget.h"
 
 #include "PipelinesWidget.h"
+#include "../../Modeling/CtDataSource.h"
+#include "../../App.h"
 
 #include <QDockWidget>
 #include <QFrame>
+#include <QPushButton>
 #include <QVBoxLayout>
 #include <QVTKOpenGLNativeWidget.h>
 
@@ -13,21 +16,25 @@
 #include <vtkColorTransferFunction.h>
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkInteractorStyleTrackballCamera.h>
+#include <vtkOpenGLRenderer.h>
+#include <vtkOrientationMarkerWidget.h>
 #include <vtkPiecewiseFunction.h>
 #include <vtkVolumeProperty.h>
+#include <vtkVolume.h>
 #include <vtkOpenGLGPUVolumeRayCastMapper.h>
 
 ArtifactsWidget::ArtifactsWidget() :
         ResetCameraButton(new QPushButton("Reset Camera")),
         RenderButton(new QPushButton("Render")) {
+//        ImageArtifactConcatenation(App::GetInstance()->Get)
     SetUpCentralRenderingWidget();
 
     SetUpDockWidget();
 }
 
 void ArtifactsWidget::SetUpCentralRenderingWidget() {
-//    DataSource = CtDataSource::New();
-//    DataSource->SetDataTree(DataTree);
+    DataSource->SetDataTree(&App::GetInstance()->GetCtDataTree());
+
     vtkNew<vtkPiecewiseFunction> opacityMappingFunction;
     opacityMappingFunction->AddPoint(-1000.0, 0.005);
     opacityMappingFunction->AddPoint(2000.0, 0.05);
@@ -43,17 +50,17 @@ void ArtifactsWidget::SetUpCentralRenderingWidget() {
     volumeProperty->SetInterpolationTypeToLinear();
     volumeProperty->SetAmbient(0.3);
 
-//    vtkNew<vtkOpenGLGPUVolumeRayCastMapper> volumeMapper;
-//    volumeMapper->SetInputConnection(DataSource->GetOutputPort());
+    vtkNew<vtkOpenGLGPUVolumeRayCastMapper> volumeMapper;
+    volumeMapper->SetInputConnection(DataSource->GetOutputPort());
 
     vtkNew<vtkVolume> volume;
-//    volume->SetMapper(volumeMapper);
+    volume->SetMapper(volumeMapper);
     volume->SetProperty(volumeProperty);
 
     Renderer->AddVolume(volume);
     Renderer->SetBackground(0.2, 0.2, 0.2);
     Renderer->ResetCamera();
-//    InitialCamera->DeepCopy(Renderer->GetActiveCamera());
+    InitialCamera->DeepCopy(Renderer->GetActiveCamera());
 
     vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
     renderWindow->SetWindowName("CT-TData");
@@ -78,14 +85,6 @@ void ArtifactsWidget::SetUpCentralRenderingWidget() {
     OrientationMarkerWidget->InteractiveOff();
 
     setCentralWidget(renderingWidget);
-
-    vtkNew<vtkCallbackCommand> onDataChangedUpdater;
-    onDataChangedUpdater->SetClientData(RenderWindowInteractor);
-    onDataChangedUpdater->SetCallback([](vtkObject*, unsigned long, void* rwi, void*) {
-        auto* renderWindowInteractor = static_cast<QVTKInteractor*>(rwi);
-        renderWindowInteractor->Render();
-    });
-//    DataTree->AddObserver(vtkCommand::ModifiedEvent, onDataChangedUpdater);
 }
 
 void ArtifactsWidget::SetUpDockWidget() {

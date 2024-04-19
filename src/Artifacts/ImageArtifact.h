@@ -2,7 +2,8 @@
 
 #include "Artifact.h"
 
-#include <QFormLayout>
+class QFormLayout;
+class vtkImageAlgorithm;
 
 class CompositeArtifact;
 
@@ -20,6 +21,9 @@ public:
     void SetParent(CompositeArtifact* parent);
 
     bool IsComposition() const;
+
+    virtual auto
+    AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm& = 0;
 
     ImageArtifact(const ImageArtifact&) = delete;
     void operator=(const ImageArtifact&) = delete;
@@ -43,15 +47,15 @@ private:
     friend struct ArtifactData<ImageArtifact, ImageArtifactData>;
     friend struct ArtifactUi<ImageArtifactUi, ImageArtifactData>;
 
-    static std::unique_ptr<ImageArtifactData> QVariantToData(const QVariant& variant);
+    static auto QVariantToData(const QVariant& variant) -> std::unique_ptr<ImageArtifactData>;
 
-    static QVariant DataToQVariant(const ImageArtifactData& data);
+    static auto DataToQVariant(const ImageArtifactData& data) -> QVariant;
 
     static void AddDerivedData(const ImageArtifact& artifact, ImageArtifactData& data);
 
     static void SetDerivedData(ImageArtifact& artifact, const ImageArtifactData& data);
 
-    static std::unique_ptr<ImageArtifactData> Create(Artifact::SubType subType);
+    static auto Create(Artifact::SubType subType) -> std::unique_ptr<ImageArtifactData>;
 };
 
 
@@ -66,5 +70,5 @@ protected:
 
     static void SetDerivedWidgetsData(QWidget* widget, const ImageArtifactData& data);
 
-    static std::vector<EnumString<Artifact::SubType>> GetSubTypeValues();
+    static auto GetSubTypeValues() -> std::vector<EnumString<Artifact::SubType>>;
 };

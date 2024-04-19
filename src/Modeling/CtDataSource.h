@@ -47,8 +47,7 @@ protected:
     std::array<double, 3> GetOrigin();
     std::array<int, 6> GetWholeExtent();
 
-    class SampleAlgorithm {
-    public:
+    struct SampleAlgorithm {
         CtDataSource* Self;
         vtkImageData* VolumeData;
         CtStructureTree* Tree;

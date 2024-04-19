@@ -53,7 +53,7 @@ bool ImageArtifact::IsComposition() const {
 #define CREATE_IMAGE_ARTIFACT_DATA(Enum, Type) \
     case Artifact::SubType::Enum: return std::make_unique<ARTIFACT_DATA_TYPE(Type)>();
 
-std::unique_ptr<ImageArtifactData> ImageArtifactData::QVariantToData(const QVariant& variant) {
+auto ImageArtifactData::QVariantToData(const QVariant& variant) -> std::unique_ptr<ImageArtifactData> {
     FOR_EACH_IMAGE_ARTIFACT(CONVERT_TO_IMAGE_ARTIFACT_DATA)
 
     qWarning("No matching image artifact type");

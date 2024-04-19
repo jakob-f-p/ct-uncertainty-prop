@@ -1,18 +1,23 @@
 #pragma once
 
 #include <QMainWindow>
-#include <QPushButton>
-#include <QVTKInteractor.h>
 
-#include <vtkOpenGLRenderer.h>
-#include <vtkOrientationMarkerWidget.h>
+#include <vtkNew.h>
+
+class QPushButton;
+
+class QVTKInteractor;
+class vtkCamera;
+class vtkOrientationMarkerWidget;
+class vtkOpenGLRenderer;
+
+class CtDataSource;
+class CtStructureTree;
+class ImageArtifactConcatenation;
 
 class ArtifactsWidget : public QMainWindow {
-    Q_OBJECT
-
 public:
     ArtifactsWidget();
-    ~ArtifactsWidget() override = default;
 
 private:
     void SetUpCentralRenderingWidget();
@@ -21,8 +26,11 @@ private:
     QPushButton* ResetCameraButton;
     QPushButton* RenderButton;
 
+    vtkNew<CtDataSource> DataSource;
+//    ImageArtifactConcatenation& ImageArtifacts;
+
     vtkNew<vtkOrientationMarkerWidget> OrientationMarkerWidget;
     vtkNew<vtkOpenGLRenderer> Renderer;
     vtkNew<QVTKInteractor> RenderWindowInteractor;
-//    vtkNew<vtkCamera> InitialCamera;
+    vtkNew<vtkCamera> InitialCamera;
 };

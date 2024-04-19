@@ -55,6 +55,8 @@ private:
 struct SphereStructureImpl {
     using Data = SphereDataImpl;
 
+    SphereStructureImpl() { Function->SetRadius(10.0); }
+
     [[nodiscard]] constexpr static auto
     GetFunctionType() -> CtStructureBase::FunctionType { return CtStructureBase::FunctionType::SPHERE; };
 
@@ -66,7 +68,7 @@ struct SphereStructureImpl {
 
     [[nodiscard]] auto
     EvaluateFunction(Point point) const noexcept -> float {
-        return static_cast<float>(Function->EvaluateFunction( point.data()));
+        return static_cast<float>(Function->EvaluateFunction(point.data()));
     }
 
     auto

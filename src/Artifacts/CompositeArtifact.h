@@ -2,6 +2,10 @@
 
 #include "ImageArtifact.h"
 
+#include <vtkSmartPointer.h>
+
+class MergeParallelImageArtifactFilters;
+
 class CompositeArtifact : public ImageArtifact {
     Q_GADGET
 
@@ -21,6 +25,7 @@ public:
     Q_ENUM(CompositionType);
     static std::string CompositionTypeToString(CompositionType compositionType);
     ENUM_GET_VALUES(CompositionType, true);
+
     vtkSetEnumMacro(CompType, CompositionType);
     vtkGetEnumMacro(CompType, CompositionType);
 
@@ -38,26 +43,27 @@ public:
 
     void MoveChildImageArtifact(ImageArtifact* imageArtifact, int newIdx);
 
+    auto AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm& override;
+
     CompositeArtifact(const CompositeArtifact&) = delete;
     void operator=(const CompositeArtifact&) = delete;
 
 protected:
-    CompositeArtifact();
-    ~CompositeArtifact() override;
+    CompositeArtifact() = default;
+    ~CompositeArtifact() override = default;
 
     friend struct CompositeArtifactData;
 
-    std::vector<ImageArtifact*> ImageArtifacts;
-    CompositionType CompType;
+    std::vector<vtkSmartPointer<ImageArtifact>> ImageArtifacts;
+    CompositionType CompType = INVALID;
+
+    vtkSmartPointer<MergeParallelImageArtifactFilters> Filter;
 };
 
 
 
 struct CompositeArtifactData : ImageArtifactData {
-    struct CompositeData {
-        CompositeArtifact::CompositionType CompositionType = CompositeArtifact::INVALID;
-    };
-    CompositeData Composite;
+    CompositeArtifact::CompositionType CompositionType = CompositeArtifact::INVALID;
 
     ~CompositeArtifactData() override = default;
 

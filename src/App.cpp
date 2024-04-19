@@ -56,7 +56,7 @@ auto App::Run() -> int {
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 
     auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
-    smpToolsApi.SetBackend("STDTHREAD");
+//    smpToolsApi.SetBackend("STDTHREAD");
     qWarning(("Backend: " + std::string(smpToolsApi.GetBackend())).c_str());
 
     InitializeWithTestData();
@@ -85,9 +85,11 @@ void App::InitializeWithTestData() {
 
     BoxStructure boxStructure;
     boxStructure.SetTissueType(CtStructureBase::GetTissueTypeByName("Cortical Bone"));
+    boxStructure.SetTransformData({ 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f });
 
     CombinedStructure combinedStructure;
-    combinedStructure.SetOperatorType(CtStructureBase::OperatorType::INTERSECTION);
+    combinedStructure.SetOperatorType(CtStructureBase::OperatorType::UNION);
+    combinedStructure.SetTransformData({ -10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f });
 
     CtDataTree->AddBasicStructure(std::move(sphereStructure));
     CtDataTree->CombineWithBasicStructure(std::move(boxStructure), std::move(combinedStructure));

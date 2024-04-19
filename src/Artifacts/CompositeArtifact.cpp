@@ -1,12 +1,17 @@
 #include "CompositeArtifact.h"
 
+#include "Filters/MergeParallelImageArtifactFilters.h"
+
 #include <QComboBox>
 #include <QGroupBox>
+#include <QFormLayout>
 #include <QHBoxLayout>
 #include <QLabel>
 #include <QWidget>
 
+#include <vtkImageAlgorithm.h>
 #include <vtkObjectFactory.h>
+#include <vtkSmartPointer.h>
 
 vtkStandardNewMacro(CompositeArtifact)
 
@@ -40,13 +45,12 @@ bool CompositeArtifact::ContainsImageArtifact(const ImageArtifact& artifact) {
 }
 
 void CompositeArtifact::AddImageArtifact(ImageArtifact& artifact, int idx) {
-    if (idx == -1) {
+    if (idx == -1)
         ImageArtifacts.push_back(&artifact);
-    } else {
+    else
         ImageArtifacts.insert(std::next(ImageArtifacts.begin(), idx), &artifact);
-    }
+
     artifact.SetParent(this);
-    artifact.Register(this);
 }
 
 void CompositeArtifact::RemoveImageArtifact(ImageArtifact& artifact) {
@@ -58,7 +62,6 @@ void CompositeArtifact::RemoveImageArtifact(ImageArtifact& artifact) {
     }
 
     ImageArtifacts.erase(artifactIt);
-    artifact.Delete();
 }
 
 ImageArtifact* CompositeArtifact::ChildArtifact(int idx) {
@@ -99,25 +102,47 @@ void CompositeArtifact::MoveChildImageArtifact(ImageArtifact* imageArtifact, int
     }
 }
 
-CompositeArtifact::CompositeArtifact() :
-        CompType(INVALID) {
-}
+vtkImageAlgorithm& CompositeArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) {
+    switch (CompType) {
 
-CompositeArtifact::~CompositeArtifact() {
-    for (const auto& imageArtifact: ImageArtifacts) {
-        imageArtifact->Delete();
+        case SEQUENTIAL: {
+            vtkImageAlgorithm* currentImageAlgorithm = &inputAlgorithm;
+
+            for (auto& imageArtifact : ImageArtifacts)
+                currentImageAlgorithm = &imageArtifact->AppendImageFilters(*currentImageAlgorithm);
+
+            return *currentImageAlgorithm;
+        }
+
+        case PARALLEL: {
+            if (!Filter)
+                Filter = MergeParallelImageArtifactFilters::New();
+            else
+                Filter->RemoveAllInputs();
+
+            Filter->SetBaseFilterConnection(inputAlgorithm.GetOutputPort());
+
+            for (auto& imageArtifact : ImageArtifacts) {
+                auto& appendedAlgorithm = imageArtifact->AppendImageFilters(inputAlgorithm);
+
+                Filter->AddParallelFilterConnection(appendedAlgorithm.GetOutputPort());
+            }
+
+            return *Filter;
+        }
+
+        default: throw std::runtime_error("invalid composition type");
     }
 }
 
-
 void CompositeArtifactData::AddSubTypeData(const ImageArtifact& imageArtifact) {
     auto& artifact = dynamic_cast<const CompositeArtifact&>(imageArtifact);
-    Composite.CompositionType = artifact.CompType;
+    CompositionType = artifact.CompType;
 }
 
 void CompositeArtifactData::SetSubTypeData(ImageArtifact& imageArtifact) const {
     auto& artifact = dynamic_cast<CompositeArtifact&>(imageArtifact);
-    artifact.CompType = Composite.CompositionType;
+    artifact.CompType = CompositionType;
 }
 
 
@@ -139,12 +164,12 @@ void CompositeArtifactUi::AddSubTypeWidgets(QFormLayout* fLayout) {
 
 void CompositeArtifactUi::AddSubTypeWidgetsData(QWidget* widget, CompositeArtifactData& data) {
     auto* compTypeComboBox = widget->findChild<QComboBox*>(CompTypeComboBoxObjectName);
-    data.Composite.CompositionType = compTypeComboBox->currentData().value<CompositeArtifact::CompositionType>();
+    data.CompositionType = compTypeComboBox->currentData().value<CompositeArtifact::CompositionType>();
 }
 
 void CompositeArtifactUi::SetSubTypeWidgetsData(QWidget* widget, const CompositeArtifactData& data) {
     auto* compTypeComboBox = widget->findChild<QComboBox*>(CompTypeComboBoxObjectName);
-    if (int idx = compTypeComboBox->findData(data.Composite.CompositionType);
+    if (int idx = compTypeComboBox->findData(data.CompositionType);
             idx != -1)
         compTypeComboBox->setCurrentIndex(idx);
 }

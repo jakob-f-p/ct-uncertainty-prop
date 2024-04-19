@@ -2,33 +2,39 @@
 
 #include "ImageArtifact.h"
 
+#include <vtkSmartPointer.h>
+
+class GaussianArtifactFilter;
+
 class GaussianArtifact : public ImageArtifact {
 public:
-    static GaussianArtifact* New();
+    static auto New() -> GaussianArtifact*;
 
-    SubType GetArtifactSubType() const override;
+    auto GetArtifactSubType() const -> SubType override;
+
+    auto
+    AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm& override;
 
     GaussianArtifact(const GaussianArtifact&) = delete;
     void operator=(const GaussianArtifact&) = delete;
 
-protected:
-    GaussianArtifact();
+private:
+    GaussianArtifact() = default;
     ~GaussianArtifact() override = default;
 
     friend class GaussianArtifactData;
 
-    float Mean;
-    float Sd;
+    float Mean = 0.0F;
+    float Sd = 0.0F;
+
+    vtkSmartPointer<GaussianArtifactFilter> Filter;
 };
 
 
 
 struct GaussianArtifactData : ImageArtifactData {
-    struct GaussianData {
-        float Mean = 0.0f;
-        float Sd = 0.0f;
-    };
-    GaussianData Gaussian;
+    float Mean = 0.0F;
+    float Sd = 0.0F;
 
     ~GaussianArtifactData() override = default;
 

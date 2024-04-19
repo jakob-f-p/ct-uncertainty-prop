@@ -2,7 +2,8 @@
 
 #include "Artifact.h"
 
-#include <QFormLayout>
+class QFormLayout;
+class vtkImageAlgorithm;
 
 class StructureArtifact : public Artifact {
 public:
@@ -16,6 +17,8 @@ public:
     virtual float EvaluateAtPosition(const double x[3]) = 0;
 
     virtual bool IgnoreCompetingStructures() = 0;
+
+//    virtual vtkSmartPointer<vtkImageAlgorithm> GetImageFilter() = 0;
 
     virtual void DeepCopy(StructureArtifact* source);
 

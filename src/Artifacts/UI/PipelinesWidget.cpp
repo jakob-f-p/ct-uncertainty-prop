@@ -103,9 +103,8 @@ void PipelinesWidget::NextPipeline() {
 }
 
 void PipelinesWidget::UpdatePipelineView() {
-    QString pipelineTitleString = "";
     std::string pipelineName = GetCurrentPipeline().GetName();
-    pipelineTitleString = pipelineName.empty()
+    QString pipelineTitleString = pipelineName.empty()
                            ? QString::fromStdString("Pipeline " + std::to_string(CurrentPipelineIndex + 1))
                            : QString::fromStdString(pipelineName);
     PipelineTitle->setText(pipelineTitleString);

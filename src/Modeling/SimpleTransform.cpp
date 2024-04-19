@@ -2,6 +2,8 @@
 
 #include <vtkMatrix4x4.h>
 
+#include <algorithm>
+
 auto SimpleTransform::GetMTime() const noexcept -> vtkMTimeType {
     return Transform->GetMTime();
 }
@@ -33,5 +35,5 @@ auto SimpleTransform::SetData(const SimpleTransformData& transformData) noexcept
     Transform->GetMatrix(vtkMatrix);
 
     const double* doubleMatrix = vtkMatrix->GetData();
-    std::copy(doubleMatrix, std::next(doubleMatrix, N4x4), Matrix.data()->data());
+    std::copy(doubleMatrix, std::next(doubleMatrix, 12), Matrix.data());
 }
