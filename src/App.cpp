@@ -30,7 +30,7 @@ App::App(int argc, char* argv[]) :
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 
     auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
-    smpToolsApi.SetBackend("STDTHREAD");
+//    smpToolsApi.SetBackend("STDTHREAD");
 }
 
 App::~App() {

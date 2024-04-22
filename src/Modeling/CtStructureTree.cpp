@@ -1,12 +1,10 @@
 #include "CtStructureTree.h"
 
-#include "CtStructure.h"
 #include "BasicStructure.h"
 #include "CombinedStructure.h"
-#include "SimpleTransform.h"
 
 auto CtStructureTree::GetMTime() const -> vtkMTimeType {
-    vtkMTimeType nodeMTime = HasRoot()
+    vtkMTimeType const nodeMTime = HasRoot()
             ? std::visit([](auto const& root) { return root.GetMTime(); }, Structures[RootIdx])
             : 0;
 
