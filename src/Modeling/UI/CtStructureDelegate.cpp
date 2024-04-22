@@ -10,8 +10,7 @@
 
 void DialogDelegate::updateEditorGeometry(QWidget* editor,
                                           const QStyleOptionViewItem& option,
-                                          const QModelIndex& index) const {
-}
+                                          const QModelIndex& index) const {}
 
 void DialogDelegate::commitEdit() {
     auto* ctStructureEditDialog = qobject_cast<QDialog*>(sender());
@@ -30,24 +29,20 @@ DialogDelegate::DialogDelegate(QObject* parent) :
         QStyledItemDelegate(parent) {
 }
 
-bool DialogDelegate::eventFilter(QObject* object, QEvent* event) {
-    return false;
-}
+bool DialogDelegate::eventFilter(QObject* object, QEvent* event) { return false; }
 
-CtStructureDelegate::CtStructureDelegate(QObject* parent) :
-        DialogDelegate(parent) {
-}
+CtStructureDelegate::CtStructureDelegate(QObject* parent) : DialogDelegate(parent) {}
 
-QWidget* CtStructureDelegate::createEditor(QWidget* parent,
-                                           const QStyleOptionViewItem& option,
-                                           const QModelIndex& index) const {
+auto CtStructureDelegate::createEditor(QWidget* parent,
+                                       const QStyleOptionViewItem& option,
+                                       const QModelIndex& index) const -> QWidget* {
     if (!index.isValid())
         return nullptr;
 
     const auto& dataVariant = index.data(Qt::UserRole).value<StructureDataVariant>();
     CtStructureDialog* dialog = std::visit(Overload{
-        [](const CombinedStructureData&) -> CtStructureDialog* { return new CombinedStructureDialog(CtStructureDialog::EDIT); },
-        [](const auto&) -> CtStructureDialog* { return new BasicStructureDialog(CtStructureDialog::EDIT); },
+        [](const CombinedStructureData&) -> CtStructureDialog* { return new CombinedStructureDialog(CtStructureDialog::DialogMode::EDIT); },
+        [](const BasicStructureData&) -> CtStructureDialog*    { return new BasicStructureDialog(CtStructureDialog::DialogMode::EDIT); },
     }, dataVariant);
 
     connect(dialog, &CtStructureDialog::accepted, this, &CtStructureDelegate::commitEdit);
@@ -59,13 +54,16 @@ QWidget* CtStructureDelegate::createEditor(QWidget* parent,
 void CtStructureDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
     const auto& dataVariant = index.data(Qt::UserRole).value<StructureDataVariant>();
 
-    std::visit([&](auto& data) { data.PopulateWidget(editor); }, dataVariant);
+    std::visit(Overload{
+        [editor](const BasicStructureData& data)    { BasicStructureWidget::SetWidgetData(editor, data); },
+        [editor](const CombinedStructureData& data) { CombinedStructureWidget::SetWidgetData(editor, data); }
+    }, dataVariant);
 }
 
 void CtStructureDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const {
     const QVariant editedData = index.data(TreeModelRoles::IS_BASIC_STRUCTURE).toBool()
-            ? QVariant::fromValue(BasicStructureUi::GetWidgetData(editor))
-            : QVariant::fromValue(CombinedStructureUi::GetWidgetData(editor));
+            ? QVariant::fromValue(BasicStructureWidget::GetWidgetData(editor))
+            : QVariant::fromValue(CombinedStructureWidget::GetWidgetData(editor));
 
     model->setData(index, editedData);
 }

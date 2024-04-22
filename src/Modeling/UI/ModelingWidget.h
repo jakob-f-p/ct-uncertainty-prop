@@ -1,13 +1,10 @@
 #pragma once
 
-#include "../BasicStructure.h"
-#include "../CombinedStructure.h"
-
 #include <QMainWindow>
 
-class CtStructureTree;
+class BasicStructureData;
+class CombinedStructureData;
 class CtStructureTreeModel;
-class CtDataSource;
 class CtStructureDialog;
 class ModelingRenderWidget;
 
@@ -19,7 +16,6 @@ class QTreeView;
 class ModelingWidget : public QMainWindow {
 public:
     explicit ModelingWidget(QWidget* parent = nullptr);
-    ~ModelingWidget() override = default;
 
 private:
     void ConnectButtons();
@@ -27,7 +23,7 @@ private:
     void DisableButtons();
 
     void OpenBasicAndCombinedStructureCreateDialog(
-            const std::function<const void(const BasicStructureDataVariant&, const CombinedStructureData&)>& onAccepted);
+            const std::function<const void(const BasicStructureData&, const CombinedStructureData&)>& onAccepted);
 
     void UpdateButtonStates(const QItemSelection& selected, const QItemSelection&);
 

@@ -31,13 +31,13 @@ public:
 
     bool setData(const QModelIndex &index, const QVariant &value, int role) override;
 
-    QModelIndex AddBasicStructure(const BasicStructureDataVariant& basicStructureDataVariant,
+    QModelIndex AddBasicStructure(const BasicStructureData& basicStructureData,
                                   const QModelIndex& siblingIndex);
 
-    void CombineWithBasicStructure(const BasicStructureDataVariant& basicStructureDataVariant,
+    void CombineWithBasicStructure(const BasicStructureData& basicStructureData,
                                    const CombinedStructureData& combinedStructureData);
 
-    void RefineWithBasicStructure(const BasicStructureDataVariant& basicStructureDataVariant,
+    void RefineWithBasicStructure(const BasicStructureData& basicStructureData,
                                   const CombinedStructureData& combinedStructureData,
                                   const QModelIndex& index);
 

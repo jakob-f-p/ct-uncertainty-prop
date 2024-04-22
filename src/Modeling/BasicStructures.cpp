@@ -3,91 +3,69 @@
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 
-auto SphereDataImpl::AddFunctionWidget(QFormLayout* fLayout) noexcept -> void {
-    auto* radiusSpinBox = new QDoubleSpinBox();
-    radiusSpinBox->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Minimum);
-    radiusSpinBox->setObjectName(SphereRadiusSpinBoxName);
-    radiusSpinBox->setRange(0.0, 100.0);
-    radiusSpinBox->setSingleStep(1.0);
-    fLayout->addRow("Radius", radiusSpinBox);
-
-    auto* centerCoordinates = CtStructure::GetCoordinatesRow(SphereCenterName, -100.0, 100.0, 1.0);
-    fLayout->addRow("Center", centerCoordinates);
+auto SphereData::PopulateFromWidget(Widget* widget) noexcept -> void {
+    *this = widget->GetData();
 }
 
-auto SphereDataImpl::PopulateFromWidget(QWidget* widget) noexcept -> void {
-    auto* radiusSpinBox = widget->findChild<QDoubleSpinBox*>(SphereRadiusSpinBoxName);
-    Radius = radiusSpinBox->value();
-    for (int i = 0; i <Center.size(); i++) {
-        auto* centerSpinBox = widget->findChild<QDoubleSpinBox*>(
-                CtStructure::GetAxisSpinBoxName(SphereCenterName, CtStructure::AxisNames[i]));
-        Center.at(i) = centerSpinBox->value();
-    }
+auto SphereData::PopulateWidget(Widget* widget) const noexcept -> void {
+    widget->Populate(*this);
 }
 
-auto SphereDataImpl::PopulateWidget(QWidget* widget) const noexcept -> void {
-    auto* radiusSpinBox = widget->findChild<QDoubleSpinBox*>(SphereRadiusSpinBoxName);
-    radiusSpinBox->setValue(Radius);
-    for (int i = 0; i <Center.size(); i++) {
-        auto* centerSpinBox = widget->findChild<QDoubleSpinBox*>(
-                CtStructure::GetAxisSpinBoxName(SphereCenterName, CtStructure::AxisNames[i]));
-        centerSpinBox->setValue(Center.at(i));
-    }
-}
-
-auto SphereStructureImpl::AddFunctionData(Data& data) const noexcept -> void {
+auto Sphere::AddFunctionData(Data& data) const noexcept -> void {
     data.Radius = Function->GetRadius();
     Function->GetCenter(data.Center.data());
 }
 
-auto SphereStructureImpl::SetFunctionData(const Data& data) noexcept -> void {
+auto Sphere::SetFunctionData(const Data& data) noexcept -> void {
     Function->SetRadius(data.Radius);
     Function->SetCenter(data.Center.data());
 }
 
-const QString SphereStructureImpl::Data::SphereRadiusSpinBoxName = "SphereRadius";
-const QString SphereStructureImpl::Data::SphereCenterName = "SphereCenter";
+SphereWidget::SphereWidget() :
+        RadiusSpinBox(new QDoubleSpinBox()),
+        CenterCoordinateRow(new CoordinateRowWidget({ -100.0, 100.0, 1.0, 0.0 })) {
 
+    auto* fLayout = new QFormLayout(this);
 
+    RadiusSpinBox->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Minimum);
+    RadiusSpinBox->setRange(0.0, 100.0);
+    RadiusSpinBox->setSingleStep(1.0);
+    fLayout->addRow("Radius", RadiusSpinBox);
 
-auto BoxDataImpl::AddFunctionWidget(QFormLayout* fLayout) noexcept -> void {
-    QWidget* minPointCoordinates = CtStructure::GetCoordinatesRow(BoxMinPointName, -100.0, 100.0, 1.0);
-    QWidget* maxPointCoordinates = CtStructure::GetCoordinatesRow(BoxMaxPointName, -100.0, 100.0, 1.0);
-
-    fLayout->addRow("Min. Point", minPointCoordinates);
-    fLayout->addRow("Max. Point", maxPointCoordinates);
+    fLayout->addRow("Center", CenterCoordinateRow);
 }
 
-auto BoxDataImpl::PopulateFromWidget(QWidget* widget) noexcept -> void {
-    for (int i = 0; i <MinPoint.size(); i++) {
-        auto* minPointSpinBox = widget->findChild<QDoubleSpinBox*>(
-                CtStructure::GetAxisSpinBoxName(BoxMinPointName, CtStructure::AxisNames[i]));
-        MinPoint[i] = minPointSpinBox->value();
+auto SphereWidget::GetData() noexcept -> SphereData {
+    SphereData data;
 
-        auto* maxPointSpinBox = widget->findChild<QDoubleSpinBox*>(
-                CtStructure::GetAxisSpinBoxName(BoxMaxPointName, CtStructure::AxisNames[i]));
-        MaxPoint[i] = maxPointSpinBox->value();
-    }
+    data.Radius = RadiusSpinBox->value();
+    data.Center = CenterCoordinateRow->GetRowData(0).ToArray();
+
+    return data;
 }
 
-auto BoxDataImpl::PopulateWidget(QWidget* widget) const noexcept -> void {
-    for (int i = 0; i < MinPoint.size(); i++) {
-        auto* minPointSpinBox = widget->findChild<QDoubleSpinBox*>(
-                CtStructure::GetAxisSpinBoxName(BoxMinPointName, CtStructure::AxisNames[i]));
-        minPointSpinBox->setValue(MinPoint[i]);
-
-        auto* maxPointSpinBox = widget->findChild<QDoubleSpinBox*>(
-                CtStructure::GetAxisSpinBoxName(BoxMaxPointName, CtStructure::AxisNames[i]));
-        maxPointSpinBox->setValue(MaxPoint[i]);
-    }
+auto SphereWidget::Populate(const SphereData& data) noexcept -> void {
+    RadiusSpinBox->setValue(data.Radius);
+    CenterCoordinateRow->SetRowData(0, CoordinateRowWidget::RowData(data.Center));
 }
 
-auto BoxStructureImpl::AddFunctionData(Data& data) const noexcept -> void {
+
+
+
+auto BoxData::PopulateFromWidget(Widget* widget) noexcept -> void {
+    *this = widget->GetData();
+}
+
+auto BoxData::PopulateWidget(Widget* widget) const noexcept -> void {
+    widget->Populate(*this);
+}
+
+auto Box::AddFunctionData(Data& data) const noexcept -> void {
     Function->GetXMin(data.MinPoint.data());
     Function->GetXMax(data.MaxPoint.data());
 }
 
-auto BoxStructureImpl::SetFunctionData(const Data& data) noexcept -> void {
+auto Box::SetFunctionData(const Data& data) noexcept -> void {
     Point minPoint {};
     Point maxPoint {};
 
@@ -98,5 +76,26 @@ auto BoxStructureImpl::SetFunctionData(const Data& data) noexcept -> void {
     Function->SetXMax(maxPoint.data());
 }
 
-const QString BoxStructureImpl::Data::BoxMinPointName = "BoxMinPoint";
-const QString BoxStructureImpl::Data::BoxMaxPointName = "BoxMaxPoint";
+BoxWidget::BoxWidget() :
+        MinMaxPointWidget(new CoordinateRowWidget(true)) {
+
+    MinMaxPointWidget->AppendCoordinatesRow({ -100.0, 100.0, 1.0, -10.0 }, "Min Point");
+    MinMaxPointWidget->AppendCoordinatesRow({ -100.0, 100.0, 1.0,  10.0 }, "Max Point");
+
+    auto* vLayout = new QVBoxLayout(this);
+    vLayout->addWidget(MinMaxPointWidget);
+}
+
+auto BoxWidget::GetData() noexcept -> BoxData {
+    BoxData data {};
+
+    data.MinPoint = MinMaxPointWidget->GetRowData(0).ToArray();
+    data.MaxPoint = MinMaxPointWidget->GetRowData(1).ToArray();
+
+    return data;
+}
+
+auto BoxWidget::Populate(const BoxData& data) noexcept -> void {
+    MinMaxPointWidget->SetRowData(0, CoordinateRowWidget::RowData(data.MinPoint));
+    MinMaxPointWidget->SetRowData(1, CoordinateRowWidget::RowData(data.MaxPoint));
+}

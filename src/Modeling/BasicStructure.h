@@ -3,65 +3,155 @@
 #include "BasicStructures.h"
 #include "CtStructure.h"
 
+class BasicStructure;
 
+class QComboBox;
 class QFormLayout;
 class QGroupBox;
 
 template<class... Ts>
 struct Overload : Ts... { using Ts::operator()...; };
 
+namespace BasicStructureDetails {
+    Q_NAMESPACE
 
-template<TBasicStructure StructureImpl> class BasicStructureBase;
+    enum struct FunctionType : uint8_t {
+        SPHERE,
+        BOX,
+        CONE
+    };
+    Q_ENUM_NS(FunctionType);
 
-class BasicStructureBaseUi {
-protected:
-    friend class BasicStructureUi;
+    [[nodiscard]] auto static
+    FunctionTypeToString(FunctionType functionType) noexcept -> std::string {
+        switch (functionType) {
+            case FunctionType::SPHERE: return "Sphere";
+            case FunctionType::BOX:    return "Box";
+            case FunctionType::CONE:   return "Cone";
+            default: { qWarning("No matching implicit function type found"); return ""; }
+        }
+    }
+    ENUM_GET_VALUES(FunctionType, false)
 
-    static const QString FunctionTypeComboBoxName;
-    static const QString TissueTypeComboBoxName;
-    static const QString FunctionParametersGroupName;
-};
+    struct TissueType {
+        std::string Name;
+        float CtNumber = 0.0; // value on the Hounsfield scale
 
-template<TBasicStructure Impl>
-struct BasicStructureBaseData : BasicStructureBaseUi {
-    using Structure = BasicStructureBase<Impl>;
+        auto
+        operator==(const TissueType& other) const noexcept -> bool { return Name == other.Name && CtNumber == other.CtNumber; }
 
-    CtStructureBase::FunctionType FunctionType = Impl::GetFunctionType();
-    QString TissueName;
-    Impl::Data Data;
+        friend auto operator<<(std::ostream& stream, const TissueType& type) -> std::ostream& {
+            return stream << type.Name << ": ('" << type.CtNumber << "')";
+        }
+    };
 
-    auto
-    PopulateDerivedStructure(Structure& structure) const noexcept -> void;
+    static std::map<std::string, TissueType> TissueTypeMap {
+            { "Air",             { "Air",            -1000.0F } },
+            { "Fat",             { "Fat",             -100.0F } },
+            { "Water",           { "Water",              0.0F } },
+            { "Soft Tissue",     { "Soft Tissue",      200.0F } },
+            { "Cancellous Bone", { "Cancellous Bone",  350.0F } },
+            { "Cortical Bone",   { "Cortical Bone",    800.0F } },
+            { "Metal",           { "Metal",          15000.0F } }
+    };
 
-    auto
-    PopulateFromDerivedStructure(const Structure& structure) noexcept -> void;
+    [[nodiscard]] auto static
+    GetTissueTypeByName(const std::string& tissueName) noexcept -> TissueType {
+        if (auto search = TissueTypeMap.find(tissueName);
+                search != TissueTypeMap.end())
+            return search->second;
 
-    static auto
-    AddSubTypeWidgets(QFormLayout* fLayout) -> void;
+        qWarning("No tissue type with requested name present. Returning 'Air'");
 
-    auto
-    PopulateStructureWidget(QWidget* widget) const -> void;
+        return TissueTypeMap.at("Air");
+    }
 
-    auto
-    PopulateFromStructureWidget(QWidget* widget) -> void;
+    [[nodiscard]] auto static
+    GetTissueTypeNames() noexcept -> QStringList {
+        QStringList names;
+        std::transform(TissueTypeMap.cbegin(), TissueTypeMap.cend(), std::back_inserter(names),
+                       [](const auto& type) { return QString::fromStdString(type.first); });
+        return names;
+    }
+
+
+    struct BasicStructureDataImpl {
+        FunctionType FunctionType;
+        QString TissueName;
+        BasicStructureSubTypeDataVariant Data;
+
+        using Structure = BasicStructure;
+
+        auto
+        PopulateFromStructure(const Structure& structure) noexcept -> void;
+
+        auto
+        PopulateStructure(Structure& structure) const noexcept -> void;
+    };
+
+    class BasicStructureWidgetImpl : public QWidget {
+    public:
+        using Data = BasicStructureDataImpl;
+
+        BasicStructureWidgetImpl();
+
+        auto
+        AddData(Data& data) noexcept -> void;
+
+        auto
+        Populate(const Data& data) noexcept -> void;
+
+    private:
+        auto
+        UpdateFunctionParametersGroup() -> void;
+
+        QFormLayout* Layout;
+        QComboBox* TissueTypeComboBox;
+        QComboBox* FunctionTypeComboBox;
+        QGroupBox* SubTypeGroupBox;
+        BasicStructureSubTypeWidgetVariant SubTypeWidgetVariant;
+    };
+}
+
+class BasicStructureData : public CtStructureBaseData<BasicStructureDetails::BasicStructureDataImpl> {};
+
+class BasicStructureWidget : public CtStructureBaseWidget<BasicStructureDetails::BasicStructureWidgetImpl,
+                                                          BasicStructureData> {
+    Q_OBJECT
+
+public:
+    [[nodiscard]] auto static
+    GetWidgetData(QWidget* widget) -> BasicStructureData { return FindWidget(widget).GetData(); }
+
+    auto static
+    SetWidgetData(QWidget* widget, const BasicStructureData& data) -> void { FindWidget(widget).Populate(data); }
 
 private:
-    [[nodiscard]] static auto
-    GetFunctionParametersGroup(CtStructureBase::FunctionType functionType) -> QGroupBox*;
+    [[nodiscard]] auto static
+    FindWidget(QWidget* widget) -> BasicStructureWidget& {
+        if (!widget)
+            throw std::runtime_error("Given widget must not be nullptr");
 
-    static auto
-    UpdateFunctionParametersGroup(QFormLayout* fLayout) -> void;
+        auto* basicStructureWidget = widget->findChild<BasicStructureWidget*>();
+
+        if (!basicStructureWidget)
+            throw std::runtime_error("No basic structure widget contained in given widget");
+
+        return *basicStructureWidget;
+    }
 };
 
-using SphereData = CtStructureBaseData<BasicStructureBaseData<SphereStructureImpl>>;
-using BoxData = CtStructureBaseData<BasicStructureBaseData<BoxStructureImpl>>;
-using BasicStructureDataVariant = std::variant<SphereData, BoxData>;
+using BasicStructureDetails::FunctionType;
+using BasicStructureDetails::TissueType;
 
 
-template<TBasicStructure Impl>
-class BasicStructureBase : public CtStructureBase {
+
+class BasicStructure : public CtStructureBase {
 public:
-    using Data = CtStructureBaseData<BasicStructureBaseData<Impl>>;
+    using Data = BasicStructureData;
+
+    explicit BasicStructure(FunctionType functionType = FunctionType::SPHERE);
+    explicit BasicStructure(const BasicStructureData& data);
 
     [[nodiscard]] auto
     GetViewName() const noexcept -> std::string;
@@ -73,51 +163,32 @@ public:
     SetTissueType(TissueType tissueType) noexcept -> void;
 
     [[nodiscard]] inline auto
-    FunctionValue(Point point) const noexcept -> float;
+    FunctionValue(Point point) const -> float;
 
-    auto
+    [[nodiscard]] auto
     GetData() const noexcept -> Data;
 
     auto
     SetData(const Data& data) noexcept -> void;
 
     auto
-    operator==(const BasicStructureBase& other) const noexcept -> bool { return Id == other.Id && Tissue == other.Tissue; }
+    operator==(const BasicStructure& other) const -> bool { return Id == other.Id && Tissue == other.Tissue; }
+
+    using ShapeVariant = std::variant<Sphere, Box>;
 
 private:
-    using Base = CtStructureBase;
-
     friend struct EvaluateImplicitStructures;
-    template<TBasicStructure BasicStructureImpl> friend class BasicStructureBaseData;
+    friend class BasicStructureDetails::BasicStructureDataImpl;
 
     StructureId Id = ++GlobalBasicStructureId;
-    TissueType Tissue = GetTissueTypeByName("Air");
-    Impl BasicStructureImpl {};
+    TissueType Tissue = BasicStructureDetails::GetTissueTypeByName("Air");
+    ShapeVariant Shape;
+
+    static std::atomic<StructureId> GlobalBasicStructureId;
 };
 
-template<TBasicStructure BasicStructureImpl>
-auto BasicStructureBase<BasicStructureImpl>::FunctionValue(Point point) const noexcept -> float {
-    Point transformedPoint = Transform.TransformPoint(point);
+auto BasicStructure::FunctionValue(Point point) const -> float {
+    const Point transformedPoint = Transform.TransformPoint(point);
 
-    return BasicStructureImpl.EvaluateFunction(transformedPoint);
+    return std::visit([&](const auto& shape) { return shape.EvaluateFunction(transformedPoint); }, Shape);
 }
-
-using SphereStructure = BasicStructureBase<SphereStructureImpl>;
-using BoxStructure = BasicStructureBase<BoxStructureImpl>;
-using BasicStructureVariant = std::variant<SphereStructure, BoxStructure>;
-
-
-
-namespace BasicStructure {
-    [[nodiscard]] auto
-    CreateBasicStructure(const BasicStructureDataVariant& dataVariant) -> BasicStructureVariant;
-}
-
-class BasicStructureUi {
-public:
-    [[nodiscard]] auto static
-    GetWidgetData(QWidget* widget) -> BasicStructureDataVariant;
-
-    [[nodiscard]] auto static
-    GetWidget() -> QWidget*;
-};

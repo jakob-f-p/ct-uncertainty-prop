@@ -4,196 +4,148 @@
 #include <QFormLayout>
 #include <QGroupBox>
 
-const QString BasicStructureBaseUi::FunctionTypeComboBoxName = "FunctionType";
-const QString BasicStructureBaseUi::TissueTypeComboBoxName = "TissueType";
-const QString BasicStructureBaseUi::FunctionParametersGroupName = "FunctionTypeParametersGroup";
+#define BASIC_SHAPE_DATA(Shape) \
+    typename std::decay_t<decltype(Shape)>::Data
 
-
-template class CtStructureBaseData<BasicStructureBaseData<SphereStructureImpl>>;
-template class CtStructureBaseData<BasicStructureBaseData<BoxStructureImpl>>;
-
-template<TBasicStructure Impl>
-auto BasicStructureBaseData<Impl>::PopulateDerivedStructure(Structure& structure) const noexcept -> void {
-    structure.SetTissueType(CtStructureBase::GetTissueTypeByName(TissueName.toStdString()));
-
-    structure.BasicStructureImpl.SetFunctionData(Data);
-}
-
-template<TBasicStructure Impl>
-auto BasicStructureBaseData<Impl>::PopulateFromDerivedStructure(const Structure& structure) noexcept -> void {
+auto BasicStructureDetails::BasicStructureDataImpl::PopulateFromStructure(const Structure& structure) noexcept
+        -> void {
+    FunctionType = structure.GetFunctionType();
     TissueName = QString::fromStdString(structure.Tissue.Name);
+    Data = std::visit([&](const auto& shape) { return BasicStructureSubTypeDataVariant{ BASIC_SHAPE_DATA(shape){} }; },
+                      structure.Shape);
 
-    structure.BasicStructureImpl.AddFunctionData(Data);
+    std::visit([&](const auto& shape) { shape.AddFunctionData(std::get<BASIC_SHAPE_DATA(shape)>(Data)); },
+               structure.Shape);
 }
 
-template<TBasicStructure Impl>
-void BasicStructureBaseData<Impl>::AddSubTypeWidgets(QFormLayout* fLayout) {
-    auto* functionTypeComboBox = new QComboBox();
-    functionTypeComboBox->setObjectName(FunctionTypeComboBoxName);
-    for (const auto &implicitFunctionAndName : CtStructureBase::GetFunctionTypeValues()) {
-        functionTypeComboBox->addItem(implicitFunctionAndName.Name,
-                                      QVariant::fromValue(implicitFunctionAndName.EnumValue));
-    }
-    functionTypeComboBox->setCurrentIndex(0);
+auto BasicStructureDetails::BasicStructureDataImpl::PopulateStructure(Structure& structure) const noexcept
+        -> void {
+    structure.SetTissueType(BasicStructureDetails::GetTissueTypeByName(TissueName.toStdString()));
 
-    auto* tissueTypeComboBox = new QComboBox();
-    tissueTypeComboBox->setObjectName(TissueTypeComboBoxName);
-    tissueTypeComboBox->addItems(CtStructureBase::GetTissueTypeNames());
-
-    fLayout->addRow("Tissue Type", tissueTypeComboBox);
-    fLayout->addRow("Structure Type", functionTypeComboBox);
-
-    auto* functionGroup = new QGroupBox();
-    functionGroup->setObjectName(FunctionParametersGroupName);
-    fLayout->addRow(functionGroup);
-    UpdateFunctionParametersGroup(fLayout);
-
-    QObject::connect(functionTypeComboBox, &QComboBox::currentIndexChanged,
-                     [&, fLayout]() { UpdateFunctionParametersGroup(fLayout); });
+    std::visit([&](auto& shape) -> void { shape.SetFunctionData(std::get<BASIC_SHAPE_DATA(shape)>(Data)); },
+               structure.Shape);
 }
 
-template<TBasicStructure Impl>
-auto BasicStructureBaseData<Impl>::PopulateStructureWidget(QWidget* widget) const -> void {
-    auto* functionTypeComboBox = widget->findChild<QComboBox*>(FunctionTypeComboBoxName);
-    auto* tissueTypeComboBox = widget->findChild<QComboBox*>(TissueTypeComboBoxName);
-
-    if (int idx = functionTypeComboBox->findData(QVariant::fromValue(FunctionType));
-            idx != -1)
-        functionTypeComboBox->setCurrentIndex(idx);
-
-    if (int idx = tissueTypeComboBox->findText(TissueName);
-            idx != -1)
-        tissueTypeComboBox->setCurrentIndex(idx);
-
-    auto* fLayout = dynamic_cast<QFormLayout*>(functionTypeComboBox->parentWidget()->layout());
-    fLayout->setRowVisible(functionTypeComboBox, false);
-
-    UpdateFunctionParametersGroup(widget->findChild<QFormLayout*>());
-
-    Data.PopulateWidget(widget);
+BasicStructure::BasicStructure(FunctionType functionType) :
+        Shape([functionType]() -> ShapeVariant { switch (functionType) {
+            case FunctionType::SPHERE: return Sphere();
+            case FunctionType::BOX:    return Box();
+            case FunctionType::CONE: { qWarning("Todo");
+                                       return Sphere(); }
+            return {};
+        } }()) {
 }
 
-template<TBasicStructure Impl>
-auto BasicStructureBaseData<Impl>::PopulateFromStructureWidget(QWidget* widget) -> void {
-    auto* functionTypeComboBox = widget->findChild<QComboBox*>(FunctionTypeComboBoxName);
-    auto* tissueTypeComboBox = widget->findChild<QComboBox*>(TissueTypeComboBoxName);
-
-    FunctionType = functionTypeComboBox->currentData().value<CtStructureBase::FunctionType>();
-    TissueName = tissueTypeComboBox->currentText();
-
-    assert(FunctionType == Impl::GetFunctionType());
-
-    Data.PopulateFromWidget(widget);
+BasicStructure::BasicStructure(const BasicStructureData& data) : BasicStructure(data.Data.FunctionType) {
+    SetData(data);
 }
 
-template<TBasicStructure Impl>
-QGroupBox* BasicStructureBaseData<Impl>::GetFunctionParametersGroup(CtStructureBase::FunctionType functionType) {
-    auto* group = new QGroupBox();
-    group->setObjectName(FunctionParametersGroupName);
-    group->setTitle(QString::fromStdString(CtStructureBase::FunctionTypeToString(functionType)));
-
-    auto* fLayout = new QFormLayout(group);
-    fLayout->setHorizontalSpacing(15);
-
-    switch (functionType) {
-        case CtStructureBase::FunctionType::SPHERE: { SphereDataImpl::AddFunctionWidget(fLayout); break; }
-        case CtStructureBase::FunctionType::BOX:    { BoxDataImpl::AddFunctionWidget(fLayout); break; }
-        case CtStructureBase::FunctionType::CONE:   { qWarning("todo"); break; }
-        default: throw std::runtime_error("No matching function type");
-    }
-
-    return group;
+auto BasicStructure::GetViewName() const noexcept -> std::string {
+    return FunctionTypeToString(GetFunctionType()) + (this->Name.empty() ? "" : " (" + this->Name + ")");
 }
 
-template<TBasicStructure Impl>
-void BasicStructureBaseData<Impl>::UpdateFunctionParametersGroup(QFormLayout* fLayout) {
-    auto* widget = fLayout->parentWidget();
-    auto* oldFunctionParametersGroup = widget->findChild<QGroupBox*>(FunctionParametersGroupName);
-    if (!oldFunctionParametersGroup)
-        throw std::runtime_error("No function parameters group exists");
-
-    auto* functionTypeComboBox = widget->findChild<QComboBox*>(FunctionTypeComboBoxName);
-    auto functionType = functionTypeComboBox->currentData().value<CtStructureBase::FunctionType>();
-    auto* newFunctionParametersGroup = GetFunctionParametersGroup(functionType);
-
-    fLayout->replaceWidget(oldFunctionParametersGroup, newFunctionParametersGroup);
-    delete oldFunctionParametersGroup;
+auto BasicStructure::GetFunctionType() const noexcept -> FunctionType {
+    return std::visit(Overload{
+        [](const Sphere&) { return FunctionType::SPHERE; },
+        [](const Box&)    { return FunctionType::BOX; },
+        [](const auto&)       { qWarning("Invalid function type"); return FunctionType::SPHERE; },
+    }, Shape);
 }
 
-template<TBasicStructure StructureImpl>
-auto BasicStructureBase<StructureImpl>::GetViewName() const noexcept -> std::string {
-    return FunctionTypeToString(StructureImpl::GetFunctionType()) + (this->Name.empty() ? "" : " (" + this->Name + ")");
-}
-
-template<TBasicStructure StructureImpl>
-auto BasicStructureBase<StructureImpl>::GetFunctionType() const noexcept -> FunctionType {
-    return StructureImpl::GetFunctionType();
-}
-
-auto operator<<(ostream& stream, const CtStructureBase::TissueType& type) noexcept -> std::ostream& {
-    return stream << type.Name << ": ('" << type.CtNumber << "')";
-}
-
-template<TBasicStructure StructureImpl>
-auto BasicStructureBase<StructureImpl>::SetTissueType(TissueType tissueType) noexcept -> void {
+auto BasicStructure::SetTissueType(TissueType tissueType) noexcept -> void {
     Tissue = std::move(tissueType);
 
     Modified();
 }
 
-template<TBasicStructure StructureImpl>
-auto BasicStructureBase<StructureImpl>::GetData() const noexcept -> Data {
+
+auto BasicStructure::GetData() const noexcept -> Data {
     Data data {};
     data.PopulateFromStructure(*this);
     return data;
 }
 
-template<TBasicStructure StructureImpl>
-auto BasicStructureBase<StructureImpl>::SetData(const Data& data) noexcept -> void {
+auto BasicStructure::SetData(const Data& data) noexcept -> void {
     data.PopulateStructure(*this);
 }
 
-template class BasicStructureBase<SphereStructureImpl>;
-template class BasicStructureBase<BoxStructureImpl>;
+std::atomic<StructureId> BasicStructure::GlobalBasicStructureId = 0;
 
+BasicStructureDetails::BasicStructureWidgetImpl::BasicStructureWidgetImpl() :
+        Layout(new QFormLayout(this)),
+        TissueTypeComboBox  (new QComboBox()),
+        FunctionTypeComboBox(new QComboBox()),
+        SubTypeGroupBox(new QGroupBox()),
+        SubTypeWidgetVariant(new SphereWidget()) {
 
-auto BasicStructure::CreateBasicStructure(const BasicStructureDataVariant& dataVariant) -> BasicStructureVariant {
-    return std::visit(Overload{
-            [&](const SphereData&) {
-                SphereStructure sphere{};
-                sphere.SetData(std::get<SphereData>(dataVariant));
-                return BasicStructureVariant{std::move(sphere)};
-            },
-            [&](const BoxData&)    {
-                BoxStructure box{};
-                box.SetData(std::get<BoxData>(dataVariant));
-                return BasicStructureVariant{std::move(box)};
-            } }, dataVariant);
+    Layout->setContentsMargins(0, 5, 0, 5);
+    Layout->setFieldGrowthPolicy(QFormLayout::FieldGrowthPolicy::FieldsStayAtSizeHint);
+    Layout->setHorizontalSpacing(15);
+
+    TissueTypeComboBox->addItems(BasicStructureDetails::GetTissueTypeNames());
+    Layout->addRow("Tissue Type", TissueTypeComboBox);
+
+    for (const auto &implicitFunctionAndName : BasicStructureDetails::GetFunctionTypeValues())
+        FunctionTypeComboBox->addItem(implicitFunctionAndName.Name,
+                                      QVariant::fromValue(implicitFunctionAndName.EnumValue));
+    Layout->addRow("Structure Type", FunctionTypeComboBox);
+
+    auto* subTypeVLayout = new QVBoxLayout(SubTypeGroupBox);
+    subTypeVLayout->setContentsMargins(0, 0, 0, 0);
+    std::visit([subTypeVLayout](QWidget* widget) { subTypeVLayout->addWidget(widget); }, SubTypeWidgetVariant);
+    UpdateFunctionParametersGroup();
+    Layout->addRow(SubTypeGroupBox);
+
+    QObject::connect(FunctionTypeComboBox, &QComboBox::currentIndexChanged, [&]() { UpdateFunctionParametersGroup(); });
 }
 
+auto BasicStructureDetails::BasicStructureWidgetImpl::AddData(Data& data) noexcept -> void {
+    data.TissueName = TissueTypeComboBox->currentText();
+    data.FunctionType = FunctionTypeComboBox->currentData().value<FunctionType>();
+    data.Data = std::visit([](auto* widget) { return BasicStructureSubTypeDataVariant{ widget->GetData() }; },
+                           SubTypeWidgetVariant);
+}
 
-auto BasicStructureUi::GetWidgetData(QWidget* widget) -> BasicStructureDataVariant {
-    auto* functionTypeComboBox = widget->findChild<QComboBox*>(BasicStructureBaseUi::FunctionTypeComboBoxName);
+#define BASIC_DATA_WIDGET(Data) \
+    typename std::decay_t<decltype(Data)>::Widget
 
-    auto functionType = functionTypeComboBox->currentData().value<CtStructureBase::FunctionType>();
+auto BasicStructureDetails::BasicStructureWidgetImpl::Populate(const Data& data) noexcept -> void {
+    TissueTypeComboBox->setCurrentText(data.TissueName);
 
-    switch (functionType) {
-        case CtStructureBase::FunctionType::SPHERE: {
-            SphereData data {};
-            data.PopulateFromWidget(widget);
-            return data;
+    if (const int idx = FunctionTypeComboBox->findData(QVariant::fromValue(data.FunctionType)); idx != -1)
+        FunctionTypeComboBox->setCurrentIndex(idx);
+
+    Layout->setRowVisible(FunctionTypeComboBox, false);
+
+    std::visit([widgetVariant = SubTypeWidgetVariant](const auto& subTypeData) -> void {
+        auto* widget = std::get<BASIC_DATA_WIDGET(subTypeData)*>(widgetVariant);
+        widget->Populate(subTypeData);
+    }, data.Data);
+}
+
+auto BasicStructureDetails::BasicStructureWidgetImpl::UpdateFunctionParametersGroup() -> void {
+    auto functionType = FunctionTypeComboBox->currentData().value<FunctionType>();
+
+    BasicStructureSubTypeWidgetVariant newSubTypeWidgetVariant = [functionType]() {
+        switch (functionType) {
+            case FunctionType::SPHERE: { return BasicStructureSubTypeWidgetVariant{ new SphereWidget() }; }
+            case FunctionType::BOX:    { return BasicStructureSubTypeWidgetVariant{ new BoxWidget() }; }
+            case FunctionType::CONE:   { qWarning("todo"); return BasicStructureSubTypeWidgetVariant{}; }
         }
+        return BasicStructureSubTypeWidgetVariant{};
+    }();
 
-        case CtStructureBase::FunctionType::BOX: {
-            BoxData data {};
-            data.PopulateFromWidget(widget);
-            return data;
-        }
+    std::visit([&, newSubTypeWidgetVariant](auto* oldSubTypeWidget) {
+        std::visit([&, oldSubTypeWidget](auto* newSubTypeWidget) {
+            SubTypeGroupBox->layout()->replaceWidget(oldSubTypeWidget, newSubTypeWidget);
+            delete oldSubTypeWidget;
 
-        default: throw std::runtime_error("No matching basic structure function type");
-    }
+            SubTypeWidgetVariant = newSubTypeWidgetVariant;
+        }, newSubTypeWidgetVariant);
+    }, SubTypeWidgetVariant);
+
+    SubTypeGroupBox->setTitle(QString::fromStdString(BasicStructureDetails::FunctionTypeToString(functionType)));
 }
 
-auto BasicStructureUi::GetWidget() -> QWidget* {
-    return SphereData::GetWidget();
-}
+#undef BASIC_SHAPE_DATA
+#undef BASIC_DATA_WIDGET

@@ -179,7 +179,7 @@ void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endP
 
         VolumeData->GetPoint(pointId, point);
 
-        const CtStructureBase::ModelingResult result = Tree->FunctionValueAndRadiodensity(
+        const CtStructureTree::ModelingResult result = Tree->FunctionValueAndRadiodensity(
                 reinterpret_cast<const std::array<double, 3>&>(point));
 
         bool pointIsWithinStructure = result.FunctionValue < 0;

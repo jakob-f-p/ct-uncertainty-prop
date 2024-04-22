@@ -1,6 +1,5 @@
 #pragma once
 
-#include "CtStructure.h"
 #include "BasicStructure.h"
 #include "CombinedStructure.h"
 
@@ -13,8 +12,8 @@ class PipelineList;
 
 class QVariant;
 
-using StructureVariant = std::variant<SphereStructure, BoxStructure, CombinedStructure>;
-using StructureDataVariant = std::variant<SphereData, BoxData, CombinedStructureData>;
+using StructureVariant = std::variant<BasicStructure, CombinedStructure>;
+using StructureDataVariant = std::variant<BasicStructureData, CombinedStructureData>;
 
 enum struct CtStructureTreeEventType : uint8_t {
     Add,
@@ -35,22 +34,22 @@ public:
     GetMTime() const -> vtkMTimeType;
 
     auto
-    AddBasicStructure(BasicStructureVariant&& boxStructure, CombinedStructure* parent = nullptr) -> void;
+    AddBasicStructure(BasicStructure&& basicStructure, CombinedStructure* parent = nullptr) -> void;
 
     auto
-    AddBasicStructure(const BasicStructureDataVariant& basicStructureData,
+    AddBasicStructure(const BasicStructureData& basicStructureData,
                       CombinedStructure* parent = nullptr) -> void;
 
     auto
-    CombineWithBasicStructure(BasicStructureVariant&& basicStructureVariant,
+    CombineWithBasicStructure(BasicStructure&& basicStructure,
                               CombinedStructure&& combinedStructure) -> void;
 
     auto
-    CombineWithBasicStructure(const BasicStructureDataVariant& basicStructureDataVariant,
+    CombineWithBasicStructure(const BasicStructureData& basicStructureData,
                               const CombinedStructureData& combinedStructureData) -> void;
 
     auto
-    RefineWithBasicStructure(const BasicStructureDataVariant& newStructureDataVariant,
+    RefineWithBasicStructure(const BasicStructureData& newStructureData,
                              const CombinedStructureData& combinedStructureData,
                              uidx_t structureToRefineIdx) -> void;
 
@@ -72,8 +71,14 @@ public:
     [[nodiscard]] auto
     StructureCount() const noexcept -> uidx_t;
 
+    struct ModelingResult {
+        float FunctionValue;
+        float Radiodensity;
+        StructureId BasicCtStructureId;
+    };
+
     [[nodiscard]] auto
-    FunctionValueAndRadiodensity(Point point) const -> CtStructureBase::ModelingResult;
+    FunctionValueAndRadiodensity(Point point) const -> ModelingResult;
 
     void SetData(uidx_t structureIdx, const QVariant& data);
 
@@ -86,9 +91,6 @@ private:
     template<TCtStructure TStructure>
     [[nodiscard]] auto
     CtStructureExists(const TStructure& ctStructure) const -> bool;
-
-    [[nodiscard]] auto
-    CtStructureExists(const BasicStructureVariant& basicStructureVariant) const -> bool;
 
     [[nodiscard]] auto
     StructureIdxExists(idx_t idx) const noexcept -> bool;

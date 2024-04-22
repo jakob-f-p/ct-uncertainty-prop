@@ -4,9 +4,8 @@
 #include "../CombinedStructure.h"
 
 #include <QDialogButtonBox>
-#include <QKeyEvent>
-#include <QPushButton>
 #include <QTabWidget>
+#include <QVBoxLayout>
 
 CtStructureDialog::CtStructureDialog(DialogMode mode, QWidget* parent) :
         QDialog(parent) {
@@ -16,7 +15,7 @@ CtStructureDialog::CtStructureDialog(DialogMode mode, QWidget* parent) :
 
     setModal(true);
 
-    setWindowTitle(mode == CREATE ? "Create" : "Edit");
+    setWindowTitle(mode == DialogMode::CREATE ? "Create" : "Edit");
 
     Layout = new QVBoxLayout(this);
     Layout->setSizeConstraint(QLayout::SizeConstraint::SetMinimumSize);
@@ -26,7 +25,7 @@ CtStructureDialog::CtStructureDialog(DialogMode mode, QWidget* parent) :
     dialogButtonBar->setStandardButtons(QDialogButtonBox::Cancel | QDialogButtonBox::Ok);
     Layout->addWidget(dialogButtonBar);
 
-    if (mode == CREATE) {
+    if (mode == DialogMode::CREATE) {
         connect(dialogButtonBar, &QDialogButtonBox::accepted, this, &QDialog::accept);
         connect(dialogButtonBar, &QDialogButtonBox::rejected, this, &QDialog::reject);
     } else {
@@ -35,33 +34,22 @@ CtStructureDialog::CtStructureDialog(DialogMode mode, QWidget* parent) :
     }
 }
 
-template class SimpleCtStructureDialog<BasicStructureUi>;
-template class SimpleCtStructureDialog<CombinedStructureUi>;
+template class SimpleCtStructureDialog<BasicStructureWidget>;
+template class SimpleCtStructureDialog<CombinedStructureWidget>;
 
-template<typename Ui>
-SimpleCtStructureDialog<Ui>::SimpleCtStructureDialog(CtStructureDialog::DialogMode mode, QWidget* parent) :
+template<typename Widget>
+SimpleCtStructureDialog<Widget>::SimpleCtStructureDialog(CtStructureDialog::DialogMode mode, QWidget* parent) :
         CtStructureDialog(mode, parent) {
-    auto* widget = Ui::GetWidget();
-    Layout->insertWidget(0, widget);
+    Layout->insertWidget(0, new Widget());
 }
 
 BasicAndCombinedStructureCreateDialog::BasicAndCombinedStructureCreateDialog(QWidget* parent) :
-        CtStructureDialog(CREATE, parent),
-        CombinedStructureWidget(CombinedStructureData::GetWidget()),
-        BasicStructureWidget(BasicStructureUi::GetWidget()) {
+        CtStructureDialog(DialogMode::CREATE, parent),
+        CombinedWidget(new CombinedStructureWidget()),
+        BasicWidget(new BasicStructureWidget()) {
 
     auto* tabWidget = new QTabWidget();
-    tabWidget->addTab(CombinedStructureWidget, "Combination");
-    tabWidget->addTab(BasicStructureWidget, "Basic");
+    tabWidget->addTab(CombinedWidget, "Combination");
+    tabWidget->addTab(BasicWidget, "Basic");
     Layout->insertWidget(0, tabWidget);
-}
-
-BasicStructureDataVariant BasicAndCombinedStructureCreateDialog::GetBasicStructureData() const {
-    return BasicStructureUi::GetWidgetData(BasicStructureWidget);
-}
-
-CombinedStructureData BasicAndCombinedStructureCreateDialog::GetCombinedStructureData() const {
-    CombinedStructureData data {};
-    data.PopulateFromWidget(CombinedStructureWidget);
-    return data;
 }

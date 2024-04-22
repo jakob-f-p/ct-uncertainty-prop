@@ -11,54 +11,64 @@ class QString;
 class QWidget;
 
 template<typename T>
-concept TBasicStructureImplLike = requires(T structure, T::Data data, QWidget* widget, QFormLayout* layout, Point point) {
-    typename T::Data;
-
+concept Evaluable = requires(T structure, T::Data data) {
     structure.AddFunctionData(data);
     structure.SetFunctionData(data);
-    { structure.EvaluateFunction(point) } -> std::same_as<float>;
+    { structure.EvaluateFunction(Point{}) } -> std::same_as<float>;
+};
 
-    { T::GetFunctionType() } -> std::same_as<CtStructureBase::FunctionType>;
-
-    T::Data::AddFunctionWidget(layout);
-
+template<typename T>
+concept HasWidget = requires(T::Data data, T::Data::Widget* widget) {
     data.PopulateFromWidget(widget);
     data.PopulateWidget(widget);
 };
 
 template<typename T>
-concept TBasicStructure = TBasicStructureImplLike<T> && std::equality_comparable<T>;
+concept TBasicStructure = Evaluable<T>
+                            && HasWidget<T>
+                            && std::equality_comparable<T>;
 
 
 
-struct SphereStructureImpl;
+class SphereWidget;
 
-
-struct SphereDataImpl {
+struct SphereData {
     double Radius = 1.0;
     Point Center = {};
 
-    static auto
-    AddFunctionWidget(QFormLayout* fLayout) noexcept -> void;
+    using Widget = SphereWidget;
 
     auto
-    PopulateFromWidget(QWidget* widget) noexcept -> void;
+    PopulateFromWidget(Widget* widget) noexcept -> void;
 
     auto
-    PopulateWidget(QWidget* widget) const noexcept -> void;
-
-private:
-    static const QString SphereRadiusSpinBoxName;
-    static const QString SphereCenterName;
+    PopulateWidget(Widget* widget) const noexcept -> void;
 };
 
-struct SphereStructureImpl {
-    using Data = SphereDataImpl;
 
-    SphereStructureImpl() { Function->SetRadius(10.0); }
+class SphereWidget : public QWidget {
+    Q_OBJECT
 
-    [[nodiscard]] constexpr static auto
-    GetFunctionType() -> CtStructureBase::FunctionType { return CtStructureBase::FunctionType::SPHERE; };
+public:
+    SphereWidget();
+
+    [[nodiscard]] auto
+    GetData() noexcept -> SphereData;
+
+    auto
+    Populate(const SphereData& data) noexcept -> void;
+
+private:
+    QDoubleSpinBox* RadiusSpinBox;
+    CoordinateRowWidget* CenterCoordinateRow;
+};
+
+
+
+struct Sphere {
+    using Data = SphereData;
+
+    Sphere() { Function->SetRadius(10.0); }
 
     auto
     AddFunctionData(Data& data) const noexcept -> void;
@@ -72,42 +82,39 @@ struct SphereStructureImpl {
     }
 
     auto
-    operator==(const SphereStructureImpl& other) const noexcept -> bool { return Function == other.Function; }
+    operator==(const Sphere& other) const noexcept -> bool { return Function == other.Function; }
 
 private:
     vtkNew<vtkSphere> Function;
 };
 
-static_assert(TBasicStructure<SphereStructureImpl>);
+static_assert(TBasicStructure<Sphere>);
 
 
 
+class BoxWidget;
 
-struct BoxDataImpl {
+struct BoxData {
     Point MinPoint {};
     Point MaxPoint {};
 
-    static auto
-    AddFunctionWidget(QFormLayout* fLayout) noexcept -> void;
+    using Widget = BoxWidget;
 
     auto
-    PopulateFromWidget(QWidget* widget) noexcept -> void;
+    PopulateFromWidget(Widget* widget) noexcept -> void;
 
     auto
-    PopulateWidget(QWidget* widget) const noexcept -> void;
+    PopulateWidget(Widget* widget) const noexcept -> void;
 
 private:
     static const QString BoxMinPointName;
     static const QString BoxMaxPointName;
 };
 
-struct BoxStructureImpl {
-    using Data = BoxDataImpl;
+struct Box {
+    using Data = BoxData;
 
-    BoxStructureImpl() { Function->SetBounds(-10.0, 10.0, -10.0, 10.0, -10.0, 10.0); }
-
-    [[nodiscard]] constexpr static auto
-    GetFunctionType() -> CtStructureBase::FunctionType { return CtStructureBase::FunctionType::BOX; };
+    Box() { Function->SetBounds(-10.0, 10.0, -10.0, 10.0, -10.0, 10.0); }
 
     auto
     AddFunctionData(Data& data) const noexcept -> void;
@@ -121,10 +128,37 @@ struct BoxStructureImpl {
     }
 
     auto
-    operator==(const BoxStructureImpl& other) const noexcept -> bool { return Function == other.Function; }
+    operator==(const Box& other) const noexcept -> bool { return Function == other.Function; }
 
 private:
-    vtkNew<vtkBox> Function {};
+    vtkNew<vtkBox> Function;
 };
 
-static_assert(TBasicStructure<BoxStructureImpl>);
+class BoxWidget : public QWidget {
+Q_OBJECT
+
+public:
+    BoxWidget();
+
+    [[nodiscard]] auto
+    GetData() noexcept -> BoxData;
+
+    auto
+    Populate(const BoxData& data) noexcept -> void;
+
+private:
+    CoordinateRowWidget* MinMaxPointWidget;
+};
+
+static_assert(TBasicStructure<Box>);
+
+
+
+using BasicStructureSubTypeDataVariant = std::variant<SphereData, BoxData>;
+
+using BasicStructureSubTypeWidgetVariant = std::variant<SphereData::Widget*, BoxData::Widget*>;
+
+class BasicStructureSubTypeWidget : public QWidget {
+Q_OBJECT
+};
+

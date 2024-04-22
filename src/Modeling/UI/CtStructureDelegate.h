@@ -1,8 +1,10 @@
 #pragma once
 
-#include <QGroupBox>
 #include <QStyledItemDelegate>
-#include <QVBoxLayout>
+
+class QWidget;
+class QGroupBox;
+class QVBoxLayout;
 
 class DialogDelegate : public QStyledItemDelegate {
 public:

@@ -1,16 +1,17 @@
 #pragma once
 
-#include "../BasicStructure.h"
-#include "../CombinedStructure.h"
-
 #include <QDialog>
-#include <QVBoxLayout>
+
+class BasicStructureWidget;
+class CombinedStructureWidget;
+
+class QVBoxLayout;
 
 class CtStructureDialog : public QDialog {
 public:
-    enum DialogMode {
+    enum struct DialogMode : uint8_t {
         EDIT,
-        CREATE,
+        CREATE
     };
 
 protected:
@@ -21,14 +22,14 @@ protected:
 
 
 
-template<typename Ui>
+template<typename Widget>
 class SimpleCtStructureDialog : public CtStructureDialog {
 public:
     explicit SimpleCtStructureDialog(DialogMode mode, QWidget* parent = nullptr);
 };
 
-using BasicStructureDialog = SimpleCtStructureDialog<BasicStructureUi>;
-using CombinedStructureDialog = SimpleCtStructureDialog<CombinedStructureUi>;
+using BasicStructureDialog = SimpleCtStructureDialog<BasicStructureWidget>;
+using CombinedStructureDialog = SimpleCtStructureDialog<CombinedStructureWidget>;
 
 
 
@@ -36,10 +37,13 @@ class BasicAndCombinedStructureCreateDialog : public CtStructureDialog {
 public:
     explicit BasicAndCombinedStructureCreateDialog(QWidget* parent = nullptr);
 
-    [[nodiscard]] BasicStructureDataVariant GetBasicStructureData() const;
-    [[nodiscard]] CombinedStructureData GetCombinedStructureData() const;
+    [[nodiscard]] auto
+    GetBasicWidget() const -> BasicStructureWidget& { return *BasicWidget; }
+
+    [[nodiscard]] auto
+    GetCombinedWidget() const -> CombinedStructureWidget& {return *CombinedWidget; }
 
 private:
-    QWidget* CombinedStructureWidget;
-    QWidget* BasicStructureWidget;
+    CombinedStructureWidget* CombinedWidget;
+    BasicStructureWidget* BasicWidget;
 };

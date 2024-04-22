@@ -11,13 +11,31 @@
 #include "Artifacts/MotionArtifact.h"
 #include "Artifacts/PipelineList.h"
 
-#include "vtkNew.h"
-
 #include <QApplication>
 #include <QSurfaceFormat>
 #include <QVTKOpenGLNativeWidget.h>
 
 #include <SMP/Common/vtkSMPToolsAPI.h>
+
+#include "vtkNew.h"
+
+App::App(int argc, char* argv[]) :
+        Argc(argc),
+        Argv(argv),
+        QApp(new QApplication(Argc, Argv)),
+        CtDataTree(new CtStructureTree()),
+        Pipelines(new PipelineList(*CtDataTree)),
+        MainWin(nullptr) {
+
+    QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
+
+    auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
+    smpToolsApi.SetBackend("STDTHREAD");
+}
+
+App::~App() {
+    QApplication::quit();
+}
 
 App* App::Self = nullptr;
 
@@ -36,38 +54,19 @@ auto App::GetInstance() -> App* {
     return Self;
 }
 
-App::App(int argc, char* argv[]) :
-        Argc(argc),
-        Argv(argv),
-        QApp(new QApplication(Argc, Argv)),
-        CtDataTree(new CtStructureTree()),
-        Pipelines(new PipelineList(*CtDataTree)),
-        MainWin(nullptr) {
-}
-
-App::~App() {
-    delete &MainWin;
-
-    QApplication::quit();
-    delete QApp;
-}
-
 auto App::Run() -> int {
-    QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
-
     auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
-//    smpToolsApi.SetBackend("STDTHREAD");
     qWarning(("Backend: " + std::string(smpToolsApi.GetBackend())).c_str());
 
     InitializeWithTestData();
 
-    MainWin = new MainWindow();
+    MainWin.reset(new MainWindow());
     MainWin->show();
 
     return QApplication::exec();
 }
 
-int App::Quit() {
+auto App::Quit() -> int {
     if (Self) {
         QApplication::quit();
         delete Self;
@@ -76,23 +75,31 @@ int App::Quit() {
     return 0;
 }
 
+auto App::GetCtDataTree() const -> CtStructureTree& {
+    return *CtDataTree;
+}
+
+auto App::GetPipelines() const -> PipelineList& {
+    return *Pipelines;
+}
+
 void App::InitializeWithTestData() {
     auto& pipeline = Pipelines->AddPipeline();
 
-    SphereStructure sphereStructure;
-    sphereStructure.SetTissueType(CtStructureBase::GetTissueTypeByName("Cancellous Bone"));
-    sphereStructure.SetTransformData({ 40.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f });
+    BasicStructure sphere(FunctionType::SPHERE);
+    sphere.SetTissueType(BasicStructureDetails::GetTissueTypeByName("Cancellous Bone"));
+    sphere.SetTransformData({ 40.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f });
 
-    BoxStructure boxStructure;
-    boxStructure.SetTissueType(CtStructureBase::GetTissueTypeByName("Cortical Bone"));
-    boxStructure.SetTransformData({ 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f });
+    BasicStructure box(FunctionType::BOX);
+    box.SetTissueType(BasicStructureDetails::GetTissueTypeByName("Cortical Bone"));
+    box.SetTransformData({ 10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f });
 
     CombinedStructure combinedStructure;
-    combinedStructure.SetOperatorType(CtStructureBase::OperatorType::UNION);
+    combinedStructure.SetOperatorType(OperatorType::UNION);
     combinedStructure.SetTransformData({ -10.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f });
 
-    CtDataTree->AddBasicStructure(std::move(sphereStructure));
-    CtDataTree->CombineWithBasicStructure(std::move(boxStructure), std::move(combinedStructure));
+    CtDataTree->AddBasicStructure(std::move(sphere));
+    CtDataTree->CombineWithBasicStructure(std::move(box), std::move(combinedStructure));
 
     vtkNew<MotionArtifact> motionArtifact1;
     motionArtifact1->SetName("1");
@@ -127,12 +134,4 @@ void App::InitializeWithTestData() {
 
     vtkNew<GaussianArtifact> gaussianArtifact4;
     imageArtifactConcatenation.AddImageArtifact(*gaussianArtifact4);
-}
-
-auto App::GetCtDataTree() const -> CtStructureTree& {
-    return *CtDataTree;
-}
-
-auto App::GetPipelines() const -> PipelineList& {
-    return *Pipelines;
 }

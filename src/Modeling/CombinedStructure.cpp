@@ -4,42 +4,50 @@
 #include <QLabel>
 #include <QFormLayout>
 
-auto
-CombinedStructureDataImpl::PopulateDerivedStructure(Structure& structure) const noexcept -> void {
+auto CombinedStructureDetails::CombinedStructureDataImpl::PopulateStructure(Structure& structure) const noexcept
+        -> void {
     structure.Operator = Operator;
 }
 
-auto CombinedStructureDataImpl::PopulateFromDerivedStructure(const Structure& structure) noexcept -> void {
+auto
+CombinedStructureDetails::CombinedStructureDataImpl::PopulateFromStructure(const Structure& structure) noexcept
+        -> void {
     Operator = structure.Operator;
 }
 
-auto CombinedStructureDataImpl::PopulateStructureWidget(QWidget* widget) const -> void {
-    auto* operatorTypeComboBox = widget->findChild<QComboBox*>(OperatorTypeComboBoxName);
+CombinedStructureDetails::CombinedStructureWidgetImpl::CombinedStructureWidgetImpl() :
+        Layout(new QFormLayout(this)),
+        OperatorComboBox(new QComboBox()) {
 
-    if (int idx = operatorTypeComboBox->findData(QVariant::fromValue(Operator));
-            idx != -1) {
-        operatorTypeComboBox->setCurrentIndex(idx);
-    }
+    Layout->setContentsMargins(0, 5, 0, 5);
+    Layout->setFieldGrowthPolicy(QFormLayout::FieldGrowthPolicy::FieldsStayAtSizeHint);
+    Layout->setHorizontalSpacing(15);
+
+    for (const auto &operatorAndName : GetOperatorTypeValues())
+        OperatorComboBox->addItem(operatorAndName.Name, QVariant::fromValue(operatorAndName.EnumValue));
+
+    Layout->addRow("Operator Type", OperatorComboBox);
 }
 
-auto CombinedStructureDataImpl::PopulateFromStructureWidget(QWidget* widget) -> void {
-    auto* operatorTypeComboBox = widget->findChild<QComboBox*>(OperatorTypeComboBoxName);
-
-    Operator = operatorTypeComboBox->currentData().value<CtStructureBase::OperatorType>();
+auto CombinedStructureDetails::CombinedStructureWidgetImpl::AddData(Data& data) noexcept -> void {
+    data.Operator = OperatorComboBox->currentData().value<OperatorType>();
 }
 
-const QString CombinedStructureDataImpl::OperatorTypeComboBoxName = "OperatorType";
-
-void CombinedStructureDataImpl::AddSubTypeWidgets(QFormLayout* fLayout) {
-    auto* operatorTypeComboBox = new QComboBox();
-    operatorTypeComboBox->setObjectName(OperatorTypeComboBoxName);
-    for (const auto &operatorAndName : CtStructureBase::GetOperatorTypeValues())
-        operatorTypeComboBox->addItem(operatorAndName.Name, QVariant::fromValue(operatorAndName.EnumValue));
-
-    fLayout->addRow("Operator Type", operatorTypeComboBox);
+auto CombinedStructureDetails::CombinedStructureWidgetImpl::Populate(const Data& data) noexcept -> void {
+    if (int idx = OperatorComboBox->findData(QVariant::fromValue(data.Operator));
+            idx != -1)
+        OperatorComboBox->setCurrentIndex(idx);
 }
 
-void CombinedStructure::SetOperatorType(CtStructureBase::OperatorType operatorType) noexcept {
+CombinedStructure::CombinedStructure(OperatorType operatorType) :
+        Operator(operatorType) {
+}
+
+CombinedStructure::CombinedStructure(const CombinedStructureData& data) : CombinedStructure(data.Data.Operator) {
+    SetData(data);
+}
+
+void CombinedStructure::SetOperatorType(OperatorType operatorType) noexcept {
     Operator = operatorType;
 
     Modified();
@@ -76,11 +84,6 @@ auto CombinedStructure::StructureIdxAt(uidx_t positionIdx) const -> uidx_t {
     return ChildStructureIndices.at(positionIdx);
 }
 
-auto CombinedStructure::HasStructureIndex(uidx_t childIdx) const noexcept -> bool {
-    return std::find(ChildStructureIndices.begin(), ChildStructureIndices.end(), childIdx)
-           != ChildStructureIndices.end();
-}
-
 auto CombinedStructure::PositionIndex(uidx_t childIdx) const -> int {
     auto searchIt = std::find(ChildStructureIndices.begin(), ChildStructureIndices.end(), childIdx);
     if(searchIt == ChildStructureIndices.end())
@@ -90,11 +93,7 @@ auto CombinedStructure::PositionIndex(uidx_t childIdx) const -> int {
 }
 
 auto CombinedStructure::GetViewName() const noexcept -> std::string {
-    return GetOperatorTypeName() + (Name.empty() ? "" : " (" + Name + ")");
-}
-
-auto CombinedStructure::GetOperatorTypeName() const -> std::string {
-    return OperatorTypeToString(Operator);
+    return OperatorTypeToString(Operator) + (Name.empty() ? "" : " (" + Name + ")");
 }
 
 auto CombinedStructure::ReplaceChild(idx_t oldIdx, idx_t newIdx) -> void {
@@ -118,14 +117,4 @@ auto CombinedStructure::SetData(const Data& data) noexcept -> void {
 auto CombinedStructure::operator==(const CombinedStructure& other) const noexcept -> bool {
     return Operator == other.Operator
             && ChildStructureIndices == other.ChildStructureIndices;
-}
-
-auto CombinedStructureUi::GetWidgetData(QWidget* widget) -> CombinedStructureData {
-    CombinedStructureData data {};
-    data.PopulateFromWidget(widget);
-    return data;
-}
-
-auto CombinedStructureUi::GetWidget() -> QWidget* {
-    return CombinedStructureData::GetWidget();
 }

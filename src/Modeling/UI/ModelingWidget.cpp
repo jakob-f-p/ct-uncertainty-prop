@@ -1,13 +1,13 @@
 #include "ModelingWidget.h"
 
-#include "CtStructureTreeModel.h"
 #include "CtStructureDialog.h"
 #include "CtStructureDelegate.h"
+#include "CtStructureTreeModel.h"
 #include "ModelingRenderWidget.h"
 #include "../../App.h"
 
-#include <QItemSelectionModel>
 #include <QDockWidget>
+#include <QItemSelectionModel>
 #include <QMainWindow>
 #include <QPushButton>
 #include <QTreeView>
@@ -83,11 +83,11 @@ void ModelingWidget::ConnectButtons() {
     connect(ResetCameraButton, &QPushButton::clicked, [&]() { RenderWidget->ResetCamera(); });
 
     connect(AddStructureButton, &QPushButton::clicked, [&]() {
-        CtStructureCreateDialog = new BasicStructureDialog(CtStructureDialog::CREATE, this);
+        CtStructureCreateDialog = new BasicStructureDialog(CtStructureDialog::DialogMode::CREATE, this);
         CtStructureCreateDialog->show();
 
         connect(CtStructureCreateDialog, &CtStructureDialog::accepted, [&]() {
-            const BasicStructureDataVariant dialogData = BasicStructureUi::GetWidgetData(CtStructureCreateDialog);
+            const BasicStructureData dialogData = BasicStructureWidget::GetWidgetData(CtStructureCreateDialog);
             const QModelIndex siblingIndex = SelectionModel->currentIndex();
             const QModelIndex newIndex = TreeModel->AddBasicStructure(dialogData, siblingIndex);
             SelectionModel->clearSelection();
@@ -96,30 +96,26 @@ void ModelingWidget::ConnectButtons() {
     });
 
     connect(CombineWithStructureButton, &QPushButton::clicked, [&]() {
-        OpenBasicAndCombinedStructureCreateDialog([&](const BasicStructureDataVariant& basicStructureDataVariant,
+        OpenBasicAndCombinedStructureCreateDialog([&](const BasicStructureData& basicStructureData,
                                                       const CombinedStructureData& combinedStructureData) {
-            TreeModel->CombineWithBasicStructure(basicStructureDataVariant, combinedStructureData);
+            TreeModel->CombineWithBasicStructure(basicStructureData, combinedStructureData);
         });
     });
 
     connect(RefineWithStructureButton, &QPushButton::clicked, [&]() {
-        OpenBasicAndCombinedStructureCreateDialog([&](const BasicStructureDataVariant& basicStructureDataVariant,
+        OpenBasicAndCombinedStructureCreateDialog([&](const BasicStructureData& basicStructureData,
                                                       const CombinedStructureData& combinedStructureData) {
             const QModelIndex index = SelectionModel->currentIndex();
-            TreeModel->RefineWithBasicStructure(basicStructureDataVariant, combinedStructureData, index);
+            TreeModel->RefineWithBasicStructure(basicStructureData, combinedStructureData, index);
         });
     });
 
     connect(RemoveStructureButton, &QPushButton::clicked, [&]() {
         const QModelIndex structureIndex = SelectionModel->currentIndex();
-        const QModelIndex parentIndex = structureIndex.parent();
         TreeModel->RemoveBasicStructure(structureIndex);
         SelectionModel->clearSelection();
 
-        if (parentIndex.isValid())
-            SelectionModel->select(parentIndex, QItemSelectionModel::SelectionFlag::Select);
-        else
-            UpdateButtonStates({}, {});
+        UpdateButtonStates({}, {});
 
         TreeView->expandAll();
     });
@@ -133,14 +129,14 @@ void ModelingWidget::DisableButtons() {
 }
 
 void ModelingWidget::OpenBasicAndCombinedStructureCreateDialog(
-        const std::function<const void(const BasicStructureDataVariant&, const CombinedStructureData&)>& onAccepted) {
+        const std::function<const void(const BasicStructureData&, const CombinedStructureData&)>& onAccepted) {
     auto* dialog = new BasicAndCombinedStructureCreateDialog(this);
     CtStructureCreateDialog = dialog;
     CtStructureCreateDialog->show();
 
     connect(CtStructureCreateDialog, &CtStructureDialog::accepted, [&, dialog, onAccepted]() {
-        BasicStructureDataVariant basicStructureData = dialog->GetBasicStructureData();
-        CombinedStructureData combinedStructureData = dialog->GetCombinedStructureData();
+        BasicStructureData basicStructureData = dialog->GetBasicWidget().GetData();
+        CombinedStructureData combinedStructureData = dialog->GetCombinedWidget().GetData();
 
         onAccepted(basicStructureData, combinedStructureData);
 

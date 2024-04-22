@@ -2,42 +2,99 @@
 
 #include "CtStructure.h"
 
-#include <vtkTimeStamp.h>
+class QComboBox;
 
 class CombinedStructure;
 
-struct CombinedStructureDataImpl {
-    using Structure = CombinedStructure;
+namespace CombinedStructureDetails {
+    Q_NAMESPACE
 
-    CtStructureBase::OperatorType Operator = CtStructureBase::OperatorType::INVALID;
+    enum struct OperatorType : uint8_t {
+        UNION,
+        INTERSECTION,
+        DIFFERENCE
+    };
+    Q_ENUM_NS(OperatorType);
 
-    auto
-    PopulateDerivedStructure(Structure& structure) const noexcept -> void;
+    [[nodiscard]] auto static
+    OperatorTypeToString(OperatorType operatorType) noexcept -> std::string {
+        switch (operatorType) {
+            case OperatorType::UNION:        return "Union";
+            case OperatorType::INTERSECTION: return "Intersection";
+            case OperatorType::DIFFERENCE:   return "Difference";
+        }
+        return "";
+    }
+    ENUM_GET_VALUES(OperatorType, false);
 
-    auto
-    PopulateFromDerivedStructure(const Structure& structure) noexcept -> void;
+    struct CombinedStructureDataImpl {
+        OperatorType Operator = OperatorType::UNION;
 
-    static auto
-    AddSubTypeWidgets(QFormLayout* fLayout) -> void;
+        using Structure = CombinedStructure;
 
-    auto
-    PopulateStructureWidget(QWidget* widget) const -> void;
+        auto
+        PopulateStructure(Structure& structure) const noexcept -> void;
 
-    auto
-    PopulateFromStructureWidget(QWidget* widget) -> void;
+        auto
+        PopulateFromStructure(const Structure& structure) noexcept -> void;
+    };
+
+    class CombinedStructureWidgetImpl : public QWidget {
+    public:
+        using Data = CombinedStructureDataImpl;
+
+        CombinedStructureWidgetImpl();
+
+        auto
+        AddData(Data& data) noexcept -> void;
+
+        auto
+        Populate(const Data& data) noexcept -> void;
+
+    private:
+        QFormLayout* Layout;
+        QComboBox* OperatorComboBox;
+    };
+}
+
+class CombinedStructureData : public CtStructureBaseData<CombinedStructureDetails::CombinedStructureDataImpl> {};
+
+class CombinedStructureWidget : public CtStructureBaseWidget<CombinedStructureDetails::CombinedStructureWidgetImpl,
+                                                             CombinedStructureData> {
+    Q_OBJECT
+
+public:
+    [[nodiscard]] auto static
+    GetWidgetData(QWidget* widget) -> CombinedStructureData { return FindWidget(widget).GetData(); }
+
+    auto static
+    SetWidgetData(QWidget* widget, const CombinedStructureData& data) -> void { FindWidget(widget).Populate(data); }
 
 private:
-    static const QString OperatorTypeComboBoxName;
+    [[nodiscard]] auto static
+    FindWidget(QWidget* widget) -> CombinedStructureWidget& {
+        if (!widget)
+            throw std::runtime_error("Given widget must not be nullptr");
+
+        auto* combinedStructureWidget = widget->findChild<CombinedStructureWidget*>();
+
+        if (!combinedStructureWidget)
+            throw std::runtime_error("No basic structure widget contained in given widget");
+
+        return *combinedStructureWidget;
+    }
 };
 
-using CombinedStructureData = CtStructureBaseData<CombinedStructureDataImpl>;
+using CombinedStructureDetails::OperatorType;
 
 
-class CtStructureTree;
 
 class CombinedStructure : public CtStructureBase {
 public:
     using Data = CombinedStructureData;
+
+    explicit CombinedStructure(OperatorType operatorType = OperatorType::UNION);
+    explicit CombinedStructure(const CombinedStructureData & data);
 
     auto
     SetOperatorType(OperatorType operatorType) noexcept-> void;
@@ -63,9 +120,6 @@ public:
     [[nodiscard]] auto
     PositionIndex(uidx_t childIdx) const -> int;
 
-    [[nodiscard]] auto
-    HasStructureIndex(uidx_t childIdx) const noexcept -> bool;
-
     auto
     ReplaceChild(idx_t oldIdx, idx_t newIdx) -> void;
 
@@ -82,22 +136,9 @@ public:
     operator==(const CombinedStructure& other) const noexcept -> bool;
 
 private:
-    [[nodiscard]] auto
-    GetOperatorTypeName() const -> std::string;
-
-    friend CombinedStructureDataImpl;
     friend struct EvaluateImplicitStructures;
+    friend CombinedStructureDetails::CombinedStructureDataImpl;
 
-    OperatorType Operator = OperatorType::INVALID;
+    OperatorType Operator = OperatorType::UNION;
     std::vector<uidx_t> ChildStructureIndices;
-};
-
-
-class CombinedStructureUi {
-public:
-    [[nodiscard]] auto static
-    GetWidgetData(QWidget* widget) -> CombinedStructureData;
-
-    [[nodiscard]] auto static
-    GetWidget() -> QWidget*;
 };

@@ -13,16 +13,14 @@ auto CtStructureTree::GetMTime() const -> vtkMTimeType {
     return std::max(MTime.GetMTime(), nodeMTime);
 }
 
-void CtStructureTree::AddBasicStructure(BasicStructureVariant&& basicStructureVariant, CombinedStructure* parent) {
+void CtStructureTree::AddBasicStructure(BasicStructure&& basicStructure, CombinedStructure* parent) {
     if (!parent) {  // add as root
         if (HasRoot()) {
             throw std::runtime_error("Another root is already present. Cannot add implicit Structure.");
         }
 
-        std::visit([&](auto& basicStructure) {
-            basicStructure.SetParentIdx(-1);
-            Structures.emplace_back(std::move(basicStructure));
-        }, basicStructureVariant);
+        basicStructure.SetParentIdx(-1);
+        Structures.emplace_back(std::move(basicStructure));
         RootIdx = 0;
         EmitEvent({ CtStructureTreeEventType::Add, 0 });
 
@@ -31,39 +29,37 @@ void CtStructureTree::AddBasicStructure(BasicStructureVariant&& basicStructureVa
     }
 
     // add as child
-    if (CtStructureExists(basicStructureVariant))
+    if (CtStructureExists(basicStructure))
         throw std::runtime_error("CT Structure already exists. Cannot add existing Structure.");
 
-    uidx_t parentIdx = FindIndexOf(*parent);
-    uidx_t insertionIdx = parentIdx + 1;
+    const uidx_t parentIdx = FindIndexOf(*parent);
+    const uidx_t insertionIdx = parentIdx + 1;
 
     IncrementParentAndChildIndices(insertionIdx);
 
     parent->AddStructureIndex(insertionIdx);
 
-    std::visit([&](auto& basicStructure) {
-        basicStructure.SetParentIdx(parentIdx);
-        Structures.emplace(std::next(Structures.begin(), insertionIdx), std::move(basicStructure));
-    }, basicStructureVariant);
+    basicStructure.SetParentIdx(parentIdx);
+    Structures.emplace(std::next(Structures.begin(), insertionIdx), std::move(basicStructure));
 
     EmitEvent({ CtStructureTreeEventType::Add, insertionIdx });
 }
 
-auto CtStructureTree::AddBasicStructure(const BasicStructureDataVariant& basicStructureDataVariant, CombinedStructure* parent) -> void {
-    BasicStructureVariant basicStructureVariant = BasicStructure::CreateBasicStructure(basicStructureDataVariant);
+auto CtStructureTree::AddBasicStructure(const BasicStructureData& basicStructureData, CombinedStructure* parent) -> void {
+    BasicStructure basicStructure(basicStructureData);
 
-    AddBasicStructure(std::move(basicStructureVariant), parent);
+    AddBasicStructure(std::move(basicStructure), parent);
 }
 
-void CtStructureTree::CombineWithBasicStructure(BasicStructureVariant&& basicStructureVariant, CombinedStructure&& combinedStructure) {
+void CtStructureTree::CombineWithBasicStructure(BasicStructure&& basicStructure, CombinedStructure&& combinedStructure) {
     if (!HasRoot())
         throw std::runtime_error("No root is present yet. Cannot combine.");
 
-    if (CtStructureExists(basicStructureVariant) || CtStructureExists(combinedStructure))
+    if (CtStructureExists(basicStructure) || CtStructureExists(combinedStructure))
         throw std::runtime_error("CT Structure already exists. Cannot combine existing Structure.");
 
-    uidx_t combinedInsertionIdx = 0;
-    uidx_t basicInsertionIdx = 1;
+    const uidx_t combinedInsertionIdx = 0;
+    const uidx_t basicInsertionIdx = 1;
 
     IncrementParentAndChildIndices(combinedInsertionIdx);
     IncrementParentAndChildIndices(basicInsertionIdx);
@@ -73,33 +69,29 @@ void CtStructureTree::CombineWithBasicStructure(BasicStructureVariant&& basicStr
 
     combinedStructure.SetParentIdx(-1);
     uidx_t newRootIdx = 0;
-    std::visit([=](auto& basicStructure) { basicStructure.SetParentIdx(newRootIdx); }, basicStructureVariant);
+    basicStructure.SetParentIdx(newRootIdx);
     std::visit([=](auto& structure)      { structure.SetParentIdx(newRootIdx); },      Structures[0]);
 
     RootIdx = newRootIdx;
 
     Structures.emplace(std::next(Structures.begin(), combinedInsertionIdx), std::move(combinedStructure));
-    std::visit([&](auto& basicStructure) { Structures.emplace(std::next(Structures.begin(), basicInsertionIdx),
-                                                                      std::move(basicStructure)); },
-               basicStructureVariant);
+    Structures.emplace(std::next(Structures.begin(), basicInsertionIdx), std::move(basicStructure));
 
     EmitEvent({ CtStructureTreeEventType::Add, combinedInsertionIdx });
     EmitEvent({ CtStructureTreeEventType::Add, basicInsertionIdx });
 }
 
-void CtStructureTree::CombineWithBasicStructure(const BasicStructureDataVariant& basicStructureDataVariant,
+void CtStructureTree::CombineWithBasicStructure(const BasicStructureData& basicStructureData,
                                                 const CombinedStructureData& combinedStructureData) {
-    BasicStructureVariant basicStructureVariant
-            = BasicStructure::CreateBasicStructure(basicStructureDataVariant);
+    BasicStructure basicStructure(basicStructureData);
 
     CombinedStructure combinedStructure;
     combinedStructure.SetData(combinedStructureData);
 
-    CombineWithBasicStructure(std::move(basicStructureVariant),
-                              std::move(combinedStructure));
+    CombineWithBasicStructure(std::move(basicStructure), std::move(combinedStructure));
 }
 
-void CtStructureTree::RefineWithBasicStructure(const BasicStructureDataVariant& newStructureDataVariant,
+void CtStructureTree::RefineWithBasicStructure(const BasicStructureData& newStructureData,
                                                const CombinedStructureData& combinedStructureData,
                                                uidx_t structureToRefineIdx) {
     if (!HasRoot())
@@ -108,17 +100,13 @@ void CtStructureTree::RefineWithBasicStructure(const BasicStructureDataVariant& 
     if (!StructureIdxExists(structureToRefineIdx))
         throw std::runtime_error("Index of structure to be refined does not exist.");
 
-    BasicStructureVariant newBasicStructureVariant = BasicStructure::CreateBasicStructure(newStructureDataVariant);
+    BasicStructure newBasicStructure(newStructureData);
 
     CombinedStructure combinedStructure;
     combinedStructure.SetData(combinedStructureData);
 
-    auto& structureToRefineVariant = GetStructureAt(structureToRefineIdx);
-    if (std::holds_alternative<CombinedStructure>(structureToRefineVariant))
-        throw std::runtime_error("Structure to refine must not be a combined structure");
-
-    idx_t parentIdx = std::visit([&](auto const& structure) { return GetParentIdxOf(structure); },
-                                       structureToRefineVariant);
+    auto& structureToRefine = std::get<BasicStructure>(GetStructureAt(structureToRefineIdx));
+    idx_t parentIdx = GetParentIdxOf(structureToRefine);
 
     uidx_t combinedInsertionIdx = structureToRefineIdx;
     uidx_t basicInsertionIdx = combinedInsertionIdx + 1;
@@ -131,13 +119,11 @@ void CtStructureTree::RefineWithBasicStructure(const BasicStructureDataVariant& 
     combinedStructure.AddStructureIndex(newRefinedIdx);
 
     combinedStructure.SetParentIdx(parentIdx);
-    std::visit([=](auto& structure) { structure.SetParentIdx(combinedInsertionIdx); }, newBasicStructureVariant);
-    std::visit([=](auto& structure) { structure.SetParentIdx(combinedInsertionIdx); }, structureToRefineVariant);
+    newBasicStructure.SetParentIdx(combinedInsertionIdx);
+    structureToRefine.SetParentIdx(combinedInsertionIdx);
 
     Structures.emplace(std::next(Structures.begin(), combinedInsertionIdx), std::move(combinedStructure));
-    std::visit([&](auto& structure) {
-                    Structures.emplace(std::next(Structures.begin(), basicInsertionIdx), std::move(structure));
-               }, newBasicStructureVariant);
+    Structures.emplace(std::next(Structures.begin(), basicInsertionIdx), std::move(newBasicStructure));
 
     EmitEvent({ CtStructureTreeEventType::Add, combinedInsertionIdx });
     EmitEvent({ CtStructureTreeEventType::Add, basicInsertionIdx });
@@ -147,18 +133,15 @@ void CtStructureTree::RefineWithBasicStructure(const BasicStructureDataVariant& 
         return;
     }
 
-    std::visit(Overload { [](auto&) {},
-                          [=](CombinedStructure& combined) { combined.ReplaceChild(newRefinedIdx, combinedInsertionIdx); } },
-               Structures[parentIdx]);
+    auto& parent = std::get<CombinedStructure>(Structures[parentIdx]);
+    parent.ReplaceChild(newRefinedIdx, combinedInsertionIdx);
 }
 
 void CtStructureTree::RemoveBasicStructure(uidx_t removeIdx) {
     if (!StructureIdxExists(removeIdx))
         throw std::runtime_error("Given index of structure to remove does not exist. Cannot remove non-existing structure");
 
-    auto& structureVariant = GetStructureAt(removeIdx);
-    if (std::holds_alternative<CombinedStructure>(structureVariant))
-        throw std::runtime_error("Structure to be removed must not be a combined structure");
+    auto& structure = std::get<BasicStructure>(GetStructureAt(removeIdx));
 
     if (RootIdx == removeIdx) {
         Structures.erase(Structures.begin());
@@ -167,17 +150,16 @@ void CtStructureTree::RemoveBasicStructure(uidx_t removeIdx) {
         return;
     }
 
-    const idx_t parentIdx = std::visit([&](auto const& basicStructure) { return GetParentIdxOf(basicStructure); },
-                                             structureVariant);
+    const idx_t parentIdx = GetParentIdxOf(structure);
     if (parentIdx < 0)
-        throw std::runtime_error("Parent cannot be null");
+        throw std::runtime_error("Parent cannot be nullptr");
 
     auto& parent = std::get<CombinedStructure>(Structures[parentIdx]);
 
     parent.RemoveStructureIndex(removeIdx);
     Structures.erase(std::next(Structures.begin(), removeIdx));
     DecrementParentAndChildIndices(removeIdx);
-    EmitEvent({ CtStructureTreeEventType::Remove, static_cast<uidx_t>(parentIdx) });
+    EmitEvent({ CtStructureTreeEventType::Remove, removeIdx });
 
     if (parent.StructureCount() == 1) {
         const idx_t grandParentIdx = GetParentIdxOf(parent);
@@ -191,7 +173,7 @@ void CtStructureTree::RemoveBasicStructure(uidx_t removeIdx) {
         std::visit([=](auto& structure) { structure.SetParentIdx(grandParentIdx); },
                    Structures[remainingIdx]);
         Structures.erase(std::next(Structures.begin(), parentIdx));
-        DecrementParentAndChildIndices(0);
+        DecrementParentAndChildIndices(parentIdx);
         EmitEvent({ CtStructureTreeEventType::Remove, static_cast<uidx_t>(parentIdx) });
 
         if (grandParentIdx == -1)
@@ -202,15 +184,16 @@ void CtStructureTree::RemoveBasicStructure(uidx_t removeIdx) {
 }
 
 struct EvaluateImplicitStructures {
+    using ModelingResult = CtStructureTree::ModelingResult;
 
-    auto operator() (const auto& basicStructure) const noexcept -> CtStructureBase::ModelingResult {
+    auto operator() (const auto& basicStructure) const noexcept -> ModelingResult {
         return { basicStructure.FunctionValue(point), basicStructure.Tissue.CtNumber, basicStructure.Id };
     }
 
-    auto operator() (const CombinedStructure& combinedStructure) const noexcept -> CtStructureBase::ModelingResult {
-        Point transformedPoint = combinedStructure.GetTransformedPoint(point);
+    auto operator() (const CombinedStructure& combinedStructure) const noexcept -> ModelingResult {
+        const Point transformedPoint = combinedStructure.GetTransformedPoint(point);
 
-        std::vector<CtStructureBase::ModelingResult> results;
+        std::vector<ModelingResult> results;
         const std::vector<uidx_t>& childIndices = combinedStructure.GetChildIndices();
         results.reserve(childIndices.size());
         for (const auto childIdx : childIndices) {
@@ -219,24 +202,24 @@ struct EvaluateImplicitStructures {
         }
 
         static auto compareModelingResults
-                = [](const CtStructureBase::ModelingResult& a, const CtStructureBase::ModelingResult& b) {
+                = [](const ModelingResult& a, const ModelingResult& b) {
             return a.FunctionValue < b.FunctionValue;
         };
 
         switch (combinedStructure.Operator) {
-            case CtStructureBase::OperatorType::UNION:
+            case OperatorType::UNION:
                 return *std::min_element(results.begin(), results.end(), compareModelingResults);
 
-            case CtStructureBase::OperatorType::INTERSECTION:
+            case OperatorType::INTERSECTION:
                 return *std::max_element(results.begin(), results.end(), compareModelingResults);
 
-            case CtStructureBase::OperatorType::DIFFERENCE: {
-                CtStructureBase::ModelingResult firstResult = results[0];
+            case OperatorType::DIFFERENCE: {
+                ModelingResult firstResult = results[0];
 
                 firstResult.FunctionValue = std::reduce(std::next(results.begin()), results.end(),
                                                   firstResult.FunctionValue,
                                                   [](float resultFunctionValue,
-                                                     const CtStructureBase::ModelingResult current) -> float {
+                                                     const ModelingResult current) -> float {
                     float const currentFunctionValue = -current.FunctionValue;
 
                     return resultFunctionValue <= currentFunctionValue
@@ -255,7 +238,7 @@ struct EvaluateImplicitStructures {
     const Point& point;
 };
 
-CtStructureBase::ModelingResult CtStructureTree::FunctionValueAndRadiodensity(Point point) const {
+auto CtStructureTree::FunctionValueAndRadiodensity(Point point) const -> ModelingResult {
     if (!HasRoot())
         throw std::runtime_error("Tree does not have a root. Cannot evaluate");
 
@@ -272,11 +255,8 @@ void CtStructureTree::SetData(uidx_t structureIdx, const QVariant& data) {
         auto combinedData = data.value<CombinedStructureData>();
         std::get<CombinedStructure>(structureVariant).SetData(combinedData);
     } else {
-        auto basicDataVariant = data.value<BasicStructureDataVariant>();
-        std::visit(Overload {
-            [&](SphereData& sphereData) { std::get<SphereStructure>(structureVariant).SetData(sphereData); },
-            [&](BoxData& boxData) { std::get<BoxStructure>(structureVariant).SetData(boxData); }
-        }, basicDataVariant);
+        auto basicData = data.value<BasicStructureData>();
+        std::get<BasicStructure>(structureVariant).SetData(basicData);
     }
 
     EmitEvent({ CtStructureTreeEventType::Edit, structureIdx });
@@ -310,13 +290,8 @@ auto CtStructureTree::CtStructureExists(const TStructure& ctStructure) const -> 
     });
 }
 
-auto CtStructureTree::CtStructureExists(const BasicStructureVariant& basicStructureVariant) const -> bool {
-    return std::visit([&](auto& basicStructure) { return CtStructureExists(basicStructure); },
-                      basicStructureVariant);
-}
-
 void CtStructureTree::AddTreeEventCallback(CtStructureTree::TreeEventCallback&& treeEventCallback) {
-    TreeEventCallbacks.emplace_back(treeEventCallback);
+    TreeEventCallbacks.emplace_back(std::move(treeEventCallback));
 }
 
 auto CtStructureTree::GetRootIdx() const noexcept -> idx_t {
@@ -371,7 +346,7 @@ auto CtStructureTree::IncrementParentAndChildIndices(uidx_t startIdx) -> void {
         std::visit(incrementParentIndicesGreaterThanOrEqualToStart, structureVariant);
         std::visit(Overload{
             [=](CombinedStructure& combinedStructure) { combinedStructure.UpdateChildIndicesGreaterThanOrEqualToBy(startIdx, +1); },
-            [](auto& basicStructure) {},
+            [](BasicStructure&) {},
         }, structureVariant);
     }
 }
@@ -388,7 +363,7 @@ auto CtStructureTree::DecrementParentAndChildIndices(uidx_t startIdx) -> void {
         std::visit(Overload{
                 [=](CombinedStructure& combinedStructure) {
                     combinedStructure.UpdateChildIndicesGreaterThanOrEqualToBy(startIdx, -1); },
-                [](auto& basicStructure) {},
+                [](BasicStructure&) {},
         }, structureVariant);
     }
 }
