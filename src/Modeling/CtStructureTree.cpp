@@ -1,5 +1,7 @@
 #include "CtStructureTree.h"
 
+#include "../Overload.h"
+
 #include "BasicStructure.h"
 #include "CombinedStructure.h"
 
@@ -342,7 +344,7 @@ auto CtStructureTree::IncrementParentAndChildIndices(uidx_t startIdx) -> void {
 
     for (auto& structureVariant : Structures) {
         std::visit(incrementParentIndicesGreaterThanOrEqualToStart, structureVariant);
-        std::visit(Overload{
+        std::visit(Overload {
             [=](CombinedStructure& combinedStructure) { combinedStructure.UpdateChildIndicesGreaterThanOrEqualToBy(startIdx, +1); },
             [](BasicStructure&) {},
         }, structureVariant);
@@ -358,7 +360,7 @@ auto CtStructureTree::DecrementParentAndChildIndices(uidx_t startIdx) -> void {
 
     for (auto& structureVariant : Structures) {
         std::visit(decrementParentIndicesGreaterThanOrEqualToStart, structureVariant);
-        std::visit(Overload{
+        std::visit(Overload {
                 [=](CombinedStructure& combinedStructure) {
                     combinedStructure.UpdateChildIndicesGreaterThanOrEqualToBy(startIdx, -1); },
                 [](BasicStructure&) {},

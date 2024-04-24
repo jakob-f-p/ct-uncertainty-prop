@@ -1,53 +1,44 @@
 #pragma once
 
-#include "StructureArtifact.h"
+#include <QWidget>
 
-class MotionArtifact : public StructureArtifact {
+#include <array>
+
+using FloatPoint = std::array<float, 3>;
+
+struct MotionArtifactData;
+
+class MotionArtifact {
 public:
-    static MotionArtifact* New();
+    using Data = MotionArtifactData;
 
-    auto GetArtifactSubType() const -> SubType override;
-
-    auto EvaluateAtPosition(const double* x) -> float override;
-
-    auto IgnoreCompetingStructures() -> bool override;
-
-    void DeepCopy(StructureArtifact *source) override;
-
-    MotionArtifact(const MotionArtifact&) = delete;
-    void operator=(const MotionArtifact&) = delete;
-
-protected:
-    MotionArtifact() = default;
-    ~MotionArtifact() override = default;
+    [[nodiscard]] auto
+    EvaluateAtPosition(const FloatPoint& point) const noexcept -> float;
 };
 
 
+struct MotionArtifactData {
+    using Artifact = MotionArtifact;
 
-struct MotionArtifactData : StructureArtifactData {
-    struct MotionData {
-    };
-    MotionData Motion;
+    float abc;
 
-    ~MotionArtifactData() override = default;
+    auto
+    PopulateFromArtifact(const MotionArtifact& artifact) noexcept -> void;
 
-protected:
-    friend struct StructureArtifactData;
-
-    void AddSubTypeData(const StructureArtifact& structureArtifact) override;
-
-    void SetSubTypeData(StructureArtifact& structureArtifact) const override;
+    auto
+    PopulateArtifact(MotionArtifact& artifact) const noexcept -> void;
 };
 
 
+class MotionArtifactWidget : public QWidget {
+public:
+    using Data = MotionArtifactData;
 
-class MotionArtifactUi : public StructureArtifactUi {
-protected:
-    friend struct StructureArtifactUi;
+    MotionArtifactWidget();
 
-    static void AddSubTypeWidgets(QFormLayout* fLayout);
+    [[nodiscard]] auto
+    GetData() noexcept -> Data;
 
-    static void AddSubTypeWidgetsData(QWidget* widget, MotionArtifactData& data);
-
-    static void SetSubTypeWidgetsData(QWidget* widget, const MotionArtifactData& data);
+    auto
+    Populate(const Data& data) noexcept -> void;
 };

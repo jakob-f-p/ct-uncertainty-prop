@@ -1,5 +1,7 @@
 #include "BasicStructure.h"
 
+#include "../Overload.h"
+
 #include <QComboBox>
 #include <QFormLayout>
 #include <QGroupBox>
@@ -32,8 +34,7 @@ BasicStructure::BasicStructure(FunctionType functionType) :
             case FunctionType::BOX:    return Box();
             case FunctionType::CONE: { qWarning("Todo");
                                        return Sphere(); }
-            return {};
-        } }()) {
+        } return {}; }()) {
 }
 
 BasicStructure::BasicStructure(const BasicStructureData& data) : BasicStructure(data.Data.FunctionType) {
@@ -45,7 +46,7 @@ auto BasicStructure::GetViewName() const noexcept -> std::string {
 }
 
 auto BasicStructure::GetFunctionType() const noexcept -> FunctionType {
-    return std::visit(Overload{
+    return std::visit(Overload {
         [](const Sphere&) { return FunctionType::SPHERE; },
         [](const Box&)    { return FunctionType::BOX; },
         [](const auto&)       { qWarning("Invalid function type"); return FunctionType::SPHERE; },

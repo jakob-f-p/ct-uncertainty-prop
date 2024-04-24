@@ -9,12 +9,11 @@ struct EnumString {
     EnumType EnumValue = {};
 };
 
-#define ENUM_GET_VALUES(EnumType, hasInvalid)                               \
+#define ENUM_GET_VALUES(EnumType)                                           \
 [[nodiscard]] static auto                                                   \
 Get##EnumType##Values() -> std::vector<EnumString<EnumType>> {              \
     auto metaEnum = QMetaEnum::fromType<EnumType>();                        \
     size_t numberOfEnums = metaEnum.keyCount();                             \
-    if (hasInvalid) numberOfEnums--;                                        \
     std::vector<EnumString<EnumType>> values(numberOfEnums);                \
     for (int i = 0; i < numberOfEnums; i++) {                               \
         auto enumValue = static_cast<EnumType>(metaEnum.value(i));          \

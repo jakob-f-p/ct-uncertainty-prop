@@ -1,41 +1,58 @@
 #include "ImageArtifactConcatenation.h"
 
-#include "CompositeArtifact.h"
+#include "ImageArtifact.h"
 
 ImageArtifactConcatenation::ImageArtifactConcatenation() noexcept :
-        Start() {
-    Start->SetCompType(CompositeArtifact::CompositionType::SEQUENTIAL);
-}
+        Start(new CompositeImageArtifact(CompositeImageArtifact::CompositionType::SEQUENTIAL)) {}
 
-bool ImageArtifactConcatenation::ContainsImageArtifact(const ImageArtifact& imageArtifact) const noexcept {
+ImageArtifactConcatenation::~ImageArtifactConcatenation() = default;
+
+auto ImageArtifactConcatenation::ContainsImageArtifact(const ImageArtifact& imageArtifact) const noexcept -> bool {
     return Start->ContainsImageArtifact(imageArtifact);
 }
 
-void ImageArtifactConcatenation::AddImageArtifact(ImageArtifact& imageArtifact, CompositeArtifact* parent) {
-    if (ContainsImageArtifact(imageArtifact))
-        throw std::runtime_error("Cannot add given image artifact because it already exists within this image artifact concatenation");
+auto ImageArtifactConcatenation::AddImageArtifact(ImageArtifact&& imageArtifact,
+                                                  ImageArtifact* parent,
+                                                  int insertionIdx) -> ImageArtifact& {
+    if (ContainsImageArtifact(imageArtifact) || (parent && !parent->IsComposite()))
+        throw std::runtime_error("Cannot add given image artifact");
 
-    if (!parent) {
-        Start->AddImageArtifact(imageArtifact);
-        return;
-    }
+    if (!parent)
+        return Start->AddImageArtifact(std::move(imageArtifact), insertionIdx);
 
-    if (!ContainsImageArtifact(imageArtifact))
-        throw std::runtime_error("Cannot add given image artifact because given parent does not exist within this image artifact concatenation");
+    imageArtifact.SetParent(parent);
 
-    parent->AddImageArtifact(imageArtifact);
+    return parent->ToComposite().AddImageArtifact(std::move(imageArtifact), insertionIdx);
 }
 
 void ImageArtifactConcatenation::RemoveImageArtifact(ImageArtifact& imageArtifact) {
     if (!ContainsImageArtifact(imageArtifact))
         throw std::runtime_error("Cannot remove given image artifact because it does not exist within this image artifact concatenation");
 
-    if (static_cast<ImageArtifact*>(Start) == &imageArtifact)
+    if (imageArtifact.IsComposite() && Start.get() == &imageArtifact.ToComposite())
         throw std::runtime_error("Cannot remove root image artifact");
 
-    imageArtifact.GetParent()->RemoveImageArtifact(imageArtifact);
+    imageArtifact.GetParent()->ToComposite().RemoveImageArtifact(imageArtifact);
 }
 
-CompositeArtifact& ImageArtifactConcatenation::GetStart() noexcept {
+auto ImageArtifactConcatenation::GetStart() noexcept -> CompositeImageArtifact& {
     return *Start;
+}
+
+auto ImageArtifactConcatenation::Get(uint16_t idx) -> ImageArtifact& {
+    uint16_t currentIdx = 1;
+    ImageArtifact* imageArtifact = Start->Get(idx, currentIdx);
+    if (!imageArtifact)
+        throw std::runtime_error("No image artifact with the given index exists in this concatenation");
+
+    return *imageArtifact;
+}
+
+auto ImageArtifactConcatenation::IndexOf(const ImageArtifact& imageArtifact) const -> uint16_t {
+    uint16_t currentIdx = 1;
+    uint16_t const idx = Start->IndexOf(imageArtifact, currentIdx);
+    if (idx == 0)
+        throw std::runtime_error("Given image artifact does not exist in this concatenation");
+
+    return idx;
 }

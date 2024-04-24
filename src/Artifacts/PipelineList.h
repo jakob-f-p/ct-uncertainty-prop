@@ -2,8 +2,10 @@
 
 #include "Pipeline.h"
 
+#include <functional>
 #include <vector>
 
+struct CtStructureTree;
 struct CtStructureTreeEvent;
 
 class PipelineList {
@@ -34,7 +36,7 @@ public:
     auto
     ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) -> void;
 
-protected:
-    std::vector<Pipeline> Pipelines;
+private:
+    std::vector<std::unique_ptr<Pipeline>> Pipelines;
     std::vector<PipelineEventCallback> PipelineEventCallbacks;
 };

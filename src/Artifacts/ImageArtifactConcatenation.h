@@ -1,28 +1,35 @@
 #pragma once
 
-#include "CompositeArtifact.h"
+#include <memory>
 
-#include <vtkNew.h>
-
+class CompositeImageArtifact;
 class ImageArtifact;
-class CompositeArtifact;
 
 class ImageArtifactConcatenation {
 public:
     ImageArtifactConcatenation() noexcept;
+    ~ImageArtifactConcatenation();
 
     [[nodiscard]] auto
     ContainsImageArtifact(const ImageArtifact& imageArtifact) const noexcept -> bool;
 
     auto
-    AddImageArtifact(ImageArtifact& imageArtifact, CompositeArtifact* parent = nullptr) -> void;
+    AddImageArtifact(ImageArtifact&& imageArtifact,
+                     ImageArtifact* parent = nullptr,
+                     int insertionIdx = -1) -> ImageArtifact&;
 
     auto
     RemoveImageArtifact(ImageArtifact& imageArtifact) -> void;
 
     [[nodiscard]] auto
-    GetStart() noexcept -> CompositeArtifact&;
+    GetStart() noexcept -> CompositeImageArtifact&;
+
+    [[nodiscard]] auto
+    Get(uint16_t idx) -> ImageArtifact&;
+
+    [[nodiscard]] auto
+    IndexOf(const ImageArtifact& imageArtifact) const -> uint16_t;
 
 private:
-    vtkNew<CompositeArtifact> Start;
+    std::unique_ptr<CompositeImageArtifact> Start;
 };

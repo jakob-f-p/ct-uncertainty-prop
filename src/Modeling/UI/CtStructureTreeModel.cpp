@@ -1,7 +1,7 @@
 #include "CtStructureTreeModel.h"
 
-#include "../CtStructureTree.h"
 #include "../../Artifacts/Pipeline.h"
+#include "../../Overload.h"
 
 CtStructureTreeModel::CtStructureTreeModel(CtStructureTree& ctStructureTree, QObject* parent) :
         QAbstractItemModel(parent),
@@ -86,8 +86,8 @@ auto CtStructureTreeModel::data(const QModelIndex& index, int role) const -> QVa
         }
 
         case TreeModelRoles::IS_BASIC_STRUCTURE: {
-            bool isBasic = std::visit(Overload{ [](const CombinedStructure&) { return false; },
-                                                [](const BasicStructure&)    { return true;  } },
+            bool isBasic = std::visit(Overload { [](const CombinedStructure&) { return false; },
+                                                 [](const BasicStructure&)    { return true;  } },
                               structureVariant);
             return isBasic;
         }

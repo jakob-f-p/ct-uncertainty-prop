@@ -9,9 +9,6 @@ class QComboBox;
 class QFormLayout;
 class QGroupBox;
 
-template<class... Ts>
-struct Overload : Ts... { using Ts::operator()...; };
-
 namespace BasicStructureDetails {
     Q_NAMESPACE
 
@@ -31,7 +28,7 @@ namespace BasicStructureDetails {
             default: { qWarning("No matching implicit function type found"); return ""; }
         }
     }
-    ENUM_GET_VALUES(FunctionType, false)
+    ENUM_GET_VALUES(FunctionType)
 
     struct TissueType {
         std::string Name;

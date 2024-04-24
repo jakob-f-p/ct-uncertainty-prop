@@ -1,74 +1,114 @@
 #pragma once
 
-#include "Artifact.h"
+#include "CompositeImageArtifact.h"
+
+#include <QWidget>
+
+class ImageArtifactData;
 
 class QFormLayout;
-class vtkImageAlgorithm;
 
-class CompositeArtifact;
-
-class ImageArtifact : public Artifact {
+class ImageArtifact {
 public:
-    vtkTypeMacro(ImageArtifact, Artifact)
+    explicit ImageArtifact(const ImageArtifactData& data);
+    ImageArtifact(BasicImageArtifact&& basicImageArtifact);
+    ImageArtifact(CompositeImageArtifact&& compositeImageArtifact);
 
-    ~ImageArtifact() override = default;
+    [[nodiscard]] auto
+    GetViewName() const noexcept -> std::string;
 
-    void PrintSelf(std::ostream& os, vtkIndent indent) override;
+    [[nodiscard]] auto
+    ContainsImageArtifact(const ImageArtifact& imageArtifact) -> bool;
 
-    Type GetArtifactType() const override;
+    [[nodiscard]] auto
+    GetParent() const -> ImageArtifact*;
 
-    CompositeArtifact* GetParent();
-    void SetParent(CompositeArtifact* parent);
+    auto
+    SetParent(ImageArtifact* parent) -> void;
 
-    bool IsComposition() const;
+    [[nodiscard]] auto
+    ToComposite() -> CompositeImageArtifact&;
 
-    virtual auto
-    AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm& = 0;
+    [[nodiscard]] auto
+    ToCompositeConst() const -> CompositeImageArtifact const&;
 
-    ImageArtifact(const ImageArtifact&) = delete;
-    void operator=(const ImageArtifact&) = delete;
+    [[nodiscard]] auto
+    IsComposite() const noexcept -> bool;
 
-protected:
-    ImageArtifact();
+    [[nodiscard]] auto
+    NumberOfChildren() const noexcept -> uint16_t;
 
-    friend struct ImageArtifactData;
+    [[nodiscard]] auto
+    Get(uint16_t targetIdx, uint16_t& currentIdx) -> ImageArtifact*;
 
-    CompositeArtifact* Parent;
-};
+    [[nodiscard]] auto
+    IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> uint16_t;
 
-
-
-class ImageArtifactUi;
-
-struct ImageArtifactData : ArtifactData<ImageArtifact, ImageArtifactData> {
-    virtual ~ImageArtifactData() = default;
+    [[nodiscard]] auto
+    GetImageArtifactPointer(const CompositeImageArtifact& compositeImageArtifact) -> ImageArtifact*;
 
 private:
-    friend struct ArtifactData<ImageArtifact, ImageArtifactData>;
-    friend struct ArtifactUi<ImageArtifactUi, ImageArtifactData>;
+    friend struct ImageArtifactData;
 
-    static auto QVariantToData(const QVariant& variant) -> std::unique_ptr<ImageArtifactData>;
-
-    static auto DataToQVariant(const ImageArtifactData& data) -> QVariant;
-
-    static void AddDerivedData(const ImageArtifact& artifact, ImageArtifactData& data);
-
-    static void SetDerivedData(ImageArtifact& artifact, const ImageArtifactData& data);
-
-    static auto Create(Artifact::SubType subType) -> std::unique_ptr<ImageArtifactData>;
+    using ImageArtifactVariant = std::variant<BasicImageArtifact, CompositeImageArtifact>;
+    ImageArtifactVariant Artifact;
 };
 
 
+struct ImageArtifactData {
+    using ImageArtifactDataVariant = std::variant<BasicImageArtifactData, CompositeImageArtifactData>;
 
-class ImageArtifactUi : public ArtifactUi<ImageArtifactUi, ImageArtifactData> {
-protected:
-    friend struct ArtifactUi<ImageArtifactUi, ImageArtifactData>;
+    ImageArtifactData() = default;
+    explicit ImageArtifactData(ImageArtifact const& artifact);
+    explicit ImageArtifactData(BasicImageArtifactData&& data);
+    explicit ImageArtifactData(CompositeImageArtifactData&& data);
 
-    static void AddDerivedWidgets(QFormLayout* fLayout, Artifact::SubType subType = Artifact::SubType::INVALID);
+    auto
+    PopulateFromArtifact(const ImageArtifact& imageArtifact) noexcept -> void;
 
-    static void AddDerivedWidgetsData(QWidget* widget, ImageArtifactData& data);
+    auto
+    PopulateArtifact(ImageArtifact& imageArtifact) const noexcept -> void;
 
-    static void SetDerivedWidgetsData(QWidget* widget, const ImageArtifactData& data);
+    ImageArtifactDataVariant Data;
+};
 
-    static auto GetSubTypeValues() -> std::vector<EnumString<Artifact::SubType>>;
+class ImageArtifactWidget : public QWidget {
+    Q_OBJECT
+
+public:
+    enum struct Type : uint8_t {
+        BASIC,
+        COMPOSITE
+    };
+    Q_ENUM(Type);
+
+    ImageArtifactWidget();
+
+    [[nodiscard]] auto
+    GetData() const noexcept -> ImageArtifactData;
+
+    auto
+    Populate(const ImageArtifactData& data) noexcept -> void;
+
+    [[nodiscard]] auto static
+    GetWidgetData(QWidget* widget) -> ImageArtifactData { return FindWidget(widget).GetData(); }
+
+    auto static
+    SetWidgetData(QWidget* widget, const ImageArtifactData& data) -> void { FindWidget(widget).Populate(data); }
+
+private:
+    [[nodiscard]] auto static
+    FindWidget(QWidget* widget) -> ImageArtifactWidget&;
+
+    auto
+    UpdateTypeWidget() noexcept -> void;
+
+    [[nodiscard]] static auto
+    TypeToString(Type type) noexcept -> std::string;
+
+    using TypeWidgetVariant = std::variant<BasicImageArtifactWidget*, CompositeImageArtifactWidget*>;
+
+    QFormLayout* Layout;
+    QComboBox* TypeComboBox;
+    TypeWidgetVariant TypeWidget;
 };

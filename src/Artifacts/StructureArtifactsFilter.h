@@ -3,7 +3,7 @@
 #include <vtkImageAlgorithm.h>
 #include <vtkImageData.h>
 
-class TreeStructureArtifactCollection;
+class TreeStructureArtifactListCollection;
 
 class StructureArtifactsFilter : public vtkImageAlgorithm {
 public:
@@ -34,7 +34,7 @@ public:
 
     vtkMTimeType GetMTime() override;
 
-    void SetTreeStructureArtifactCollection(TreeStructureArtifactCollection* structureArtifactCollection);
+    void SetTreeStructureArtifactCollection(TreeStructureArtifactListCollection* structureArtifactCollection);
 
 protected:
     StructureArtifactsFilter() = default;
@@ -48,5 +48,5 @@ protected:
 
     void ExecuteDataWithInformation(vtkDataObject *output, vtkInformation *outInfo) override;
 
-    TreeStructureArtifactCollection* StructureArtifactCollection = nullptr;
+    TreeStructureArtifactListCollection* StructureArtifactCollection = nullptr;
 };

@@ -4,16 +4,17 @@
 #include "../StructureArtifact.h"
 
 #include <QDialogButtonBox>
+#include <QVBoxLayout>
 
 ArtifactsDialog::ArtifactsDialog(Mode mode, QWidget* parent) :
         QDialog(parent),
         VLayout(new QVBoxLayout(this)) {
 
-    setMinimumSize(200, 100);
+    setMinimumSize(250, 200);
 
     setModal(true);
 
-    setWindowTitle(mode == EDIT ? "Edit Image Artifact" : "Create Image Artifact");
+    setWindowTitle(mode == Mode::EDIT ? "Edit Image Artifact" : "Create Image Artifact");
 
     VLayout->setAlignment(Qt::AlignTop);
 
@@ -24,7 +25,7 @@ ArtifactsDialog::ArtifactsDialog(Mode mode, QWidget* parent) :
     VLayout->addSpacing(20);
     VLayout->addWidget(dialogButtonBar);
 
-    if (mode == CREATE) {
+    if (mode == Mode::CREATE) {
         connect(dialogButtonBar, &QDialogButtonBox::accepted, this, &QDialog::accept);
         connect(dialogButtonBar, &QDialogButtonBox::rejected, this, &QDialog::reject);
     } else {
@@ -35,12 +36,11 @@ ArtifactsDialog::ArtifactsDialog(Mode mode, QWidget* parent) :
 
 
 
-template class ArtifactsTypeDialog<ImageArtifactUi>;
-template class ArtifactsTypeDialog<StructureArtifactUi>;
+template class ArtifactsTypeDialog<ImageArtifactWidget>;
+template class ArtifactsTypeDialog<StructureArtifactWidget>;
 
-template<typename Ui>
-ArtifactsTypeDialog<Ui>::ArtifactsTypeDialog(ArtifactsDialog::Mode mode, QWidget* parent) :
+template<typename Widget>
+ArtifactsTypeDialog<Widget>::ArtifactsTypeDialog(ArtifactsDialog::Mode mode, QWidget* parent) :
         ArtifactsDialog(mode, parent) {
-    auto* widget = Ui::GetWidget(mode == CREATE);
-    VLayout->insertWidget(0, widget);
+    VLayout->insertWidget(0, new Widget());
 }

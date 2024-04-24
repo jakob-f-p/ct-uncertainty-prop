@@ -1,68 +1,136 @@
 #pragma once
 
-#include "Artifact.h"
+#include "MotionArtifact.h"
+#include "../Enum.h"
 
+#include <QWidget>
+
+#include <vtkTimeStamp.h>
+
+#include <string>
+#include <variant>
+
+class NameLineEdit;
+
+class QComboBox;
 class QFormLayout;
+class QGroupBox;
+
 class vtkImageAlgorithm;
 
-class StructureArtifact : public Artifact {
-public:
-    vtkTypeMacro(StructureArtifact, Artifact)
-    static StructureArtifact* NewStructureArtifact(SubType subType);
 
-    void PrintSelf(std::ostream& os, vtkIndent indent) override;
+using FloatPoint = std::array<float, 3>;
 
-    Type GetArtifactType() const override;
+using StructureArtifactVariant = std::variant<MotionArtifact>;
+using StructureArtifactDataVariant = std::variant<MotionArtifactData>;
+using StructureArtifactWidgetVariant = std::variant<MotionArtifactWidget*>;
 
-    virtual float EvaluateAtPosition(const double x[3]) = 0;
+namespace StructureArtifactDetails {
+    Q_NAMESPACE
 
-    virtual bool IgnoreCompetingStructures() = 0;
+    enum struct SubType : uint8_t {
+        STREAKING,
+        METALLIC,
+        MOTION,
+    };
+    Q_ENUM_NS(SubType);
 
-//    virtual vtkSmartPointer<vtkImageAlgorithm> GetImageFilter() = 0;
+    [[nodiscard]] static auto
+    SubTypeToString(SubType subType) noexcept -> std::string {
+        switch (subType) {
+            case SubType::STREAKING: return "Streaking";
+            case SubType::METALLIC:  return "Metallic";
+            case SubType::MOTION:    return "Motion";
+        }
 
-    virtual void DeepCopy(StructureArtifact* source);
+        return "";
+    }
 
-    StructureArtifact(const StructureArtifact&) = delete;
-    void operator=(const StructureArtifact&) = delete;
+    ENUM_GET_VALUES(SubType);
+}
 
-protected:
-    StructureArtifact() = default;
-    ~StructureArtifact() override = default;
+
+class StructureArtifact;
+
+struct StructureArtifactData {
+    QString Name;
+    QString ViewName;
+    StructureArtifactDataVariant Data;
+
+    auto
+    PopulateFromArtifact(const StructureArtifact& artifact) noexcept -> void;
+
+    auto
+    PopulateArtifact(StructureArtifact& artifact) const noexcept -> void;
 };
 
 
+class StructureArtifact {
+public:
+    using SubType = StructureArtifactDetails::SubType;
 
-class StructureArtifactUi;
+    explicit StructureArtifact(SubType subType = SubType::MOTION);
+    explicit StructureArtifact(StructureArtifactData const& data);
 
-struct StructureArtifactData : ArtifactData<StructureArtifact, StructureArtifactData> {
-    virtual ~StructureArtifactData() = default;
+    [[nodiscard]] auto
+    GetMTime() const noexcept -> vtkMTimeType { return MTime.GetMTime(); }
+
+    [[nodiscard]] auto
+    GetName() const noexcept -> std::string { return Name; }
+
+    auto
+    SetName(const std::string& name) noexcept -> void { Name = name; MTime.Modified(); }
+
+    [[nodiscard]] auto
+    GetViewName() const noexcept -> std::string;
+
+    [[nodiscard]] auto
+    EvaluateAtPosition(const FloatPoint& point) -> float;
+
+    [[nodiscard]] auto
+    GetSubType() const noexcept -> SubType;
 
 private:
-    friend struct ArtifactData<StructureArtifact, StructureArtifactData>;
-    friend struct ArtifactUi<StructureArtifactUi, StructureArtifactData>;
+    friend struct StructureArtifactData;
+    friend class StructureArtifactWidget;
 
-    static std::unique_ptr<StructureArtifactData> QVariantToData(const QVariant& variant);
+    [[nodiscard]] auto static
+    GetSubType(const StructureArtifactVariant& artifactVariant) noexcept -> SubType;
 
-    static QVariant DataToQVariant(const StructureArtifactData& data);
-
-    static void AddDerivedData(const StructureArtifact& artifact, StructureArtifactData& data);
-
-    static void SetDerivedData(StructureArtifact& artifact, const StructureArtifactData& data);
-
-    static std::unique_ptr<StructureArtifactData> Create(Artifact::SubType subType);
+    std::string Name;
+    StructureArtifactVariant Artifact;
+    vtkTimeStamp MTime;
 };
 
 
+class StructureArtifactWidget : public QWidget {
+    Q_OBJECT
 
-class StructureArtifactUi : public ArtifactUi<StructureArtifactUi, StructureArtifactData> {
-protected:
-    friend struct ArtifactUi<StructureArtifactUi, StructureArtifactData>;
+public:
+    StructureArtifactWidget();
 
-    static void AddDerivedWidgets(QFormLayout* fLayout, Artifact::SubType subType = Artifact::SubType::INVALID);
+    [[nodiscard]] auto
+    GetData() const noexcept -> StructureArtifactData;
 
-    static void AddDerivedWidgetsData(QWidget* widget, StructureArtifactData& data);
+    auto
+    Populate(const StructureArtifactData& data) noexcept -> void;
 
-    static void SetDerivedWidgetsData(QWidget* widget, const StructureArtifactData& data);
+    [[nodiscard]] auto static
+    GetWidgetData(QWidget* widget) -> StructureArtifactData { return FindWidget(widget).GetData(); }
 
-    static std::vector<EnumString<Artifact::SubType>> GetSubTypeValues();
+    auto static
+    SetWidgetData(QWidget* widget, const StructureArtifactData& data) -> void { FindWidget(widget).Populate(data); }
+
+private:
+    [[nodiscard]] auto static
+    FindWidget(QWidget* widget) -> StructureArtifactWidget&;
+
+    auto
+    UpdateSubTypeWidget() noexcept -> void;
+
+    QFormLayout* Layout;
+    NameLineEdit* NameEdit;
+    QComboBox* SubTypeComboBox;
+    QGroupBox* SubTypeGroupBox;
+    StructureArtifactWidgetVariant WidgetVariant;
 };

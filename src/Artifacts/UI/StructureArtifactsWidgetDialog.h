@@ -5,12 +5,12 @@
 #include <QStackedLayout>
 
 class ArtifactsDialog;
-class StructureArtifacts;
+class StructureArtifactList;
 class StructureArtifactsModel;
 
 class StructureArtifactsWidgetDialog : public QDialog {
 public:
-    explicit StructureArtifactsWidgetDialog(StructureArtifacts& structureWrapper,
+    explicit StructureArtifactsWidgetDialog(StructureArtifactList& structureWrapper,
                                             std::string& title,
                                             QWidget* parent = nullptr);
 

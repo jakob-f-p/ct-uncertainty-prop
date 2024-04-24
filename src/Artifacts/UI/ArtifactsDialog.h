@@ -1,11 +1,12 @@
 #pragma once
 
 #include <QDialog>
-#include <QVBoxLayout>
+
+class QVBoxLayout;
 
 class ArtifactsDialog : public QDialog {
 public:
-    enum Mode {
+    enum struct Mode : uint8_t {
         EDIT,
         CREATE
     };
@@ -17,14 +18,14 @@ protected:
 };
 
 
-template<typename Ui>
+template<typename Widget>
 class ArtifactsTypeDialog : public ArtifactsDialog {
 public:
     explicit ArtifactsTypeDialog(Mode mode, QWidget* parent = nullptr);
 };
 
-class ImageArtifactUi;
-class StructureArtifactUi;
+class ImageArtifactWidget;
+class StructureArtifactWidget;
 
-typedef ArtifactsTypeDialog<ImageArtifactUi> ImageArtifactDialog;
-typedef ArtifactsTypeDialog<StructureArtifactUi> StructureArtifactDialog;
+using ImageArtifactDialog = ArtifactsTypeDialog<ImageArtifactWidget>;
+using StructureArtifactDialog = ArtifactsTypeDialog<StructureArtifactWidget>;

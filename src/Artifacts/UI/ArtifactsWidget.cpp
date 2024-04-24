@@ -107,7 +107,7 @@ void ArtifactsWidget::SetUpDockWidget() {
     verticalLayout->addWidget(renderingButtonBarWidget);
 
     connect(ResetCameraButton, &QPushButton::clicked, [&]() {
-//        Renderer->GetActiveCamera()->DeepCopy(InitialCamera);
+        Renderer->GetActiveCamera()->DeepCopy(InitialCamera);
         RenderWindowInteractor->Render();
     });
 

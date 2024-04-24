@@ -31,9 +31,8 @@ protected:
                      vtkInformationVector* outputVector) -> int override;
 private:
     [[nodiscard]] auto static
-    InfoPointDataInformationVectorHasArray(vtkInformationVector* infos, Artifact::SubType subType) -> bool;
+    InfoPointDataInformationVectorHasArray(vtkInformationVector* infos, SubType subType) -> bool;
 
     [[nodiscard]] auto static
-    GetContainedSubTypes(vtkInformation* baseInInfo, vtkInformationVector* parallelInInfos) noexcept
-    -> std::vector<Artifact::SubType>;
+    GetContainedSubTypes(vtkInformation* baseInInfo, vtkInformationVector* parallelInInfos) noexcept -> std::vector<SubType>;
 };

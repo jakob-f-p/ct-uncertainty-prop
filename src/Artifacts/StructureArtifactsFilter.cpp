@@ -1,6 +1,6 @@
 #include "StructureArtifactsFilter.h"
 
-#include "StructureWrapper.h"
+#include "StructureArtifactListCollection.h"
 
 #include <vtkDataSetAttributes.h>
 #include <vtkFloatArray.h>
@@ -28,7 +28,7 @@ vtkMTimeType StructureArtifactsFilter::GetMTime() {
 }
 
 void StructureArtifactsFilter::SetTreeStructureArtifactCollection(
-        TreeStructureArtifactCollection* structureArtifactCollection) {
+        TreeStructureArtifactListCollection* structureArtifactCollection) {
     StructureArtifactCollection = structureArtifactCollection;
 }
 

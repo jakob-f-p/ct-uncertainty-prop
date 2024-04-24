@@ -2,45 +2,63 @@
 
 #include <QAbstractItemModel>
 
+using idx_t = int32_t;
+using uidx_t = uint16_t;
+
+class ImageArtifactData;
 class ImageArtifactConcatenation;
 class Pipeline;
-struct ImageArtifactData;
 
 class ImageArtifactsModel : public QAbstractItemModel {
 public:
     explicit ImageArtifactsModel(ImageArtifactConcatenation& imageArtifactConcatenation,
                                  QObject* parent = nullptr);
 
-    QModelIndex index(int row, int column, const QModelIndex& parent) const override;
+    auto
+    index(int row, int column, const QModelIndex& parent) const -> QModelIndex override;
 
-    QModelIndex parent(const QModelIndex& child) const override;
+    auto
+    parent(const QModelIndex& childModelIndex) const -> QModelIndex override;
 
-    int rowCount(const QModelIndex& parent) const override;
+    auto
+    rowCount(const QModelIndex& parentModelIndex) const -> int override;
 
-    int columnCount(const QModelIndex& parent) const override;
+    auto
+    columnCount(const QModelIndex& parent) const -> int override;
 
-    QVariant data(const QModelIndex& index, int role) const override;
+    auto
+    data(const QModelIndex& index, int role) const -> QVariant override;
 
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+    auto
+    headerData(int section, Qt::Orientation orientation, int role) const -> QVariant override;
 
-    Qt::ItemFlags flags(const QModelIndex& index) const override;
+    auto
+    flags(const QModelIndex& index) const -> Qt::ItemFlags override;
 
-    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+    auto
+    setData(const QModelIndex &index, const QVariant &value, int role) -> bool override;
 
-    QModelIndex AddSiblingImageArtifact(const ImageArtifactData& data, const QModelIndex& siblingIndex);
+    auto
+    AddSiblingImageArtifact(const ImageArtifactData& data, const QModelIndex& siblingIndex) -> QModelIndex;
 
-    QModelIndex AddChildImageArtifact(const ImageArtifactData& data, const QModelIndex& parentIndex);
+    auto
+    AddChildImageArtifact(const ImageArtifactData& data, const QModelIndex& parentIndex) -> QModelIndex;
 
-    void RemoveImageArtifact(const QModelIndex& index);
+    void
+    RemoveImageArtifact(const QModelIndex& index);
 
-    QModelIndex MoveUp(const QModelIndex& index);
+    auto
+    MoveUp(const QModelIndex& index) -> QModelIndex;
 
-    QModelIndex MoveDown(const QModelIndex& index);
+    auto
+    MoveDown(const QModelIndex& index) -> QModelIndex;
 
-protected:
-    QModelIndex AddImageArtifact(const ImageArtifactData& data, const QModelIndex& parentIndex, int insertionIndex);
+private:
+    auto
+    AddImageArtifact(const ImageArtifactData& data, const QModelIndex& parentIndex, int insertionIndex) -> QModelIndex;
 
-    QModelIndex Move(const QModelIndex& sourceIndex, int displacement);
+    auto
+    Move(const QModelIndex& sourceIndex, int displacement) -> QModelIndex;
 
     ImageArtifactConcatenation& Concatenation;
 };

@@ -3,19 +3,11 @@
 #include "Filters/GaussianArtifactFilter.h"
 
 #include <QDoubleSpinBox>
-#include <QGroupBox>
 #include <QLabel>
 #include <QFormLayout>
-#include <QWidget>
 
-#include <vtkObjectFactory.h>
-#include <vtkSmartPointer.h>
-
-vtkStandardNewMacro(GaussianArtifact)
-
-Artifact::SubType GaussianArtifact::GetArtifactSubType() const {
-    return SubType::IMAGE_GAUSSIAN;
-}
+GaussianArtifact::GaussianArtifact(GaussianArtifact&&) = default;
+auto GaussianArtifact::operator= (GaussianArtifact&&) -> GaussianArtifact& = default;
 
 vtkImageAlgorithm& GaussianArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) {
     if (!Filter)
@@ -31,61 +23,39 @@ vtkImageAlgorithm& GaussianArtifact::AppendImageFilters(vtkImageAlgorithm& input
     return *Filter;
 }
 
-void GaussianArtifactData::AddSubTypeData(const ImageArtifact& imageArtifact) {
-    auto& artifact = dynamic_cast<const GaussianArtifact&>(imageArtifact);
+auto GaussianArtifactData::PopulateFromArtifact(const GaussianArtifact& artifact) noexcept -> void {
     Mean = artifact.Mean;
     Sd = artifact.Sd;
 }
 
-void GaussianArtifactData::SetSubTypeData(ImageArtifact& imageArtifact) const {
-    auto& artifact = dynamic_cast<GaussianArtifact&>(imageArtifact);
+auto GaussianArtifactData::PopulateArtifact(GaussianArtifact& artifact) const noexcept -> void {
     artifact.Mean = Mean;
     artifact.Sd = Sd;
 }
 
-void GaussianArtifactUi::AddSubTypeWidgets(QFormLayout* fLayout) {
-    auto* group = new QGroupBox("Gaussian");
-    auto* hLayout = new QHBoxLayout(group);
+GaussianArtifactWidget::GaussianArtifactWidget() :
+        MeanSpinBox(new QDoubleSpinBox()),
+        SdSpinBox  (new QDoubleSpinBox()) {
 
-    auto* meanLabel = new QLabel("Mean (μ)");
-    meanLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    hLayout->addWidget(meanLabel);
-    auto* meanSpinBox = new QDoubleSpinBox();
-    meanSpinBox->setObjectName(MeanSpinBoxObjectName);
-    meanSpinBox->setRange(-2000.0, 2000.0);
-    meanSpinBox->setSingleStep(10.0);
-    hLayout->addWidget(meanSpinBox);
+    auto* fLayout = new QFormLayout(this);
 
-    hLayout->addSpacing(5);
-    hLayout->addStretch();
+    MeanSpinBox->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Minimum);
+    MeanSpinBox->setRange(-1000.0, 1000.0);
+    MeanSpinBox->setSingleStep(1.0);
+    fLayout->addRow("Mean", MeanSpinBox);
 
-    auto* sdLabel= new QLabel("SD (σ)");
-    sdLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-    hLayout->addWidget(sdLabel);
-    auto* sdSpinBox = new QDoubleSpinBox();
-    sdSpinBox->setObjectName(SdSpinBoxObjectName);
-    sdSpinBox->setRange(0.0, 1000.0);
-    sdSpinBox->setSingleStep(10.0);
-    hLayout->addWidget(sdSpinBox);
-
-    fLayout->addRow(group);
+    SdSpinBox->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Minimum);
+    SdSpinBox->setRange(-1000.0, 1000.0);
+    SdSpinBox->setSingleStep(1.0);
+    fLayout->addRow("SD", SdSpinBox);
 }
 
-void GaussianArtifactUi::AddSubTypeWidgetsData(QWidget* widget, GaussianArtifactData& data) {
-    auto* meanSpinBox = widget->findChild<QDoubleSpinBox*>(MeanSpinBoxObjectName);
-    auto* sdSpinBox = widget->findChild<QDoubleSpinBox*>(SdSpinBoxObjectName);
-
-    data.Mean = static_cast<float>(meanSpinBox->value());
-    data.Sd = static_cast<float>(sdSpinBox->value());
+auto GaussianArtifactWidget::GetData() noexcept -> GaussianArtifactData {
+    return { static_cast<float>(MeanSpinBox->value()),
+             static_cast<float>(SdSpinBox->value()) };
 }
 
-void GaussianArtifactUi::SetSubTypeWidgetsData(QWidget* widget, const GaussianArtifactData& data) {
-    auto* meanSpinBox = widget->findChild<QDoubleSpinBox*>(MeanSpinBoxObjectName);
-    auto* sdSpinBox = widget->findChild<QDoubleSpinBox*>(SdSpinBoxObjectName);
-
-    meanSpinBox->setValue(data.Mean);
-    sdSpinBox->setValue(data.Sd);
+auto GaussianArtifactWidget::Populate(const GaussianArtifactData& data) noexcept -> void {
+    MeanSpinBox->setValue(data.Mean);
+    SdSpinBox->setValue(data.Sd);
 }
-
-const QString GaussianArtifactUi::MeanSpinBoxObjectName = "MeanSpinBox";
-const QString GaussianArtifactUi::SdSpinBoxObjectName = "SdSpinBox";

@@ -19,15 +19,16 @@ auto PipelineList::GetSize() const noexcept -> int {
 }
 
 auto PipelineList::Get(int idx) noexcept -> Pipeline& {
-    return Pipelines.at(idx);
+    return *Pipelines.at(idx);
 }
 
 auto PipelineList::AddPipeline() -> Pipeline& {
-    return Pipelines.emplace_back(App::GetInstance()->GetCtDataTree().StructureCount());
+    return *Pipelines.emplace_back(std::make_unique<Pipeline>(App::GetInstance()->GetCtDataTree().StructureCount()));
 }
 
 void PipelineList::RemovePipeline(Pipeline& pipeline) {
-    auto removeIt = std::find(Pipelines.begin(), Pipelines.end(), pipeline);
+    auto removeIt = std::find_if(Pipelines.begin(), Pipelines.end(),
+                                 [&](auto& p) { return p.get() == &pipeline; });
     if (removeIt == Pipelines.end())
         throw std::runtime_error("Given pipeline could not be removed because it was not present");
 
@@ -44,7 +45,7 @@ void PipelineList::AddPipelineEventCallback(PipelineEventCallback&& pipelineEven
 
 void PipelineList::ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) {
     for (auto& pipeline: Pipelines)
-        pipeline.ProcessCtStructureTreeEvent(event);
+        pipeline->ProcessCtStructureTreeEvent(event);
 
     for (const auto& callback : PipelineEventCallbacks)
         callback();

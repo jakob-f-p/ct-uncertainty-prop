@@ -2,7 +2,7 @@
 
 #include "CtStructureDialog.h"
 #include "CtStructureTreeModel.h"
-#include "../CtStructureTree.h"
+#include "../../Overload.h"
 
 #include <QComboBox>
 #include <QDialog>
@@ -40,7 +40,7 @@ auto CtStructureDelegate::createEditor(QWidget* parent,
         return nullptr;
 
     const auto& dataVariant = index.data(Qt::UserRole).value<StructureDataVariant>();
-    CtStructureDialog* dialog = std::visit(Overload{
+    CtStructureDialog* dialog = std::visit(Overload {
         [](const CombinedStructureData&) -> CtStructureDialog* { return new CombinedStructureDialog(CtStructureDialog::DialogMode::EDIT); },
         [](const BasicStructureData&) -> CtStructureDialog*    { return new BasicStructureDialog(CtStructureDialog::DialogMode::EDIT); },
     }, dataVariant);
@@ -54,7 +54,7 @@ auto CtStructureDelegate::createEditor(QWidget* parent,
 void CtStructureDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
     const auto& dataVariant = index.data(Qt::UserRole).value<StructureDataVariant>();
 
-    std::visit(Overload{
+    std::visit(Overload {
         [editor](const BasicStructureData& data)    { BasicStructureWidget::SetWidgetData(editor, data); },
         [editor](const CombinedStructureData& data) { CombinedStructureWidget::SetWidgetData(editor, data); }
     }, dataVariant);

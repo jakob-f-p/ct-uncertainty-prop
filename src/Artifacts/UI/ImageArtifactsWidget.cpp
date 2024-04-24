@@ -93,13 +93,13 @@ void ImageArtifactsWidget::RemoveCurrentView() {
 }
 
 void ImageArtifactsWidget::AddChildArtifact() {
-    CreateDialog = new ImageArtifactDialog(ArtifactsDialog::CREATE, this);
+    CreateDialog = new ImageArtifactDialog(ArtifactsDialog::Mode::CREATE, this);
     CreateDialog->show();
 
     connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
-        auto data = ImageArtifactUi::GetWidgetData(CreateDialog);
+        auto data = ImageArtifactWidget::GetWidgetData(CreateDialog);
         QModelIndex parentIndex = GetCurrentSelectionModel()->currentIndex();
-        QModelIndex newIndex = GetCurrentModel()->AddChildImageArtifact(*data, parentIndex);
+        QModelIndex newIndex = GetCurrentModel()->AddChildImageArtifact(data, parentIndex);
 
         GetCurrentSelectionModel()->clear();
         GetCurrentSelectionModel()->setCurrentIndex(newIndex, QItemSelectionModel::SelectionFlag::SelectCurrent);
@@ -107,13 +107,13 @@ void ImageArtifactsWidget::AddChildArtifact() {
 }
 
 void ImageArtifactsWidget::AddSiblingArtifact() {
-    CreateDialog = new ImageArtifactDialog(ArtifactsDialog::CREATE, this);
+    CreateDialog = new ImageArtifactDialog(ArtifactsDialog::Mode::CREATE, this);
     CreateDialog->show();
 
     connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
-        auto data = ImageArtifactUi::GetWidgetData(CreateDialog);
+        auto data = ImageArtifactWidget::GetWidgetData(CreateDialog);
         QModelIndex siblingIndex = GetCurrentSelectionModel()->currentIndex();
-        QModelIndex newIndex = GetCurrentModel()->AddSiblingImageArtifact(*data, siblingIndex);
+        QModelIndex newIndex = GetCurrentModel()->AddSiblingImageArtifact(data, siblingIndex);
 
         GetCurrentSelectionModel()->clear();
         GetCurrentSelectionModel()->setCurrentIndex(newIndex, QItemSelectionModel::SelectionFlag::SelectCurrent);
@@ -148,9 +148,9 @@ void ImageArtifactsWidget::UpdateButtonStatesOnSelectionChange(const QModelIndex
     bool indexIsValid = currentIndex.isValid();
     bool viewIsEmpty = !GetCurrentModel()->hasChildren(GetCurrentView()->rootIndex());
 
-    auto* currentImageArtifact = static_cast<ImageArtifact*>(currentIndex.internalPointer());
     bool isEmptyAndInvalid = !indexIsValid && viewIsEmpty;
-    bool isImageArtifactComposition = indexIsValid && currentImageArtifact->GetArtifactSubType() == Artifact::SubType::IMAGE_COMPOSITION;
+    bool isImageArtifactComposition = indexIsValid
+            && std::holds_alternative<CompositeImageArtifactData>(currentIndex.data(Qt::UserRole).value<ImageArtifactData>().Data);
     bool hasSiblingsBefore = indexIsValid && currentIndex.siblingAtRow(currentIndex.row() - 1).isValid();
     bool hasSiblingsAfter = indexIsValid && currentIndex.siblingAtRow(currentIndex.row() + 1).isValid();
 

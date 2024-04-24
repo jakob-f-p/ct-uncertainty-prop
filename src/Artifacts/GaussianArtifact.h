@@ -1,27 +1,33 @@
 #pragma once
 
-#include "ImageArtifact.h"
+#include <QWidget>
 
 #include <vtkSmartPointer.h>
 
 class GaussianArtifactFilter;
+class GaussianArtifactData;
 
-class GaussianArtifact : public ImageArtifact {
+class QDoubleSpinBox;
+class QFormLayout;
+
+class vtkImageAlgorithm;
+
+
+class GaussianArtifact {
 public:
-    static auto New() -> GaussianArtifact*;
+    using Data = GaussianArtifactData;
 
-    auto GetArtifactSubType() const -> SubType override;
+    GaussianArtifact() = default;
+    GaussianArtifact(GaussianArtifact const&) = delete;
+    auto operator= (GaussianArtifact const&) -> GaussianArtifact& = delete;
+    GaussianArtifact(GaussianArtifact&&);
+    auto operator= (GaussianArtifact&&) -> GaussianArtifact&;
+    ~GaussianArtifact() = default;
 
     auto
-    AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm& override;
-
-    GaussianArtifact(const GaussianArtifact&) = delete;
-    void operator=(const GaussianArtifact&) = delete;
+    AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm&;
 
 private:
-    GaussianArtifact() = default;
-    ~GaussianArtifact() override = default;
-
     friend class GaussianArtifactData;
 
     float Mean = 0.0F;
@@ -32,31 +38,34 @@ private:
 
 
 
-struct GaussianArtifactData : ImageArtifactData {
+struct GaussianArtifactData {
+    using Artifact = GaussianArtifact;
+
     float Mean = 0.0F;
     float Sd = 0.0F;
 
-    ~GaussianArtifactData() override = default;
+    auto
+    PopulateFromArtifact(const GaussianArtifact& artifact) noexcept -> void;
 
-protected:
-    void AddSubTypeData(const ImageArtifact& imageArtifact) override;
-
-    void SetSubTypeData(ImageArtifact& imageArtifact) const override;
+    auto
+    PopulateArtifact(GaussianArtifact& artifact) const noexcept -> void;
 };
 
 
 
-class GaussianArtifactUi : public ImageArtifactUi {
-protected:
-    friend struct ImageArtifactUi;
+class GaussianArtifactWidget : public QWidget {
+public:
+    using Data = GaussianArtifactData;
 
-    static void AddSubTypeWidgets(QFormLayout* fLayout);
+    GaussianArtifactWidget();
 
-    static void AddSubTypeWidgetsData(QWidget* widget, GaussianArtifactData& data);
+    [[nodiscard]] auto
+    GetData() noexcept -> GaussianArtifactData;
 
-    static void SetSubTypeWidgetsData(QWidget* widget, const GaussianArtifactData& data);
+    auto
+    Populate(const GaussianArtifactData& data) noexcept -> void;
 
 private:
-    static const QString MeanSpinBoxObjectName;
-    static const QString SdSpinBoxObjectName;
+    QDoubleSpinBox* MeanSpinBox;
+    QDoubleSpinBox* SdSpinBox;
 };

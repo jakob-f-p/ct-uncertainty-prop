@@ -8,7 +8,7 @@ QWidget* ImageArtifactsDelegate::createEditor(QWidget* parent, const QStyleOptio
     if (!index.isValid())
         return nullptr;
 
-    auto* dialog =  new ImageArtifactDialog(ArtifactsDialog::EDIT, parent);
+    auto* dialog =  new ImageArtifactDialog(ArtifactsDialog::Mode::EDIT, parent);
 
     connect(dialog, &ArtifactsDialog::accepted, this, &ImageArtifactsDelegate::commitEdit);
     connect(dialog, &ArtifactsDialog::rejected, this, &ImageArtifactsDelegate::discardChanges);
@@ -17,16 +17,15 @@ QWidget* ImageArtifactsDelegate::createEditor(QWidget* parent, const QStyleOptio
 }
 
 void ImageArtifactsDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
-    auto* artifact = static_cast<ImageArtifact*>(index.internalPointer());
-    auto data  = ImageArtifactData::GetData(*artifact);
+    auto data = index.data(Qt::UserRole).value<ImageArtifactData>();
 
-    ImageArtifactUi::SetWidgetData(editor, *data);
+    ImageArtifactWidget::SetWidgetData(editor, data);
 }
 
 void ImageArtifactsDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const {
-    auto imageArtifactData = ImageArtifactUi::GetWidgetData(editor);
+    auto data = ImageArtifactWidget::GetWidgetData(editor);
 
-    model->setData(index, ImageArtifactData::ToQVariant(*imageArtifactData));
+    model->setData(index, QVariant::fromValue(data));
 }
 
 void ImageArtifactsDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option,

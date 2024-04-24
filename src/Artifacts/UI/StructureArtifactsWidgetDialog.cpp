@@ -9,7 +9,7 @@
 #include <QLabel>
 #include <QPushButton>
 
-StructureArtifactsWidgetDialog::StructureArtifactsWidgetDialog(StructureArtifacts& structureWrapper,
+StructureArtifactsWidgetDialog::StructureArtifactsWidgetDialog(StructureArtifactList& structureWrapper,
                                                                std::string& title,
                                                                QWidget* parent) :
         QDialog(parent),
@@ -69,13 +69,13 @@ StructureArtifactsWidgetDialog::StructureArtifactsWidgetDialog(StructureArtifact
 }
 
 void StructureArtifactsWidgetDialog::AddArtifact() {
-    CreateDialog = new StructureArtifactDialog(ArtifactsDialog::CREATE, this);
+    CreateDialog = new StructureArtifactDialog(ArtifactsDialog::Mode::CREATE, this);
     CreateDialog->show();
 
     connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
-        auto data = StructureArtifactUi::GetWidgetData(CreateDialog);
+        auto data = StructureArtifactWidget::GetWidgetData(CreateDialog);
         QModelIndex parentIndex = SelectionModel->currentIndex();
-        QModelIndex newIndex = Model->AddStructureArtifact(*data, parentIndex);
+        QModelIndex newIndex = Model->AddStructureArtifact(data, parentIndex);
 
         SelectionModel->clearSelection();
         SelectionModel->select(newIndex, QItemSelectionModel::SelectionFlag::Select);

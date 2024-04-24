@@ -42,7 +42,7 @@ int MergeParallelImageArtifactFilters::RequestInformation(vtkInformation* reques
     vtkInformationVector* parallelInInfos = inputVector[1];
     CopyInputArrayAttributesToOutput(request, inputVector, outputVector);
 
-    std::vector<Artifact::SubType> containedSubTypes = GetContainedSubTypes(baseInInfo, parallelInInfos);
+    std::vector<SubType> containedSubTypes = GetContainedSubTypes(baseInInfo, parallelInInfos);
 
     for (const auto subType : containedSubTypes)
         AddArrayInformationToPointDataVector(subType, outputVector);
@@ -70,11 +70,11 @@ int MergeParallelImageArtifactFilters::RequestData(vtkInformation* request,
     vtkPointData* outputPointData = output->GetPointData();
     outputPointData->PassData(baseInput->GetPointData());
 
-    std::vector<Artifact::SubType> containedSubTypes = GetContainedSubTypes(baseInInfo, parallelInInfos);
+    std::vector<SubType> containedSubTypes = GetContainedSubTypes(baseInInfo, parallelInInfos);
 
     std::vector<vtkFloatArray*> outputArrays;
     std::transform(containedSubTypes.begin(), containedSubTypes.end(), std::back_inserter(outputArrays),
-                   [&, output](Artifact::SubType subType) { return GetArtifactArray(output, subType); });
+                   [&, output](SubType subType) { return GetArtifactArray(output, subType); });
 
     std::vector<float*> artifactArrayWritePointers;
     std::transform(outputArrays.begin(), outputArrays.end(), std::back_inserter(artifactArrayWritePointers),
@@ -82,7 +82,7 @@ int MergeParallelImageArtifactFilters::RequestData(vtkInformation* request,
 
     std::vector<std::vector<vtkFloatArray*>> inputArrays;
     std::transform(containedSubTypes.begin(), containedSubTypes.end(), std::back_inserter(inputArrays),
-                   [&, parallelInInfos](Artifact::SubType subType) {
+                   [&, parallelInInfos](SubType subType) {
         std::vector<vtkFloatArray*> subTypeInputArrays;
 
         for (int i = 0; i < parallelInInfos->GetNumberOfInformationObjects(); i++) {
@@ -134,7 +134,7 @@ int MergeParallelImageArtifactFilters::RequestData(vtkInformation* request,
 }
 
 auto MergeParallelImageArtifactFilters::InfoPointDataInformationVectorHasArray(vtkInformationVector* infos,
-                                                                               Artifact::SubType subType) -> bool {
+                                                                               SubType subType) -> bool {
     for (int i = 0; i < infos->GetNumberOfInformationObjects(); ++i) {
         if (ImageArtifactFilter::PointDataInformationVectorHasArray(infos->GetInformationObject(i), subType))
             return true;
@@ -145,12 +145,12 @@ auto MergeParallelImageArtifactFilters::InfoPointDataInformationVectorHasArray(v
 
 auto MergeParallelImageArtifactFilters::GetContainedSubTypes(vtkInformation* baseInInfo,
                                                              vtkInformationVector* parallelInInfos) noexcept
-                                                             -> std::vector<Artifact::SubType> {
-    std::vector<Artifact::SubType> containedSubTypes;
-    for (auto subType : Artifact::GetImageArtifactTypes()) {
-        if (PointDataInformationVectorHasArray(baseInInfo, subType)
-            || InfoPointDataInformationVectorHasArray(parallelInInfos, subType)) {
-            containedSubTypes.push_back(subType);
+                                                             -> std::vector<SubType> {
+    std::vector<SubType> containedSubTypes;
+    for (auto subTypeAndName : BasicImageArtifactDetails::GetSubTypeValues()) {
+        if (PointDataInformationVectorHasArray(baseInInfo, subTypeAndName.EnumValue)
+            || InfoPointDataInformationVectorHasArray(parallelInInfos, subTypeAndName.EnumValue)) {
+            containedSubTypes.push_back(subTypeAndName.EnumValue);
             break;
         }
     }

@@ -8,7 +8,7 @@ QWidget* StructureArtifactsDelegate::createEditor(QWidget* parent, const QStyleO
     if (!index.isValid())
         return nullptr;
 
-    auto* dialog =  new StructureArtifactDialog(ArtifactsDialog::EDIT, parent);
+    auto* dialog =  new StructureArtifactDialog(ArtifactsDialog::Mode::EDIT, parent);
 
     connect(dialog, &ArtifactsDialog::accepted, this, &StructureArtifactsDelegate::commitEdit);
     connect(dialog, &ArtifactsDialog::rejected, this, &StructureArtifactsDelegate::discardChanges);
@@ -18,15 +18,15 @@ QWidget* StructureArtifactsDelegate::createEditor(QWidget* parent, const QStyleO
 
 void StructureArtifactsDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
     auto* artifact = static_cast<StructureArtifact*>(index.internalPointer());
-    auto data  = StructureArtifactData::GetData(*artifact);
+    auto data = index.data(Qt::UserRole).value<StructureArtifactData>();
 
-    StructureArtifactUi::SetWidgetData(editor, *data);
+    StructureArtifactWidget::SetWidgetData(editor, data);
 }
 
 void StructureArtifactsDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const {
-    auto imageArtifactData = StructureArtifactUi::GetWidgetData(editor);
+    auto imageArtifactData = StructureArtifactWidget::GetWidgetData(editor);
 
-    model->setData(index, StructureArtifactData::ToQVariant(*imageArtifactData));
+    model->setData(index, QVariant::fromValue(imageArtifactData));
 }
 
 void StructureArtifactsDelegate::updateEditorGeometry(QWidget* editor, const QStyleOptionViewItem& option,

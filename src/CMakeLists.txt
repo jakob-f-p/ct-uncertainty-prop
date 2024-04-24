@@ -100,12 +100,6 @@ vtk_module_autoinit(
         MODULES ${VTK_MODULES}
 )
 
-get_cmake_property(_variableNames VARIABLES)
-list (SORT _variableNames)
-foreach (_variableName ${_variableNames})
-    message(STATUS "${_variableName}=${${_variableName}}")
-endforeach()
-
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
     target_compile_definitions(uncertainty_propagation PUBLIC BUILD_TYPE_DEBUG=TRUE)
 endif ()

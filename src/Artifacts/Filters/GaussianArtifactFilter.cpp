@@ -24,7 +24,7 @@ auto GaussianArtifactFilter::RequestInformation(vtkInformation* request,
                                                 vtkInformationVector *outputVector) -> int {
     ImageArtifactFilter::RequestInformation(request, inputVector, outputVector);
 
-    AddArrayInformationToPointDataVector(Artifact::SubType::IMAGE_GAUSSIAN, outputVector);
+    AddArrayInformationToPointDataVector(SubType::GAUSSIAN, outputVector);
 
     return 1;
 }
@@ -34,7 +34,7 @@ void GaussianArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* outpu
 
     vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);
 
-    vtkFloatArray* gaussianNoiseArray = GetArtifactArray(output, Artifact::SubType::IMAGE_GAUSSIAN);
+    vtkFloatArray* gaussianNoiseArray = GetArtifactArray(output, SubType::GAUSSIAN);
     float* gaussianNoiseValues = gaussianNoiseArray->WritePointer(0, numberOfPoints);
 
     auto generateGaussianNoiseValues = [mean = Mean,

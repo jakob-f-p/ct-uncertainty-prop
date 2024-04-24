@@ -25,7 +25,7 @@ namespace CombinedStructureDetails {
         }
         return "";
     }
-    ENUM_GET_VALUES(OperatorType, false);
+    ENUM_GET_VALUES(OperatorType);
 
     struct CombinedStructureDataImpl {
         OperatorType Operator = OperatorType::UNION;

@@ -1,49 +1,26 @@
 #include "MotionArtifact.h"
 
-#include <vtkObjectFactory.h>
-
-vtkStandardNewMacro(MotionArtifact)
-
-Artifact::SubType MotionArtifact::GetArtifactSubType() const {
-    return SubType::STRUCTURE_MOTION;
-}
-
-float MotionArtifact::EvaluateAtPosition(const double *x) {
-    vtkErrorMacro("TODO: Implement");
+auto MotionArtifact::EvaluateAtPosition(const FloatPoint& point) const noexcept -> float {
+    qWarning("TODO: Implement");
     return 0;
 }
 
-bool MotionArtifact::IgnoreCompetingStructures() {
-    vtkErrorMacro("TODO: Implement");
-    return false;
-}
-
-void MotionArtifact::DeepCopy(StructureArtifact *source) {
-    StructureArtifact::DeepCopy(source);
-}
-
-
-
-void MotionArtifactData::AddSubTypeData(const StructureArtifact& structureArtifact) {
-    auto& artifact = dynamic_cast<const MotionArtifact&>(structureArtifact);
+auto MotionArtifactData::PopulateFromArtifact(const MotionArtifact& artifact) noexcept -> void {
     qWarning("Todo");
 }
 
-void MotionArtifactData::SetSubTypeData(StructureArtifact& structureArtifact) const {
-    auto& artifact = dynamic_cast<MotionArtifact&>(structureArtifact);
+auto MotionArtifactData::PopulateArtifact(MotionArtifact& artifact) const noexcept -> void {
     qWarning("Todo");
 }
 
+MotionArtifactWidget::MotionArtifactWidget() {
 
-
-void MotionArtifactUi::AddSubTypeWidgets(QFormLayout* fLayout) {
-    qWarning("Todo");
 }
 
-void MotionArtifactUi::AddSubTypeWidgetsData(QWidget* widget, MotionArtifactData& data) {
-    qWarning("Todo");
+auto MotionArtifactWidget::GetData() noexcept -> MotionArtifactWidget::Data {
+    return MotionArtifactWidget::Data();
 }
 
-void MotionArtifactUi::SetSubTypeWidgetsData(QWidget* widget, const MotionArtifactData& data) {
-    qWarning("Todo");
+auto MotionArtifactWidget::Populate(const MotionArtifactWidget::Data& data) noexcept -> void {
+
 }

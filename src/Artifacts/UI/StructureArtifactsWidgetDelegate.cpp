@@ -19,7 +19,7 @@ auto StructureArtifactsWidgetDelegate::createEditor(QWidget* parent,
     if (structureIdx < 0)
         throw std::runtime_error("Invalid internal id");
 
-    auto& structureWrapper = APipeline.GetArtifactStructureWrapper(structureIdx);
+    auto& structureWrapper = APipeline.GetStructureArtifactListCollectionForIdx(structureIdx);
     auto title = index.data().toString().toStdString();
     auto* dialog = new StructureArtifactsWidgetDialog(structureWrapper, title, parent);
 

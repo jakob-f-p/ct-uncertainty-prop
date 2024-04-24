@@ -48,7 +48,7 @@ int ImageArtifactFilter::RequestData(vtkInformation* request,
     return 1;
 }
 
-auto ImageArtifactFilter::AddArrayInformationToPointDataVector(Artifact::SubType subType,
+auto ImageArtifactFilter::AddArrayInformationToPointDataVector(SubType subType,
                                                                vtkInformationVector* outputVector) -> void {
     vtkInformation* outInfo = outputVector->GetInformationObject(0);
 
@@ -66,12 +66,12 @@ auto ImageArtifactFilter::AddArrayInformationToPointDataVector(Artifact::SubType
     arrayDataInformation->FastDelete();
 }
 
-auto ImageArtifactFilter::GetArrayName(Artifact::SubType subType) noexcept -> std::string {
-    return Artifact::SubTypeToString(subType);
+auto ImageArtifactFilter::GetArrayName(SubType subType) noexcept -> std::string {
+    return SubTypeToString(subType);
 }
 
 auto ImageArtifactFilter::PointDataInformationVectorHasArray(vtkInformation* info,
-                                                             Artifact::SubType subType) -> bool {
+                                                             SubType subType) -> bool {
     vtkInformationVector* pointDataVector = info->Get(vtkDataObject::POINT_DATA_VECTOR());
     for (int i = 0; i < pointDataVector->GetNumberOfInformationObjects(); ++i) {
         vtkInformation* pointDataInfo = pointDataVector->GetInformationObject(i);
@@ -95,7 +95,7 @@ auto ImageArtifactFilter::GetRadiodensitiesArray(vtkImageData* output) noexcept 
     return vtkFloatArray::SafeDownCast(output->GetPointData()->GetAbstractArray("Radiodensities"));
 }
 
-auto ImageArtifactFilter::GetArtifactArray(vtkImageData* output, Artifact::SubType subType) noexcept -> vtkFloatArray* {
+auto ImageArtifactFilter::GetArtifactArray(vtkImageData* output, SubType subType) noexcept -> vtkFloatArray* {
     vtkFloatArray* dataArray = vtkFloatArray::SafeDownCast(
             output->GetPointData()->GetAbstractArray(GetArrayName(subType).data()));
 
