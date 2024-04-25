@@ -8,7 +8,8 @@
 #include <QVBoxLayout>
 
 CtStructureDialog::CtStructureDialog(DialogMode mode, QWidget* parent) :
-        QDialog(parent) {
+        QDialog(parent),
+        Layout(new QVBoxLayout(this)) {
 
     setMinimumSize(800, 800);
     setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
@@ -17,7 +18,6 @@ CtStructureDialog::CtStructureDialog(DialogMode mode, QWidget* parent) :
 
     setWindowTitle(mode == DialogMode::CREATE ? "Create" : "Edit");
 
-    Layout = new QVBoxLayout(this);
     Layout->setSizeConstraint(QLayout::SizeConstraint::SetMinimumSize);
 
     auto* dialogButtonBar = new QDialogButtonBox();

@@ -32,7 +32,7 @@ auto GaussianArtifactFilter::RequestInformation(vtkInformation* request,
 void GaussianArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
                                                              vtkImageData* output,
                                                              vtkInformation* outInfo) {
-    vtkIdType numberOfPoints = output->GetNumberOfPoints();
+    vtkIdType const numberOfPoints = output->GetNumberOfPoints();
 
     vtkNew<vtkFloatArray> newNoiseValueArray;
     newNoiseValueArray->SetNumberOfComponents(1);

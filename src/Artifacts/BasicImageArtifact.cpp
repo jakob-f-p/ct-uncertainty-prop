@@ -78,6 +78,7 @@ auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::UpdateSubTypeWidge
     BasicImageArtifactWidgetVariant newWidgetVariant = [subType]() {
         switch (subType) {
             case SubType::GAUSSIAN:    return BasicImageArtifactWidgetVariant { new GaussianArtifactWidget() };
+            case SubType::SALT_PEPPER: return BasicImageArtifactWidgetVariant { new SaltPepperArtifactWidget() };
             default: qWarning("Todo");
         }
         return BasicImageArtifactWidgetVariant { new GaussianArtifactWidget() };
@@ -98,7 +99,10 @@ auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::UpdateSubTypeWidge
 
 
 BasicImageArtifact::BasicImageArtifact(const BasicImageArtifactData& data) :
-        BasicImageArtifact(GetSubType(BasicImageArtifactVariant { std::visit([](auto& data) { return DataArtifactT<decltype(data)>{}; }, data.Data ) } )) {
+        BasicImageArtifact(GetSubType(
+                std::visit([](auto& data) { return BasicImageArtifactVariant { DataArtifactT<decltype(data)>{} }; },
+                           data.Data)
+                           )) {
     data.PopulateArtifact(*this);
 }
 
@@ -106,7 +110,7 @@ BasicImageArtifact::BasicImageArtifact(SubType subType) :
         Artifact([subType]() -> BasicImageArtifactVariant {
             switch (subType) {
                 case SubType::GAUSSIAN:    return GaussianArtifact();
-                case SubType::SALT_PEPPER:
+                case SubType::SALT_PEPPER: return SaltPepperArtifact();
                 case SubType::RING:
                 case SubType::CUPPING:
                 case SubType::WIND_MILL:
@@ -123,16 +127,14 @@ auto BasicImageArtifact::GetSubType() const noexcept -> SubType {
 
 auto BasicImageArtifact::GetSubType(const BasicImageArtifactVariant& artifact) noexcept -> SubType {
     return std::visit(Overload{
-            [](const GaussianArtifact&)  { return SubType::GAUSSIAN; },
+            [](const GaussianArtifact&)   { return SubType::GAUSSIAN; },
+            [](const SaltPepperArtifact&) { return SubType::SALT_PEPPER; },
             [](auto&) { qWarning("Todo"); return SubType::GAUSSIAN; }
     }, artifact);
 }
 
 auto BasicImageArtifact::GetViewName() const noexcept -> std::string {
-    std::string subTypeFullName = SubTypeToString(GetSubType());
-    std::string const subTypeViewName = subTypeFullName.erase(0, subTypeFullName.find(' ') + 1);
-    std::string const viewName = subTypeViewName + (Name.empty() ? "" : (" (" + Name + ")"));
-    return viewName;
+    return SubTypeToString(GetSubType()) + (Name.empty() ? "" : (" (" + Name + ")"));
 }
 
 auto BasicImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm& {

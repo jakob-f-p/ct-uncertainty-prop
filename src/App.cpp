@@ -135,4 +135,9 @@ void App::InitializeWithTestData() {
 
     BasicImageArtifact gaussianArtifact4(BasicImageArtifactDetails::SubType::GAUSSIAN);
     imageArtifactConcatenation.AddImageArtifact(std::move(gaussianArtifact4));
+
+    SaltPepperArtifact saltPepperArtifact;
+    saltPepperArtifact.SetSaltAmount(0.05);
+    saltPepperArtifact.SetSaltIntensity(1000.0);
+    imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(saltPepperArtifact) } });
 }

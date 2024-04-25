@@ -3,6 +3,7 @@
 #include "ImageArtifactBase.h"
 
 #include "GaussianArtifact.h"
+#include "SaltPepperArtifact.h"
 
 #include <QMetaObject>
 
@@ -40,9 +41,9 @@ namespace BasicImageArtifactDetails {
 
     ENUM_GET_VALUES(SubType);
 
-    using BasicImageArtifactWidgetVariant = std::variant<GaussianArtifactWidget*>;
+    using BasicImageArtifactWidgetVariant = std::variant<GaussianArtifactWidget*, SaltPepperArtifactWidget*>;
 
-    struct BasicImageArtifactDataVariant : std::variant<GaussianArtifactData> {
+    struct BasicImageArtifactDataVariant : std::variant<GaussianArtifactData, SaltPepperArtifactData> {
         using Artifact = BasicImageArtifact;
 
         auto
@@ -80,10 +81,11 @@ class BasicImageArtifactData;
 class BasicImageArtifact : public ImageArtifactBaseDetails::ImageArtifactBase {
 public:
     using SubType = BasicImageArtifactDetails::SubType;
-    using BasicImageArtifactVariant = std::variant<GaussianArtifact>;
+    using BasicImageArtifactVariant = std::variant<GaussianArtifact, SaltPepperArtifact>;
 
     explicit BasicImageArtifact(const BasicImageArtifactData& data);
     explicit BasicImageArtifact(SubType subType = SubType::GAUSSIAN);
+    explicit BasicImageArtifact(auto&& basicArtifact) : Artifact(std::move(basicArtifact)) {}
 
     [[nodiscard]] auto
     GetSubType() const noexcept -> SubType;

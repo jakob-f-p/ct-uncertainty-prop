@@ -9,9 +9,7 @@
 #include <QGroupBox>
 
 auto StructureArtifact::GetViewName() const noexcept -> std::string {
-    std::string subTypeFullName = SubTypeToString(GetSubType());
-    std::string const subTypeViewName = subTypeFullName.erase(0, subTypeFullName.find(' ') + 1);
-    std::string const viewName = subTypeViewName + (Name.empty() ? "" : (" (" + Name + ")"));
+    std::string const viewName = SubTypeToString(GetSubType()) + (Name.empty() ? "" : (" (" + Name + ")"));
     return viewName;
 }
 

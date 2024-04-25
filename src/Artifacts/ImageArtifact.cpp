@@ -143,9 +143,9 @@ auto ImageArtifactWidget::GetData() const noexcept -> ImageArtifactData {
 }
 
 auto ImageArtifactWidget::Populate(const ImageArtifactData& data) noexcept -> void {
-    Type type = std::visit(Overload {
-        [&](BasicImageArtifactData const& data) { return Type::BASIC; },
-        [&](CompositeImageArtifactData const& data) { return Type::COMPOSITE; }
+    Type const type = std::visit(Overload {
+        [&](BasicImageArtifactData const&) { return Type::BASIC; },
+        [&](CompositeImageArtifactData const&) { return Type::COMPOSITE; }
     }, data.Data);
 
     if (const int idx = TypeComboBox->findData(QVariant::fromValue(type)); idx != -1)

@@ -10,7 +10,9 @@ ArtifactsDialog::ArtifactsDialog(Mode mode, QWidget* parent) :
         QDialog(parent),
         VLayout(new QVBoxLayout(this)) {
 
-    setMinimumSize(250, 200);
+    VLayout->setSizeConstraint(QLayout::SizeConstraint::SetFixedSize);
+    setMinimumSize(450, 200);
+    setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 
     setModal(true);
 
