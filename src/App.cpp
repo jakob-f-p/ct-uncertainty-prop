@@ -137,7 +137,13 @@ void App::InitializeWithTestData() {
     imageArtifactConcatenation.AddImageArtifact(std::move(gaussianArtifact4));
 
     SaltPepperArtifact saltPepperArtifact;
-    saltPepperArtifact.SetSaltAmount(0.05);
+    saltPepperArtifact.SetSaltAmount(0.001);
     saltPepperArtifact.SetSaltIntensity(1000.0);
     imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(saltPepperArtifact) } });
+
+    RingArtifact ringArtifact;
+    ringArtifact.SetBrightIntensity(500.0);
+    ringArtifact.SetBrightRingWidth(15.0);
+    ringArtifact.SetDarkRingWidth(5.0);
+    imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(ringArtifact) } });
 }

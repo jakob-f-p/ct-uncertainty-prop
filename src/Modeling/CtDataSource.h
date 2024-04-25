@@ -35,6 +35,8 @@ protected:
     CtDataSource();
     ~CtDataSource() override = default;
 
+    friend class RingArtifactFilter;
+
     vtkExecutive* CreateDefaultExecutive() override;
 
     int RequestInformation(vtkInformation *request,

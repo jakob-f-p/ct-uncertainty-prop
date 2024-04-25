@@ -79,6 +79,7 @@ auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::UpdateSubTypeWidge
         switch (subType) {
             case SubType::GAUSSIAN:    return BasicImageArtifactWidgetVariant { new GaussianArtifactWidget() };
             case SubType::SALT_PEPPER: return BasicImageArtifactWidgetVariant { new SaltPepperArtifactWidget() };
+            case SubType::RING:        return BasicImageArtifactWidgetVariant { new RingArtifactWidget() };
             default: qWarning("Todo");
         }
         return BasicImageArtifactWidgetVariant { new GaussianArtifactWidget() };
@@ -111,7 +112,7 @@ BasicImageArtifact::BasicImageArtifact(SubType subType) :
             switch (subType) {
                 case SubType::GAUSSIAN:    return GaussianArtifact();
                 case SubType::SALT_PEPPER: return SaltPepperArtifact();
-                case SubType::RING:
+                case SubType::RING:        return RingArtifact();
                 case SubType::CUPPING:
                 case SubType::WIND_MILL:
                 case SubType::STAIR_STEP:
@@ -129,6 +130,7 @@ auto BasicImageArtifact::GetSubType(const BasicImageArtifactVariant& artifact) n
     return std::visit(Overload{
             [](const GaussianArtifact&)   { return SubType::GAUSSIAN; },
             [](const SaltPepperArtifact&) { return SubType::SALT_PEPPER; },
+            [](const RingArtifact&)       { return SubType::RING; },
             [](auto&) { qWarning("Todo"); return SubType::GAUSSIAN; }
     }, artifact);
 }

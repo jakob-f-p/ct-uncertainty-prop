@@ -87,7 +87,7 @@ void CtDataSource::ExecuteDataWithInformation(vtkDataObject *output, vtkInformat
     vtkImageData* data = vtkImageData::SafeDownCast(output);
     int* updateExtent = outInfo->Get(vtkStreamingDemandDrivenPipeline::UPDATE_EXTENT());
     data->SetExtent(updateExtent);
-    vtkIdType numberOfPoints = data->GetNumberOfPoints();
+    vtkIdType const numberOfPoints = data->GetNumberOfPoints();
 
     vtkFloatArray* radiodensityArray = vtkFloatArray::New();
     radiodensityArray->SetNumberOfComponents(1);
@@ -204,7 +204,6 @@ void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endP
                 xEnd = x2;
 
             for (; x <= xEnd; x++) {
-                VolumeData->GetPoint(pointId, point.data());
                 const CtStructureTree::ModelingResult result = Tree->FunctionValueAndRadiodensity(point);
 
                 bool pointIsWithinStructure = result.FunctionValue < 0;

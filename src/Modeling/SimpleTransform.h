@@ -6,6 +6,8 @@
 
 #include <array>
 
+class CoordinateRowWidget;
+
 class QDoubleSpinBox;
 class QGridLayout;
 class vtkTransform;
@@ -64,77 +66,6 @@ auto SimpleTransform::TransformPoint(Point point) const noexcept -> Point {
              Matrix(1, 0) * point[0] + Matrix(1, 1) * point[1] + Matrix(1, 2) * point[2] + Matrix(1, 3),
              Matrix(2, 0) * point[0] + Matrix(2, 1) * point[1] + Matrix(2, 2) * point[2] + Matrix(2, 3) };
 }
-
-class CoordinateRowWidget : public QWidget {
-    Q_OBJECT
-
-public:
-    struct NumericSettings {
-        double Min;
-        double Max;
-        double StepSize;
-        double DefaultValue;
-        QString Suffix;
-    };
-
-    explicit CoordinateRowWidget(bool hasLabel);
-    explicit CoordinateRowWidget(NumericSettings numericSettings, const QString& labelText = {});
-
-    auto
-    AppendCoordinatesRow(const NumericSettings& numericSettings, const QString& labelText = {}) -> void;
-
-    struct RowData {
-        double X;
-        double Y;
-        double Z;
-
-        RowData(double x, double y, double z) : X(x), Y(y), Z(z) {};
-        explicit RowData(const std::array<double, 3>& array) : X(array[0]), Y(array[1]), Z(array[2]) {};
-
-        [[nodiscard]] auto
-        ToArray() const noexcept -> std::array<double, 3> { return { X, Y, Z }; }
-    };
-
-    [[nodiscard]] auto
-    GetRowData(uint8_t rowIdx) const -> RowData;
-
-    [[nodiscard]] auto
-    GetRowData() const noexcept -> std::vector<RowData>;
-
-    auto
-    SetRowData(uint8_t rowIdx, RowData data) -> void;
-
-private:
-    struct SpinBoxRow {
-        QDoubleSpinBox* X;
-        QDoubleSpinBox* Y;
-        QDoubleSpinBox* Z;
-
-        auto
-        SetSpinBox(uint8_t idx, QDoubleSpinBox& spinBox) -> void {
-            switch (idx) {
-                case 0: X = &spinBox; break;
-                case 1: Y = &spinBox; break;
-                case 2: Z = &spinBox; break;
-            }
-        }
-        auto operator[] (uint8_t idx) -> QDoubleSpinBox* {
-            switch (idx) {
-                case 0: return X;
-                case 1: return Y;
-                case 2: return Z;
-                default: return nullptr;
-            }
-        }
-    };
-
-    std::vector<SpinBoxRow> Rows;
-
-    bool HasLabel;
-    QGridLayout* GLayout;
-
-    const QStringList AxisNames = { "x", "y", "z" };
-};
 
 class SimpleTransformWidget : public QWidget {
     Q_OBJECT
