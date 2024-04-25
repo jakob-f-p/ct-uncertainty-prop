@@ -8,6 +8,7 @@
 #include <vtkObjectFactory.h>
 #include <vtkPointData.h>
 #include <vtkSMPTools.h>
+#include <vtkStreamingDemandDrivenPipeline.h>
 
 vtkStandardNewMacro(MergeParallelImageArtifactFilters)
 
@@ -39,10 +40,18 @@ int MergeParallelImageArtifactFilters::RequestInformation(vtkInformation* reques
                                                           vtkInformationVector** inputVector,
                                                           vtkInformationVector* outputVector) {
     vtkInformation* baseInInfo = inputVector[0]->GetInformationObject(0);
+    vtkInformation* outInfo = outputVector->GetInformationObject(0);
     vtkInformationVector* parallelInInfos = inputVector[1];
-    CopyInputArrayAttributesToOutput(request, inputVector, outputVector);
 
-    std::vector<SubType> containedSubTypes = GetContainedSubTypes(baseInInfo, parallelInInfos);
+    CopyInputArrayAttributesToOutput(request, inputVector, outputVector);
+    outInfo->CopyEntry(baseInInfo, vtkStreamingDemandDrivenPipeline::WHOLE_EXTENT());
+    outInfo->CopyEntry(baseInInfo, vtkDataObject::ORIGIN());
+    outInfo->CopyEntry(baseInInfo, vtkDataObject::SPACING());
+    outInfo->CopyEntry(baseInInfo, vtkDataObject::POINT_DATA_VECTOR());
+
+    outInfo->Set(CAN_PRODUCE_SUB_EXTENT(), 1);
+
+    std::vector<SubType> const containedSubTypes = GetContainedSubTypes(baseInInfo, parallelInInfos);
 
     for (const auto subType : containedSubTypes)
         AddArrayInformationToPointDataVector(subType, outputVector);
@@ -64,8 +73,8 @@ int MergeParallelImageArtifactFilters::RequestData(vtkInformation* request,
         parallelInputs.push_back(vtkImageData::SafeDownCast(parallelInfo->Get(vtkDataObject::DATA_OBJECT())));
     }
     vtkImageData* output = vtkImageData::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
-    vtkIdType numberOfPoints = output->GetNumberOfPoints();
-
+    output->SetExtent(baseInput->GetExtent());
+    vtkIdType const numberOfPoints = output->GetNumberOfPoints();
 
     vtkPointData* outputPointData = output->GetPointData();
     outputPointData->PassData(baseInput->GetPointData());
@@ -74,7 +83,8 @@ int MergeParallelImageArtifactFilters::RequestData(vtkInformation* request,
 
     std::vector<vtkFloatArray*> outputArrays;
     std::transform(containedSubTypes.begin(), containedSubTypes.end(), std::back_inserter(outputArrays),
-                   [&, output](SubType subType) { return GetArtifactArray(output, subType); });
+                   [&, baseInput, output](SubType subType) { return GetDeepCopiedArtifactArray(baseInput, output, subType); });
+    outputArrays.push_back(GetDeepCopiedRadiodensitiesArray(baseInput, output));
 
     std::vector<float*> artifactArrayWritePointers;
     std::transform(outputArrays.begin(), outputArrays.end(), std::back_inserter(artifactArrayWritePointers),
@@ -94,6 +104,11 @@ int MergeParallelImageArtifactFilters::RequestData(vtkInformation* request,
 
         return subTypeInputArrays;
     });
+    std::vector<vtkFloatArray*> inputRadiodensityArrays;
+    std::transform(parallelInputs.begin(), parallelInputs.end(), std::back_inserter(inputRadiodensityArrays),
+                   [&](vtkImageData* parallelInput) { return GetRadiodensitiesArray(parallelInput); });
+    inputArrays.push_back(inputRadiodensityArrays);
+
 
     std::vector<std::vector<const float*>> inputArrayReadPointers;
     std::transform(inputArrays.begin(), inputArrays.end(), std::back_inserter(inputArrayReadPointers),
@@ -107,19 +122,26 @@ int MergeParallelImageArtifactFilters::RequestData(vtkInformation* request,
 
     auto addInputArrayDeltasToOutputArrays = [containedSubTypes, artifactArrayWritePointers, inputArrayReadPointers]
     (vtkIdType pointId, vtkIdType endPointId) {
-        for (int i = 0; i < containedSubTypes.size(); ++i) {
+        vtkIdType const startPointId = pointId;
+
+        for (int i = 0; i < artifactArrayWritePointers.size(); ++i) {
             float* outArray = artifactArrayWritePointers[i];
-            std::vector<const float*> inArrays = inputArrayReadPointers[i];
+            std::vector<float const*> const& inArrays = inputArrayReadPointers[i];
 
             std::vector<float> pointDeltas(endPointId - pointId, 0.0);
 
-            for (const auto inArray: inArrays) {
+            for (auto const*const inArray: inArrays) {
+                pointId = startPointId;
+
                 for (int j = 0; pointId < endPointId; pointId++, j++)
                     pointDeltas[j] += inArray[pointId] - outArray[pointId];
             }
+            pointId = startPointId;
 
             for (int j = 0; pointId < endPointId; pointId++, j++)
                 outArray[pointId] += pointDeltas[j];
+
+            pointId = startPointId;
         }
     };
     vtkSMPTools::For(0, numberOfPoints, addInputArrayDeltasToOutputArrays);
@@ -127,7 +149,7 @@ int MergeParallelImageArtifactFilters::RequestData(vtkInformation* request,
 
     SetErrorCode(vtkErrorCode::NoError);
 
-    if (GetErrorCode())
+    if (GetErrorCode() != 0U)
         return 0;
 
     return 1;
@@ -147,7 +169,7 @@ auto MergeParallelImageArtifactFilters::GetContainedSubTypes(vtkInformation* bas
                                                              vtkInformationVector* parallelInInfos) noexcept
                                                              -> std::vector<SubType> {
     std::vector<SubType> containedSubTypes;
-    for (auto subTypeAndName : BasicImageArtifactDetails::GetSubTypeValues()) {
+    for (auto const& subTypeAndName : BasicImageArtifactDetails::GetSubTypeValues()) {
         if (PointDataInformationVectorHasArray(baseInInfo, subTypeAndName.EnumValue)
             || InfoPointDataInformationVectorHasArray(parallelInInfos, subTypeAndName.EnumValue)) {
             containedSubTypes.push_back(subTypeAndName.EnumValue);

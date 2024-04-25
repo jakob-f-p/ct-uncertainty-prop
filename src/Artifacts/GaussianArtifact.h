@@ -2,7 +2,7 @@
 
 #include <QWidget>
 
-#include <vtkSmartPointer.h>
+#include <vtkNew.h>
 
 class GaussianArtifactFilter;
 class GaussianArtifactData;
@@ -17,15 +17,18 @@ class GaussianArtifact {
 public:
     using Data = GaussianArtifactData;
 
-    GaussianArtifact() = default;
+    GaussianArtifact();
     GaussianArtifact(GaussianArtifact const&) = delete;
     auto operator= (GaussianArtifact const&) -> GaussianArtifact& = delete;
     GaussianArtifact(GaussianArtifact&&);
     auto operator= (GaussianArtifact&&) -> GaussianArtifact&;
-    ~GaussianArtifact() = default;
+    ~GaussianArtifact();
 
     auto
-    AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm&;
+    UpdateFilterParameters() -> void;
+
+    [[nodiscard]] auto
+    GetFilter() -> vtkImageAlgorithm&;
 
 private:
     friend class GaussianArtifactData;
@@ -33,7 +36,7 @@ private:
     float Mean = 0.0F;
     float Sd = 0.0F;
 
-    vtkSmartPointer<GaussianArtifactFilter> Filter;
+    vtkNew<GaussianArtifactFilter> Filter;
 };
 
 

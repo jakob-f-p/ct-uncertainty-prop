@@ -29,29 +29,46 @@ auto GaussianArtifactFilter::RequestInformation(vtkInformation* request,
     return 1;
 }
 
-void GaussianArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* output, vtkInformation* outInfo) {
+void GaussianArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
+                                                             vtkImageData* output,
+                                                             vtkInformation* outInfo) {
     vtkIdType numberOfPoints = output->GetNumberOfPoints();
 
-    vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);
-
-    vtkFloatArray* gaussianNoiseArray = GetArtifactArray(output, SubType::GAUSSIAN);
-    float* gaussianNoiseValues = gaussianNoiseArray->WritePointer(0, numberOfPoints);
+    vtkNew<vtkFloatArray> newNoiseValueArray;
+    newNoiseValueArray->SetNumberOfComponents(1);
+    newNoiseValueArray->SetNumberOfTuples(output->GetNumberOfPoints());
+    newNoiseValueArray->FillValue(0.0F);
+    float* newNoiseValues = newNoiseValueArray->WritePointer(0, numberOfPoints);
 
     auto generateGaussianNoiseValues = [mean = Mean,
             sd = Sd,
-            noiseValues = gaussianNoiseValues] (vtkIdType pointId, vtkIdType endPointId) {
+            newNoiseValues = newNoiseValues](vtkIdType pointId, vtkIdType endPointId) {
         vtkNew<vtkBoxMuellerRandomSequence> gaussianSequence;
 
         for (; pointId < endPointId; pointId++)
-            noiseValues[pointId] = static_cast<float>(gaussianSequence->GetNextScaledValue(mean, sd));
+            newNoiseValues[pointId] = static_cast<float>(gaussianSequence->GetNextScaledValue(mean, sd));
     };
     vtkSMPTools::For(0, numberOfPoints, generateGaussianNoiseValues);
 
+
+
+    vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);
+    float* radiodensities = radioDensityArray->WritePointer(0, numberOfPoints);
+
+    vtkFloatArray* gaussianNoiseArray = GetDeepCopiedArtifactArray(input, output, SubType::GAUSSIAN);
+    float* gaussianNoiseValues = gaussianNoiseArray->WritePointer(0, numberOfPoints);
+
     auto addNoiseValues = [noiseValues = gaussianNoiseValues,
-            radiodensities = radioDensityArray->WritePointer(0, numberOfPoints)] (vtkIdType pointId,
-                                                                                  vtkIdType endPointId) {
+                           newNoiseValues = newNoiseValues,
+                           radiodensities = radiodensities] (vtkIdType pointId, vtkIdType endPointId) {
+        vtkIdType const startPointId = pointId;
+
         for (; pointId < endPointId; pointId++)
-            radiodensities[pointId] += noiseValues[pointId];
+            radiodensities[pointId] += newNoiseValues[pointId];
+
+        pointId = startPointId;
+        for (; pointId < endPointId; pointId++)
+            noiseValues[pointId] += newNoiseValues[pointId];
     };
     vtkSMPTools::For(0, numberOfPoints, addNoiseValues);
 }

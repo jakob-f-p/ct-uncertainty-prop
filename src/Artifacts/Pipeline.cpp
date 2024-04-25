@@ -26,7 +26,7 @@ auto Pipeline::GetImageArtifactConcatenation() const -> ImageArtifactConcatenati
     return *ImageArtifactConcat;
 }
 
-void Pipeline::ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) {
+void Pipeline::ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) const {
     switch (event.Type) {
         case CtStructureTreeEventType::Add: {
             TreeStructureArtifacts->AddStructureArtifactList(event.Idx);

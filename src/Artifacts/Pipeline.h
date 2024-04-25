@@ -26,7 +26,7 @@ public:
     [[nodiscard]] auto
     GetImageArtifactConcatenation() const -> ImageArtifactConcatenation&;
 
-    auto ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) -> void;
+    auto ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) const -> void;
 
     auto operator==(const Pipeline& other) const noexcept -> bool;
 

@@ -16,19 +16,25 @@ auto ImageArtifactFilter::CreateDefaultExecutive() -> vtkExecutive* {
 auto ImageArtifactFilter::RequestInformation(vtkInformation* request,
                                              vtkInformationVector** inputVector,
                                              vtkInformationVector* outputVector) -> int {
+
+    CopyInputArrayAttributesToOutput(request, inputVector, outputVector);
+
     vtkInformation* outInfo = outputVector->GetInformationObject(0);
     vtkInformation* inInfo = inputVector[0]->GetInformationObject(0);
 
-    outInfo->Copy(inInfo);
+    outInfo->CopyEntry(inInfo, vtkStreamingDemandDrivenPipeline::WHOLE_EXTENT());
+    outInfo->CopyEntry(inInfo, vtkDataObject::ORIGIN());
+    outInfo->CopyEntry(inInfo, vtkDataObject::SPACING());
+    outInfo->CopyEntry(inInfo, vtkDataObject::POINT_DATA_VECTOR());
 
     outInfo->Set(CAN_PRODUCE_SUB_EXTENT(), 1);
 
     return 1;
 }
 
-int ImageArtifactFilter::RequestData(vtkInformation* request,
-                                     vtkInformationVector** inputVector,
-                                     vtkInformationVector* outputVector) {
+auto ImageArtifactFilter::RequestData(vtkInformation* request,
+                                      vtkInformationVector** inputVector,
+                                      vtkInformationVector* outputVector) -> int {
     const int outputPort = request->Get(vtkDemandDrivenPipeline::FROM_OUTPUT_PORT());
 
     vtkInformation* inInfo = inputVector[0]->GetInformationObject(0);
@@ -36,13 +42,17 @@ int ImageArtifactFilter::RequestData(vtkInformation* request,
     vtkImageData* input = vtkImageData::SafeDownCast(inInfo->Get(vtkDataObject::DATA_OBJECT()));
     vtkImageData* output = vtkImageData::SafeDownCast(outInfo->Get(vtkDataObject::DATA_OBJECT()));
 
+    output->SetExtent(input->GetExtent());
+
     output->GetPointData()->PassData(input->GetPointData());
+
+    static_cast<void>(GetDeepCopiedRadiodensitiesArray(input, output));
 
     SetErrorCode(vtkErrorCode::NoError);
 
-    ExecuteDataWithImageInformation(output, outInfo);
+    ExecuteDataWithImageInformation(input, output, outInfo);
 
-    if (GetErrorCode())
+    if (GetErrorCode() != 0U)
         return 0;
 
     return 1;
@@ -87,32 +97,67 @@ auto ImageArtifactFilter::PointDataInformationVectorHasArray(vtkInformation* inf
     return false;
 }
 
-auto ImageArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* output, vtkInformation* outInfo) -> void {
+auto ImageArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
+                                                          vtkImageData* output,
+                                                          vtkInformation* outInfo) -> void {
     throw std::runtime_error("not implemented");
 }
 
-auto ImageArtifactFilter::GetRadiodensitiesArray(vtkImageData* output) noexcept -> vtkFloatArray* {
-    return vtkFloatArray::SafeDownCast(output->GetPointData()->GetAbstractArray("Radiodensities"));
+auto ImageArtifactFilter::GetRadiodensitiesArray(vtkImageData* imageData) noexcept -> vtkFloatArray* {
+    return vtkFloatArray::SafeDownCast(imageData->GetPointData()->GetAbstractArray("Radiodensities"));
 }
 
-auto ImageArtifactFilter::GetArtifactArray(vtkImageData* output, SubType subType) noexcept -> vtkFloatArray* {
+auto ImageArtifactFilter::GetDeepCopiedRadiodensitiesArray(vtkImageData* input, vtkImageData* output) noexcept
+        -> vtkFloatArray* {
+
+    vtkNew<vtkFloatArray> copiedRadiodensities;
+    copiedRadiodensities->DeepCopy(GetRadiodensitiesArray(input));
+
+    output->GetPointData()->AddArray(copiedRadiodensities);
+
+    return copiedRadiodensities;
+}
+
+auto ImageArtifactFilter::GetArtifactArray(vtkImageData* imageData, SubType subType) noexcept -> vtkFloatArray* {
     vtkFloatArray* dataArray = vtkFloatArray::SafeDownCast(
-            output->GetPointData()->GetAbstractArray(GetArrayName(subType).data()));
+            imageData->GetPointData()->GetAbstractArray(GetArrayName(subType).data()));
 
     if (dataArray)
         return dataArray;
 
-    dataArray = vtkFloatArray::New();
-    dataArray->SetNumberOfComponents(1);
-    dataArray->SetName(GetArrayName(subType).data());
-    dataArray->SetNumberOfTuples(output->GetNumberOfPoints());
-    dataArray->FillValue(0.0F);
-    output->GetPointData()->AddArray(dataArray);
-    dataArray->Delete();
+    return AddArtifactArray(imageData, subType);
+}
 
-    return dataArray;
+auto ImageArtifactFilter::GetDeepCopiedArtifactArray(vtkImageData* input,
+                                                     vtkImageData* output,
+                                                     SubType subType) noexcept -> vtkFloatArray* {
+    vtkFloatArray* artifactArray = vtkFloatArray::SafeDownCast(
+            input->GetPointData()->GetAbstractArray(GetArrayName(subType).data()));
+
+    if (artifactArray) {
+        vtkNew<vtkFloatArray> copiedArtifactArray;
+        copiedArtifactArray->DeepCopy(artifactArray);
+
+        output->GetPointData()->AddArray(copiedArtifactArray);
+
+        return copiedArtifactArray;
+    }
+
+    return AddArtifactArray(output, subType);
 }
 
 void ImageArtifactFilter::ExecuteDataWithInformation(vtkDataObject* output, vtkInformation* outInfo) {
     throw std::runtime_error("not used by image artifact filter");
+}
+
+auto ImageArtifactFilter::AddArtifactArray(vtkImageData* imageData,
+                                           ImageArtifactFilter::SubType subType) noexcept -> vtkFloatArray* {
+    vtkNew<vtkFloatArray> dataArray;
+    dataArray->SetNumberOfComponents(1);
+    dataArray->SetName(GetArrayName(subType).data());
+    dataArray->SetNumberOfTuples(imageData->GetNumberOfPoints());
+    dataArray->FillValue(0.0F);
+    imageData->GetPointData()->AddArray(dataArray);
+
+    return dataArray;
 }

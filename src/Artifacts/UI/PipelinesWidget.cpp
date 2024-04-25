@@ -1,6 +1,7 @@
 #include "PipelinesWidget.h"
 
 #include "ArtifactsDialog.h"
+#include "ArtifactsWidget.h"
 #include "ImageArtifactsModel.h"
 #include "ImageArtifactsView.h"
 #include "ImageArtifactsWidget.h"
@@ -14,11 +15,11 @@
 #include <QLabel>
 #include <QStackedLayout>
 
-#include <vtkCallbackCommand.h>
 #include <vtkNew.h>
 
-PipelinesWidget::PipelinesWidget(QWidget* parent) :
+PipelinesWidget::PipelinesWidget(ArtifactRenderWidget& renderWidget, QWidget* parent) :
         QWidget(parent),
+        RenderWidget(renderWidget),
         Pipelines(App::GetInstance()->GetPipelines()),
         CurrentPipelineIndex(Pipelines.IsEmpty() ? -1 : 0),
         PipelineTitle(new QLabel()),
@@ -103,8 +104,8 @@ void PipelinesWidget::NextPipeline() {
 }
 
 void PipelinesWidget::UpdatePipelineView() {
-    std::string pipelineName = GetCurrentPipeline().GetName();
-    QString pipelineTitleString = pipelineName.empty()
+    std::string const pipelineName = GetCurrentPipeline().GetName();
+    QString const pipelineTitleString = pipelineName.empty()
                            ? QString::fromStdString("Pipeline " + std::to_string(CurrentPipelineIndex + 1))
                            : QString::fromStdString(pipelineName);
     PipelineTitle->setText(pipelineTitleString);
@@ -116,9 +117,11 @@ void PipelinesWidget::UpdatePipelineView() {
 
     StructureArtifactModelingWidget->SetCurrentView(CurrentPipelineIndex);
     ImageArtifactModelingWidget->SetCurrentView(CurrentPipelineIndex);
+
+    RenderWidget.UpdateImageArtifactFiltersOnPipelineChange(GetCurrentPipeline().GetImageArtifactConcatenation());
 }
 
-QIcon PipelinesWidget::GenerateIcon(const std::string &filePrefix) noexcept {
+auto PipelinesWidget::GenerateIcon(const std::string &filePrefix) noexcept -> QIcon {
     QIcon icon;
     QString qFilePrefix = QString::fromStdString(filePrefix);
     icon.addPixmap(QPixmap(":/" + qFilePrefix + "Normal.png"), QIcon::Normal);
@@ -126,7 +129,7 @@ QIcon PipelinesWidget::GenerateIcon(const std::string &filePrefix) noexcept {
     return icon;
 }
 
-QString PipelinesWidget::GetHeaderStyleSheet() noexcept {
+auto PipelinesWidget::GetHeaderStyleSheet() noexcept -> QString {
     return "font-size: 14px; font-weight: bold";
 }
 
@@ -142,6 +145,6 @@ void PipelinesWidget::CreateArtifactsViewsForCurrentPipeline() {
     ImageArtifactModelingWidget->AddView(GetCurrentPipeline());
 }
 
-Pipeline& PipelinesWidget::GetCurrentPipeline() {
+auto PipelinesWidget::GetCurrentPipeline() -> Pipeline& {
     return Pipelines.Get(CurrentPipelineIndex);
 }

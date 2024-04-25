@@ -6,19 +6,18 @@
 #include <QLabel>
 #include <QFormLayout>
 
+GaussianArtifact::GaussianArtifact() = default;
 GaussianArtifact::GaussianArtifact(GaussianArtifact&&) = default;
 auto GaussianArtifact::operator= (GaussianArtifact&&) -> GaussianArtifact& = default;
+GaussianArtifact::~GaussianArtifact() = default;
 
-vtkImageAlgorithm& GaussianArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) {
-    if (!Filter)
-        Filter = GaussianArtifactFilter::New();
-    else
-        Filter->RemoveAllInputs();
-
+auto GaussianArtifact::UpdateFilterParameters() -> void {
     Filter->SetMean(Mean);
     Filter->SetSd(Sd);
+}
 
-    Filter->SetInputConnection(inputAlgorithm.GetOutputPort());
+auto GaussianArtifact::GetFilter() -> vtkImageAlgorithm& {
+    UpdateFilterParameters();
 
     return *Filter;
 }
@@ -31,6 +30,8 @@ auto GaussianArtifactData::PopulateFromArtifact(const GaussianArtifact& artifact
 auto GaussianArtifactData::PopulateArtifact(GaussianArtifact& artifact) const noexcept -> void {
     artifact.Mean = Mean;
     artifact.Sd = Sd;
+
+    artifact.UpdateFilterParameters();
 }
 
 GaussianArtifactWidget::GaussianArtifactWidget() :
@@ -45,7 +46,7 @@ GaussianArtifactWidget::GaussianArtifactWidget() :
     fLayout->addRow("Mean", MeanSpinBox);
 
     SdSpinBox->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Minimum);
-    SdSpinBox->setRange(-1000.0, 1000.0);
+    SdSpinBox->setRange(0.0, 1000.0);
     SdSpinBox->setSingleStep(1.0);
     fLayout->addRow("SD", SdSpinBox);
 }

@@ -148,15 +148,15 @@ auto CompositeImageArtifact::Get(uint16_t targetIdx, uint16_t& currentIdx) -> Im
     return nullptr;
 }
 
-auto CompositeImageArtifact::IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> uint16_t {
+auto CompositeImageArtifact::IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> int32_t {
     for (const auto& childArtifact : ImageArtifacts) {
-        uint16_t idx = childArtifact->IndexOf(imageArtifact, currentIdx);
+        int32_t idx = childArtifact->IndexOf(imageArtifact, currentIdx);
 
-        if (idx != 0)
+        if (idx != -1)
             return idx;
     }
 
-    return 0;
+    return -1;
 }
 
 vtkImageAlgorithm& CompositeImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) {
@@ -166,23 +166,20 @@ vtkImageAlgorithm& CompositeImageArtifact::AppendImageFilters(vtkImageAlgorithm&
             vtkImageAlgorithm* currentImageAlgorithm = &inputAlgorithm;
 
             for (auto& imageArtifact : ImageArtifacts)
-//                currentImageAlgorithm = &imageArtifact->AppendImageFilters(*currentImageAlgorithm);
+                currentImageAlgorithm = &imageArtifact->AppendImageFilters(*currentImageAlgorithm);
 
             return *currentImageAlgorithm;
         }
 
         case CompositionType::PARALLEL: {
-            if (!Filter)
-                Filter = MergeParallelImageArtifactFilters::New();
-            else
-                Filter->RemoveAllInputs();
+            Filter->RemoveAllInputConnections(1);
 
             Filter->SetBaseFilterConnection(inputAlgorithm.GetOutputPort());
 
             for (auto& imageArtifact : ImageArtifacts) {
-//                auto& appendedAlgorithm = imageArtifact->AppendImageFilters(inputAlgorithm);
+                auto& appendedAlgorithm = imageArtifact->AppendImageFilters(inputAlgorithm);
 
-//                Filter->AddParallelFilterConnection(appendedAlgorithm.GetOutputPort());
+                Filter->AddParallelFilterConnection(appendedAlgorithm.GetOutputPort());
             }
 
             return *Filter;

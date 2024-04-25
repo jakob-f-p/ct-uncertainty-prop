@@ -91,6 +91,9 @@ public:
     [[nodiscard]] auto
     GetViewName() const noexcept -> std::string;
 
+    auto
+    AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm&;
+
 private:
     [[nodiscard]] auto static
     GetSubType(const BasicImageArtifactVariant& artifact) noexcept -> SubType;

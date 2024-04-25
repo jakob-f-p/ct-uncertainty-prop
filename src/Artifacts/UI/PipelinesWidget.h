@@ -2,6 +2,7 @@
 
 #include <QWidget>
 
+class ArtifactRenderWidget;
 class ImageArtifactsWidget;
 class Pipeline;
 class PipelineList;
@@ -16,13 +17,15 @@ class PipelinesWidget : public QWidget {
     Q_OBJECT
 
 public:
-    explicit PipelinesWidget(QWidget* parent = nullptr);
+    explicit PipelinesWidget(ArtifactRenderWidget& renderWidget, QWidget* parent = nullptr);
 
     [[nodiscard]] static auto
     GetHeaderStyleSheet() noexcept -> QString;
 
     [[nodiscard]] static auto
     GenerateIcon(const std::string& filePrefix) noexcept -> QIcon;
+
+    auto GetCurrentPipeline() -> Pipeline&;
 
 private slots:
     void AddPipeline();
@@ -36,8 +39,7 @@ private:
 
     void CreateArtifactsViewsForCurrentPipeline();
 
-    Pipeline& GetCurrentPipeline();
-
+    ArtifactRenderWidget& RenderWidget;
     PipelineList& Pipelines;
     int CurrentPipelineIndex;
 

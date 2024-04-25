@@ -42,10 +42,10 @@ public:
     Get(uint16_t targetIdx, uint16_t& currentIdx) -> ImageArtifact*;
 
     [[nodiscard]] auto
-    IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> uint16_t;
+    IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> int32_t;
 
-    [[nodiscard]] auto
-    GetImageArtifactPointer(const CompositeImageArtifact& compositeImageArtifact) -> ImageArtifact*;
+    auto
+    AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm&;
 
 private:
     friend struct ImageArtifactData;

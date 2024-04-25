@@ -25,13 +25,19 @@ protected:
                      vtkInformationVector* outputVector) -> int override;
 
     virtual auto
-    ExecuteDataWithImageInformation(vtkImageData* output, vtkInformation* outInfo) -> void;
+    ExecuteDataWithImageInformation(vtkImageData* input, vtkImageData* output, vtkInformation* outInfo) -> void;
 
     [[nodiscard]] auto static
-    GetRadiodensitiesArray(vtkImageData* output) noexcept -> vtkFloatArray*;
+    GetRadiodensitiesArray(vtkImageData* imageData) noexcept -> vtkFloatArray*;
 
     [[nodiscard]] auto static
-    GetArtifactArray(vtkImageData* output, SubType subType) noexcept -> vtkFloatArray*;
+    GetDeepCopiedRadiodensitiesArray(vtkImageData* input, vtkImageData* output) noexcept -> vtkFloatArray*;
+
+    [[nodiscard]] auto static
+    GetArtifactArray(vtkImageData* imageData, SubType subType) noexcept -> vtkFloatArray*;
+
+    [[nodiscard]] auto static
+    GetDeepCopiedArtifactArray(vtkImageData* input, vtkImageData* output, SubType subType) noexcept -> vtkFloatArray*;
 
     [[nodiscard]] auto static
     PointDataInformationVectorHasArray(vtkInformation* info, SubType subType) -> bool;
@@ -44,4 +50,7 @@ protected:
 private:
     [[nodiscard]] auto static
     GetArrayName(SubType subType) noexcept -> std::string;
+
+    [[nodiscard]] auto static
+    AddArtifactArray(vtkImageData* imageData, SubType subType) noexcept -> vtkFloatArray*;
 };

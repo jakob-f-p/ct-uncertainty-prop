@@ -13,19 +13,14 @@ auto ImageArtifactsModel::index(int row, int column, const QModelIndex& parentMo
     if (!hasIndex(row, column, parentModelIndex))
         return {};
 
-    idx_t childTreeIdx;
-    idx_t parentChildIdx;
-    if (parentModelIndex.isValid()) {
-        ImageArtifact const& parent = Concatenation.Get(static_cast<uidx_t>(parentModelIndex.internalId()));
-        ImageArtifact const& child = parent.ToCompositeConst().ChildArtifact(row);
+    ImageArtifact const& parent = parentModelIndex.isValid()
+            ? Concatenation.Get(static_cast<uidx_t>(parentModelIndex.internalId()))
+            : Concatenation.GetStart();
 
-        childTreeIdx = Concatenation.IndexOf(child);
-        parentChildIdx = parent.ToCompositeConst().GetChildIdx(child);
-    } else {
-        ImageArtifact const& artifact = Concatenation.GetStart().ChildArtifact(row);
-        childTreeIdx = Concatenation.IndexOf(artifact);
-        parentChildIdx = Concatenation.GetStart().GetChildIdx(artifact);
-    }
+    ImageArtifact const& child = parent.ToCompositeConst().ChildArtifact(row);
+
+    idx_t const childTreeIdx = Concatenation.IndexOf(child);
+    idx_t const parentChildIdx = parent.ToCompositeConst().GetChildIdx(child);
 
     return createIndex(parentChildIdx, 0, childTreeIdx);
 }
@@ -44,7 +39,7 @@ auto ImageArtifactsModel::parent(const QModelIndex& childModelIndex) const -> QM
 
     ImageArtifact* grandparentArtifact = parentArtifact->GetParent();
     if (!grandparentArtifact)
-        return createIndex(Concatenation.GetStart().GetChildIdx(*parentArtifact), 0, parentIdx);
+        return {};
 
     uidx_t const rowIdx = grandparentArtifact->ToComposite().GetChildIdx(*parentArtifact);
     return createIndex(rowIdx, 0, parentIdx);
@@ -79,9 +74,9 @@ auto ImageArtifactsModel::data(const QModelIndex& index, int role) const -> QVar
 
             return QVariant::fromValue(ImageArtifactData(artifact));
         }
-    }
 
-    return {};
+        default: return {};
+    }
 }
 
 auto ImageArtifactsModel::headerData(int section, Qt::Orientation orientation, int role) const -> QVariant {
@@ -127,13 +122,10 @@ void ImageArtifactsModel::RemoveImageArtifact(const QModelIndex& index) {
         throw std::runtime_error("Cannot remove image artifact. Given index is not valid");
 
     QModelIndex const parentIndex = index.parent();
-    auto& parentArtifact = parentIndex.isValid()
-                                ? Concatenation.Get(static_cast<uidx_t>(parentIndex.internalId())).ToComposite()
-                                : Concatenation.GetStart();
     auto& imageArtifact = Concatenation.Get(static_cast<uidx_t>(index.internalId()));
 
     beginRemoveRows(parentIndex, index.row(), index.row());
-    parentArtifact.RemoveImageArtifact(imageArtifact);
+    Concatenation.RemoveImageArtifact(imageArtifact);
     endRemoveRows();
 }
 
@@ -151,9 +143,9 @@ auto ImageArtifactsModel::MoveDown(const QModelIndex& index) -> QModelIndex {
     return Move(index, 1);
 }
 
-QModelIndex ImageArtifactsModel::AddImageArtifact(const ImageArtifactData& data,
-                                                  const QModelIndex& parentIndex,
-                                                  int insertionIndex) {
+auto ImageArtifactsModel::AddImageArtifact(const ImageArtifactData& data,
+                                           const QModelIndex& parentIndex,
+                                           int insertionIndex) -> QModelIndex {
     auto* parentArtifact = parentIndex.isValid()
                            ? &Concatenation.Get(static_cast<uidx_t>(parentIndex.internalId()))
                            : nullptr;
@@ -169,19 +161,15 @@ QModelIndex ImageArtifactsModel::AddImageArtifact(const ImageArtifactData& data,
 }
 
 auto ImageArtifactsModel::Move(const QModelIndex& sourceIndex, int displacement) -> QModelIndex {
-    QModelIndex parentIndex = sourceIndex.parent();
-    auto& parentArtifact = parentIndex.isValid()
-                           ? Concatenation.Get(static_cast<uidx_t>(parentIndex.internalId())).ToComposite()
-                           : Concatenation.GetStart();
-
+    QModelIndex const parentIndex = sourceIndex.parent();
     auto& imageArtifact = Concatenation.Get(static_cast<uidx_t>(sourceIndex.internalId()));
 
-    int prevIdx = sourceIndex.row();
-    int newIdx = sourceIndex.row() + displacement;
+    int const prevIdx = sourceIndex.row();
+    int const newIdx = sourceIndex.row() + displacement;
 
     beginMoveRows(parentIndex, prevIdx, prevIdx,
                   parentIndex, newIdx > prevIdx ? newIdx + 1 : newIdx);
-    parentArtifact.MoveChildImageArtifact(imageArtifact, newIdx);
+    Concatenation.MoveChildImageArtifact(imageArtifact, newIdx);
     endMoveRows();
 
     return index(newIdx, 0, sourceIndex.parent());

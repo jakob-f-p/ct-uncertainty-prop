@@ -7,6 +7,8 @@
 #include <QFormLayout>
 #include <QGroupBox>
 
+#include <vtkImageAlgorithm.h>
+
 
 auto BasicImageArtifactDetails::BasicImageArtifactDataVariant::PopulateFromArtifact(
         const BasicImageArtifact& artifact) noexcept -> void {
@@ -121,7 +123,7 @@ auto BasicImageArtifact::GetSubType() const noexcept -> SubType {
 
 auto BasicImageArtifact::GetSubType(const BasicImageArtifactVariant& artifact) noexcept -> SubType {
     return std::visit(Overload{
-            [](GaussianArtifact&)  { return SubType::GAUSSIAN; },
+            [](const GaussianArtifact&)  { return SubType::GAUSSIAN; },
             [](auto&) { qWarning("Todo"); return SubType::GAUSSIAN; }
     }, artifact);
 }
@@ -131,4 +133,12 @@ auto BasicImageArtifact::GetViewName() const noexcept -> std::string {
     std::string const subTypeViewName = subTypeFullName.erase(0, subTypeFullName.find(' ') + 1);
     std::string const viewName = subTypeViewName + (Name.empty() ? "" : (" (" + Name + ")"));
     return viewName;
+}
+
+auto BasicImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm& {
+    return std::visit([&](auto& artifact) -> vtkImageAlgorithm& {
+        vtkImageAlgorithm& filter = artifact.GetFilter();
+        filter.SetInputConnection(inputAlgorithm.GetOutputPort());
+        return filter;
+    }, Artifact);
 }

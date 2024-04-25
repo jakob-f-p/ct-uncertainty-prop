@@ -48,7 +48,7 @@ ModelingRenderWidget::ModelingRenderWidget(CtStructureTree& dataTree, QWidget* p
     InitialCamera->DeepCopy(Renderer->GetActiveCamera());
 
     vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
-    renderWindow->SetWindowName("CT-TData");
+    renderWindow->SetWindowName("CT-Data");
     renderWindow->AddRenderer(Renderer);
 
     renderWindow->SetInteractor(RenderWindowInteractor);

@@ -73,29 +73,21 @@ auto ImageArtifact::Get(uint16_t targetIdx, uint16_t& currentIdx) -> ImageArtifa
     }, Artifact);
 }
 
-auto ImageArtifact::IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> uint16_t {
+auto ImageArtifact::IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> int32_t {
     if (this == &imageArtifact)
         return currentIdx;
 
     currentIdx++;
 
     return std::visit(Overload {
-            [&](BasicImageArtifact const&) -> uint16_t { return 0; },
+            [&](BasicImageArtifact const&) -> int32_t { return -1; },
             [&](CompositeImageArtifact const& composite) { return composite.IndexOf(imageArtifact, currentIdx); }
     }, Artifact);
 }
 
-auto
-ImageArtifact::GetImageArtifactPointer(const CompositeImageArtifact& compositeImageArtifact) -> ImageArtifact* {
-    if (std::get_if<CompositeImageArtifact>(&Artifact) == &compositeImageArtifact)
-        return this;
-
-    return std::visit(Overload {
-            [&](BasicImageArtifact&) -> ImageArtifact*  { return nullptr; },
-            [&](CompositeImageArtifact& composite) { return composite.GetImageArtifactPointer(compositeImageArtifact); }
-    }, Artifact);
+auto ImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm& {
+    return std::visit([&](auto& artifact) -> vtkImageAlgorithm& { return artifact.AppendImageFilters(inputAlgorithm); }, Artifact);
 }
-
 
 ImageArtifactData::ImageArtifactData(const ImageArtifact& artifact) :
         Data([&]() {

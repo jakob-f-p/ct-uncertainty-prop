@@ -4,6 +4,7 @@
 
 class QApplication;
 
+class CtDataSource;
 class CtStructureTree;
 class PipelineList;
 class MainWindow;

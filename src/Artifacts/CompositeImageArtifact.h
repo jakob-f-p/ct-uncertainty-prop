@@ -124,7 +124,7 @@ public:
     Get(uint16_t targetIdx, uint16_t& currentIdx) -> ImageArtifact*;
 
     [[nodiscard]] auto
-    IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> uint16_t;
+    IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> int32_t;
 
     auto AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm&;
 
@@ -135,7 +135,7 @@ private:
     std::vector<std::unique_ptr<ImageArtifact>> ImageArtifacts;
     CompositionType CompType = CompositionType::SEQUENTIAL;
 
-    vtkSmartPointer<MergeParallelImageArtifactFilters> Filter;
+    vtkNew<MergeParallelImageArtifactFilters> Filter;
 };
 
 

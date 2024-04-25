@@ -3,7 +3,7 @@
 #include "MainWindow.h"
 #include "Modeling/BasicStructure.h"
 #include "Modeling/CombinedStructure.h"
-#include "Modeling/CtStructure.h"
+#include "Modeling/CtDataSource.h"
 #include "Modeling/CtStructureTree.h"
 #include "Artifacts/ImageArtifact.h"
 #include "Artifacts/ImageArtifactConcatenation.h"

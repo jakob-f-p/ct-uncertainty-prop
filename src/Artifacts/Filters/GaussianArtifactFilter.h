@@ -8,10 +8,10 @@ public:
     vtkTypeMacro(GaussianArtifactFilter, ImageArtifactFilter);
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
-    vtkSetClampMacro(Mean, double, -150.0, 150.0);
+    vtkSetClampMacro(Mean, double, -2000.0, 2000.0);
     vtkGetMacro(Mean, double);
 
-    vtkSetClampMacro(Sd, double, -150.0, 100.0);
+    vtkSetClampMacro(Sd, double, 0.0, 2000.0);
     vtkGetMacro(Sd, double);
 
     GaussianArtifactFilter(const GaussianArtifactFilter&) = delete;
@@ -25,7 +25,8 @@ protected:
                            vtkInformationVector **inputVector,
                            vtkInformationVector *outputVector) override;
 
-    auto ExecuteDataWithImageInformation(vtkImageData* output, vtkInformation* outInfo) -> void override;
+    auto
+    ExecuteDataWithImageInformation(vtkImageData* input, vtkImageData* output, vtkInformation* outInfo) -> void override;
 
     double Mean;
     double Sd;
