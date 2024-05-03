@@ -80,6 +80,7 @@ auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::UpdateSubTypeWidge
             case SubType::GAUSSIAN:    return new GaussianArtifactWidget();
             case SubType::SALT_PEPPER: return new SaltPepperArtifactWidget();
             case SubType::RING:        return new RingArtifactWidget();
+            case SubType::CUPPING:     return new CuppingArtifactWidget();
             case SubType::WIND_MILL:   return new WindMillArtifactWidget();
             default: qWarning("Todo");
         }
@@ -116,6 +117,7 @@ auto BasicImageArtifact::GetSubType(const BasicImageArtifactVariant& artifact) n
             [](const GaussianArtifact&)   { return SubType::GAUSSIAN; },
             [](const SaltPepperArtifact&) { return SubType::SALT_PEPPER; },
             [](const RingArtifact&)       { return SubType::RING; },
+            [](const CuppingArtifact&)    { return SubType::CUPPING; },
             [](const WindMillArtifact&)   { return SubType::WIND_MILL; },
             [](auto&) { qWarning("Todo"); return SubType::GAUSSIAN; }
     }, artifact);

@@ -17,10 +17,10 @@ public:
     vtkSetClampMacro(PepperAmount, float, 0.0, 1.0);
     vtkGetMacro(PepperAmount, float);
 
-    vtkSetClampMacro(SaltIntensityValue, float, -2000.0, 2000.0);
+    vtkSetClampMacro(SaltIntensityValue, float, 0.0, 2000.0);
     vtkGetMacro(SaltIntensityValue, float);
 
-    vtkSetClampMacro(PepperIntensityValue, float, -2000.0, 2000.0);
+    vtkSetClampMacro(PepperIntensityValue, float, -2000.0, 0.0);
     vtkGetMacro(PepperIntensityValue, float);
 
 

@@ -20,14 +20,14 @@ public:
     vtkSetClampMacro(DarkRingWidth, float, 0.0, 100.0);
     vtkGetMacro(DarkRingWidth, float);
 
-    vtkSetClampMacro(BrightIntensityValue, float, -1000.0, 1000.0);
+    vtkSetClampMacro(BrightIntensityValue, float, 0.0, 1000.0);
     vtkGetMacro(BrightIntensityValue, float);
 
-    vtkSetClampMacro(DarkIntensityValue, float, -1000.0, 1000.0);
+    vtkSetClampMacro(DarkIntensityValue, float, -1000.0, 0.0);
     vtkGetMacro(DarkIntensityValue, float);
 
     auto
-    SetCenterPoint(std::array<float, 3> center) -> void { if (center != center) Center = center; Modified(); }
+    SetCenterPoint(std::array<float, 3> center) -> void { if (center != Center) Center = center; Modified(); }
 
     [[nodiscard]] auto
     GetCenterPoint() -> std::array<float, 3> { return Center; }

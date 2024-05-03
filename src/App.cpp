@@ -152,4 +152,8 @@ void App::InitializeWithTestData() {
     windMillArtifact.SetBrightAngularWidth(15.0);
     windMillArtifact.SetDarkAngularWidth(15.0);
     imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(windMillArtifact) } });
+
+    CuppingArtifact cuppingArtifact;
+    cuppingArtifact.SetDarkIntensity(-500.0);
+    imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(cuppingArtifact) } });
 }

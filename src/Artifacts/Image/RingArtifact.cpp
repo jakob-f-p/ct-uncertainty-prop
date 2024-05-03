@@ -63,6 +63,7 @@ RingArtifactWidget::RingArtifactWidget() :
     std::vector<QString> labels { "Bright", "Dark" };
     std::vector<QDoubleSpinBox*> widthSpinBoxes { BrightRingWidthSpinBox, DarkRingWidthSpinBox };
     std::vector<QDoubleSpinBox*> intensitySpinBoxes { BrightIntensityValueSpinBox, DarkIntensityValueSpinBox };
+    std::vector<double> ranges { 0.0, 1000.0, -1000.0, 0.0 };
 
     for (int i = 0; i < 2; i++) {
         auto* label = new QLabel(labels.at(i));
@@ -82,7 +83,7 @@ RingArtifactWidget::RingArtifactWidget() :
         intensityLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
         gLayout->addWidget(intensityLabel, i, 3);
 
-        intensitySpinBoxes[i]->setRange(-1000.0, 1000.0);
+        intensitySpinBoxes[i]->setRange(ranges[2 * i], ranges[2 * i + 1]);
         intensitySpinBoxes[i]->setSingleStep(10.0);
         gLayout->addWidget(intensitySpinBoxes[i], i, 4);
     }

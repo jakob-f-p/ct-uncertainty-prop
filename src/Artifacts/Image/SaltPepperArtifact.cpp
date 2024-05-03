@@ -55,6 +55,7 @@ SaltPepperArtifactWidget::SaltPepperArtifactWidget() :
     std::vector<QString> labels { "Salt", "Pepper" };
     std::vector<QDoubleSpinBox*> amountSpinBoxes { SaltAmountSpinBox, PepperAmountSpinBox };
     std::vector<QDoubleSpinBox*> intensitySpinBoxes { SaltIntensityValueSpinBox, PepperIntensityValueSpinBox };
+    std::vector<double> ranges { 0.0, 2000.0, -2000.0, 0.0 };
 
     for (int i = 0; i < 2; i++) {
         auto* label = new QLabel(labels.at(i));
@@ -74,7 +75,7 @@ SaltPepperArtifactWidget::SaltPepperArtifactWidget() :
         intensityLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
         gLayout->addWidget(intensityLabel, i, 3);
 
-        intensitySpinBoxes[i]->setRange(-2000.0, 2000.0);
+        intensitySpinBoxes[i]->setRange(ranges[2 * i], ranges[2 * i + 1]);
         intensitySpinBoxes[i]->setSingleStep(100.0);
         gLayout->addWidget(intensitySpinBoxes[i], i, 4);
     }

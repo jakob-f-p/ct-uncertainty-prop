@@ -37,6 +37,7 @@ protected:
 
     friend class RingArtifactFilter;
     friend class WindMillArtifactFilter;
+    friend class CuppingArtifactFilter;
 
     vtkExecutive* CreateDefaultExecutive() override;
 
