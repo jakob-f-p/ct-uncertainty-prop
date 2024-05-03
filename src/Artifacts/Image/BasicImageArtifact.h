@@ -6,6 +6,7 @@
 #include "GaussianArtifact.h"
 #include "RingArtifact.h"
 #include "SaltPepperArtifact.h"
+#include "StairStepArtifact.h"
 #include "WindMillArtifact.h"
 #include "../../Types.h"
 
@@ -15,7 +16,7 @@
 
 class BasicImageArtifact;
 
-#define BASIC_IMAGE_ARTIFACT_TYPES GaussianArtifact, SaltPepperArtifact, RingArtifact, CuppingArtifact, WindMillArtifact
+#define BASIC_IMAGE_ARTIFACT_TYPES GaussianArtifact, SaltPepperArtifact, RingArtifact, CuppingArtifact, WindMillArtifact, StairStepArtifact
 
 namespace BasicImageArtifactDetails {
     Q_NAMESPACE

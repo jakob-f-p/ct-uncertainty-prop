@@ -82,6 +82,7 @@ auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::UpdateSubTypeWidge
             case SubType::RING:        return new RingArtifactWidget();
             case SubType::CUPPING:     return new CuppingArtifactWidget();
             case SubType::WIND_MILL:   return new WindMillArtifactWidget();
+            case SubType::STAIR_STEP:  return new StairStepArtifactWidget();
             default: qWarning("Todo");
         }
         return new GaussianArtifactWidget();
@@ -119,6 +120,7 @@ auto BasicImageArtifact::GetSubType(const BasicImageArtifactVariant& artifact) n
             [](const RingArtifact&)       { return SubType::RING; },
             [](const CuppingArtifact&)    { return SubType::CUPPING; },
             [](const WindMillArtifact&)   { return SubType::WIND_MILL; },
+            [](const StairStepArtifact&)  { return SubType::STAIR_STEP; },
             [](auto&) { qWarning("Todo"); return SubType::GAUSSIAN; }
     }, artifact);
 }

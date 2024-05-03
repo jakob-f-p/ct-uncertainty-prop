@@ -156,4 +156,8 @@ void App::InitializeWithTestData() {
     CuppingArtifact cuppingArtifact;
     cuppingArtifact.SetDarkIntensity(-500.0);
     imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(cuppingArtifact) } });
+
+    StairStepArtifact stairStepArtifact;
+    stairStepArtifact.SetRelativeZAxisSamplingRate(0.75);
+    imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(stairStepArtifact) } });
 }
