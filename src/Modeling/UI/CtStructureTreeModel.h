@@ -1,10 +1,12 @@
 #pragma once
 
-#include "../CtStructureTree.h"
-
 #include <QAbstractItemModel>
 
+class CtStructureTree;
 class Pipeline;
+
+struct BasicStructureData;
+struct CombinedStructureData;
 
 enum TreeModelRoles : uint16_t {
     STRUCTURE_DATA_VARIANT = Qt::UserRole,
@@ -15,24 +17,32 @@ class CtStructureTreeModel : public QAbstractItemModel {
 public:
     explicit CtStructureTreeModel(CtStructureTree& ctStructureTree, QObject* parent = nullptr);
 
-    QModelIndex index(int row, int column, const QModelIndex& parentIndex) const override;
+    [[nodiscard]] auto
+    index(int row, int column, const QModelIndex& parentIndex) const -> QModelIndex override;
 
-    QModelIndex parent(const QModelIndex& child) const override;
+    [[nodiscard]] auto
+    parent(const QModelIndex& child) const -> QModelIndex override;
 
-    int rowCount(const QModelIndex& parent) const override;
+    [[nodiscard]] auto
+    rowCount(const QModelIndex& parent) const -> int override;
 
-    int columnCount(const QModelIndex& parent) const override;
+    [[nodiscard]] auto
+    columnCount(const QModelIndex& parent) const -> int override;
 
-    QVariant data(const QModelIndex& index, int role) const override;
+    [[nodiscard]] auto
+    data(const QModelIndex& index, int role) const -> QVariant override;
 
-    QVariant headerData(int section, Qt::Orientation orientation, int role) const override;
+    [[nodiscard]] auto
+    headerData(int section, Qt::Orientation orientation, int role) const -> QVariant override;
 
-    Qt::ItemFlags flags(const QModelIndex& index) const override;
+    [[nodiscard]] auto
+    flags(const QModelIndex& index) const -> Qt::ItemFlags override;
 
-    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+    [[nodiscard]] auto
+    setData(const QModelIndex &index, const QVariant &value, int role) -> bool override;
 
-    QModelIndex AddBasicStructure(const BasicStructureData& basicStructureData,
-                                  const QModelIndex& siblingIndex);
+    [[nodiscard]] auto
+    AddBasicStructure(const BasicStructureData& basicStructureData, const QModelIndex& siblingIndex) -> QModelIndex;
 
     void CombineWithBasicStructure(const BasicStructureData& basicStructureData,
                                    const CombinedStructureData& combinedStructureData);
@@ -43,7 +53,8 @@ public:
 
     void RemoveBasicStructure(const QModelIndex& index);
 
-    bool HasRoot();
+    [[nodiscard]] auto
+    HasRoot() -> bool;
 
 protected:
     friend class StructureArtifactsWidget;

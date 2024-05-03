@@ -1,6 +1,7 @@
 #pragma once
 
 #include "CtStructure.h"
+#include "../Types.h"
 
 #include <vtkBox.h>
 #include <vtkNew.h>
@@ -153,12 +154,10 @@ private:
 static_assert(TBasicStructure<Box>);
 
 
+#define SHAPE_TYPES Sphere, Box
 
-using BasicStructureSubTypeDataVariant = std::variant<SphereData, BoxData>;
+using ShapeVariant = std::variant<SHAPE_TYPES>;
+using ShapeDataVariant = DataVariant<SHAPE_TYPES>;
+using ShapeWidgetVariant = WidgetPointerVariant<SHAPE_TYPES>;
 
-using BasicStructureSubTypeWidgetVariant = std::variant<SphereData::Widget*, BoxData::Widget*>;
-
-class BasicStructureSubTypeWidget : public QWidget {
-Q_OBJECT
-};
-
+#undef SHAPE_TYPES

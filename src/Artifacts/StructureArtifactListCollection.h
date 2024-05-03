@@ -5,10 +5,7 @@
 #include <memory>
 #include <vector>
 
-class CtStructureTree;
 class StructureArtifact;
-
-using uidx_t = uint16_t;
 
 class StructureArtifactList {
 public:

@@ -1,6 +1,6 @@
 #include "Pipeline.h"
 
-#include "ImageArtifactConcatenation.h"
+#include "Image/ImageArtifactConcatenation.h"
 #include "StructureArtifactListCollection.h"
 #include "../Modeling/CtStructureTree.h"
 

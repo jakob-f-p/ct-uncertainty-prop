@@ -4,9 +4,12 @@
 #include "ImageArtifactsModel.h"
 #include "ImageArtifactsView.h"
 #include "PipelinesWidget.h"
-#include "../ImageArtifact.h"
+#include "../Image/ImageArtifact.h"
 
 #include <QLabel>
+#include <QPushButton>
+#include <QStackedLayout>
+#include <QBoxLayout>
 
 ImageArtifactsWidget::ImageArtifactsWidget(QWidget* parent) :
         QWidget(parent),

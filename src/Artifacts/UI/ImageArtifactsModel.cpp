@@ -1,13 +1,13 @@
 #include "ImageArtifactsModel.h"
 
-#include "../ImageArtifact.h"
-#include "../ImageArtifactConcatenation.h"
+#include "../Image/ImageArtifact.h"
+#include "../Image/ImageArtifactConcatenation.h"
+#include "../../Types.h"
 
 ImageArtifactsModel::ImageArtifactsModel(ImageArtifactConcatenation& imageArtifactConcatenation,
                                          QObject* parent) :
         QAbstractItemModel(parent),
-        Concatenation(imageArtifactConcatenation) {
-}
+        Concatenation(imageArtifactConcatenation) {}
 
 auto ImageArtifactsModel::index(int row, int column, const QModelIndex& parentModelIndex) const -> QModelIndex {
     if (!hasIndex(row, column, parentModelIndex))
@@ -19,8 +19,8 @@ auto ImageArtifactsModel::index(int row, int column, const QModelIndex& parentMo
 
     ImageArtifact const& child = parent.ToCompositeConst().ChildArtifact(row);
 
-    idx_t const childTreeIdx = Concatenation.IndexOf(child);
-    idx_t const parentChildIdx = parent.ToCompositeConst().GetChildIdx(child);
+    uint16_t const childTreeIdx = Concatenation.IndexOf(child);
+    uint16_t const parentChildIdx = parent.ToCompositeConst().GetChildIdx(child);
 
     return createIndex(parentChildIdx, 0, childTreeIdx);
 }

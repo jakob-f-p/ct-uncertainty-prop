@@ -1,35 +1,21 @@
+#include "../../Modeling/CtDataSource.h"
 #include "ArtifactsWidget.h"
 
 #include "PipelinesWidget.h"
-#include "../ImageArtifactConcatenation.h"
+#include "../Image/ImageArtifactConcatenation.h"
 #include "../PipelineList.h"
-#include "../../Modeling/CtDataSource.h"
 #include "../../App.h"
 
 #include <QDockWidget>
 #include <QFrame>
 #include <QPushButton>
 #include <QVBoxLayout>
-#include <QVTKOpenGLNativeWidget.h>
 
-#include <vtkAxesActor.h>
-#include <vtkCamera.h>
-#include <vtkCallbackCommand.h>
-#include <vtkColorTransferFunction.h>
-#include <vtkGenericOpenGLRenderWindow.h>
-#include <vtkInteractorStyleTrackballCamera.h>
-#include <vtkOpenGLRenderer.h>
-#include <vtkOrientationMarkerWidget.h>
-#include <vtkPiecewiseFunction.h>
-#include <vtkVolumeProperty.h>
-#include <vtkVolume.h>
-#include <vtkOpenGLGPUVolumeRayCastMapper.h>
-
-ArtifactsWidget::ArtifactsWidget() :
+ArtifactsWidget::ArtifactsWidget(PipelineList& pipelines) :
         ResetCameraButton(new QPushButton("Reset Camera")),
         RenderButton(new QPushButton("Render")),
-        RenderWidget(new ArtifactRenderWidget(App::GetInstance()->GetPipelines().Get(0).GetImageArtifactConcatenation())),
-        PipelineWidget(new PipelinesWidget(*RenderWidget)) {
+        RenderWidget(new ArtifactRenderWidget(pipelines.Get(0).GetImageArtifactConcatenation())),
+        PipelineWidget(new PipelinesWidget(pipelines)) {
 
     RenderWidget = new ArtifactRenderWidget(PipelineWidget->GetCurrentPipeline().GetImageArtifactConcatenation());
     setCentralWidget(RenderWidget);
@@ -54,8 +40,9 @@ ArtifactsWidget::ArtifactsWidget() :
 
     connect(ResetCameraButton, &QPushButton::clicked, [&]() { RenderWidget->ResetCamera(); });
     connect(RenderButton, &QPushButton::clicked, [&]() {
-        RenderWidget->UpdateImageArtifactFiltersOnPipelineChange(
-                PipelineWidget->GetCurrentPipeline().GetImageArtifactConcatenation()); });
+        RenderWidget->UpdateImageArtifactFiltersOnPipelineChange(PipelineWidget->GetCurrentPipeline()); });
+    connect(PipelineWidget, &PipelinesWidget::PipelineViewUpdated,
+            RenderWidget, &ArtifactRenderWidget::UpdateImageArtifactFiltersOnPipelineChange);
 
     auto* line = new QFrame();
     line->setFrameShape(QFrame::HLine);
@@ -72,70 +59,24 @@ ArtifactsWidget::ArtifactsWidget() :
 
 
 ArtifactRenderWidget::ArtifactRenderWidget(ImageArtifactConcatenation& imageArtifactConcatenation, QWidget* parent) :
-        QVTKOpenGLNativeWidget(parent),
+        RenderWidget([&, dataTree = &App::GetInstance()->GetCtDataTree()]() -> vtkImageAlgorithm& {
+            vtkNew<CtDataSource> dataSource;
+            dataSource->SetDataTree(dataTree);
+
+            imageArtifactConcatenation.UpdateArtifactFilter();
+            auto& imageArtifactStartFilter = imageArtifactConcatenation.GetStartFilter();
+            imageArtifactStartFilter.SetInputConnection(dataSource->GetOutputPort());
+
+            return imageArtifactConcatenation.GetEndFilter();
+        }(), parent),
         Pipelines(App::GetInstance()->GetPipelines()) {
-    DataSource->SetDataTree(&App::GetInstance()->GetCtDataTree());
 
-    vtkNew<vtkPiecewiseFunction> opacityMappingFunction;
-    opacityMappingFunction->AddPoint(-1000.0, 0.005);
-    opacityMappingFunction->AddPoint(2000.0, 0.05);
-
-    vtkNew<vtkColorTransferFunction> colorTransferFunction;
-    colorTransferFunction->AddRGBPoint(-1000.0, 0.0, 0.0, 0.0);
-    colorTransferFunction->AddRGBPoint(2000.0, 3 * 1.0, 3 * 1.0, 3 * 1.0);
-
-    vtkNew<vtkVolumeProperty> volumeProperty;
-    volumeProperty->SetColor(colorTransferFunction.GetPointer());
-    volumeProperty->SetScalarOpacity(opacityMappingFunction.GetPointer());
-    volumeProperty->ShadeOn();
-    volumeProperty->SetInterpolationTypeToLinear();
-    volumeProperty->SetAmbient(0.3);
-
-    imageArtifactConcatenation.UpdateArtifactFilter();
-    VolumeMapper->SetInputConnection(imageArtifactConcatenation.GetArtifactFilter().GetOutputPort());
-
-    vtkNew<vtkVolume> volume;
-    volume->SetMapper(VolumeMapper);
-    volume->SetProperty(volumeProperty);
-
-    Renderer->AddVolume(volume);
-    Renderer->SetBackground(0.2, 0.2, 0.2);
-    Renderer->ResetCamera();
-    InitialCamera->DeepCopy(Renderer->GetActiveCamera());
-
-    vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
-    renderWindow->SetWindowName("Artifacts");
-    renderWindow->AddRenderer(Renderer);
-
-    renderWindow->SetInteractor(RenderWindowInteractor);
-    RenderWindowInteractor->Initialize();
-    vtkNew<vtkInteractorStyleTrackballCamera> const trackballCameraStyle;
-    RenderWindowInteractor->SetInteractorStyle(trackballCameraStyle);
-
-    setRenderWindow(renderWindow);
-
-    renderWindow->Render();
-
-    vtkNew<vtkAxesActor> axesActor;
-    axesActor->SetTotalLength(20.0, 20.0, 20.0);
-    OrientationMarkerWidget->SetOrientationMarker(axesActor);
-    OrientationMarkerWidget->SetViewport(0.8, 0.0, 1.0, 0.2);
-    OrientationMarkerWidget->SetInteractor(RenderWindowInteractor);
-    OrientationMarkerWidget->EnabledOn();
-    OrientationMarkerWidget->InteractiveOff();
-
-    Pipelines.AddPipelineEventCallback([renderWindowInteractor = RenderWindowInteractor.Get()]()
-                                  { renderWindowInteractor->Render(); });
+    Pipelines.AddPipelineEventCallback([&]() { Render(); });
 }
 
-void ArtifactRenderWidget::ResetCamera() const {
-    Renderer->GetActiveCamera()->DeepCopy(InitialCamera);
-    RenderWindowInteractor->Render();
-}
+ArtifactRenderWidget::~ArtifactRenderWidget() = default;
 
-auto ArtifactRenderWidget::UpdateImageArtifactFiltersOnPipelineChange(ImageArtifactConcatenation& imageArtifactConcatenation) -> void {
-    imageArtifactConcatenation.UpdateArtifactFilter();
-    auto& filter = imageArtifactConcatenation.GetArtifactFilter();
-    VolumeMapper->SetInputConnection(filter.GetOutputPort());
+auto ArtifactRenderWidget::UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) const -> void {
+    newPipeline.GetImageArtifactConcatenation().UpdateArtifactFilter();
     RenderWindowInteractor->Render();
 }

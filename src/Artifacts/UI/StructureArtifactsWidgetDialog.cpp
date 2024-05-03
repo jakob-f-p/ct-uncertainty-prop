@@ -2,21 +2,24 @@
 
 #include "ArtifactsDialog.h"
 #include "PipelinesWidget.h"
-#include "StructureArtifactsDelegate.h"
+#include "StructureArtifactsView.h"
 #include "StructureArtifactsModel.h"
 #include "../StructureArtifact.h"
 
+#include <QItemSelectionModel>
 #include <QLabel>
+#include <QListView>
 #include <QPushButton>
+#include <QVBoxLayout>
 
 StructureArtifactsWidgetDialog::StructureArtifactsWidgetDialog(StructureArtifactList& structureWrapper,
                                                                std::string& title,
                                                                QWidget* parent) :
         QDialog(parent),
         CreateDialog(nullptr),
-        View(new QListView()),
-        Model(new StructureArtifactsModel(structureWrapper)),
-        SelectionModel(),
+        View(new StructureArtifactsView(structureWrapper)),
+        Model(dynamic_cast<StructureArtifactsModel*>(View->model())),
+        SelectionModel(View->selectionModel()),
         AddButton(new QPushButton("")),
         RemoveButton(new QPushButton("")),
         MoveUpButton(new QPushButton("")),
@@ -59,10 +62,7 @@ StructureArtifactsWidgetDialog::StructureArtifactsWidgetDialog(StructureArtifact
     titleBarHLayout->addWidget(buttonBar);
     vLayout->addLayout(titleBarHLayout);
 
-    View->setModel(Model);
-    View->setItemDelegate(new StructureArtifactsDelegate());
     vLayout->addWidget(View);
-    SelectionModel = View->selectionModel();
 
     connect(SelectionModel, &QItemSelectionModel::selectionChanged,
             this, &StructureArtifactsWidgetDialog::UpdateButtonStatesOnSelectionChange);
@@ -74,8 +74,8 @@ void StructureArtifactsWidgetDialog::AddArtifact() {
 
     connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
         auto data = StructureArtifactWidget::GetWidgetData(CreateDialog);
-        QModelIndex parentIndex = SelectionModel->currentIndex();
-        QModelIndex newIndex = Model->AddStructureArtifact(data, parentIndex);
+        QModelIndex const parentIndex = SelectionModel->currentIndex();
+        QModelIndex const newIndex = Model->AddStructureArtifact(data, parentIndex);
 
         SelectionModel->clearSelection();
         SelectionModel->select(newIndex, QItemSelectionModel::SelectionFlag::Select);
@@ -85,21 +85,21 @@ void StructureArtifactsWidgetDialog::AddArtifact() {
 }
 
 void StructureArtifactsWidgetDialog::RemoveArtifact() {
-    QModelIndex index = SelectionModel->currentIndex();
+    QModelIndex const index = SelectionModel->currentIndex();
     Model->RemoveStructureArtifact(index);
     SelectionModel->clearSelection();
 }
 
 void StructureArtifactsWidgetDialog::MoveUp() {
-    QModelIndex index = SelectionModel->currentIndex();
-    QModelIndex newIndex = Model->MoveUp(index);
+    QModelIndex const index = SelectionModel->currentIndex();
+    QModelIndex const newIndex = Model->MoveUp(index);
     SelectionModel->clearSelection();
     SelectionModel->select(newIndex, QItemSelectionModel::SelectionFlag::Select);
 }
 
 void StructureArtifactsWidgetDialog::MoveDown() {
-    QModelIndex index = SelectionModel->currentIndex();
-    QModelIndex newIndex = Model->MoveDown(index);
+    QModelIndex const index = SelectionModel->currentIndex();
+    QModelIndex const newIndex = Model->MoveDown(index);
     SelectionModel->clearSelection();
     SelectionModel->select(newIndex, QItemSelectionModel::SelectionFlag::Select);
 }
@@ -110,12 +110,12 @@ void StructureArtifactsWidgetDialog::UpdateButtonStatesOnSelectionChange(const Q
     if (modelIndexList.size() > 1)
         throw std::runtime_error("Invalid selection");
 
-    QModelIndex selectedIndex = modelIndexList.size() == 1
+    QModelIndex const selectedIndex = modelIndexList.size() == 1
             ? selected.indexes()[0]
             : QModelIndex();
-    bool indexIsValid = selectedIndex.isValid();
-    bool hasSiblingsBefore = indexIsValid && selectedIndex.siblingAtRow(selectedIndex.row() - 1).isValid();
-    bool hasSiblingsAfter = indexIsValid && selectedIndex.siblingAtRow(selectedIndex.row() + 1).isValid();
+    bool const indexIsValid = selectedIndex.isValid();
+    bool const hasSiblingsBefore = indexIsValid && selectedIndex.siblingAtRow(selectedIndex.row() - 1).isValid();
+    bool const hasSiblingsAfter = indexIsValid && selectedIndex.siblingAtRow(selectedIndex.row() + 1).isValid();
 
     AddButton->setEnabled(true);
     RemoveButton->setEnabled(indexIsValid);

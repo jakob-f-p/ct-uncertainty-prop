@@ -15,21 +15,20 @@ public:
     };
 
 protected:
-    explicit CtStructureDialog(DialogMode mode, QWidget* parent = nullptr);
+    explicit CtStructureDialog(QWidget* structureWidget, DialogMode mode, QWidget* parent = nullptr);
 
     QVBoxLayout* Layout;
 };
 
-
-
-template<typename Widget>
-class SimpleCtStructureDialog : public CtStructureDialog {
+class BasicStructureDialog : public CtStructureDialog {
 public:
-    explicit SimpleCtStructureDialog(DialogMode mode, QWidget* parent = nullptr);
+    explicit BasicStructureDialog(DialogMode mode, QWidget* parent = nullptr);
 };
 
-using BasicStructureDialog = SimpleCtStructureDialog<BasicStructureWidget>;
-using CombinedStructureDialog = SimpleCtStructureDialog<CombinedStructureWidget>;
+class CombinedStructureDialog : public CtStructureDialog {
+public:
+    explicit CombinedStructureDialog(DialogMode mode, QWidget* parent = nullptr);
+};
 
 
 

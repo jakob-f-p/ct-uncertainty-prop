@@ -1,26 +1,18 @@
 #include "PipelinesWidget.h"
 
-#include "ArtifactsDialog.h"
-#include "ArtifactsWidget.h"
-#include "ImageArtifactsModel.h"
-#include "ImageArtifactsView.h"
 #include "ImageArtifactsWidget.h"
 #include "StructureArtifactsWidget.h"
 #include "../Pipeline.h"
 #include "../PipelineList.h"
-#include "../../App.h"
 
 #include <QIcon>
 #include <QPushButton>
 #include <QLabel>
 #include <QStackedLayout>
 
-#include <vtkNew.h>
-
-PipelinesWidget::PipelinesWidget(ArtifactRenderWidget& renderWidget, QWidget* parent) :
+PipelinesWidget::PipelinesWidget(PipelineList& pipelines, QWidget* parent) :
         QWidget(parent),
-        RenderWidget(renderWidget),
-        Pipelines(App::GetInstance()->GetPipelines()),
+        Pipelines(pipelines),
         CurrentPipelineIndex(Pipelines.IsEmpty() ? -1 : 0),
         PipelineTitle(new QLabel()),
         PreviousPipelineButton(new QPushButton("")),
@@ -118,7 +110,7 @@ void PipelinesWidget::UpdatePipelineView() {
     StructureArtifactModelingWidget->SetCurrentView(CurrentPipelineIndex);
     ImageArtifactModelingWidget->SetCurrentView(CurrentPipelineIndex);
 
-    RenderWidget.UpdateImageArtifactFiltersOnPipelineChange(GetCurrentPipeline().GetImageArtifactConcatenation());
+    emit PipelineViewUpdated(GetCurrentPipeline());
 }
 
 auto PipelinesWidget::GenerateIcon(const std::string &filePrefix) noexcept -> QIcon {

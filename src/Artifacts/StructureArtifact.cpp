@@ -2,7 +2,6 @@
 
 #include "../NameLineEdit.h"
 #include "../Overload.h"
-#include "../Types.h"
 
 #include <QComboBox>
 #include <QFormLayout>
@@ -29,20 +28,9 @@ StructureArtifact::GetSubType(const StructureArtifactVariant& artifactVariant) n
     }, artifactVariant);
 }
 
-StructureArtifact::StructureArtifact(StructureArtifact::SubType subType) :
-        Artifact([subType]() -> StructureArtifactVariant {
-            switch (subType) {
-                case SubType::MOTION:    return MotionArtifact();
-                case SubType::STREAKING:
-                case SubType::METALLIC:
-                default: { qWarning("Todo"); return MotionArtifact(); }
-            }
-        }()){
-}
-
 StructureArtifact::StructureArtifact(const StructureArtifactData& data) :
         Artifact([&]() -> StructureArtifactVariant {
-            return std::visit([](auto& data) { return DataArtifactT<decltype(data)>(); }, data.Data);
+            return std::visit([](auto& data) { return ArtifactTypeT<decltype(data)>(); }, data.Data);
         }()) {
     data.PopulateArtifact(*this);
 }
@@ -51,7 +39,7 @@ StructureArtifact::StructureArtifact(const StructureArtifactData& data) :
 auto StructureArtifactData::PopulateFromArtifact(const StructureArtifact& artifact) noexcept -> void {
     Name = QString::fromStdString(artifact.GetName());
     Data = std::visit([&](auto& artifact) {
-        ArtifactDataT<decltype(artifact)> data {};
+        DataTypeT<decltype(artifact)> data {};
         data.PopulateFromArtifact(artifact);
         return data;
     }, artifact.Artifact);
@@ -59,7 +47,7 @@ auto StructureArtifactData::PopulateFromArtifact(const StructureArtifact& artifa
 
 auto StructureArtifactData::PopulateArtifact(StructureArtifact& artifact) const noexcept -> void {
     artifact.SetName(Name.toStdString());
-    std::visit([&](auto& artifact) { std::get<ArtifactDataT<decltype(artifact)>>(Data).PopulateArtifact(artifact); },
+    std::visit([&](auto& artifact) { std::get<DataTypeT<decltype(artifact)>>(Data).PopulateArtifact(artifact); },
                artifact.Artifact);
 
     artifact.MTime.Modified();
@@ -96,7 +84,7 @@ auto StructureArtifactWidget::GetData() const noexcept -> StructureArtifactData 
     StructureArtifactData data;
 
     data.Name = NameEdit->GetData();
-    data.Data = std::visit([](auto* widget) { return StructureArtifactDataVariant { widget->GetData() }; },
+    data.Data = std::visit([](auto* widget) { return DataVariant { widget->GetData() }; },
                            WidgetVariant);
 
     return data;
@@ -106,7 +94,7 @@ auto StructureArtifactWidget::Populate(const StructureArtifactData& data) noexce
     NameEdit->SetData(data.Name);
 
     StructureArtifact::SubType const subType = std::visit([&](const auto& data) {
-        return StructureArtifact::GetSubType(DataArtifactT<decltype(data)>());
+        return StructureArtifact::GetSubType(ArtifactTypeT<decltype(data)>());
     }, data.Data);
 
     if (const int idx = SubTypeComboBox->findData(QVariant::fromValue(subType)); idx != -1)
@@ -114,7 +102,7 @@ auto StructureArtifactWidget::Populate(const StructureArtifactData& data) noexce
 
     Layout->setRowVisible(SubTypeComboBox, false);
 
-    std::visit([&](auto* widget) { widget->Populate(std::get<ArtifactWidgetDataT<decltype(widget)>>(data.Data)); },
+    std::visit([&](auto* widget) { widget->Populate(std::get<DataTypeT<decltype(widget)>>(data.Data)); },
                WidgetVariant);
 }
 

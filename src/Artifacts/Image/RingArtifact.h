@@ -61,9 +61,11 @@ private:
 };
 
 
+class RingArtifactWidget;
 
 struct RingArtifactData {
     using Artifact = RingArtifact;
+    using Widget = RingArtifactWidget;
 
     float BrightRingWidth = 0.0F;
     float DarkRingWidth = 0.0F;

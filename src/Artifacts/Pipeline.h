@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../Types.h"
+
 #include <cstdint>
 #include <memory>
 #include <string>
@@ -9,8 +11,6 @@ class ImageArtifactConcatenation;
 class TreeStructureArtifactListCollection;
 
 struct CtStructureTreeEvent;
-
-using uidx_t = uint16_t;
 
 class Pipeline {
 public:

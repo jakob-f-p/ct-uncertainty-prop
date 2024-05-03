@@ -7,6 +7,7 @@
 #include "../../Modeling/UI/CtStructureTreeModel.h"
 
 #include <QLabel>
+#include <QStackedLayout>
 
 StructureArtifactsWidget::StructureArtifactsWidget(QWidget* parent) :
         QWidget(parent),

@@ -1,7 +1,6 @@
 #include "StructureArtifactListCollection.h"
 
 #include "StructureArtifact.h"
-#include "../Modeling/CtStructureTree.h"
 
 auto StructureArtifactList::GetMTime() const noexcept -> vtkMTimeType {
     if (Artifacts.empty())
@@ -27,9 +26,9 @@ auto StructureArtifactList::GetNumberOfArtifacts() const noexcept -> uidx_t {
 
 void StructureArtifactList::AddStructureArtifact(StructureArtifact& structureArtifact, int insertionIdx) {
     if (insertionIdx == -1)
-        Artifacts.emplace_back(std::make_unique<StructureArtifact>(structureArtifact));
+        Artifacts.emplace_back(std::make_unique<StructureArtifact>(std::move(structureArtifact)));
     else
-        Artifacts.emplace(std::next(Artifacts.begin(), insertionIdx), std::make_unique<StructureArtifact>(structureArtifact));
+        Artifacts.emplace(std::next(Artifacts.begin(), insertionIdx), std::make_unique<StructureArtifact>(std::move(structureArtifact)));
 
     std::sort(Artifacts.begin(), Artifacts.end(),
               [](const auto& a, const auto& b) {

@@ -75,7 +75,7 @@ namespace BasicStructureDetails {
     struct BasicStructureDataImpl {
         FunctionType FunctionType;
         QString TissueName;
-        BasicStructureSubTypeDataVariant Data;
+        ShapeDataVariant Data;
 
         using Structure = BasicStructure;
 
@@ -93,7 +93,7 @@ namespace BasicStructureDetails {
         BasicStructureWidgetImpl();
 
         auto
-        AddData(Data& data) noexcept -> void;
+        GetData() noexcept -> Data;
 
         auto
         Populate(const Data& data) noexcept -> void;
@@ -106,7 +106,7 @@ namespace BasicStructureDetails {
         QComboBox* TissueTypeComboBox;
         QComboBox* FunctionTypeComboBox;
         QGroupBox* SubTypeGroupBox;
-        BasicStructureSubTypeWidgetVariant SubTypeWidgetVariant;
+        ShapeWidgetVariant SubTypeWidgetVariant;
     };
 }
 
@@ -115,39 +115,19 @@ class BasicStructureData : public CtStructureBaseData<BasicStructureDetails::Bas
 class BasicStructureWidget : public CtStructureBaseWidget<BasicStructureDetails::BasicStructureWidgetImpl,
                                                           BasicStructureData> {
     Q_OBJECT
-
-public:
-    [[nodiscard]] auto static
-    GetWidgetData(QWidget* widget) -> BasicStructureData { return FindWidget(widget).GetData(); }
-
-    auto static
-    SetWidgetData(QWidget* widget, const BasicStructureData& data) -> void { FindWidget(widget).Populate(data); }
-
-private:
-    [[nodiscard]] auto static
-    FindWidget(QWidget* widget) -> BasicStructureWidget& {
-        if (!widget)
-            throw std::runtime_error("Given widget must not be nullptr");
-
-        auto* basicStructureWidget = widget->findChild<BasicStructureWidget*>();
-
-        if (!basicStructureWidget)
-            throw std::runtime_error("No basic structure widget contained in given widget");
-
-        return *basicStructureWidget;
-    }
 };
 
-using BasicStructureDetails::FunctionType;
-using BasicStructureDetails::TissueType;
 
 
+using StructureId = uint16_t;
 
 class BasicStructure : public CtStructureBase {
 public:
-    using Data = BasicStructureData;
+    using FunctionType = BasicStructureDetails::FunctionType;
+    using TissueType = BasicStructureDetails::TissueType;
 
     explicit BasicStructure(FunctionType functionType = FunctionType::SPHERE);
+    explicit BasicStructure(auto&& shape) : Shape(std::move(shape)) {}
     explicit BasicStructure(const BasicStructureData& data);
 
     [[nodiscard]] auto
@@ -162,16 +142,8 @@ public:
     [[nodiscard]] inline auto
     FunctionValue(Point point) const -> float;
 
-    [[nodiscard]] auto
-    GetData() const noexcept -> Data;
-
-    auto
-    SetData(const Data& data) noexcept -> void;
-
     auto
     operator==(const BasicStructure& other) const -> bool { return Id == other.Id && Tissue == other.Tissue; }
-
-    using ShapeVariant = std::variant<Sphere, Box>;
 
 private:
     friend struct EvaluateImplicitStructures;
@@ -185,7 +157,5 @@ private:
 };
 
 auto BasicStructure::FunctionValue(Point point) const -> float {
-    const Point transformedPoint = Transform.TransformPoint(point);
-
-    return std::visit([&](const auto& shape) { return shape.EvaluateFunction(transformedPoint); }, Shape);
+    return std::visit([&](const auto& shape) { return shape.EvaluateFunction(point); }, Shape);
 }

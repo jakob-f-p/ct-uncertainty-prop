@@ -1,11 +1,12 @@
 #pragma once
 
-#include <QStackedLayout>
 #include <QWidget>
 
 class CtStructureTreeModel;
 class Pipeline;
 class StructureArtifactsWidgetDialog;
+
+class QStackedLayout;
 
 class StructureArtifactsWidget : public QWidget {
     Q_OBJECT

@@ -12,20 +12,18 @@ public:
     };
 
 protected:
-    explicit ArtifactsDialog(Mode mode, QWidget* parent = nullptr);
+    explicit ArtifactsDialog(QWidget* widget, Mode mode, QWidget* parent = nullptr);
 
+private:
     QVBoxLayout* VLayout;
 };
 
-
-template<typename Widget>
-class ArtifactsTypeDialog : public ArtifactsDialog {
+class ImageArtifactDialog : public ArtifactsDialog {
 public:
-    explicit ArtifactsTypeDialog(Mode mode, QWidget* parent = nullptr);
+    explicit ImageArtifactDialog(Mode mode, QWidget* parent = nullptr);
 };
 
-class ImageArtifactWidget;
-class StructureArtifactWidget;
-
-using ImageArtifactDialog = ArtifactsTypeDialog<ImageArtifactWidget>;
-using StructureArtifactDialog = ArtifactsTypeDialog<StructureArtifactWidget>;
+class StructureArtifactDialog : public ArtifactsDialog {
+public:
+    explicit StructureArtifactDialog(Mode mode, QWidget* parent = nullptr);
+};

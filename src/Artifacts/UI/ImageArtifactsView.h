@@ -15,7 +15,7 @@ protected:
                  const std::function<void(const QModelIndex&, int)>& f,
                  int depth = 0) const;
 
-    bool hasHiddenIndices() const;
+    auto hasHiddenIndices() const -> bool;
 
-    static int getLevel(const QModelIndex& index) ;
+    static auto getLevel(const QModelIndex& index) -> int;
 };

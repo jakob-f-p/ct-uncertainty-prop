@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../BasicImageArtifact.h"
+#include "../Image/BasicImageArtifact.h"
 
 #include <vtkImageAlgorithm.h>
 

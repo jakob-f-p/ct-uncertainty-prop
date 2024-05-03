@@ -7,9 +7,12 @@
 #include <QTabWidget>
 #include <QVBoxLayout>
 
-CtStructureDialog::CtStructureDialog(DialogMode mode, QWidget* parent) :
+CtStructureDialog::CtStructureDialog(QWidget* structureWidget, DialogMode mode, QWidget* parent) :
         QDialog(parent),
         Layout(new QVBoxLayout(this)) {
+
+    if (!structureWidget)
+        throw std::runtime_error("Structure widget must not be null");
 
     setMinimumSize(800, 800);
     setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
@@ -19,6 +22,8 @@ CtStructureDialog::CtStructureDialog(DialogMode mode, QWidget* parent) :
     setWindowTitle(mode == DialogMode::CREATE ? "Create" : "Edit");
 
     Layout->setSizeConstraint(QLayout::SizeConstraint::SetMinimumSize);
+
+    Layout->addWidget(structureWidget);
 
     auto* dialogButtonBar = new QDialogButtonBox();
     dialogButtonBar->setOrientation(Qt::Horizontal);
@@ -34,22 +39,21 @@ CtStructureDialog::CtStructureDialog(DialogMode mode, QWidget* parent) :
     }
 }
 
-template class SimpleCtStructureDialog<BasicStructureWidget>;
-template class SimpleCtStructureDialog<CombinedStructureWidget>;
+BasicStructureDialog::BasicStructureDialog(CtStructureDialog::DialogMode mode, QWidget* parent) :
+        CtStructureDialog(new BasicStructureWidget(), mode, parent) {}
 
-template<typename Widget>
-SimpleCtStructureDialog<Widget>::SimpleCtStructureDialog(CtStructureDialog::DialogMode mode, QWidget* parent) :
-        CtStructureDialog(mode, parent) {
-    Layout->insertWidget(0, new Widget());
-}
+CombinedStructureDialog::CombinedStructureDialog(CtStructureDialog::DialogMode mode, QWidget* parent) :
+        CtStructureDialog(new CombinedStructureWidget(), mode, parent) {}
 
 BasicAndCombinedStructureCreateDialog::BasicAndCombinedStructureCreateDialog(QWidget* parent) :
-        CtStructureDialog(DialogMode::CREATE, parent),
-        CombinedWidget(new CombinedStructureWidget()),
-        BasicWidget(new BasicStructureWidget()) {
-
-    auto* tabWidget = new QTabWidget();
-    tabWidget->addTab(CombinedWidget, "Combination");
-    tabWidget->addTab(BasicWidget, "Basic");
-    Layout->insertWidget(0, tabWidget);
+        CtStructureDialog([]() {
+                              auto* tabWidget = new QTabWidget();
+                              tabWidget->addTab(new CombinedStructureWidget(), "Combination");
+                              tabWidget->addTab(new BasicStructureWidget(), "Basic");
+                              return tabWidget;
+                          }(),
+                          DialogMode::CREATE,
+                          parent),
+        CombinedWidget(findChild<CombinedStructureWidget*>()),
+        BasicWidget(findChild<BasicStructureWidget*>()) {
 }

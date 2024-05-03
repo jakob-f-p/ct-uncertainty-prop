@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../Types.h"
+
 #include <QWidget>
 
 #include <vtkNew.h>
@@ -12,11 +14,9 @@ class QDoubleSpinBox;
 class QGridLayout;
 class vtkTransform;
 
-using vtkMTimeType = uint64_t;
+using SimpleTransformData = std::array<DoubleVector, 3>;
 
-using SimpleTransformData = std::array<std::array<double, 3>, 3>;
-
-using Point = std::array<double, 3>;
+using Point = DoubleVector;
 
 struct RowMajor4x3Matrix {
 

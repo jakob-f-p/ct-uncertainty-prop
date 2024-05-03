@@ -2,9 +2,6 @@
 
 #include <QAbstractItemModel>
 
-using idx_t = int32_t;
-using uidx_t = uint16_t;
-
 class ImageArtifactData;
 class ImageArtifactConcatenation;
 class Pipeline;

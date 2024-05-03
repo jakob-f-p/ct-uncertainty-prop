@@ -1,7 +1,7 @@
 #pragma once
 
 #include "BasicImageArtifact.h"
-#include "../Enum.h"
+#include "../../Enum.h"
 
 #include <QMetaEnum>
 #include <QMetaObject>

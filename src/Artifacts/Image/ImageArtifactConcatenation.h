@@ -1,15 +1,12 @@
 #pragma once
 
+#include <functional>
 #include <map>
 #include <memory>
 
 #include <vtkNew.h>
-#include <vtkSmartPointer.h>
 
-class CompositeImageArtifact;
-class CtDataSource;
 class ImageArtifact;
-class ImageArtifactFilter;
 class PassThroughImageArtifactFilter;
 class vtkImageAlgorithm;
 
@@ -33,7 +30,7 @@ public:
     ~ImageArtifactConcatenation();
 
     [[nodiscard]] auto
-    ContainsImageArtifact(const ImageArtifact& imageArtifact) const noexcept -> bool;
+    ContainsImageArtifact(ImageArtifact const& imageArtifact) const noexcept -> bool;
 
     auto
     AddImageArtifact(ImageArtifact&& imageArtifact,
@@ -44,7 +41,22 @@ public:
     RemoveImageArtifact(ImageArtifact& imageArtifact) -> void;
 
     void
-    MoveChildImageArtifact(const ImageArtifact& imageArtifact, int newIdx);
+    MoveChildImageArtifact(ImageArtifact const& imageArtifact, int newIdx);
+
+    auto
+    UpdateArtifactFilter() -> void;
+
+    [[nodiscard]] auto
+    GetStartFilter() const -> vtkImageAlgorithm&;
+
+    [[nodiscard]] auto
+    GetEndFilter() const -> vtkImageAlgorithm&;
+
+    using EventCallback = std::function<void()>;
+    void AddEventCallback(void* receiver, EventCallback&& callback);
+
+private:
+    friend class ImageArtifactsModel;
 
     [[nodiscard]] auto
     GetStart() noexcept -> ImageArtifact&;
@@ -53,23 +65,13 @@ public:
     Get(uint16_t idx) -> ImageArtifact&;
 
     [[nodiscard]] auto
-    IndexOf(const ImageArtifact& imageArtifact) const -> uint16_t;
+    IndexOf(ImageArtifact const& imageArtifact) const -> uint16_t;
 
-    [[nodiscard]] auto
-    GetArtifactFilter() const -> vtkImageAlgorithm&;
-
-    auto
-    UpdateArtifactFilter() -> void;
-
-    using EventCallback = std::function<void()>;
-    void AddEventCallback(void* receiver, EventCallback&& callback);
-
-private:
     auto
     EmitEvent() -> void;
 
     std::unique_ptr<ImageArtifact> Start; // Composite
-    vtkNew<CtDataSource> StartFilter;
+    vtkNew<PassThroughImageArtifactFilter> StartFilter;
     vtkNew<PassThroughImageArtifactFilter> EndFilter;
 
     std::map<void*, EventCallback> CallbackMap;

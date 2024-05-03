@@ -1,6 +1,6 @@
 #include "ImageArtifact.h"
 
-#include "../Overload.h"
+#include "../../Overload.h"
 
 #include <QComboBox>
 #include <QFormLayout>
@@ -92,18 +92,16 @@ auto ImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtk
 ImageArtifactData::ImageArtifactData(const ImageArtifact& artifact) :
         Data([&]() {
             return std::visit(Overload {
-                    [&](const BasicImageArtifact& basic) -> ImageArtifactDataVariant { return BasicImageArtifactData{}; },
-                    [&](const CompositeImageArtifact& composite) -> ImageArtifactDataVariant { return CompositeImageArtifactData{}; }
+                    [&](BasicImageArtifact const&) -> ImageArtifactDataVariant { return BasicImageArtifactData{}; },
+                    [&](CompositeImageArtifact const&) -> ImageArtifactDataVariant { return CompositeImageArtifactData{}; }
             }, artifact.Artifact);
         }()) {
     PopulateFromArtifact(artifact);
 }
 
-ImageArtifactData::ImageArtifactData(BasicImageArtifactData&& data) :
-        Data(data) { }
+ImageArtifactData::ImageArtifactData(BasicImageArtifactData&& data) : Data(std::move(data)) {}
 
-ImageArtifactData::ImageArtifactData(CompositeImageArtifactData&& data) :
-        Data(data) { }
+ImageArtifactData::ImageArtifactData(CompositeImageArtifactData&& data) : Data(std::move(data)) {}
 
 auto ImageArtifactData::PopulateFromArtifact(const ImageArtifact& imageArtifact) noexcept -> void {
     std::visit(Overload {
@@ -114,8 +112,8 @@ auto ImageArtifactData::PopulateFromArtifact(const ImageArtifact& imageArtifact)
 
 auto ImageArtifactData::PopulateArtifact(ImageArtifact& imageArtifact) const noexcept -> void {
     std::visit(Overload {
-            [&](const BasicImageArtifactData& basic) { basic.PopulateArtifact(std::get<BasicImageArtifact>(imageArtifact.Artifact)); },
-            [&](const CompositeImageArtifactData& composite) { composite.PopulateArtifact(std::get<CompositeImageArtifact>(imageArtifact.Artifact)); }
+            [&](BasicImageArtifactData const& basic) { basic.PopulateArtifact(std::get<BasicImageArtifact>(imageArtifact.Artifact)); },
+            [&](CompositeImageArtifactData const& composite) { composite.PopulateArtifact(std::get<CompositeImageArtifact>(imageArtifact.Artifact)); }
     }, Data);
 }
 

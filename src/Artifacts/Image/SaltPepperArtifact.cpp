@@ -1,6 +1,6 @@
 #include "SaltPepperArtifact.h"
 
-#include "Filters/SaltPepperArtifactFilter.h"
+#include "../Filters/SaltPepperArtifactFilter.h"
 
 #include <QDoubleSpinBox>
 #include <QLabel>

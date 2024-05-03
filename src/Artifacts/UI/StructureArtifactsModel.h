@@ -12,9 +12,9 @@ public:
 
     auto index(int row, int column, const QModelIndex& parent) const -> QModelIndex override;
 
-    QModelIndex parent(const QModelIndex& child) const override;
+    auto parent(const QModelIndex& child) const -> QModelIndex override;
 
-    int rowCount(const QModelIndex& parent) const override;
+    auto rowCount(const QModelIndex& parent) const -> int override;
 
     int columnCount(const QModelIndex& parent) const override;
 

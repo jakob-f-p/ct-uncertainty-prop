@@ -1,12 +1,10 @@
-#include "../CtStructureTree.h"
-#include "../CtDataSource.h"
-
-#include "ModelingRenderWidget.h"
+#include "RenderWidget.h"
 
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
 #include <vtkColorTransferFunction.h>
 #include <vtkGenericOpenGLRenderWindow.h>
+#include <vtkImageAlgorithm.h>
 #include <vtkInteractorStyleTrackballCamera.h>
 #include <vtkOpenGLGPUVolumeRayCastMapper.h>
 #include <vtkOpenGLRenderer.h>
@@ -14,11 +12,8 @@
 #include <vtkPiecewiseFunction.h>
 #include <vtkVolumeProperty.h>
 
-ModelingRenderWidget::ModelingRenderWidget(CtStructureTree& dataTree, QWidget* parent) :
-        QVTKOpenGLNativeWidget(parent),
-        DataTree(dataTree) {
-
-    DataSource->SetDataTree(&DataTree);
+RenderWidget::RenderWidget(vtkImageAlgorithm& dataSource, QWidget* parent) :
+        QVTKOpenGLNativeWidget(parent) {
 
     vtkNew<vtkPiecewiseFunction> opacityMappingFunction;
     opacityMappingFunction->AddPoint(-1000.0, 0.005);
@@ -36,7 +31,7 @@ ModelingRenderWidget::ModelingRenderWidget(CtStructureTree& dataTree, QWidget* p
     volumeProperty->SetAmbient(0.3);
 
     vtkNew<vtkOpenGLGPUVolumeRayCastMapper> volumeMapper;
-    volumeMapper->SetInputConnection(DataSource->GetOutputPort());
+    volumeMapper->SetInputConnection(dataSource.GetOutputPort());
 
     vtkNew<vtkVolume> volume;
     volume->SetMapper(volumeMapper);
@@ -50,14 +45,13 @@ ModelingRenderWidget::ModelingRenderWidget(CtStructureTree& dataTree, QWidget* p
     vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
     renderWindow->SetWindowName("CT-Data");
     renderWindow->AddRenderer(Renderer);
-
     renderWindow->SetInteractor(RenderWindowInteractor);
     RenderWindowInteractor->Initialize();
-    vtkNew<vtkInteractorStyleTrackballCamera> trackballCameraStyle;
+
+    vtkNew<vtkInteractorStyleTrackballCamera> const trackballCameraStyle;
     RenderWindowInteractor->SetInteractorStyle(trackballCameraStyle);
 
     setRenderWindow(renderWindow);
-
     renderWindow->Render();
 
     vtkNew<vtkAxesActor> axesActor;
@@ -67,13 +61,15 @@ ModelingRenderWidget::ModelingRenderWidget(CtStructureTree& dataTree, QWidget* p
     OrientationMarkerWidget->SetInteractor(RenderWindowInteractor);
     OrientationMarkerWidget->EnabledOn();
     OrientationMarkerWidget->InteractiveOff();
-
-    // update on tree event
-    DataTree.AddTreeEventCallback([renderWindowInteractor = RenderWindowInteractor.Get()](const CtStructureTreeEvent&)
-                                  { renderWindowInteractor->Render(); });
 }
 
-void ModelingRenderWidget::ResetCamera() const {
+RenderWidget::~RenderWidget() = default;
+
+auto RenderWidget::ResetCamera() const -> void {
     Renderer->GetActiveCamera()->DeepCopy(InitialCamera);
+    RenderWindowInteractor->Render();
+}
+
+auto RenderWidget::Render() const -> void {
     RenderWindowInteractor->Render();
 }

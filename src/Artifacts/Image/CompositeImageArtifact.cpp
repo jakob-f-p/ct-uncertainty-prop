@@ -2,7 +2,7 @@
 
 #include "ImageArtifact.h"
 
-#include "Filters/MergeParallelImageArtifactFilters.h"
+#include "../Filters/MergeParallelImageArtifactFilters.h"
 
 #include <QComboBox>
 #include <QFormLayout>
@@ -159,7 +159,7 @@ auto CompositeImageArtifact::IndexOf(const ImageArtifact& imageArtifact, uint16_
     return -1;
 }
 
-vtkImageAlgorithm& CompositeImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) {
+auto CompositeImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm& {
     switch (CompType) {
 
         case CompositionType::SEQUENTIAL: {

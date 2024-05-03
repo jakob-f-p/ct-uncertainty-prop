@@ -40,9 +40,11 @@ private:
 };
 
 
+class GaussianArtifactWidget;
 
 struct GaussianArtifactData {
     using Artifact = GaussianArtifact;
+    using Widget = GaussianArtifactWidget;
 
     float Mean = 0.0F;
     float Sd = 0.0F;

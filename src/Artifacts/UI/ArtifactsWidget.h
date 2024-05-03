@@ -1,27 +1,20 @@
 #pragma once
 
-#include <QMainWindow>
-#include <QVTKOpenGLNativeWidget.h>
+#include "../../RenderWidget.h"
 
-#include <vtkNew.h>
+#include <QMainWindow>
 
 class QPushButton;
 
-class vtkCamera;
-class vtkOrientationMarkerWidget;
-class vtkOpenGLRenderer;
-class vtkOpenGLGPUVolumeRayCastMapper;
-
 class ArtifactRenderWidget;
-class CtDataSource;
-class CtStructureTree;
 class ImageArtifactConcatenation;
+class Pipeline;
 class PipelineList;
 class PipelinesWidget;
 
 class ArtifactsWidget : public QMainWindow {
 public:
-    ArtifactsWidget();
+    explicit ArtifactsWidget(PipelineList& pipelines);
 
 private:
     QPushButton* ResetCameraButton;
@@ -32,22 +25,18 @@ private:
 };
 
 
-class ArtifactRenderWidget : public QVTKOpenGLNativeWidget {
+class ArtifactRenderWidget : public RenderWidget {
+    Q_OBJECT
+
 public:
     explicit ArtifactRenderWidget(ImageArtifactConcatenation& imageArtifactConcatenation, QWidget* parent = nullptr);
+    ~ArtifactRenderWidget() override;
 
-    void ResetCamera() const;
-
+public slots:
     auto
-    UpdateImageArtifactFiltersOnPipelineChange(ImageArtifactConcatenation& imageArtifactConcatenation) -> void;
+    UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) const -> void;
 
-    vtkNew<CtDataSource> DataSource;
+private:
     PipelineList& Pipelines;
 //    ImageArtifactConcatenation& ImageArtifacts;
-
-    vtkNew<vtkOrientationMarkerWidget> OrientationMarkerWidget;
-    vtkNew<vtkOpenGLRenderer> Renderer;
-    vtkNew<vtkOpenGLGPUVolumeRayCastMapper> VolumeMapper;
-    vtkNew<QVTKInteractor> RenderWindowInteractor;
-    vtkNew<vtkCamera> InitialCamera;
 };

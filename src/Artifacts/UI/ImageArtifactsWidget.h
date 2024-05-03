@@ -1,14 +1,15 @@
 #pragma once
 
-#include <QItemSelectionModel>
-#include <QPushButton>
 #include <QWidget>
-#include <QStackedLayout>
 
 class ArtifactsDialog;
 class ImageArtifactsModel;
 class ImageArtifactsView;
 class Pipeline;
+
+class QItemSelectionModel;
+class QPushButton;
+class QStackedLayout;
 
 class ImageArtifactsWidget : public QWidget {
     Q_OBJECT
@@ -31,9 +32,9 @@ protected slots:
 private:
     void DisableImageArtifactButtons();
 
-    ImageArtifactsView* GetCurrentView();
-    ImageArtifactsModel* GetCurrentModel();
-    QItemSelectionModel* GetCurrentSelectionModel();
+    auto GetCurrentView() -> ImageArtifactsView*;
+    auto GetCurrentModel() -> ImageArtifactsModel*;
+    auto GetCurrentSelectionModel() -> QItemSelectionModel*;
 
     QStackedLayout* Views;
 

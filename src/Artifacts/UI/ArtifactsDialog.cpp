@@ -1,17 +1,20 @@
 #include "ArtifactsDialog.h"
 
-#include "../ImageArtifact.h"
+#include "../Image/ImageArtifact.h"
 #include "../StructureArtifact.h"
 
 #include <QDialogButtonBox>
 #include <QVBoxLayout>
 
-ArtifactsDialog::ArtifactsDialog(Mode mode, QWidget* parent) :
+ArtifactsDialog::ArtifactsDialog(QWidget* widget, Mode mode, QWidget* parent) :
         QDialog(parent),
         VLayout(new QVBoxLayout(this)) {
 
+    if (!widget)
+        throw std::runtime_error("Given widget cannot be nullptr");
+
     VLayout->setSizeConstraint(QLayout::SizeConstraint::SetFixedSize);
-    setMinimumSize(450, 200);
+    setMinimumSize(600, 400);
     setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 
     setModal(true);
@@ -19,6 +22,8 @@ ArtifactsDialog::ArtifactsDialog(Mode mode, QWidget* parent) :
     setWindowTitle(mode == Mode::EDIT ? "Edit Image Artifact" : "Create Image Artifact");
 
     VLayout->setAlignment(Qt::AlignTop);
+
+    VLayout->addWidget(widget);
 
     auto* dialogButtonBar = new QDialogButtonBox();
     dialogButtonBar->setOrientation(Qt::Horizontal);
@@ -36,13 +41,8 @@ ArtifactsDialog::ArtifactsDialog(Mode mode, QWidget* parent) :
     }
 }
 
+ImageArtifactDialog::ImageArtifactDialog(ArtifactsDialog::Mode mode, QWidget* parent) :
+        ArtifactsDialog(new ImageArtifactWidget(), mode, parent) {}
 
-
-template class ArtifactsTypeDialog<ImageArtifactWidget>;
-template class ArtifactsTypeDialog<StructureArtifactWidget>;
-
-template<typename Widget>
-ArtifactsTypeDialog<Widget>::ArtifactsTypeDialog(ArtifactsDialog::Mode mode, QWidget* parent) :
-        ArtifactsDialog(mode, parent) {
-    VLayout->insertWidget(0, new Widget());
-}
+StructureArtifactDialog::StructureArtifactDialog(ArtifactsDialog::Mode mode, QWidget* parent) :
+        ArtifactsDialog(new StructureArtifactWidget(), mode, parent) {}

@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 
+#include "App.h"
 #include "Modeling/UI/ModelingWidget.h"
 #include "Artifacts/UI/ArtifactsWidget.h"
 
@@ -12,7 +13,7 @@ MainWindow::MainWindow() {
     tabWidget->setTabPosition(QTabWidget::TabPosition::West);
 
 //    auto* modelingWidget = new ModelingWidget();
-    auto* artifactsWidget = new ArtifactsWidget();
+    auto* artifactsWidget = new ArtifactsWidget(App::GetInstance()->GetPipelines());
 
 //    tabWidget->addTab(modelingWidget, "Implicit Modeling");
     tabWidget->addTab(artifactsWidget, "Artifacts Widget");

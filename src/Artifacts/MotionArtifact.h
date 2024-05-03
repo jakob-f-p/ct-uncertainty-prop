@@ -1,10 +1,10 @@
 #pragma once
 
+#include "../Types.h"
+
 #include <QWidget>
 
 #include <array>
-
-using FloatPoint = std::array<float, 3>;
 
 struct MotionArtifactData;
 

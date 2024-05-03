@@ -6,19 +6,19 @@ class Pipeline;
 
 class StructureArtifactsWidgetDelegate : public QStyledItemDelegate {
 public:
-    explicit StructureArtifactsWidgetDelegate(const Pipeline& pipeline, QWidget* parent = nullptr);
+    explicit StructureArtifactsWidgetDelegate(Pipeline const& pipeline, QWidget* parent = nullptr);
 
-    auto createEditor(QWidget* parent, const QStyleOptionViewItem& option, const QModelIndex& index) const -> QWidget* override;
+    auto createEditor(QWidget* parent, QStyleOptionViewItem const& option, QModelIndex const& index) const -> QWidget* override;
 
-    void setEditorData(QWidget* editor, const QModelIndex& index) const override;
+    void setEditorData(QWidget* editor, QModelIndex const& index) const override {};
 
-    void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override;
+    void setModelData(QWidget* editor, QAbstractItemModel* model, QModelIndex const& index) const override {};
 
     void updateEditorGeometry(QWidget* editor,
-                              const QStyleOptionViewItem& option,
-                              const QModelIndex& index) const override;
+                              QStyleOptionViewItem const& option,
+                              QModelIndex const& index) const override {};
 protected:
-    auto eventFilter(QObject *object, QEvent *event) -> bool override;
+    auto eventFilter(QObject* object, QEvent* event) -> bool override { return false; };
 
-    const Pipeline& APipeline;
+    Pipeline const& APipeline;
 };

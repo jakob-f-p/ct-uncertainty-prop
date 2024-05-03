@@ -4,14 +4,13 @@
 #include <QLabel>
 #include <QFormLayout>
 
-auto CombinedStructureDetails::CombinedStructureDataImpl::PopulateStructure(Structure& structure) const noexcept
-        -> void {
+auto
+CombinedStructureDetails::CombinedStructureDataImpl::PopulateStructure(Structure& structure) const noexcept -> void {
     structure.Operator = Operator;
 }
 
 auto
-CombinedStructureDetails::CombinedStructureDataImpl::PopulateFromStructure(const Structure& structure) noexcept
-        -> void {
+CombinedStructureDetails::CombinedStructureDataImpl::PopulateFromStructure(const Structure& structure) noexcept -> void {
     Operator = structure.Operator;
 }
 
@@ -29,8 +28,12 @@ CombinedStructureDetails::CombinedStructureWidgetImpl::CombinedStructureWidgetIm
     Layout->addRow("Operator Type", OperatorComboBox);
 }
 
-auto CombinedStructureDetails::CombinedStructureWidgetImpl::AddData(Data& data) noexcept -> void {
+auto CombinedStructureDetails::CombinedStructureWidgetImpl::GetData() noexcept -> Data {
+    Data data {};
+
     data.Operator = OperatorComboBox->currentData().value<OperatorType>();
+
+    return data;
 }
 
 auto CombinedStructureDetails::CombinedStructureWidgetImpl::Populate(const Data& data) noexcept -> void {
@@ -39,12 +42,14 @@ auto CombinedStructureDetails::CombinedStructureWidgetImpl::Populate(const Data&
         OperatorComboBox->setCurrentIndex(idx);
 }
 
+
+
 CombinedStructure::CombinedStructure(OperatorType operatorType) :
         Operator(operatorType) {
 }
 
 CombinedStructure::CombinedStructure(const CombinedStructureData& data) : CombinedStructure(data.Data.Operator) {
-    SetData(data);
+    data.PopulateStructure(*this);
 }
 
 void CombinedStructure::SetOperatorType(OperatorType operatorType) noexcept {
@@ -93,25 +98,15 @@ auto CombinedStructure::PositionIndex(uidx_t childIdx) const -> int {
 }
 
 auto CombinedStructure::GetViewName() const noexcept -> std::string {
-    return OperatorTypeToString(Operator) + (Name.empty() ? "" : " (" + Name + ")");
+    return OperatorTypeToString(Operator) + (GetName().empty() ? "" : " (" + GetName() + ")");
 }
 
-auto CombinedStructure::ReplaceChild(idx_t oldIdx, idx_t newIdx) -> void {
+auto CombinedStructure::ReplaceChild(uidx_t oldIdx, uidx_t newIdx) -> void {
     auto oldIt = std::find(ChildStructureIndices.begin(), ChildStructureIndices.end(), oldIdx);
     if (oldIt == ChildStructureIndices.end())
         throw std::runtime_error("Given old child index is not a child index of this structure");
 
     *oldIt = newIdx;
-}
-
-auto CombinedStructure::GetData() const noexcept -> Data {
-    Data data {};
-    data.PopulateFromStructure(*this);
-    return data;
-}
-
-auto CombinedStructure::SetData(const Data& data) noexcept -> void {
-    data.PopulateStructure(*this);
 }
 
 auto CombinedStructure::operator==(const CombinedStructure& other) const noexcept -> bool {

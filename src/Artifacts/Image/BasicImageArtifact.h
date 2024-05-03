@@ -5,12 +5,16 @@
 #include "GaussianArtifact.h"
 #include "RingArtifact.h"
 #include "SaltPepperArtifact.h"
+#include "WindMillArtifact.h"
+#include "../../Types.h"
 
 #include <QMetaObject>
 
 #include <string>
 
 class BasicImageArtifact;
+
+#define BASIC_IMAGE_ARTIFACT_TYPES GaussianArtifact, SaltPepperArtifact, RingArtifact, WindMillArtifact
 
 namespace BasicImageArtifactDetails {
     Q_NAMESPACE
@@ -42,9 +46,11 @@ namespace BasicImageArtifactDetails {
 
     ENUM_GET_VALUES(SubType);
 
-    using BasicImageArtifactWidgetVariant = std::variant<GaussianArtifactWidget*, SaltPepperArtifactWidget*, RingArtifactWidget*>;
 
-    struct BasicImageArtifactDataVariant : std::variant<GaussianArtifactData, SaltPepperArtifactData, RingArtifactData> {
+
+    using BasicImageArtifactWidgetVariant = WidgetPointerVariant<BASIC_IMAGE_ARTIFACT_TYPES>;
+
+    struct BasicImageArtifactDataVariant : DataVariant<BASIC_IMAGE_ARTIFACT_TYPES> {
         using Artifact = BasicImageArtifact;
 
         auto
@@ -82,10 +88,10 @@ class BasicImageArtifactData;
 class BasicImageArtifact : public ImageArtifactBaseDetails::ImageArtifactBase {
 public:
     using SubType = BasicImageArtifactDetails::SubType;
-    using BasicImageArtifactVariant = std::variant<GaussianArtifact, SaltPepperArtifact, RingArtifact>;
+    using BasicImageArtifactVariant = std::variant<BASIC_IMAGE_ARTIFACT_TYPES>;
 
+    BasicImageArtifact() = default;
     explicit BasicImageArtifact(const BasicImageArtifactData& data);
-    explicit BasicImageArtifact(SubType subType = SubType::GAUSSIAN);
     explicit BasicImageArtifact(auto&& basicArtifact) : Artifact(std::move(basicArtifact)) {}
 
     [[nodiscard]] auto
@@ -115,3 +121,5 @@ struct BasicImageArtifactWidget
                                                                    BasicImageArtifactData> {
     Q_OBJECT
 };
+
+#undef BASIC_IMAGE_ARTIFACT_TYPES

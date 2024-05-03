@@ -5,10 +5,11 @@
 #include <QDoubleSpinBox>
 #include <QGridLayout>
 #include <QLabel>
-#include <utility>
 
 #include <vtkMatrix4x4.h>
 #include <vtkTransform.h>
+
+#include <utility>
 
 auto SimpleTransform::GetMTime() const noexcept -> vtkMTimeType {
     return Transform->GetMTime();

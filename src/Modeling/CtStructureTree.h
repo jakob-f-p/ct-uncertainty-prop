@@ -12,9 +12,6 @@ class PipelineList;
 
 class QVariant;
 
-using StructureVariant = std::variant<BasicStructure, CombinedStructure>;
-using StructureDataVariant = std::variant<BasicStructureData, CombinedStructureData>;
-
 enum struct CtStructureTreeEventType : uint8_t {
     Add,
     Remove,
@@ -28,8 +25,12 @@ struct CtStructureTreeEvent {
     constexpr CtStructureTreeEvent(CtStructureTreeEventType type, uidx_t idx) noexcept : Type(type), Idx(idx) {};
 };
 
+using StructureDataVariant = std::variant<BasicStructureData, CombinedStructureData>;
+
 class CtStructureTree {
 public:
+    using StructureVariant = std::variant<BasicStructure, CombinedStructure>;
+
     [[nodiscard]] auto
     GetMTime() const -> vtkMTimeType;
 
@@ -85,25 +86,24 @@ public:
     using TreeEventCallback = std::function<void(const CtStructureTreeEvent&)>;
     void AddTreeEventCallback(TreeEventCallback&& treeEventCallback);
 
-    auto GetRootIdx() const noexcept -> idx_t;
+    [[nodiscard]] auto
+    GetRootIdx() const noexcept -> idx_t;
 
 private:
-    template<TCtStructure TStructure>
     [[nodiscard]] auto
-    CtStructureExists(const TStructure& ctStructure) const -> bool;
+    CtStructureExists(auto const& ctStructure) const -> bool;
 
     [[nodiscard]] auto
-    StructureIdxExists(idx_t idx) const noexcept -> bool;
+    StructureIdxExists(uidx_t idx) const noexcept -> bool;
 
     auto
     EmitEvent(CtStructureTreeEvent event) noexcept -> void;
 
-    template<TCtStructure TStructure>
     [[nodiscard]] auto
-    FindIndexOf(const TStructure& structure) const -> uidx_t;
+    FindIndexOf(auto const& structure) const -> uidx_t;
 
     [[nodiscard]] auto
-    GetParentIdxOf(const TCtStructure auto& ctStructure) const -> idx_t;
+    GetParentIdxOf(auto const& ctStructure) const -> idx_t;
 
     auto
     IncrementParentAndChildIndices(uidx_t startIdx) -> void;
@@ -111,10 +111,10 @@ private:
     auto
     DecrementParentAndChildIndices(uidx_t startIdx) -> void;
 
-    idx_t RootIdx = -1;
-    std::vector<StructureVariant> Structures;
     vtkTimeStamp MTime;
+    std::vector<StructureVariant> Structures;
     std::vector<TreeEventCallback> TreeEventCallbacks;
+    idx_t RootIdx;
 };
 
 

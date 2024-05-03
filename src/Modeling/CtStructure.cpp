@@ -57,7 +57,7 @@ auto CtStructureBaseWidget<StructureWidget, Data>::GetData() const noexcept -> D
     data.Name = NameEdit->GetData();
     data.Transform = TransformWidget->GetData();
 
-    SubWidget->AddData(data.Data);
+    data.Data = SubWidget->GetData();
 
     return data;
 }

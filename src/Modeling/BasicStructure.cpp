@@ -6,17 +6,14 @@
 #include <QFormLayout>
 #include <QGroupBox>
 
-#define BASIC_SHAPE_DATA(Shape) \
-    typename std::decay_t<decltype(Shape)>::Data
-
 auto BasicStructureDetails::BasicStructureDataImpl::PopulateFromStructure(const Structure& structure) noexcept
         -> void {
     FunctionType = structure.GetFunctionType();
     TissueName = QString::fromStdString(structure.Tissue.Name);
-    Data = std::visit([&](const auto& shape) { return BasicStructureSubTypeDataVariant{ BASIC_SHAPE_DATA(shape){} }; },
+    Data = std::visit([&](const auto& shape) { return ShapeDataVariant { DataTypeT<decltype(shape)>{} }; },
                       structure.Shape);
 
-    std::visit([&](const auto& shape) { shape.AddFunctionData(std::get<BASIC_SHAPE_DATA(shape)>(Data)); },
+    std::visit([&](const auto& shape) { shape.AddFunctionData(std::get<DataTypeT<decltype(shape)>>(Data)); },
                structure.Shape);
 }
 
@@ -24,12 +21,12 @@ auto BasicStructureDetails::BasicStructureDataImpl::PopulateStructure(Structure&
         -> void {
     structure.SetTissueType(BasicStructureDetails::GetTissueTypeByName(TissueName.toStdString()));
 
-    std::visit([&](auto& shape) -> void { shape.SetFunctionData(std::get<BASIC_SHAPE_DATA(shape)>(Data)); },
+    std::visit([&](auto& shape) -> void { shape.SetFunctionData(std::get<DataTypeT<decltype(shape)>>(Data)); },
                structure.Shape);
 }
 
 BasicStructure::BasicStructure(FunctionType functionType) :
-        Shape([functionType]() -> ShapeVariant { switch (functionType) {
+        Shape([=]() -> ShapeVariant { switch (functionType) {
             case FunctionType::SPHERE: return Sphere();
             case FunctionType::BOX:    return Box();
             case FunctionType::CONE: { qWarning("Todo");
@@ -38,11 +35,11 @@ BasicStructure::BasicStructure(FunctionType functionType) :
 }
 
 BasicStructure::BasicStructure(const BasicStructureData& data) : BasicStructure(data.Data.FunctionType) {
-    SetData(data);
+    data.PopulateStructure(*this);
 }
 
 auto BasicStructure::GetViewName() const noexcept -> std::string {
-    return FunctionTypeToString(GetFunctionType()) + (this->Name.empty() ? "" : " (" + this->Name + ")");
+    return FunctionTypeToString(GetFunctionType()) + (GetName().empty() ? "" : " (" + GetName() + ")");
 }
 
 auto BasicStructure::GetFunctionType() const noexcept -> FunctionType {
@@ -59,16 +56,6 @@ auto BasicStructure::SetTissueType(TissueType tissueType) noexcept -> void {
     Modified();
 }
 
-
-auto BasicStructure::GetData() const noexcept -> Data {
-    Data data {};
-    data.PopulateFromStructure(*this);
-    return data;
-}
-
-auto BasicStructure::SetData(const Data& data) noexcept -> void {
-    data.PopulateStructure(*this);
-}
 
 std::atomic<StructureId> BasicStructure::GlobalBasicStructureId = 0;
 
@@ -100,15 +87,16 @@ BasicStructureDetails::BasicStructureWidgetImpl::BasicStructureWidgetImpl() :
     QObject::connect(FunctionTypeComboBox, &QComboBox::currentIndexChanged, [&]() { UpdateFunctionParametersGroup(); });
 }
 
-auto BasicStructureDetails::BasicStructureWidgetImpl::AddData(Data& data) noexcept -> void {
+auto BasicStructureDetails::BasicStructureWidgetImpl::GetData() noexcept -> Data {
+    Data data {};
+
     data.TissueName = TissueTypeComboBox->currentText();
     data.FunctionType = FunctionTypeComboBox->currentData().value<FunctionType>();
-    data.Data = std::visit([](auto* widget) { return BasicStructureSubTypeDataVariant{ widget->GetData() }; },
+    data.Data = std::visit([](auto* widget) { return ShapeDataVariant{ widget->GetData() }; },
                            SubTypeWidgetVariant);
-}
 
-#define BASIC_DATA_WIDGET(Data) \
-    typename std::decay_t<decltype(Data)>::Widget
+    return data;
+}
 
 auto BasicStructureDetails::BasicStructureWidgetImpl::Populate(const Data& data) noexcept -> void {
     TissueTypeComboBox->setCurrentText(data.TissueName);
@@ -119,7 +107,7 @@ auto BasicStructureDetails::BasicStructureWidgetImpl::Populate(const Data& data)
     Layout->setRowVisible(FunctionTypeComboBox, false);
 
     std::visit([widgetVariant = SubTypeWidgetVariant](const auto& subTypeData) -> void {
-        auto* widget = std::get<BASIC_DATA_WIDGET(subTypeData)*>(widgetVariant);
+        auto* widget = std::get<WidgetTypeT<decltype(subTypeData)>*>(widgetVariant);
         widget->Populate(subTypeData);
     }, data.Data);
 }
@@ -127,13 +115,13 @@ auto BasicStructureDetails::BasicStructureWidgetImpl::Populate(const Data& data)
 auto BasicStructureDetails::BasicStructureWidgetImpl::UpdateFunctionParametersGroup() -> void {
     auto functionType = FunctionTypeComboBox->currentData().value<FunctionType>();
 
-    BasicStructureSubTypeWidgetVariant newSubTypeWidgetVariant = [functionType]() {
+    ShapeWidgetVariant newSubTypeWidgetVariant = [functionType]() {
         switch (functionType) {
-            case FunctionType::SPHERE: { return BasicStructureSubTypeWidgetVariant{ new SphereWidget() }; }
-            case FunctionType::BOX:    { return BasicStructureSubTypeWidgetVariant{ new BoxWidget() }; }
-            case FunctionType::CONE:   { qWarning("todo"); return BasicStructureSubTypeWidgetVariant{}; }
+            case FunctionType::SPHERE: { return ShapeWidgetVariant{ new SphereWidget() }; }
+            case FunctionType::BOX:    { return ShapeWidgetVariant{ new BoxWidget() }; }
+            case FunctionType::CONE:   { qWarning("todo"); return ShapeWidgetVariant{}; }
         }
-        return BasicStructureSubTypeWidgetVariant{};
+        return ShapeWidgetVariant{};
     }();
 
     std::visit([&, newSubTypeWidgetVariant](auto* oldSubTypeWidget) {
@@ -147,6 +135,3 @@ auto BasicStructureDetails::BasicStructureWidgetImpl::UpdateFunctionParametersGr
 
     SubTypeGroupBox->setTitle(QString::fromStdString(BasicStructureDetails::FunctionTypeToString(functionType)));
 }
-
-#undef BASIC_SHAPE_DATA
-#undef BASIC_DATA_WIDGET

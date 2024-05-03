@@ -1,12 +1,14 @@
 #pragma once
 
 #include <QDialog>
-#include <QListView>
-#include <QStackedLayout>
 
 class ArtifactsDialog;
 class StructureArtifactList;
 class StructureArtifactsModel;
+
+class QItemSelection;
+class QItemSelectionModel;
+class QListView;
 
 class StructureArtifactsWidgetDialog : public QDialog {
 public:

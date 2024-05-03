@@ -36,6 +36,7 @@ protected:
     ~CtDataSource() override = default;
 
     friend class RingArtifactFilter;
+    friend class WindMillArtifactFilter;
 
     vtkExecutive* CreateDefaultExecutive() override;
 

@@ -55,9 +55,11 @@ private:
 };
 
 
+class SaltPepperArtifactWidget;
 
 struct SaltPepperArtifactData {
     using Artifact = SaltPepperArtifact;
+    using Widget = SaltPepperArtifactWidget;
 
     float SaltAmount;
     float PepperAmount;

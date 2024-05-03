@@ -2,6 +2,7 @@
 
 #include "MotionArtifact.h"
 #include "../Enum.h"
+#include "../Types.h"
 
 #include <QWidget>
 
@@ -18,12 +19,6 @@ class QGroupBox;
 
 class vtkImageAlgorithm;
 
-
-using FloatPoint = std::array<float, 3>;
-
-using StructureArtifactVariant = std::variant<MotionArtifact>;
-using StructureArtifactDataVariant = std::variant<MotionArtifactData>;
-using StructureArtifactWidgetVariant = std::variant<MotionArtifactWidget*>;
 
 namespace StructureArtifactDetails {
     Q_NAMESPACE
@@ -53,6 +48,9 @@ namespace StructureArtifactDetails {
 class StructureArtifact;
 
 struct StructureArtifactData {
+public:
+    using StructureArtifactDataVariant = std::variant<MotionArtifactData>;
+
     QString Name;
     QString ViewName;
     StructureArtifactDataVariant Data;
@@ -67,10 +65,13 @@ struct StructureArtifactData {
 
 class StructureArtifact {
 public:
+    using StructureArtifactVariant = std::variant<MotionArtifact>;
     using SubType = StructureArtifactDetails::SubType;
 
-    explicit StructureArtifact(SubType subType = SubType::MOTION);
+    StructureArtifact() = default;
     explicit StructureArtifact(StructureArtifactData const& data);
+    explicit StructureArtifact(auto&& structureArtifactSubType) : Artifact(std::move(structureArtifactSubType)) {}
+    StructureArtifact(StructureArtifact&&) = default;
 
     [[nodiscard]] auto
     GetMTime() const noexcept -> vtkMTimeType { return MTime.GetMTime(); }
@@ -105,6 +106,9 @@ private:
 
 class StructureArtifactWidget : public QWidget {
     Q_OBJECT
+
+    using DataVariant = StructureArtifactData::StructureArtifactDataVariant;
+    using StructureArtifactWidgetVariant = std::variant<MotionArtifactWidget*>;
 
 public:
     StructureArtifactWidget();

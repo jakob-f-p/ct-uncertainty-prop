@@ -2,7 +2,7 @@
 
 #include "ImageArtifactsModel.h"
 #include "ImageArtifactsDelegate.h"
-#include "../ImageArtifact.h"
+#include "../Image/ImageArtifact.h"
 #include "../Pipeline.h"
 
 #include <QPainter>

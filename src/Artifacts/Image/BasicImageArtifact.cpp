@@ -1,7 +1,7 @@
 #include "BasicImageArtifact.h"
 
-#include "../Overload.h"
-#include "../Types.h"
+#include "../../Overload.h"
+#include "../../Types.h"
 
 #include <QComboBox>
 #include <QFormLayout>
@@ -14,7 +14,7 @@ auto BasicImageArtifactDetails::BasicImageArtifactDataVariant::PopulateFromArtif
         const BasicImageArtifact& artifact) noexcept -> void {
 
     *this = std::visit([&](const auto& artifact) {
-        ArtifactDataT<decltype(artifact)> data {};
+        DataTypeT<decltype(artifact)> data {};
         data.PopulateFromArtifact(artifact);
         return BasicImageArtifactDataVariant { data };
     }, artifact.Artifact);
@@ -24,7 +24,7 @@ auto BasicImageArtifactDetails::BasicImageArtifactDataVariant::PopulateArtifact(
         BasicImageArtifact& artifact) const noexcept -> void {
 
     std::visit([dataVariant = this](auto& artifact) {
-        auto& data = std::get<ArtifactDataT<decltype(artifact)>>(*dataVariant);
+        auto& data = std::get<DataTypeT<decltype(artifact)>>(*dataVariant);
         data.PopulateArtifact(artifact);
     }, artifact.Artifact);
 }
@@ -60,7 +60,7 @@ auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::GetData() const no
 
 auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::Populate(const Data& data) noexcept -> void {
     SubType subType = std::visit([&](const auto& data) {
-        return BasicImageArtifact::GetSubType(DataArtifactT<decltype(data)>());
+        return BasicImageArtifact::GetSubType(ArtifactTypeT<decltype(data)>());
     }, data);
 
     if (const int idx = SubTypeComboBox->findData(QVariant::fromValue(subType)); idx != -1)
@@ -68,21 +68,22 @@ auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::Populate(const Dat
 
     Layout->setRowVisible(SubTypeComboBox, false);
 
-    std::visit([&](auto* widget) { widget->Populate(std::get<ArtifactWidgetDataT<decltype(widget)>>(data)); },
+    std::visit([&](auto* widget) { widget->Populate(std::get<DataTypeT<decltype(widget)>>(data)); },
                SubTypeWidgetVariant);
 }
 
 auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::UpdateSubTypeWidget() noexcept -> void {
     auto subType = SubTypeComboBox->currentData().value<SubType>();
 
-    BasicImageArtifactWidgetVariant newWidgetVariant = [subType]() {
+    BasicImageArtifactWidgetVariant newWidgetVariant = [subType]() -> BasicImageArtifactWidgetVariant {
         switch (subType) {
-            case SubType::GAUSSIAN:    return BasicImageArtifactWidgetVariant { new GaussianArtifactWidget() };
-            case SubType::SALT_PEPPER: return BasicImageArtifactWidgetVariant { new SaltPepperArtifactWidget() };
-            case SubType::RING:        return BasicImageArtifactWidgetVariant { new RingArtifactWidget() };
+            case SubType::GAUSSIAN:    return new GaussianArtifactWidget();
+            case SubType::SALT_PEPPER: return new SaltPepperArtifactWidget();
+            case SubType::RING:        return new RingArtifactWidget();
+            case SubType::WIND_MILL:   return new WindMillArtifactWidget();
             default: qWarning("Todo");
         }
-        return BasicImageArtifactWidgetVariant { new GaussianArtifactWidget() };
+        return new GaussianArtifactWidget();
     }();
 
     std::visit([&, newWidgetVariant](auto* oldSubTypeWidget) {
@@ -100,26 +101,10 @@ auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::UpdateSubTypeWidge
 
 
 BasicImageArtifact::BasicImageArtifact(const BasicImageArtifactData& data) :
-        BasicImageArtifact(GetSubType(
-                std::visit([](auto& data) { return BasicImageArtifactVariant { DataArtifactT<decltype(data)>{} }; },
-                           data.Data)
-                           )) {
+        BasicImageArtifact(std::visit([](auto& data) {
+                return BasicImageArtifactVariant { ArtifactTypeT<decltype(data)>{} };
+            }, data.Data)) {
     data.PopulateArtifact(*this);
-}
-
-BasicImageArtifact::BasicImageArtifact(SubType subType) :
-        Artifact([subType]() -> BasicImageArtifactVariant {
-            switch (subType) {
-                case SubType::GAUSSIAN:    return GaussianArtifact();
-                case SubType::SALT_PEPPER: return SaltPepperArtifact();
-                case SubType::RING:        return RingArtifact();
-                case SubType::CUPPING:
-                case SubType::WIND_MILL:
-                case SubType::STAIR_STEP:
-                case SubType::STREAKING:
-                default: { qWarning("Todo"); return GaussianArtifact(); }
-            }
-        }()) {
 }
 
 auto BasicImageArtifact::GetSubType() const noexcept -> SubType {
@@ -131,6 +116,7 @@ auto BasicImageArtifact::GetSubType(const BasicImageArtifactVariant& artifact) n
             [](const GaussianArtifact&)   { return SubType::GAUSSIAN; },
             [](const SaltPepperArtifact&) { return SubType::SALT_PEPPER; },
             [](const RingArtifact&)       { return SubType::RING; },
+            [](const WindMillArtifact&)   { return SubType::WIND_MILL; },
             [](auto&) { qWarning("Todo"); return SubType::GAUSSIAN; }
     }, artifact);
 }

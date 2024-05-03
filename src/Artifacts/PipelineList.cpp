@@ -2,10 +2,11 @@
 
 #include "Pipeline.h"
 #include "../Modeling/CtStructureTree.h"
-#include "../App.h"
 
-PipelineList::PipelineList(CtStructureTree& structureTree) {
-    structureTree.AddTreeEventCallback([&](const CtStructureTreeEvent& event) {
+PipelineList::PipelineList(CtStructureTree& structureTree) :
+        StructureTree(structureTree) {
+
+    structureTree.AddTreeEventCallback([&](CtStructureTreeEvent const& event) {
             ProcessCtStructureTreeEvent(event);
     });
 }
@@ -23,7 +24,7 @@ auto PipelineList::Get(int idx) noexcept -> Pipeline& {
 }
 
 auto PipelineList::AddPipeline() -> Pipeline& {
-    return *Pipelines.emplace_back(std::make_unique<Pipeline>(App::GetInstance()->GetCtDataTree().StructureCount()));
+    return *Pipelines.emplace_back(std::make_unique<Pipeline>(StructureTree.StructureCount()));
 }
 
 void PipelineList::RemovePipeline(Pipeline& pipeline) {
@@ -35,12 +36,8 @@ void PipelineList::RemovePipeline(Pipeline& pipeline) {
     Pipelines.erase(removeIt);
 }
 
-auto PipelineList::NumberOfPipelines() const noexcept -> int {
-    return static_cast<int>(Pipelines.size());
-}
-
 void PipelineList::AddPipelineEventCallback(PipelineEventCallback&& pipelineEventCallback) {
-    PipelineEventCallbacks.emplace_back(pipelineEventCallback);
+    PipelineEventCallbacks.emplace_back(std::move(pipelineEventCallback));
 }
 
 void PipelineList::ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) {

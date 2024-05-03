@@ -1,6 +1,6 @@
 #include "CtStructureTreeModel.h"
 
-#include "../../Artifacts/Pipeline.h"
+#include "../CtStructureTree.h"
 #include "../../Overload.h"
 
 CtStructureTreeModel::CtStructureTreeModel(CtStructureTree& ctStructureTree, QObject* parent) :
@@ -12,40 +12,40 @@ auto CtStructureTreeModel::index(int row, int column, const QModelIndex& parentI
     if (!hasIndex(row, column, parentIndex))
         return {};
 
-    uidx_t childStructureIdx;
+    idx_t childStructureIdx;
     if (!parentIndex.isValid())
         childStructureIdx = Tree.GetRootIdx();
     else {
-        const uidx_t parentIdx = parentIndex.internalId();
-        const auto& parentStructure = std::get<CombinedStructure>(Tree.GetStructureAt(parentIdx));
+        uidx_t const parentIdx = idx_t::SignedAsUnsignedIdx(parentIndex.internalId());
+        auto const& parentStructure = std::get<CombinedStructure>(Tree.GetStructureAt(parentIdx));
         childStructureIdx = parentStructure.StructureIdxAt(row);
     }
 
-    return createIndex(row, column, childStructureIdx);
+    return createIndex(row, column, childStructureIdx.ToSigned());
 }
 
-QModelIndex CtStructureTreeModel::parent(const QModelIndex& child) const {
+auto CtStructureTreeModel::parent(const QModelIndex& child) const -> QModelIndex {
     if (!child.isValid())
         return {};
 
-    const auto childIdx = static_cast<uidx_t>(child.internalId());
+    auto const childIdx = static_cast<uidx_t>(child.internalId());
     if (childIdx == Tree.GetRootIdx())
         return {};
 
-    const auto& childVariant = Tree.GetStructureAt(childIdx);
+    auto const& childVariant = Tree.GetStructureAt(childIdx);
 
-    const uidx_t parentIdx = std::visit([](auto& structure) { return structure.GetParentIdx(); }, childVariant);
-    const auto& parentVariant = Tree.GetStructureAt(parentIdx);
-    const auto& parentStructure = std::get<CombinedStructure>(parentVariant);
+    uidx_t const parentIdx = std::visit([](auto& structure) { return *structure.ParentIdx; }, childVariant);
+    auto const& parentVariant = Tree.GetStructureAt(parentIdx);
+    auto const& parentStructure = std::get<CombinedStructure>(parentVariant);
 
-    const idx_t grandParentIdx = parentStructure.GetParentIdx();
+    idx_t const grandParentIdx = parentStructure.ParentIdx;
     if (grandParentIdx < 0)
-        return createIndex(Tree.GetRootIdx(), 0, parentIdx);
+        return createIndex(Tree.GetRootIdx().ToSigned(), 0, parentIdx);
 
-    const auto& grandParentVariant = Tree.GetStructureAt(grandParentIdx);
-    const auto& grandParentStructure = std::get<CombinedStructure>(grandParentVariant);
+    auto const& grandParentVariant = Tree.GetStructureAt(grandParentIdx.ToUnsigned());
+    auto const& grandParentStructure = std::get<CombinedStructure>(grandParentVariant);
 
-    const uidx_t parentChildIdx = grandParentStructure.PositionIndex(parentIdx);
+    uidx_t const parentChildIdx = grandParentStructure.PositionIndex(parentIdx);
     return createIndex(parentChildIdx, 0, parentIdx);
 }
 
@@ -79,9 +79,19 @@ auto CtStructureTreeModel::data(const QModelIndex& index, int role) const -> QVa
                                structureVariant));
 
         case TreeModelRoles::STRUCTURE_DATA_VARIANT: {
-            auto&& structureDataVariant
-                    = std::visit([](auto& structure) { return StructureDataVariant{ structure.GetData() }; },
-                                 structureVariant);
+            auto const& structureDataVariant
+                    = std::visit(Overload {
+                            [](BasicStructure const& structure) {
+                                    BasicStructureData data {};
+                                    data.PopulateFromStructure(structure);
+                                    return StructureDataVariant { data };
+                                },
+                            [](CombinedStructure const& structure) {
+                                CombinedStructureData data {};
+                                data.PopulateFromStructure(structure);
+                                return StructureDataVariant { data };
+                            }
+                        }, structureVariant);
             return QVariant::fromValue(std::move(structureDataVariant));
         }
 

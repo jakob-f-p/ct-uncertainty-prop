@@ -10,7 +10,7 @@ class QFormLayout;
 
 class ImageArtifact {
 public:
-    explicit ImageArtifact(const ImageArtifactData& data);
+    explicit ImageArtifact(ImageArtifactData const& data);
     ImageArtifact(BasicImageArtifact&& basicImageArtifact);
     ImageArtifact(CompositeImageArtifact&& compositeImageArtifact);
 
@@ -18,7 +18,7 @@ public:
     GetViewName() const noexcept -> std::string;
 
     [[nodiscard]] auto
-    ContainsImageArtifact(const ImageArtifact& imageArtifact) -> bool;
+    ContainsImageArtifact(ImageArtifact const& imageArtifact) -> bool;
 
     [[nodiscard]] auto
     GetParent() const -> ImageArtifact*;
@@ -42,7 +42,7 @@ public:
     Get(uint16_t targetIdx, uint16_t& currentIdx) -> ImageArtifact*;
 
     [[nodiscard]] auto
-    IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> int32_t;
+    IndexOf(ImageArtifact const& imageArtifact, uint16_t& currentIdx) const -> int32_t;
 
     auto
     AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm&;
@@ -64,7 +64,7 @@ struct ImageArtifactData {
     explicit ImageArtifactData(CompositeImageArtifactData&& data);
 
     auto
-    PopulateFromArtifact(const ImageArtifact& imageArtifact) noexcept -> void;
+    PopulateFromArtifact(ImageArtifact const& imageArtifact) noexcept -> void;
 
     auto
     PopulateArtifact(ImageArtifact& imageArtifact) const noexcept -> void;
@@ -88,13 +88,13 @@ public:
     GetData() const noexcept -> ImageArtifactData;
 
     auto
-    Populate(const ImageArtifactData& data) noexcept -> void;
+    Populate(ImageArtifactData const& data) noexcept -> void;
 
     [[nodiscard]] auto static
     GetWidgetData(QWidget* widget) -> ImageArtifactData { return FindWidget(widget).GetData(); }
 
     auto static
-    SetWidgetData(QWidget* widget, const ImageArtifactData& data) -> void { FindWidget(widget).Populate(data); }
+    SetWidgetData(QWidget* widget, ImageArtifactData const& data) -> void { FindWidget(widget).Populate(data); }
 
 private:
     [[nodiscard]] auto static

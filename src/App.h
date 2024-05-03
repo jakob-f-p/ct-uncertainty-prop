@@ -46,7 +46,7 @@ private:
     char** Argv;
 
     std::unique_ptr<QApplication> QApp;
+    std::unique_ptr<MainWindow> MainWin;
     std::unique_ptr<CtStructureTree> CtDataTree;
     std::unique_ptr<PipelineList> Pipelines;
-    std::unique_ptr<MainWindow> MainWin;
 };

@@ -21,9 +21,6 @@ public:
     [[nodiscard]] auto
     Get(int idx) noexcept -> Pipeline&;
 
-    [[nodiscard]] auto
-    NumberOfPipelines() const noexcept -> int;
-
     auto
     AddPipeline() -> Pipeline&;
 
@@ -37,6 +34,7 @@ public:
     ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) -> void;
 
 private:
+    CtStructureTree& StructureTree;
     std::vector<std::unique_ptr<Pipeline>> Pipelines;
     std::vector<PipelineEventCallback> PipelineEventCallbacks;
 };
