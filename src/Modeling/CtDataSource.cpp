@@ -1,6 +1,7 @@
 #include "CtDataSource.h"
 
 #include "CtStructureTree.h"
+#include "../ImageDataUtils.h"
 
 #include <vtkDataSetAttributes.h>
 #include <vtkDataObject.h>
@@ -19,8 +20,12 @@ vtkStandardNewMacro(CtDataSource)
 void CtDataSource::PrintSelf(ostream &os, vtkIndent indent) {
     Superclass::PrintSelf(os, indent);
 
-    os << indent << "Physical Dimensions: [" << PhysicalDimensions[0] << ", " << PhysicalDimensions[1] << ", " << PhysicalDimensions[2] << "]\n";
-    os << indent << "Number of Voxels: [" << NumberOfVoxels[0] << ", " << NumberOfVoxels[1] << ", " << NumberOfVoxels[2] << "]\n";
+    os << indent << "Physical Dimensions: [" << PhysicalDimensions[0] << ", "
+                                             << PhysicalDimensions[1] << ", "
+                                             << PhysicalDimensions[2] << "]\n";
+    os << indent << "Number of Voxels: [" << NumberOfVoxels[0] << ", "
+                                          << NumberOfVoxels[1] << ", "
+                                          << NumberOfVoxels[2] << "]\n";
     os << indent << "Implicit CT Structures: (" << DataTree << ")\n";
 }
 

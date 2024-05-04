@@ -31,7 +31,7 @@ public:
     void AddPipelineEventCallback(PipelineEventCallback&& pipelineEventCallback);
 
     auto
-    ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) -> void;
+    ProcessCtStructureTreeEvent(CtStructureTreeEvent const& event) -> void;
 
 private:
     CtStructureTree& StructureTree;

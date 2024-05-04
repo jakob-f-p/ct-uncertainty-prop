@@ -169,6 +169,8 @@ void CtStructureTree::RemoveBasicStructure(uidx_t removeIdx) {
         if (grandParentIdx) {
             auto& grandParent = std::get<CombinedStructure>(Structures[*grandParentIdx]);
             grandParent.ReplaceChild(parentIdx, remainingIdx);
+        } else {
+            RootIdx = remainingIdx;
         }
 
         std::visit([=](auto& structure) { structure.ParentIdx = grandParentIdx; },
@@ -176,9 +178,6 @@ void CtStructureTree::RemoveBasicStructure(uidx_t removeIdx) {
         Structures.erase(std::next(Structures.begin(), parentIdx));
         DecrementParentAndChildIndices(parentIdx);
         EmitEvent({ CtStructureTreeEventType::Remove, static_cast<uidx_t>(parentIdx) });
-
-        if (!grandParentIdx)
-            RootIdx = 0;
     }
 
     MTime.Modified();

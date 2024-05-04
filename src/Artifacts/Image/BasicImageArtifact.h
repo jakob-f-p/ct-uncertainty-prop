@@ -16,7 +16,8 @@
 
 class BasicImageArtifact;
 
-#define BASIC_IMAGE_ARTIFACT_TYPES GaussianArtifact, SaltPepperArtifact, RingArtifact, CuppingArtifact, WindMillArtifact, StairStepArtifact
+#define BASIC_IMAGE_ARTIFACT_TYPES \
+GaussianArtifact, SaltPepperArtifact, RingArtifact, CuppingArtifact, WindMillArtifact, StairStepArtifact
 
 namespace BasicImageArtifactDetails {
     Q_NAMESPACE
@@ -94,7 +95,8 @@ public:
 
     BasicImageArtifact() = default;
     explicit BasicImageArtifact(const BasicImageArtifactData& data);
-    explicit BasicImageArtifact(auto&& basicArtifact) : Artifact(std::move(basicArtifact)) {}
+    explicit BasicImageArtifact(auto&& basicArtifact) :
+            Artifact(std::forward<decltype(basicArtifact)>(basicArtifact)) {}
 
     [[nodiscard]] auto
     GetSubType() const noexcept -> SubType;
@@ -116,11 +118,13 @@ private:
 };
 
 struct BasicImageArtifactData :
-        public ImageArtifactBaseDetails::ImageArtifactBaseData<BasicImageArtifactDetails::BasicImageArtifactDataVariant> {};
+        public ImageArtifactBaseDetails::ImageArtifactBaseData<
+                BasicImageArtifactDetails::BasicImageArtifactDataVariant> {};
 
 struct BasicImageArtifactWidget
-        : public ImageArtifactBaseDetails::ImageArtifactBaseWidget<BasicImageArtifactDetails::BasicImageArtifactWidgetImpl,
-                                                                   BasicImageArtifactData> {
+        : public ImageArtifactBaseDetails::ImageArtifactBaseWidget<
+                BasicImageArtifactDetails::BasicImageArtifactWidgetImpl,
+                BasicImageArtifactData> {
     Q_OBJECT
 };
 

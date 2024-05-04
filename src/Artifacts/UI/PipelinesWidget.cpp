@@ -115,7 +115,7 @@ void PipelinesWidget::UpdatePipelineView() {
 
 auto PipelinesWidget::GenerateIcon(const std::string &filePrefix) noexcept -> QIcon {
     QIcon icon;
-    QString qFilePrefix = QString::fromStdString(filePrefix);
+    QString const qFilePrefix = QString::fromStdString(filePrefix);
     icon.addPixmap(QPixmap(":/" + qFilePrefix + "Normal.png"), QIcon::Normal);
     icon.addPixmap(QPixmap(":/" + qFilePrefix + "Disabled.png"), QIcon::Disabled);
     return icon;

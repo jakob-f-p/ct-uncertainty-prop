@@ -1,4 +1,5 @@
 #include "CuppingArtifactFilter.h"
+#include "../../ImageDataUtils.h"
 #include "../../Modeling/CtDataSource.h"
 
 #include <vtkFloatArray.h>
@@ -49,7 +50,8 @@ void CuppingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
     vtkFloatArray* cuppingArtifactArray = GetDeepCopiedArtifactArray(input, output, SubType::WIND_MILL);
     float* cuppingArtifactValues = cuppingArtifactArray->WritePointer(0, numberOfPoints);
 
-    auto addArtifactValues = [cuppingArtifactValues, newArtifactValues, radiodensities] (vtkIdType pointId, vtkIdType endPointId) {
+    auto addArtifactValues = [cuppingArtifactValues, newArtifactValues, radiodensities] (vtkIdType pointId,
+                                                                                         vtkIdType endPointId) {
         vtkIdType const startPointId = pointId;
 
         for (; pointId < endPointId; pointId++)
@@ -90,10 +92,10 @@ void CuppingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType e
     DoublePoint startPoint;
     VolumeData->GetPoint(pointId, startPoint.data());
 
-    const std::array<int, 3> startPointCoordinates = CtDataSource::PointIdToDimensionCoordinates(pointId, UpdateDims);
-    const std::array<int, 3> endPointCoordinates = CtDataSource::PointIdToDimensionCoordinates(endPointId, UpdateDims);
+    std::array<int, 3> const startPointCoordinates = PointIdToDimensionCoordinates(pointId, UpdateDims);
+    std::array<int, 3> const endPointCoordinates = PointIdToDimensionCoordinates(endPointId, UpdateDims);
     auto [ x1, y1, z1 ] = startPointCoordinates;
-    auto lastValidPointCoordinates = CtDataSource::GetDecrementedCoordinates(endPointCoordinates, UpdateDims);
+    auto lastValidPointCoordinates = GetDecrementedCoordinates(endPointCoordinates, UpdateDims);
     auto [ x2, y2, z2 ] = lastValidPointCoordinates;
 
     DoublePoint point = startPoint;

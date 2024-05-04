@@ -2,7 +2,16 @@
 
 #include <QMainWindow>
 
+#include <vtkNew.h>
+
+class CtDataSource;
+class CtStructureTree;
+class PipelineList;
+
 class MainWindow : public QMainWindow {
 public:
-    MainWindow();
+    explicit MainWindow(CtStructureTree& ctStructureTree, PipelineList& pipelineList);
+
+private:
+    vtkNew<CtDataSource> DataSource;
 };

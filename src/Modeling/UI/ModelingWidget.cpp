@@ -16,14 +16,9 @@
 #include <QVBoxLayout>
 
 
-ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, QWidget* parent) :
+ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& dataSource, QWidget* parent) :
         QMainWindow(parent),
-        DataSource([&]() {
-            vtkNew<CtDataSource> dataSource;
-            dataSource->SetDataTree(&ctStructureTree);
-            return dataSource;
-        }()),
-        RenderingWidget(new RenderWidget(*DataSource)),
+        RenderingWidget(new RenderWidget(dataSource)),
         ResetCameraButton(new QPushButton("Reset Camera")),
         AddStructureButton(new QPushButton("Add Structure")),
         CombineWithStructureButton(new QPushButton("Combine With Structure")),

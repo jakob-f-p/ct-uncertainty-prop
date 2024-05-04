@@ -5,14 +5,15 @@
 class QVTKInteractor;
 class vtkCamera;
 class vtkImageAlgorithm;
-class vtkOrientationMarkerWidget;
+class vtkOpenGLGPUVolumeRayCastMapper;
 class vtkOpenGLRenderer;
+class vtkOrientationMarkerWidget;
 
 class RenderWidget : public QVTKOpenGLNativeWidget {
     Q_OBJECT
 
 public:
-    explicit RenderWidget(vtkImageAlgorithm& dataSource, QWidget* parent = nullptr);
+    explicit RenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent = nullptr);
     ~RenderWidget() override;
 
 public slots:
@@ -22,10 +23,13 @@ public slots:
     auto
     Render() const -> void;
 
-protected:
-    vtkNew<QVTKInteractor> RenderWindowInteractor;
+    auto
+    UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> void;
 
 private:
+    vtkImageAlgorithm* ImageAlgorithm;
+    vtkNew<vtkOpenGLGPUVolumeRayCastMapper> VolumeMapper;
+    vtkNew<QVTKInteractor> RenderWindowInteractor;
     vtkNew<vtkOrientationMarkerWidget> OrientationMarkerWidget;
     vtkNew<vtkOpenGLRenderer> Renderer;
     vtkNew<vtkCamera> InitialCamera;

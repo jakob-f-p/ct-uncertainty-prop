@@ -19,7 +19,9 @@ class QPushButton;
 
 class ModelingWidget : public QMainWindow {
 public:
-    explicit ModelingWidget(CtStructureTree& ctStructureTree, QWidget* parent = nullptr);
+    explicit ModelingWidget(CtStructureTree& ctStructureTree,
+                            CtDataSource& dataSource,
+                            QWidget* parent = nullptr);
 
 private:
     void ConnectButtons();
@@ -31,7 +33,6 @@ private:
 
     void UpdateButtonStates(QItemSelection const& selected, QItemSelection const&);
 
-    vtkNew<CtDataSource> DataSource;
     RenderWidget* const RenderingWidget;
 
     QPushButton* const ResetCameraButton;

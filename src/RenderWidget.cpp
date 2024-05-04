@@ -12,8 +12,9 @@
 #include <vtkPiecewiseFunction.h>
 #include <vtkVolumeProperty.h>
 
-RenderWidget::RenderWidget(vtkImageAlgorithm& dataSource, QWidget* parent) :
-        QVTKOpenGLNativeWidget(parent) {
+RenderWidget::RenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent) :
+        QVTKOpenGLNativeWidget(parent),
+        ImageAlgorithm(&imageAlgorithm) {
 
     vtkNew<vtkPiecewiseFunction> opacityMappingFunction;
     opacityMappingFunction->AddPoint(-1000.0, 0.005);
@@ -30,11 +31,10 @@ RenderWidget::RenderWidget(vtkImageAlgorithm& dataSource, QWidget* parent) :
     volumeProperty->SetInterpolationTypeToLinear();
     volumeProperty->SetAmbient(0.3);
 
-    vtkNew<vtkOpenGLGPUVolumeRayCastMapper> volumeMapper;
-    volumeMapper->SetInputConnection(dataSource.GetOutputPort());
+    UpdateImageAlgorithm(imageAlgorithm);
 
     vtkNew<vtkVolume> volume;
-    volume->SetMapper(volumeMapper);
+    volume->SetMapper(VolumeMapper);
     volume->SetProperty(volumeProperty);
 
     Renderer->AddVolume(volume);
@@ -72,4 +72,9 @@ auto RenderWidget::ResetCamera() const -> void {
 
 auto RenderWidget::Render() const -> void {
     RenderWindowInteractor->Render();
+}
+
+auto RenderWidget::UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> void {
+    ImageAlgorithm = &imageAlgorithm;
+    VolumeMapper->SetInputConnection(ImageAlgorithm->GetOutputPort());
 }

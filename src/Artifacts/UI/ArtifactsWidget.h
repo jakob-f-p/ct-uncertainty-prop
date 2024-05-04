@@ -7,6 +7,7 @@
 class QPushButton;
 
 class ArtifactRenderWidget;
+class CtDataSource;
 class ImageArtifactConcatenation;
 class Pipeline;
 class PipelineList;
@@ -14,14 +15,14 @@ class PipelinesWidget;
 
 class ArtifactsWidget : public QMainWindow {
 public:
-    explicit ArtifactsWidget(PipelineList& pipelines);
+    explicit ArtifactsWidget(PipelineList& pipelines, CtDataSource& dataSource);
 
 private:
     QPushButton* ResetCameraButton;
     QPushButton* RenderButton;
 
-    ArtifactRenderWidget* RenderWidget;
     PipelinesWidget* PipelineWidget;
+    ArtifactRenderWidget* RenderWidget;
 };
 
 
@@ -29,14 +30,19 @@ class ArtifactRenderWidget : public RenderWidget {
     Q_OBJECT
 
 public:
-    explicit ArtifactRenderWidget(ImageArtifactConcatenation& imageArtifactConcatenation, QWidget* parent = nullptr);
+    explicit ArtifactRenderWidget(PipelineList& pipelines,
+                                  Pipeline& pipeline,
+                                  CtDataSource& dataSource,
+                                  QWidget* parent = nullptr);
     ~ArtifactRenderWidget() override;
 
 public slots:
     auto
-    UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) const -> void;
+    UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) -> void;
 
 private:
-    PipelineList& Pipelines;
-//    ImageArtifactConcatenation& ImageArtifacts;
+    auto
+    GetUpdatedFilter(Pipeline const& pipeline) -> vtkImageAlgorithm&;
+
+    CtDataSource* DataSource;
 };

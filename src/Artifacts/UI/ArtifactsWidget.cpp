@@ -1,23 +1,23 @@
-#include "../../Modeling/CtDataSource.h"
 #include "ArtifactsWidget.h"
 
 #include "PipelinesWidget.h"
 #include "../Image/ImageArtifactConcatenation.h"
 #include "../PipelineList.h"
-#include "../../App.h"
+#include "../../Modeling/CtDataSource.h"
 
 #include <QDockWidget>
 #include <QFrame>
 #include <QPushButton>
 #include <QVBoxLayout>
 
-ArtifactsWidget::ArtifactsWidget(PipelineList& pipelines) :
+ArtifactsWidget::ArtifactsWidget(PipelineList& pipelines, CtDataSource& dataSource) :
         ResetCameraButton(new QPushButton("Reset Camera")),
         RenderButton(new QPushButton("Render")),
-        RenderWidget(new ArtifactRenderWidget(pipelines.Get(0).GetImageArtifactConcatenation())),
-        PipelineWidget(new PipelinesWidget(pipelines)) {
+        PipelineWidget(new PipelinesWidget(pipelines)),
+        RenderWidget(new ArtifactRenderWidget(pipelines,
+                                              PipelineWidget->GetCurrentPipeline(),
+                                              dataSource)) {
 
-    RenderWidget = new ArtifactRenderWidget(PipelineWidget->GetCurrentPipeline().GetImageArtifactConcatenation());
     setCentralWidget(RenderWidget);
 
     auto* dockWidget = new QDockWidget();
@@ -58,25 +58,33 @@ ArtifactsWidget::ArtifactsWidget(PipelineList& pipelines) :
 
 
 
-ArtifactRenderWidget::ArtifactRenderWidget(ImageArtifactConcatenation& imageArtifactConcatenation, QWidget* parent) :
-        RenderWidget([&, dataTree = &App::GetInstance()->GetCtDataTree()]() -> vtkImageAlgorithm& {
-            vtkNew<CtDataSource> dataSource;
-            dataSource->SetDataTree(dataTree);
+ArtifactRenderWidget::ArtifactRenderWidget(PipelineList& pipelines,
+                                           Pipeline& pipeline,
+                                           CtDataSource& dataSource,
+                                           QWidget* parent) :
+        RenderWidget([&]() -> vtkImageAlgorithm& {
+            DataSource = &dataSource;
 
-            imageArtifactConcatenation.UpdateArtifactFilter();
-            auto& imageArtifactStartFilter = imageArtifactConcatenation.GetStartFilter();
-            imageArtifactStartFilter.SetInputConnection(dataSource->GetOutputPort());
+            return GetUpdatedFilter(pipeline);
+        }(), parent) {
 
-            return imageArtifactConcatenation.GetEndFilter();
-        }(), parent),
-        Pipelines(App::GetInstance()->GetPipelines()) {
-
-    Pipelines.AddPipelineEventCallback([&]() { Render(); });
+    pipelines.AddPipelineEventCallback([&]() { Render(); });
 }
 
 ArtifactRenderWidget::~ArtifactRenderWidget() = default;
 
-auto ArtifactRenderWidget::UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) const -> void {
-    newPipeline.GetImageArtifactConcatenation().UpdateArtifactFilter();
-    RenderWindowInteractor->Render();
+auto ArtifactRenderWidget::UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) -> void {
+    UpdateImageAlgorithm(GetUpdatedFilter(newPipeline));
+
+    Render();
+}
+
+auto ArtifactRenderWidget::GetUpdatedFilter(Pipeline const& pipeline) -> vtkImageAlgorithm& {
+    auto& imageArtifactConcatenation = pipeline.GetImageArtifactConcatenation();
+
+    imageArtifactConcatenation.UpdateArtifactFilter();
+    auto& imageArtifactStartFilter = imageArtifactConcatenation.GetStartFilter();
+    imageArtifactStartFilter.SetInputConnection(DataSource->GetOutputPort());
+
+    return imageArtifactConcatenation.GetEndFilter();
 }

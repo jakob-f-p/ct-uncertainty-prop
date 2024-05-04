@@ -60,7 +60,7 @@ auto App::Run() -> int {
 
     InitializeWithTestData();
 
-    MainWin = std::make_unique<MainWindow>();
+    MainWin = std::make_unique<MainWindow>(*CtDataTree, *Pipelines);
     MainWin->show();
 
     return QApplication::exec();
