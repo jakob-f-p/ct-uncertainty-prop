@@ -2,7 +2,7 @@
 
 #include "ArtifactsDialog.h"
 #include "StructureArtifactsModel.h"
-#include "../StructureArtifact.h"
+#include "../Structure/StructureArtifact.h"
 
 StructureArtifactsView::StructureArtifactsView(StructureArtifactList& structureArtifactList) {
     setModel(new StructureArtifactsModel(structureArtifactList));
@@ -21,13 +21,13 @@ StructureArtifactsView::StructureArtifactsDelegate::getDialog(QModelIndex const&
 void StructureArtifactsView::StructureArtifactsDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
     auto data = index.data(Qt::UserRole).value<StructureArtifactData>();
 
-    StructureArtifactWidget::SetWidgetData(editor, data);
+    SetWidgetData<StructureArtifactWidget>(editor, data);
 }
 
 void StructureArtifactsView::StructureArtifactsDelegate::setModelData(QWidget* editor,
                                                                       QAbstractItemModel* model,
                                                                       const QModelIndex& index) const {
-    auto imageArtifactData = StructureArtifactWidget::GetWidgetData(editor);
+    auto data = GetWidgetData<StructureArtifactWidget>(editor);
 
-    model->setData(index, QVariant::fromValue(imageArtifactData));
+    model->setData(index, QVariant::fromValue(data));
 }

@@ -95,6 +95,8 @@ public:
 
 private:
     friend struct EvaluateImplicitStructures;
+    friend struct EvaluateFunctionValue;
+    friend struct AddBasicStructureIndices;
     friend struct CombinedStructureDetails::CombinedStructureDataImpl;
     friend class CtStructureTree;
     friend class CtStructureTreeModel;

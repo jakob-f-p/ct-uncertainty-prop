@@ -3,9 +3,6 @@
 #include "ImageArtifactFilter.h"
 
 class WindMillArtifactFilter : public ImageArtifactFilter {
-    using FloatPoint = std::array<float, 3>;
-    using DoublePoint = std::array<double, 3>;
-
 public:
     WindMillArtifactFilter(const WindMillArtifactFilter&) = delete;
     void operator=(const WindMillArtifactFilter&) = delete;

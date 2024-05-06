@@ -110,7 +110,7 @@ void CtDataSource::ExecuteDataWithInformation(vtkDataObject *output, vtkInformat
     functionValueArray->Delete();
     float* functionValues = functionValueArray->WritePointer(0, numberOfPoints);
 
-    vtkTypeUInt16Array* basicStructureIdArray= vtkTypeUInt16Array::New();
+    vtkTypeUInt16Array* basicStructureIdArray = vtkTypeUInt16Array::New();
     basicStructureIdArray->SetNumberOfComponents(1);
     basicStructureIdArray->SetName("BasicStructureIds");
     basicStructureIdArray->SetNumberOfTuples(numberOfPoints);
@@ -183,8 +183,8 @@ void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endP
     Point startPoint;
     VolumeData->GetPoint(pointId, startPoint.data());
 
-    const std::array<int, 3> startPointCoordinates = PointIdToDimensionCoordinates(pointId, UpdateDims);
-    const std::array<int, 3> endPointCoordinates = PointIdToDimensionCoordinates(endPointId, UpdateDims);
+    std::array<int, 3> const startPointCoordinates = PointIdToDimensionCoordinates(pointId, UpdateDims);
+    std::array<int, 3> const endPointCoordinates = PointIdToDimensionCoordinates(endPointId, UpdateDims);
     auto [ x1, y1, z1 ] = startPointCoordinates;
     auto lastValidPointCoordinates = GetDecrementedCoordinates(endPointCoordinates, UpdateDims);
     auto [ x2, y2, z2 ] = lastValidPointCoordinates;
@@ -209,9 +209,9 @@ void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endP
                 xEnd = x2;
 
             for (; x <= xEnd; x++) {
-                const CtStructureTree::ModelingResult result = Tree->FunctionValueAndRadiodensity(point);
+                CtStructureTree::ModelingResult const result = Tree->FunctionValueAndRadiodensity(point);
 
-                bool pointIsWithinStructure = result.FunctionValue < 0;
+                bool const pointIsWithinStructure = result.FunctionValue < 0;
                 FunctionValues[pointId] = result.FunctionValue;
                 Radiodensities[pointId] = pointIsWithinStructure
                                           ? result.Radiodensity

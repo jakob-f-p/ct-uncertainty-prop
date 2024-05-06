@@ -47,7 +47,7 @@ public:
     GetData() const noexcept -> SimpleTransformData;
 
     auto
-    SetData(const SimpleTransformData& transformData) noexcept -> void;
+    SetData(SimpleTransformData const& transformData) noexcept -> void;
 
     [[nodiscard]] inline auto
     TransformPoint(Point point) const noexcept -> Point;

@@ -3,9 +3,6 @@
 #include "ImageArtifactFilter.h"
 
 class CuppingArtifactFilter : public ImageArtifactFilter {
-    using FloatPoint = std::array<float, 3>;
-    using DoublePoint = std::array<double, 3>;
-
 public:
     CuppingArtifactFilter(const CuppingArtifactFilter&) = delete;
     void operator=(const CuppingArtifactFilter&) = delete;

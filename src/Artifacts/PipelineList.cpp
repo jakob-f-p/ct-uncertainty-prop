@@ -24,7 +24,7 @@ auto PipelineList::Get(int idx) noexcept -> Pipeline& {
 }
 
 auto PipelineList::AddPipeline() -> Pipeline& {
-    return *Pipelines.emplace_back(std::make_unique<Pipeline>(StructureTree.StructureCount()));
+    return *Pipelines.emplace_back(std::make_unique<Pipeline>(StructureTree));
 }
 
 void PipelineList::RemovePipeline(Pipeline& pipeline) {

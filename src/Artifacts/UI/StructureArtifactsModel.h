@@ -7,8 +7,7 @@ class StructureArtifactData;
 
 class StructureArtifactsModel : public QAbstractItemModel {
 public:
-    explicit StructureArtifactsModel(StructureArtifactList& structureWrapper,
-                                     QObject* parent = nullptr);
+    explicit StructureArtifactsModel(StructureArtifactList& structureWrapper, QObject* parent = nullptr);
 
     auto index(int row, int column, const QModelIndex& parent) const -> QModelIndex override;
 
@@ -16,9 +15,9 @@ public:
 
     auto rowCount(const QModelIndex& parent) const -> int override;
 
-    int columnCount(const QModelIndex& parent) const override;
+    auto columnCount(const QModelIndex& parent) const -> int override;
 
-    QVariant data(const QModelIndex& index, int role) const override;
+    auto data(const QModelIndex& index, int role) const -> QVariant override;
 
     Qt::ItemFlags flags(const QModelIndex& index) const override;
 

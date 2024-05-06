@@ -240,11 +240,63 @@ struct EvaluateImplicitStructures {
     const Point& point;
 };
 
-auto CtStructureTree::FunctionValueAndRadiodensity(Point point) const -> ModelingResult {
-    if (!HasRoot())
-        throw std::runtime_error("Tree does not have a root. Cannot evaluate");
+auto CtStructureTree::FunctionValueAndRadiodensity(Point point,
+                                                   StructureVariant const* const structure) const -> ModelingResult {
+    if (!HasRoot() || (structure && !std::visit([&](auto const& s) { return CtStructureExists(s); }, *structure)))
+        throw std::runtime_error("TreeArtifacts does not contain structure. Cannot evaluate");
 
-    return std::visit(EvaluateImplicitStructures{Structures, point}, GetRoot());
+    if (structure)
+        point = TransformPointUntilStructure(point, *structure);
+
+    return std::visit(EvaluateImplicitStructures { Structures, point }, structure ? *structure : GetRoot());
+}
+
+struct EvaluateFunctionValue {
+    auto operator() (BasicStructure const& basicStructure) const noexcept -> float {
+        return basicStructure.FunctionValue(basicStructure.GetTransformedPoint(point));
+    }
+
+    auto operator() (CombinedStructure const& combinedStructure) const noexcept -> float {
+        const Point transformedPoint = combinedStructure.GetTransformedPoint(point);
+
+        std::vector<float> results;
+        std::vector<uidx_t> const& childIndices = combinedStructure.GetChildIndices();
+        results.reserve(childIndices.size());
+        for (const auto childIdx : childIndices)
+            results.emplace_back(std::visit(EvaluateFunctionValue{structures, transformedPoint}, structures[childIdx]));
+
+        switch (combinedStructure.Operator) {
+            case CombinedStructure::OperatorType::UNION:
+                return *std::min_element(results.begin(), results.end());
+
+            case CombinedStructure::OperatorType::INTERSECTION:
+                return *std::max_element(results.begin(), results.end());
+
+            case CombinedStructure::OperatorType::DIFFERENCE_: {
+                float firstResult = results[0];
+
+                firstResult = std::reduce(std::next(results.begin()), results.end(), firstResult,
+                                          [](float resultFunctionValue, float current) -> float {
+                                                  return resultFunctionValue <= -current
+                                                          ? resultFunctionValue
+                                                          : -current;
+                                          });
+
+                return firstResult;
+            }
+
+            default: return {};
+        }
+    }
+
+    const std::vector<CtStructureTree::StructureVariant>& structures;
+    const Point& point;
+};
+
+auto CtStructureTree::FunctionValue(Point point, StructureVariant const& structure) const -> float {
+    point = TransformPointUntilStructure(point, structure);
+
+    return std::visit(EvaluateFunctionValue{Structures, point}, structure);
 }
 
 void CtStructureTree::SetData(uidx_t structureIdx, const QVariant& data) {
@@ -299,6 +351,28 @@ void CtStructureTree::AddTreeEventCallback(CtStructureTree::TreeEventCallback&& 
 
 auto CtStructureTree::GetRootIdx() const noexcept -> idx_t {
     return RootIdx;
+}
+
+struct AddBasicStructureIndices {
+    auto operator() (BasicStructure const& basicStructure) const noexcept -> void {
+        StructureIds.push_back(basicStructure.GetId());
+    }
+
+    auto operator() (CombinedStructure const& combinedStructure) const noexcept -> void {
+        for (const auto childIdx : combinedStructure.ChildStructureIndices)
+            std::visit(AddBasicStructureIndices { StructureIds, Structures }, Structures[childIdx]);
+    }
+
+    std::vector<StructureId>& StructureIds;
+    std::vector<CtStructureTree::StructureVariant> const& Structures;
+};
+
+auto CtStructureTree::GetBasicStructureIdsOfStructureAt(uidx_t idx) const noexcept -> std::vector<StructureId> {
+    std::vector<StructureId> structureIds {};
+
+    std::visit(AddBasicStructureIndices { structureIds, Structures }, Structures.at(idx));
+
+    return structureIds;
 }
 
 auto CtStructureTree::StructureCount() const noexcept -> uidx_t {

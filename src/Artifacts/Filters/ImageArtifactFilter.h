@@ -47,6 +47,9 @@ protected:
 
     auto CreateDefaultExecutive() -> vtkExecutive* override;
 
+    ImageArtifactFilter() = default;
+    ~ImageArtifactFilter() override = default;
+
 private:
     [[nodiscard]] auto static
     GetArrayName(SubType subType) noexcept -> std::string;

@@ -5,9 +5,6 @@
 #include <vtkImageResample.h>
 
 class StairStepArtifactFilter : public ImageArtifactFilter {
-    using FloatPoint = std::array<float, 3>;
-    using DoublePoint = std::array<double, 3>;
-
 public:
     StairStepArtifactFilter(const StairStepArtifactFilter&) = delete;
     void operator=(const StairStepArtifactFilter&) = delete;

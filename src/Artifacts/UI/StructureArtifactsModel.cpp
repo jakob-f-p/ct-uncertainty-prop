@@ -1,7 +1,7 @@
 #include "StructureArtifactsModel.h"
 
-#include "../StructureArtifact.h"
-#include "../StructureArtifactListCollection.h"
+#include "../Structure/StructureArtifact.h"
+#include "../Structure/StructureArtifactListCollection.h"
 
 StructureArtifactsModel::StructureArtifactsModel(StructureArtifactList& structureWrapper,
                                                  QObject* parent) :
@@ -9,7 +9,7 @@ StructureArtifactsModel::StructureArtifactsModel(StructureArtifactList& structur
         StructureWrapper(structureWrapper) {
 }
 
-auto StructureArtifactsModel::index(int row, int column, const QModelIndex& parent) const -> QModelIndex {
+auto StructureArtifactsModel::index(int row, int column, QModelIndex const& parent) const -> QModelIndex {
     if (!hasIndex(row, column, parent))
         return {};
 
@@ -18,37 +18,51 @@ auto StructureArtifactsModel::index(int row, int column, const QModelIndex& pare
     return createIndex(row, column, structureArtifact);
 }
 
-auto StructureArtifactsModel::parent(const QModelIndex& child) const -> QModelIndex {
+auto StructureArtifactsModel::parent(QModelIndex const& child) const -> QModelIndex {
     return {};
 }
 
-auto StructureArtifactsModel::rowCount(const QModelIndex& parent) const -> int {
+auto StructureArtifactsModel::rowCount(QModelIndex const& parent) const -> int {
     if (parent.isValid())
         return 0;
 
     return StructureWrapper.GetNumberOfArtifacts();
 }
 
-auto StructureArtifactsModel::columnCount(const QModelIndex& parent) const -> int {
+auto StructureArtifactsModel::columnCount(QModelIndex const& parent) const -> int {
     return 1;
 }
 
-auto StructureArtifactsModel::data(const QModelIndex& index, int role) const -> QVariant {
-    if (!index.isValid() || role != Qt::DisplayRole)
+auto StructureArtifactsModel::data(QModelIndex const& index, int role) const -> QVariant {
+    if (!index.isValid())
         return {};
 
     const auto* artifact = static_cast<StructureArtifact*>(index.internalPointer());
+    if (!artifact)
+        throw std::runtime_error("Artifact must not be null");
 
-    return QString::fromStdString(artifact->GetViewName());
+    switch (role) {
+        case Qt::DisplayRole: return QString::fromStdString(artifact->GetViewName());
+
+        case Qt::UserRole: {
+            StructureArtifactData data {};
+
+            data.PopulateFromArtifact(*artifact);
+
+            return QVariant::fromValue(data);
+        }
+
+        default: return {};
+    }
 }
 
-auto StructureArtifactsModel::flags(const QModelIndex& index) const -> Qt::ItemFlags {
+auto StructureArtifactsModel::flags(QModelIndex const& index) const -> Qt::ItemFlags {
     if (!index.isValid()) return {};
 
     return Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable;
 }
 
-auto StructureArtifactsModel::setData(const QModelIndex& index, const QVariant& value, int role) -> bool {
+auto StructureArtifactsModel::setData(QModelIndex const& index, QVariant const& value, int role) -> bool {
     if (!index.isValid() || role != Qt::EditRole)
         return false;
 
@@ -61,8 +75,8 @@ auto StructureArtifactsModel::setData(const QModelIndex& index, const QVariant& 
     return true;
 }
 
-auto StructureArtifactsModel::AddStructureArtifact(const StructureArtifactData& data,
-                                                          const QModelIndex& siblingIndex) -> QModelIndex {
+auto StructureArtifactsModel::AddStructureArtifact(StructureArtifactData const& data,
+                                                   QModelIndex const& siblingIndex) -> QModelIndex {
     StructureArtifact artifact(data);
 
     int insertionIndex = siblingIndex.isValid()
@@ -70,13 +84,13 @@ auto StructureArtifactsModel::AddStructureArtifact(const StructureArtifactData& 
             : StructureWrapper.GetNumberOfArtifacts();
 
     beginInsertRows({}, insertionIndex, insertionIndex);
-    StructureWrapper.AddStructureArtifact(artifact, insertionIndex);
+    StructureWrapper.AddStructureArtifact(std::move(artifact), insertionIndex);
     endInsertRows();
 
     return index(insertionIndex, 0, {});
 }
 
-void StructureArtifactsModel::RemoveStructureArtifact(const QModelIndex& index) {
+void StructureArtifactsModel::RemoveStructureArtifact(QModelIndex const& index) {
     if (!index.isValid())
         throw std::runtime_error("Cannot remove image artifact. Given index is not valid");
 
@@ -87,21 +101,21 @@ void StructureArtifactsModel::RemoveStructureArtifact(const QModelIndex& index) 
     endRemoveRows();
 }
 
-auto StructureArtifactsModel::MoveUp(const QModelIndex& index) -> QModelIndex {
+auto StructureArtifactsModel::MoveUp(QModelIndex const& index) -> QModelIndex {
     if (!index.isValid() || index.row() == 0)
         throw std::runtime_error("Cannot move image artifact up. Given index is not valid or it is first child");
 
     return Move(index, -1);
 }
 
-auto StructureArtifactsModel::MoveDown(const QModelIndex& index) -> QModelIndex {
+auto StructureArtifactsModel::MoveDown(QModelIndex const& index) -> QModelIndex {
     if (!index.isValid() || index.row() == rowCount({}) - 1)
         throw std::runtime_error("Cannot move image artifact up. Given index is not valid or it is last child");
 
     return Move(index, 1);
 }
 
-auto StructureArtifactsModel::Move(const QModelIndex& sourceIndex, int displacement) -> QModelIndex {
+auto StructureArtifactsModel::Move(QModelIndex const& sourceIndex, int displacement) -> QModelIndex {
     auto* structureArtifact = static_cast<StructureArtifact*>(sourceIndex.internalPointer());
 
     int prevIdx = sourceIndex.row();

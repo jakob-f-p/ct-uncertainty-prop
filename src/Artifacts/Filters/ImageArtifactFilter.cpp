@@ -80,8 +80,7 @@ auto ImageArtifactFilter::GetArrayName(SubType subType) noexcept -> std::string 
     return SubTypeToString(subType);
 }
 
-auto ImageArtifactFilter::PointDataInformationVectorHasArray(vtkInformation* info,
-                                                             SubType subType) -> bool {
+auto ImageArtifactFilter::PointDataInformationVectorHasArray(vtkInformation* info, SubType subType) -> bool {
     vtkInformationVector* pointDataVector = info->Get(vtkDataObject::POINT_DATA_VECTOR());
     for (int i = 0; i < pointDataVector->GetNumberOfInformationObjects(); ++i) {
         vtkInformation* pointDataInfo = pointDataVector->GetInformationObject(i);

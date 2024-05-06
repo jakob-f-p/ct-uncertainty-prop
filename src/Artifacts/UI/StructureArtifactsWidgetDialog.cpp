@@ -4,7 +4,7 @@
 #include "PipelinesWidget.h"
 #include "StructureArtifactsView.h"
 #include "StructureArtifactsModel.h"
-#include "../StructureArtifact.h"
+#include "../Structure/StructureArtifact.h"
 
 #include <QItemSelectionModel>
 #include <QLabel>
@@ -73,7 +73,7 @@ void StructureArtifactsWidgetDialog::AddArtifact() {
     CreateDialog->show();
 
     connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
-        auto data = StructureArtifactWidget::GetWidgetData(CreateDialog);
+        auto data = GetWidgetData<StructureArtifactWidget>(CreateDialog);
         QModelIndex const parentIndex = SelectionModel->currentIndex();
         QModelIndex const newIndex = Model->AddStructureArtifact(data, parentIndex);
 

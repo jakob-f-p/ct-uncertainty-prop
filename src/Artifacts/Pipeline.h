@@ -6,15 +6,16 @@
 #include <memory>
 #include <string>
 
-class StructureArtifactList;
+class CtStructureTree;
 class ImageArtifactConcatenation;
+class StructureArtifactList;
 class TreeStructureArtifactListCollection;
 
 struct CtStructureTreeEvent;
 
 class Pipeline {
 public:
-    explicit Pipeline(uidx_t structureCount);
+    explicit Pipeline(CtStructureTree const& structureTree);
     ~Pipeline();
 
     [[nodiscard]] auto
@@ -22,6 +23,9 @@ public:
 
     [[nodiscard]] auto
     GetStructureArtifactListCollectionForIdx(uint16_t structureIdx) const -> StructureArtifactList&;
+
+    [[nodiscard]] auto
+    GetTreeArtifacts() const -> TreeStructureArtifactListCollection&;
 
     [[nodiscard]] auto
     GetImageArtifactConcatenation() const -> ImageArtifactConcatenation&;

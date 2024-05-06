@@ -1,8 +1,8 @@
 #pragma once
 
 #include "MotionArtifact.h"
-#include "../Enum.h"
-#include "../Types.h"
+#include "../../Enum.h"
+#include "../../Types.h"
 
 #include <QWidget>
 
@@ -24,9 +24,9 @@ namespace StructureArtifactDetails {
     Q_NAMESPACE
 
     enum struct SubType : uint8_t {
-        STREAKING,
+        STREAKING = 0,
         METALLIC,
-        MOTION,
+        MOTION
     };
     Q_ENUM_NS(SubType);
 
@@ -42,6 +42,18 @@ namespace StructureArtifactDetails {
     }
 
     ENUM_GET_VALUES(SubType);
+
+    [[nodiscard]] static consteval auto
+    GetNumberOfSubTypeValues() -> int { return 3; };
+
+    [[nodiscard]] static consteval auto
+    GetSubTypeValuesConstEval() {
+        std::array<SubType, GetNumberOfSubTypeValues()> values {};
+        for (int i = 0; i < values.size(); i++)
+            values[i] = static_cast<SubType>(i);
+
+        return values;
+    }
 }
 
 
@@ -70,8 +82,10 @@ public:
 
     StructureArtifact() = default;
     explicit StructureArtifact(StructureArtifactData const& data);
-    explicit StructureArtifact(auto&& structureArtifactSubType) : Artifact(std::move(structureArtifactSubType)) {}
+    explicit StructureArtifact(auto&& structureArtifactSubType)
+            : Artifact(std::forward<decltype(structureArtifactSubType)>(structureArtifactSubType)) {}
     StructureArtifact(StructureArtifact&&) = default;
+    auto operator= (StructureArtifact&&) -> StructureArtifact& = default;
 
     [[nodiscard]] auto
     GetMTime() const noexcept -> vtkMTimeType { return MTime.GetMTime(); }
@@ -85,18 +99,33 @@ public:
     [[nodiscard]] auto
     GetViewName() const noexcept -> std::string;
 
+    using StructureEvaluator = std::function<float(DoublePoint)>;
+
     [[nodiscard]] auto
-    EvaluateAtPosition(const FloatPoint& point) -> float;
+    EvaluateAtPosition(DoublePoint const& point,
+                       bool pointOccupiedByStructure,
+                       float tissueValue,
+                       StructureEvaluator const& structureEvaluator) const noexcept -> float {
+        return std::visit([&](auto const& artifact)
+                                  { return artifact.EvaluateAtPosition(point,
+                                                                       pointOccupiedByStructure,
+                                                                       tissueValue,
+                                                                       structureEvaluator); },
+                          Artifact);
+    }
 
     [[nodiscard]] auto
     GetSubType() const noexcept -> SubType;
+
+    [[nodiscard]] auto
+    operator== (StructureArtifact const& other) const noexcept -> bool { return MTime == other.MTime; }
 
 private:
     friend struct StructureArtifactData;
     friend class StructureArtifactWidget;
 
     [[nodiscard]] auto static
-    GetSubType(const StructureArtifactVariant& artifactVariant) noexcept -> SubType;
+    GetSubType(StructureArtifactVariant const& artifactVariant) noexcept -> SubType;
 
     std::string Name;
     StructureArtifactVariant Artifact;
@@ -119,16 +148,7 @@ public:
     auto
     Populate(const StructureArtifactData& data) noexcept -> void;
 
-    [[nodiscard]] auto static
-    GetWidgetData(QWidget* widget) -> StructureArtifactData { return FindWidget(widget).GetData(); }
-
-    auto static
-    SetWidgetData(QWidget* widget, const StructureArtifactData& data) -> void { FindWidget(widget).Populate(data); }
-
 private:
-    [[nodiscard]] auto static
-    FindWidget(QWidget* widget) -> StructureArtifactWidget&;
-
     auto
     UpdateSubTypeWidget() noexcept -> void;
 

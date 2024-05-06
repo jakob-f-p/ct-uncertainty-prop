@@ -119,8 +119,6 @@ class BasicStructureWidget : public CtStructureBaseWidget<BasicStructureDetails:
 
 
 
-using StructureId = uint16_t;
-
 class BasicStructure : public CtStructureBase {
 public:
     using FunctionType = BasicStructureDetails::FunctionType;
@@ -141,6 +139,9 @@ public:
 
     [[nodiscard]] inline auto
     FunctionValue(Point point) const -> float;
+
+    [[nodiscard]] auto
+    GetId() const noexcept -> StructureId { return Id; }
 
     auto
     operator==(const BasicStructure& other) const -> bool { return Id == other.Id && Tissue == other.Tissue; }

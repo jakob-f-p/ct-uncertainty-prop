@@ -8,8 +8,8 @@
 #include "Artifacts/Image/ImageArtifact.h"
 #include "Artifacts/Image/ImageArtifactConcatenation.h"
 #include "Artifacts/Image/CompositeImageArtifact.h"
-#include "Artifacts/StructureArtifact.h"
-#include "Artifacts/StructureArtifactListCollection.h"
+#include "Artifacts/Structure/StructureArtifact.h"
+#include "Artifacts/Structure/StructureArtifactListCollection.h"
 #include "Artifacts/PipelineList.h"
 
 #include <QApplication>
@@ -101,15 +101,16 @@ void App::InitializeWithTestData() {
     CtDataTree->AddBasicStructure(std::move(sphere));
     CtDataTree->CombineWithBasicStructure(std::move(box), std::move(combinedStructure));
 
-    StructureArtifact motionArtifact1(MotionArtifact{});
-    motionArtifact1.SetName("1");
-
-    StructureArtifact motionArtifact2(MotionArtifact{});
-    motionArtifact2.SetName("2");
+    MotionArtifact motionArtifact {};
+    motionArtifact.SetCtNumberFactor(5.0);
+    motionArtifact.SetTransform({ 1.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0,
+                                  1.0, 1.0, 1.0 });
+    StructureArtifact motionStructureArtifact(std::move(motionArtifact));
+    motionStructureArtifact.SetName("1");
 
     auto& basicStructure1Artifacts = pipeline.GetStructureArtifactListCollectionForIdx(1);
-    basicStructure1Artifacts.AddStructureArtifact(motionArtifact1);
-    basicStructure1Artifacts.AddStructureArtifact(motionArtifact2);
+    basicStructure1Artifacts.AddStructureArtifact(std::move(motionStructureArtifact));
 
 
     ImageArtifactConcatenation& imageArtifactConcatenation = pipeline.GetImageArtifactConcatenation();

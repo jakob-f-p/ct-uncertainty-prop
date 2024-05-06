@@ -79,7 +79,10 @@ public:
     };
 
     [[nodiscard]] auto
-    FunctionValueAndRadiodensity(Point point) const -> ModelingResult;
+    FunctionValueAndRadiodensity(Point point, StructureVariant const* = nullptr) const -> ModelingResult;
+
+    [[nodiscard]] auto
+    FunctionValue(Point point, StructureVariant const& structure) const -> float;
 
     void SetData(uidx_t structureIdx, const QVariant& data);
 
@@ -88,6 +91,9 @@ public:
 
     [[nodiscard]] auto
     GetRootIdx() const noexcept -> idx_t;
+
+    [[nodiscard]] auto
+    GetBasicStructureIdsOfStructureAt(uidx_t idx) const noexcept -> std::vector<StructureId>;
 
 private:
     [[nodiscard]] auto
@@ -110,6 +116,25 @@ private:
 
     auto
     DecrementParentAndChildIndices(uidx_t startIdx) -> void;
+
+    [[nodiscard]] auto
+    TransformPointUntilStructure(Point point, StructureVariant const& structure) const -> Point {
+        std::vector<StructureVariant const*> ancestors;
+        uidx_t const structureIdx = std::visit([&](auto const& s) { return FindIndexOf(s); }, structure);
+
+        idx_t ancestorIdx = std::visit([](auto const& s) { return s.ParentIdx; }, structure);
+        while (ancestorIdx) {
+            auto const& ancestor = GetStructureAt(*ancestorIdx);
+            ancestors.push_back(&ancestor);
+
+            ancestorIdx = std::visit([](auto const& s) { return s.ParentIdx; }, ancestor);
+        }
+
+        return std::accumulate(ancestors.crbegin(), ancestors.crend(), point,
+                        [](Point point, StructureVariant const* ancestor) {
+            return std::visit([&](auto const& s) { return s.GetTransformedPoint(point); }, *ancestor);
+        });
+    }
 
     vtkTimeStamp MTime;
     std::vector<StructureVariant> Structures;

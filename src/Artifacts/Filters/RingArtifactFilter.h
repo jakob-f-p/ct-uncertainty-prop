@@ -3,9 +3,6 @@
 #include "ImageArtifactFilter.h"
 
 class RingArtifactFilter : public ImageArtifactFilter {
-    using FloatPoint = std::array<float, 3>;
-    using DoublePoint = std::array<double, 3>;
-
 public:
     RingArtifactFilter(const RingArtifactFilter&) = delete;
     void operator=(const RingArtifactFilter&) = delete;

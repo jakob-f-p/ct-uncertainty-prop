@@ -1,7 +1,7 @@
 #include "ArtifactsDialog.h"
 
 #include "../Image/ImageArtifact.h"
-#include "../StructureArtifact.h"
+#include "../Structure/StructureArtifact.h"
 
 #include <QDialogButtonBox>
 #include <QVBoxLayout>

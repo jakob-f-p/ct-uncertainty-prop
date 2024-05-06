@@ -43,7 +43,7 @@ public:
     GetTransformedPoint(Point point) const noexcept -> Point { return Transform.TransformPoint(point); }
 
     auto
-    SetTransformData(const SimpleTransformData& transformData) noexcept -> void { Transform.SetData(transformData); }
+    SetTransformData(SimpleTransformData const& transformData) noexcept -> void { Transform.SetData(transformData); }
 
     [[nodiscard]] auto
     GetTransformData() const noexcept -> SimpleTransformData { return Transform.GetData(); };
@@ -77,7 +77,7 @@ public:
     PopulateStructure(Structure& structure) const -> void;
 
     auto
-    PopulateFromStructure(const Structure& structure) -> void;
+    PopulateFromStructure(Structure const& structure) -> void;
 };
 
 template<TStructureWidget StructureWidget, typename Data>
@@ -89,7 +89,7 @@ public:
     GetData() const noexcept -> Data;
 
     auto
-    Populate(const Data& data) noexcept -> void;
+    Populate(Data const& data) noexcept -> void;
 
 private:
     QFormLayout* Layout;

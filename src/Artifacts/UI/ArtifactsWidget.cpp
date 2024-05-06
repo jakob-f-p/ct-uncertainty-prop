@@ -2,6 +2,7 @@
 
 #include "PipelinesWidget.h"
 #include "../Image/ImageArtifactConcatenation.h"
+#include "../Structure/StructureArtifactListCollection.h"
 #include "../PipelineList.h"
 #include "../../Modeling/CtDataSource.h"
 
@@ -80,11 +81,14 @@ auto ArtifactRenderWidget::UpdateImageArtifactFiltersOnPipelineChange(Pipeline c
 }
 
 auto ArtifactRenderWidget::GetUpdatedFilter(Pipeline const& pipeline) -> vtkImageAlgorithm& {
-    auto& imageArtifactConcatenation = pipeline.GetImageArtifactConcatenation();
+    auto& treeArtifacts = pipeline.GetTreeArtifacts();
+    auto& treeArtifactsFilter = treeArtifacts.GetFilter();
+    treeArtifactsFilter.SetInputConnection(DataSource->GetOutputPort());
 
+    auto& imageArtifactConcatenation = pipeline.GetImageArtifactConcatenation();
     imageArtifactConcatenation.UpdateArtifactFilter();
     auto& imageArtifactStartFilter = imageArtifactConcatenation.GetStartFilter();
-    imageArtifactStartFilter.SetInputConnection(DataSource->GetOutputPort());
+    imageArtifactStartFilter.SetInputConnection(treeArtifactsFilter.GetOutputPort());
 
     return imageArtifactConcatenation.GetEndFilter();
 }

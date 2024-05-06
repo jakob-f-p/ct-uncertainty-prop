@@ -22,8 +22,8 @@ void CuppingArtifactFilter::PrintSelf(ostream &os, vtkIndent indent) {
 }
 
 auto CuppingArtifactFilter::RequestInformation(vtkInformation* request,
-                                                vtkInformationVector** inputVector,
-                                                vtkInformationVector *outputVector) -> int {
+                                               vtkInformationVector** inputVector,
+                                               vtkInformationVector *outputVector) -> int {
     ImageArtifactFilter::RequestInformation(request, inputVector, outputVector);
 
     AddArrayInformationToPointDataVector(SubType::CUPPING, outputVector);
@@ -32,8 +32,8 @@ auto CuppingArtifactFilter::RequestInformation(vtkInformation* request,
 }
 
 void CuppingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
-                                                             vtkImageData* output,
-                                                             vtkInformation* outInfo) {
+                                                            vtkImageData* output,
+                                                            vtkInformation* outInfo) {
     vtkIdType const numberOfPoints = output->GetNumberOfPoints();
 
     vtkNew<vtkFloatArray> newArtifactValueArray;
@@ -64,7 +64,9 @@ void CuppingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
     vtkSMPTools::For(0, numberOfPoints, addArtifactValues);
 }
 
-CuppingArtifactFilter::Algorithm::Algorithm(CuppingArtifactFilter* self, vtkImageData* volumeData, float* artifactValues) :
+CuppingArtifactFilter::Algorithm::Algorithm(CuppingArtifactFilter* self,
+                                            vtkImageData* volumeData,
+                                            float* artifactValues) :
         Self(self),
         VolumeData(volumeData),
         Spacing(),

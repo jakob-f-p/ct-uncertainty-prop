@@ -1,7 +1,7 @@
 #include "StructureArtifact.h"
 
-#include "../NameLineEdit.h"
-#include "../Overload.h"
+#include "../../NameLineEdit.h"
+#include "../../Overload.h"
 
 #include <QComboBox>
 #include <QFormLayout>
@@ -10,10 +10,6 @@
 auto StructureArtifact::GetViewName() const noexcept -> std::string {
     std::string const viewName = SubTypeToString(GetSubType()) + (Name.empty() ? "" : (" (" + Name + ")"));
     return viewName;
-}
-
-auto StructureArtifact::EvaluateAtPosition(const FloatPoint& point) -> float {
-    return 0;
 }
 
 auto StructureArtifact::GetSubType() const noexcept -> StructureArtifact::SubType {
@@ -106,27 +102,15 @@ auto StructureArtifactWidget::Populate(const StructureArtifactData& data) noexce
                WidgetVariant);
 }
 
-auto StructureArtifactWidget::FindWidget(QWidget* widget) -> StructureArtifactWidget& {
-    if (!widget)
-        throw std::runtime_error("Given widget must not be nullptr");
-
-    auto* structureArtifactWidget = widget->findChild<StructureArtifactWidget*>();
-
-    if (!structureArtifactWidget)
-        throw std::runtime_error("No image artifact widget contained in given widget");
-
-    return *structureArtifactWidget;
-}
-
 auto StructureArtifactWidget::UpdateSubTypeWidget() noexcept -> void {
     auto subType = SubTypeComboBox->currentData().value<StructureArtifact::SubType>();
 
-    StructureArtifactWidgetVariant newWidgetVariant = [subType]() {
+    StructureArtifactWidgetVariant newWidgetVariant = [subType]() -> StructureArtifactWidgetVariant {
         switch (subType) {
-            case StructureArtifact::SubType::MOTION: return StructureArtifactWidgetVariant { new MotionArtifactWidget() };
+            case StructureArtifact::SubType::MOTION: return new MotionArtifactWidget();
             default: qWarning("Todo");
         }
-        return StructureArtifactWidgetVariant {};
+        return new MotionArtifactWidget();
     }();
 
     std::visit([&, newWidgetVariant](auto* oldSubTypeWidget) {
