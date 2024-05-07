@@ -1,6 +1,6 @@
 #include "BasicStructures.h"
 
-#include "../CoordinateRowWidget.h"
+#include "../Utils/CoordinateRowWidget.h"
 
 #include <QDoubleSpinBox>
 #include <QFormLayout>

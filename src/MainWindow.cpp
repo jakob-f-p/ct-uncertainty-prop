@@ -3,6 +3,7 @@
 #include "Modeling/CtDataSource.h"
 #include "Modeling/UI/ModelingWidget.h"
 #include "Artifacts/UI/ArtifactsWidget.h"
+#include "Segmentation/SegmentationWidget.h"
 
 MainWindow::MainWindow(CtStructureTree& ctStructureTree, PipelineList& pipelineList) :
         DataSource([&]() {
@@ -19,11 +20,19 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree, PipelineList& pipelineL
 
     auto* modelingWidget = new ModelingWidget(ctStructureTree, *DataSource);
     auto* artifactsWidget = new ArtifactsWidget(pipelineList, *DataSource);
+    auto* segmentationWidget = new SegmentationWidget(*DataSource);
 
-    tabWidget->addTab(modelingWidget, "Implicit Modeling");
-    tabWidget->addTab(artifactsWidget, "Artifacts Widget");
+    tabWidget->addTab(modelingWidget, "Modeling");
+    tabWidget->addTab(artifactsWidget, "Artifacts");
+    tabWidget->addTab(segmentationWidget, "Segmentation");
 
     tabWidget->setCurrentIndex(1);
 
     setCentralWidget(tabWidget);
+
+    auto updateSegmentationDataSource = [=](int idx) {
+        if (idx == tabWidget->indexOf(segmentationWidget))
+            segmentationWidget->UpdateDataSource(artifactsWidget->GetCurrentFilter());
+    };
+    connect(tabWidget, &QTabWidget::currentChanged, this, updateSegmentationDataSource);
 }

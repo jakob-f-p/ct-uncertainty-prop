@@ -1,6 +1,6 @@
-#include "CuppingArtifactFilter.h"
-#include "../../ImageDataUtils.h"
-#include "../../Modeling/CtDataSource.h"
+#include "WindMillArtifactFilter.h"
+#include "../../../Utils/ImageDataUtils.h"
+#include "../../../Modeling/CtDataSource.h"
 
 #include <vtkFloatArray.h>
 #include <vtkImageData.h>
@@ -13,27 +13,31 @@
 
 #include <numbers>
 
-vtkStandardNewMacro(CuppingArtifactFilter)
+vtkStandardNewMacro(WindMillArtifactFilter)
 
-void CuppingArtifactFilter::PrintSelf(ostream &os, vtkIndent indent) {
+void WindMillArtifactFilter::PrintSelf(ostream &os, vtkIndent indent) {
     Superclass::PrintSelf(os, indent);
 
+    os << indent << "Bright Angular Width" << BrightAngularWidth << ")\n";
+    os << indent << "Dark Angular Width" << DarkAngularWidth << ")\n";
+
+    os << indent << "Bright Intensity Value" << DarkIntensityValue << ")\n";
     os << indent << "Dark Intensity Value" << DarkIntensityValue << ")\n";
 }
 
-auto CuppingArtifactFilter::RequestInformation(vtkInformation* request,
-                                               vtkInformationVector** inputVector,
-                                               vtkInformationVector *outputVector) -> int {
+auto WindMillArtifactFilter::RequestInformation(vtkInformation* request,
+                                                vtkInformationVector** inputVector,
+                                                vtkInformationVector *outputVector) -> int {
     ImageArtifactFilter::RequestInformation(request, inputVector, outputVector);
 
-    AddArrayInformationToPointDataVector(SubType::CUPPING, outputVector);
+    AddArrayInformationToPointDataVector(SubType::WIND_MILL, outputVector);
 
     return 1;
 }
 
-void CuppingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
-                                                            vtkImageData* output,
-                                                            vtkInformation* outInfo) {
+void WindMillArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
+                                                             vtkImageData* output,
+                                                             vtkInformation* outInfo) {
     vtkIdType const numberOfPoints = output->GetNumberOfPoints();
 
     vtkNew<vtkFloatArray> newArtifactValueArray;
@@ -47,11 +51,10 @@ void CuppingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
     vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);
     float* radiodensities = radioDensityArray->WritePointer(0, numberOfPoints);
 
-    vtkFloatArray* cuppingArtifactArray = GetDeepCopiedArtifactArray(input, output, SubType::WIND_MILL);
-    float* cuppingArtifactValues = cuppingArtifactArray->WritePointer(0, numberOfPoints);
+    vtkFloatArray* windMillArtifactArray = GetDeepCopiedArtifactArray(input, output, SubType::WIND_MILL);
+    float* windMillArtifactValues = windMillArtifactArray->WritePointer(0, numberOfPoints);
 
-    auto addArtifactValues = [cuppingArtifactValues, newArtifactValues, radiodensities] (vtkIdType pointId,
-                                                                                         vtkIdType endPointId) {
+    auto addArtifactValues = [windMillArtifactValues, newArtifactValues, radiodensities] (vtkIdType pointId, vtkIdType endPointId) {
         vtkIdType const startPointId = pointId;
 
         for (; pointId < endPointId; pointId++)
@@ -59,36 +62,35 @@ void CuppingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
 
         pointId = startPointId;
         for (; pointId < endPointId; pointId++)
-            cuppingArtifactValues[pointId] += newArtifactValues[pointId];
+            windMillArtifactValues[pointId] += newArtifactValues[pointId];
     };
     vtkSMPTools::For(0, numberOfPoints, addArtifactValues);
 }
 
-CuppingArtifactFilter::Algorithm::Algorithm(CuppingArtifactFilter* self,
-                                            vtkImageData* volumeData,
-                                            float* artifactValues) :
+WindMillArtifactFilter::Algorithm::Algorithm(WindMillArtifactFilter* self, vtkImageData* volumeData, float* artifactValues) :
         Self(self),
         VolumeData(volumeData),
         Spacing(),
         UpdateDims(),
         ArtifactValues(artifactValues),
+        BrightAngularWidth(vtkMath::RadiansFromDegrees(Self->GetBrightAngularWidth())),
+        DarkAngularWidth(vtkMath::RadiansFromDegrees(Self->GetDarkAngularWidth())),
+        CombinedAngularWidth(BrightAngularWidth + DarkAngularWidth),
+        BrightDarkThreshold(CombinedAngularWidth == 0.0 ? 0.0 : BrightAngularWidth / CombinedAngularWidth),
+        BrightIntensityValue(Self->GetBrightIntensityValue()),
         DarkIntensityValue(Self->GetDarkIntensityValue()),
-        xyMaxDistance([&]() {
-            std::array<double, 6> bounds {};
-            VolumeData->GetBounds(bounds.data());
-            double const xMaxDistance = bounds[1] - bounds[0];
-            double const yMaxDistance = bounds[3] - bounds[2];
-            return static_cast<float>(std::sqrt(xMaxDistance * xMaxDistance + yMaxDistance * yMaxDistance));
-        }()),
         Center(Self->GetCenterPoint()) {
     std::copy(volumeData->GetSpacing(), std::next(volumeData->GetSpacing(), 3), Spacing.begin());
     std::copy(volumeData->GetDimensions(), std::next(volumeData->GetDimensions(), 3), UpdateDims.begin());
 }
 
-void CuppingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType endPointId) const {
+void WindMillArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType endPointId) const {
     Self->CheckAbort();
 
     if (Self->GetAbortOutput())
+        return;
+
+    if (CombinedAngularWidth == 0.0)
         return;
 
     DoublePoint startPoint;
@@ -120,13 +122,17 @@ void CuppingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType e
                 xEnd = x2;
 
             for (; x <= xEnd; x++) {
-                float const xDistance = static_cast<float>(point[0] - Center[0]);
-                float const yDistance = static_cast<float>(point[1] - Center[1]);
+                float const xFromCenter = static_cast<float>(point[0] - Center[0]);
+                float const yFromCenter = static_cast<float>(point[1] - Center[1]);
 
-                float const xyDistance = std::sqrt(xDistance * xDistance + yDistance * yDistance);
-                float const relativeDistance = xyDistance / xyMaxDistance;
+                float const angleFromCenter = std::atan2(yFromCenter, xFromCenter) + static_cast<float>(std::numbers::pi);
+                float const numberOfCombinedAngularWidths = angleFromCenter / CombinedAngularWidth;
 
-                ArtifactValues[pointId] = DarkIntensityValue * (1.0F - relativeDistance);
+                float integralPart;
+                float const fractionalPart = std::modf(numberOfCombinedAngularWidths, &integralPart);
+
+                bool const isDark = fractionalPart >= BrightDarkThreshold;
+                ArtifactValues[pointId] = isDark ? DarkIntensityValue : BrightIntensityValue;
 
                 pointId++;
 

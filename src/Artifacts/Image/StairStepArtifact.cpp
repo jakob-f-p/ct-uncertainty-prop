@@ -1,7 +1,7 @@
 #include "StairStepArtifact.h"
 
-#include "../Filters/StairStepArtifactFilter.h"
-#include "../../CoordinateRowWidget.h"
+#include "Filters/StairStepArtifactFilter.h"
+#include "../../Utils/CoordinateRowWidget.h"
 
 #include <QDoubleSpinBox>
 #include <QLabel>

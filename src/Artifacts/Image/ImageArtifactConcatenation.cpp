@@ -1,7 +1,7 @@
 #include "ImageArtifactConcatenation.h"
 
 #include "ImageArtifact.h"
-#include "../Filters/PassThroughImageArtifactFilter.h"
+#include "Filters/PassThroughImageArtifactFilter.h"
 
 ImageArtifactConcatenation::ImageArtifactConcatenation() noexcept :
         Start(new ImageArtifact { std::move(CompositeImageArtifact(CompositeImageArtifact::CompositionType::SEQUENTIAL)) }) {}

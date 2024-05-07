@@ -1,7 +1,7 @@
 #include "CuppingArtifact.h"
 
-#include "../Filters/CuppingArtifactFilter.h"
-#include "../../CoordinateRowWidget.h"
+#include "Filters/CuppingArtifactFilter.h"
+#include "../../Utils/CoordinateRowWidget.h"
 
 #include <QDoubleSpinBox>
 #include <QLabel>

@@ -16,6 +16,9 @@ public:
     explicit RenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent = nullptr);
     ~RenderWidget() override;
 
+    [[nodiscard]] auto
+    GetCurrentFilter() -> vtkImageAlgorithm&;
+
 public slots:
     auto
     ResetCamera() const -> void;

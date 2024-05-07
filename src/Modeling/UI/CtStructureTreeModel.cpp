@@ -1,7 +1,7 @@
 #include "CtStructureTreeModel.h"
 
 #include "../CtStructureTree.h"
-#include "../../Overload.h"
+#include "../../Utils/Overload.h"
 
 CtStructureTreeModel::CtStructureTreeModel(CtStructureTree& ctStructureTree, QObject* parent) :
         QAbstractItemModel(parent),

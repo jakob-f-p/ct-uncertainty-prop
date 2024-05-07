@@ -2,7 +2,7 @@
 
 #include "ImageArtifact.h"
 
-#include "../Filters/MergeParallelImageArtifactFilters.h"
+#include "Filters/MergeParallelImageArtifactFilters.h"
 
 #include <QComboBox>
 #include <QFormLayout>

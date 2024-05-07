@@ -2,7 +2,7 @@
 
 #include "BasicImageArtifact.h"
 #include "CompositeImageArtifact.h"
-#include "../../NameLineEdit.h"
+#include "../../Utils/NameLineEdit.h"
 
 #include <QComboBox>
 #include <QFormLayout>

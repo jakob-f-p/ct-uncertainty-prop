@@ -2,7 +2,7 @@
 
 #include "BasicStructure.h"
 #include "CombinedStructure.h"
-#include "../NameLineEdit.h"
+#include "../Utils/NameLineEdit.h"
 
 #include <QFormLayout>
 #include <QGroupBox>

@@ -57,6 +57,9 @@ ArtifactsWidget::ArtifactsWidget(PipelineList& pipelines, CtDataSource& dataSour
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dockWidget);
 }
 
+auto ArtifactsWidget::GetCurrentFilter() -> vtkImageAlgorithm& {
+    return RenderWidget->GetCurrentFilter();
+}
 
 
 ArtifactRenderWidget::ArtifactRenderWidget(PipelineList& pipelines,

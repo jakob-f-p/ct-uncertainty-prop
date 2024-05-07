@@ -1,7 +1,7 @@
 #include "CtDataSource.h"
 
 #include "CtStructureTree.h"
-#include "../ImageDataUtils.h"
+#include "../Utils/ImageDataUtils.h"
 
 #include <vtkDataSetAttributes.h>
 #include <vtkDataObject.h>

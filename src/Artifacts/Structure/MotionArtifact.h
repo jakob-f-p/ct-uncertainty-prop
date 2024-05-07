@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../../Types.h"
-#include "../../Modeling/SimpleTransform.h"
+#include "../../Utils/SimpleTransform.h"
 
 #include <QWidget>
 

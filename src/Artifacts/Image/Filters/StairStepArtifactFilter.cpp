@@ -1,5 +1,5 @@
 #include "StairStepArtifactFilter.h"
-#include "../../Modeling/CtDataSource.h"
+#include "../../../Modeling/CtDataSource.h"
 
 #include <vtkFloatArray.h>
 #include <vtkImageData.h>

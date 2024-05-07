@@ -1,7 +1,7 @@
 #include "WindMillArtifact.h"
 
-#include "../Filters/WindMillArtifactFilter.h"
-#include "../../CoordinateRowWidget.h"
+#include "Filters/WindMillArtifactFilter.h"
+#include "../../Utils/CoordinateRowWidget.h"
 
 #include <QDoubleSpinBox>
 #include <QLabel>

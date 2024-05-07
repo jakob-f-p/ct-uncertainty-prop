@@ -1,7 +1,7 @@
 #include "RingArtifact.h"
 
-#include "../Filters/RingArtifactFilter.h"
-#include "../../CoordinateRowWidget.h"
+#include "Filters/RingArtifactFilter.h"
+#include "../../Utils/CoordinateRowWidget.h"
 
 #include <QDoubleSpinBox>
 #include <QLabel>

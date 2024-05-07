@@ -78,3 +78,10 @@ auto RenderWidget::UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> vo
     ImageAlgorithm = &imageAlgorithm;
     VolumeMapper->SetInputConnection(ImageAlgorithm->GetOutputPort());
 }
+
+auto RenderWidget::GetCurrentFilter() -> vtkImageAlgorithm& {
+    if (!ImageAlgorithm)
+        throw std::runtime_error("Filter must not be null");
+
+    return *ImageAlgorithm;
+}

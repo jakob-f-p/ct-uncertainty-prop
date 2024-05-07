@@ -1,6 +1,6 @@
-#include "RingArtifactFilter.h"
-#include "../../ImageDataUtils.h"
-#include "../../Modeling/CtDataSource.h"
+#include "CuppingArtifactFilter.h"
+#include "../../../Utils/ImageDataUtils.h"
+#include "../../../Modeling/CtDataSource.h"
 
 #include <vtkFloatArray.h>
 #include <vtkImageData.h>
@@ -11,31 +11,29 @@
 #include <vtkSMPTools.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
 
-vtkStandardNewMacro(RingArtifactFilter)
+#include <numbers>
 
-void RingArtifactFilter::PrintSelf(ostream &os, vtkIndent indent) {
+vtkStandardNewMacro(CuppingArtifactFilter)
+
+void CuppingArtifactFilter::PrintSelf(ostream &os, vtkIndent indent) {
     Superclass::PrintSelf(os, indent);
 
-    os << indent << "Bright Ring Width" << BrightRingWidth << ")\n";
-    os << indent << "Dark Ring Width" << DarkRingWidth << ")\n";
-
-    os << indent << "Bright Intensity Value" << DarkIntensityValue << ")\n";
     os << indent << "Dark Intensity Value" << DarkIntensityValue << ")\n";
 }
 
-auto RingArtifactFilter::RequestInformation(vtkInformation* request,
-                                            vtkInformationVector** inputVector,
-                                            vtkInformationVector *outputVector) -> int {
+auto CuppingArtifactFilter::RequestInformation(vtkInformation* request,
+                                               vtkInformationVector** inputVector,
+                                               vtkInformationVector *outputVector) -> int {
     ImageArtifactFilter::RequestInformation(request, inputVector, outputVector);
 
-    AddArrayInformationToPointDataVector(SubType::RING, outputVector);
+    AddArrayInformationToPointDataVector(SubType::CUPPING, outputVector);
 
     return 1;
 }
 
-void RingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
-                                                         vtkImageData* output,
-                                                         vtkInformation* outInfo) {
+void CuppingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
+                                                            vtkImageData* output,
+                                                            vtkInformation* outInfo) {
     vtkIdType const numberOfPoints = output->GetNumberOfPoints();
 
     vtkNew<vtkFloatArray> newArtifactValueArray;
@@ -49,10 +47,11 @@ void RingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
     vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);
     float* radiodensities = radioDensityArray->WritePointer(0, numberOfPoints);
 
-    vtkFloatArray* ringArtifactArray = GetDeepCopiedArtifactArray(input, output, SubType::RING);
-    float* ringArtifactValues = ringArtifactArray->WritePointer(0, numberOfPoints);
+    vtkFloatArray* cuppingArtifactArray = GetDeepCopiedArtifactArray(input, output, SubType::WIND_MILL);
+    float* cuppingArtifactValues = cuppingArtifactArray->WritePointer(0, numberOfPoints);
 
-    auto addNoiseValues = [ringArtifactValues, newArtifactValues, radiodensities] (vtkIdType pointId, vtkIdType endPointId) {
+    auto addArtifactValues = [cuppingArtifactValues, newArtifactValues, radiodensities] (vtkIdType pointId,
+                                                                                         vtkIdType endPointId) {
         vtkIdType const startPointId = pointId;
 
         for (; pointId < endPointId; pointId++)
@@ -60,33 +59,36 @@ void RingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
 
         pointId = startPointId;
         for (; pointId < endPointId; pointId++)
-            ringArtifactValues[pointId] += newArtifactValues[pointId];
+            cuppingArtifactValues[pointId] += newArtifactValues[pointId];
     };
-    vtkSMPTools::For(0, numberOfPoints, addNoiseValues);
+    vtkSMPTools::For(0, numberOfPoints, addArtifactValues);
 }
 
-RingArtifactFilter::Algorithm::Algorithm(RingArtifactFilter* self, vtkImageData* volumeData, float* artifactValues) :
+CuppingArtifactFilter::Algorithm::Algorithm(CuppingArtifactFilter* self,
+                                            vtkImageData* volumeData,
+                                            float* artifactValues) :
         Self(self),
         VolumeData(volumeData),
+        Spacing(),
+        UpdateDims(),
         ArtifactValues(artifactValues),
-        BrightRingWidth(Self->GetBrightRingWidth()),
-        DarkRingWidth(Self->GetDarkRingWidth()),
-        CombinedRingWidth(BrightRingWidth + DarkRingWidth),
-        BrightDarkThreshold(CombinedRingWidth == 0.0 ? 0.0 : BrightRingWidth / CombinedRingWidth),
-        BrightIntensityValue(Self->GetBrightIntensityValue()),
         DarkIntensityValue(Self->GetDarkIntensityValue()),
+        xyMaxDistance([&]() {
+            std::array<double, 6> bounds {};
+            VolumeData->GetBounds(bounds.data());
+            double const xMaxDistance = bounds[1] - bounds[0];
+            double const yMaxDistance = bounds[3] - bounds[2];
+            return static_cast<float>(std::sqrt(xMaxDistance * xMaxDistance + yMaxDistance * yMaxDistance));
+        }()),
         Center(Self->GetCenterPoint()) {
     std::copy(volumeData->GetSpacing(), std::next(volumeData->GetSpacing(), 3), Spacing.begin());
     std::copy(volumeData->GetDimensions(), std::next(volumeData->GetDimensions(), 3), UpdateDims.begin());
 }
 
-void RingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType endPointId) const {
+void CuppingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType endPointId) const {
     Self->CheckAbort();
 
     if (Self->GetAbortOutput())
-        return;
-
-    if (CombinedRingWidth == 0.0)
         return;
 
     DoublePoint startPoint;
@@ -122,13 +124,9 @@ void RingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType endP
                 float const yDistance = static_cast<float>(point[1] - Center[1]);
 
                 float const xyDistance = std::sqrt(xDistance * xDistance + yDistance * yDistance);
-                float const numberOfCombinedRings = xyDistance / CombinedRingWidth;
+                float const relativeDistance = xyDistance / xyMaxDistance;
 
-                float integralPart;
-                float const fractionalPart = std::modf(numberOfCombinedRings, &integralPart);
-
-                bool isDark = fractionalPart >= BrightDarkThreshold;
-                ArtifactValues[pointId] = isDark ? DarkIntensityValue : BrightIntensityValue;
+                ArtifactValues[pointId] = DarkIntensityValue * (1.0F - relativeDistance);
 
                 pointId++;
 

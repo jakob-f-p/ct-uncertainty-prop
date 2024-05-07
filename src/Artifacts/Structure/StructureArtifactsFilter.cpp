@@ -1,7 +1,7 @@
 #include "StructureArtifactsFilter.h"
 
 #include "StructureArtifactListCollection.h"
-#include "../../ImageDataUtils.h"
+#include "../../Utils/ImageDataUtils.h"
 
 #include <vtkErrorCode.h>
 #include <vtkDataObject.h>

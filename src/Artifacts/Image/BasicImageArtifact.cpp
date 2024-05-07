@@ -1,6 +1,6 @@
 #include "BasicImageArtifact.h"
 
-#include "../../Overload.h"
+#include "../../Utils/Overload.h"
 #include "../../Types.h"
 
 #include <QComboBox>

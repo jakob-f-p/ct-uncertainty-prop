@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../WidgetUtils.h"
+#include "../../Utils/WidgetUtils.h"
 
 #include <QTreeView>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Enum.h"
+#include "../../Utils/Enum.h"
 
 #include <QWidget>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../RenderWidget.h"
+#include "../../Utils/RenderWidget.h"
 
 #include <QMainWindow>
 
@@ -16,6 +16,9 @@ class PipelinesWidget;
 class ArtifactsWidget : public QMainWindow {
 public:
     explicit ArtifactsWidget(PipelineList& pipelines, CtDataSource& dataSource);
+
+    [[nodiscard]] auto
+    GetCurrentFilter() -> vtkImageAlgorithm&;
 
 private:
     QPushButton* ResetCameraButton;

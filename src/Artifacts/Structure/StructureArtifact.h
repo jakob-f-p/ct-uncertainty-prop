@@ -1,7 +1,7 @@
 #pragma once
 
 #include "MotionArtifact.h"
-#include "../../Enum.h"
+#include "../../Utils/Enum.h"
 #include "../../Types.h"
 
 #include <QWidget>

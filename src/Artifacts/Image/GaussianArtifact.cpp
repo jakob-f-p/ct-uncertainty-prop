@@ -1,6 +1,6 @@
 #include "GaussianArtifact.h"
 
-#include "../Filters/GaussianArtifactFilter.h"
+#include "Filters/GaussianArtifactFilter.h"
 
 #include <QDoubleSpinBox>
 #include <QLabel>
