@@ -126,9 +126,9 @@ auto ThresholdFilterWidget::SetFilterData(ThresholdFilter& thresholdFilter) -> v
     auto const mode = ModeComboBox->currentData().value<FilterMode>();
 
     switch (mode) {
-        case FilterMode::UPPER:   thresholdFilter.ThresholdByUpper(upper);
-        case FilterMode::LOWER:   thresholdFilter.ThresholdByLower(lower);
-        case FilterMode::BETWEEN: thresholdFilter.ThresholdBetween(lower, upper);
+        case FilterMode::UPPER:   thresholdFilter.ThresholdByUpper(upper);        break;
+        case FilterMode::LOWER:   thresholdFilter.ThresholdByLower(lower);        break;
+        case FilterMode::BETWEEN: thresholdFilter.ThresholdBetween(lower, upper); break;
         default: break;
     }
 }

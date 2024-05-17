@@ -66,8 +66,9 @@ SaltPepperArtifactWidget::SaltPepperArtifactWidget() :
         amountLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
         gLayout->addWidget(amountLabel, i, 1);
 
-        amountSpinBoxes[i]->setRange(0.0, 1.0);
-        amountSpinBoxes[i]->setSingleStep(0.01);
+        amountSpinBoxes[i]->setRange(0.0, 0.5);
+        amountSpinBoxes[i]->setDecimals(4);
+        amountSpinBoxes[i]->setSingleStep(0.001);
         gLayout->addWidget(amountSpinBoxes[i], i, 2);
 
         auto* intensityLabel = new QLabel("Intensity");
