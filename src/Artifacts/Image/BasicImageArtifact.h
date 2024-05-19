@@ -2,13 +2,13 @@
 
 #include "ImageArtifactBase.h"
 
-#include "CuppingArtifact.h"
-#include "GaussianArtifact.h"
-#include "RingArtifact.h"
-#include "SaltPepperArtifact.h"
-#include "StairStepArtifact.h"
-#include "WindMillArtifact.h"
-#include "../../Types.h"
+#include "Artifacts/CuppingArtifact.h"
+#include "Artifacts/GaussianArtifact.h"
+#include "Artifacts/RingArtifact.h"
+#include "Artifacts/SaltPepperArtifact.h"
+#include "Artifacts/StairStepArtifact.h"
+#include "Artifacts/WindMillArtifact.h"
+#include "../../Utils/Types.h"
 
 #include <QMetaObject>
 

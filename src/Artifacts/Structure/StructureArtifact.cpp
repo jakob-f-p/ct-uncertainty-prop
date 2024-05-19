@@ -1,6 +1,6 @@
 #include "StructureArtifact.h"
 
-#include "../../Utils/NameLineEdit.h"
+#include "../../Ui/Utils/NameLineEdit.h"
 #include "../../Utils/Overload.h"
 
 #include <QComboBox>

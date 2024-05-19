@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Types.h"
+#include "../../Utils/Types.h"
 #include "../../Utils/SimpleTransform.h"
 
 #include <QWidget>

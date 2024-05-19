@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CtStructure.h"
-#include "../Types.h"
+#include "../Utils/Types.h"
 
 #include <vtkBox.h>
 #include <vtkNew.h>

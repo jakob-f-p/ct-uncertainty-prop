@@ -1,7 +1,7 @@
 #pragma once
 
 #include "StructureArtifact.h"
-#include "../../Types.h"
+#include "../../Utils/Types.h"
 
 #include <vtkImageAlgorithm.h>
 

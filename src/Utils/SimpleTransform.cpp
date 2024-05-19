@@ -1,6 +1,6 @@
 #include "SimpleTransform.h"
 
-#include "CoordinateRowWidget.h"
+#include "../Ui/Utils/CoordinateRowWidget.h"
 
 #include <QDoubleSpinBox>
 #include <QGridLayout>

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Utils/SimpleTransform.h"
-#include "../Types.h"
+#include "../Utils/Types.h"
 #include "../Utils/Enum.h"
 
 #include <vtkTransform.h>

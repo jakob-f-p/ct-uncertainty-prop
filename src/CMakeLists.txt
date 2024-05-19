@@ -8,6 +8,7 @@ file(GLOB_RECURSE UNCERTAINTY_PROPAGATION_SRC CONFIGURE_DEPENDS "*.h" "*.cpp" "*
 
 add_executable(uncertainty_propagation ${UNCERTAINTY_PROPAGATION_SRC})
 
+
 ### add Qt6 ###
 set(QT_COMPONENTS
         Core
@@ -58,8 +59,10 @@ if (EXISTS ${QT_SRC_DIR})
     endif ()
 
     if (EXISTS ${QT_BASE_SRC_DIR})
-        message(NOTICE "Including QT sources from ${QT_BASE_SRC_DIR}")
-        include_directories(${QT_BASE_SRC_DIR})
+        target_include_directories(Qt::Core INTERFACE "${QT_BASE_SRC_DIR}/corelib")
+        target_include_directories(Qt::Widgets INTERFACE "${QT_BASE_SRC_DIR}/widgets")
+        target_include_directories(Qt::Gui INTERFACE "${QT_BASE_SRC_DIR}/gui")
+        message(NOTICE "Including QT sources from ${QT_BASE_SRC_DIR}/<target_dir> to <target>")
     endif ()
 endif ()
 
@@ -69,6 +72,7 @@ qt_add_resources(uncertainty_propagation images
         BASE "Resources"
         FILES ${RESOURCES_FOLDER} "Resources/ArrowLeftDisabled.png"
 )
+
 
 ### add VTK ###
 set(VTK_COMPONENTS
@@ -103,3 +107,17 @@ vtk_module_autoinit(
 if (CMAKE_BUILD_TYPE STREQUAL Debug)
     target_compile_definitions(uncertainty_propagation PUBLIC BUILD_TYPE_DEBUG=TRUE)
 endif ()
+
+
+### add Python ###
+find_package(Python 3.9 REQUIRED COMPONENTS Interpreter Development)
+
+#get_cmake_property(_variableNames VARIABLES)
+#list (SORT _variableNames)
+#foreach (_variableName ${_variableNames})
+#    if (_variableName MATCHES "PY" OR _variableName MATCHES "Py")
+#        message(STATUS "${_variableName}=${${_variableName}}")
+#    endif ()
+#endforeach()
+
+target_link_libraries(uncertainty_propagation PRIVATE Python::Python Python::Module)

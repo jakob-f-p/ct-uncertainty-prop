@@ -1,6 +1,6 @@
 #include "App.h"
 
-#include "MainWindow.h"
+#include "Ui/MainWindow.h"
 #include "Modeling/BasicStructure.h"
 #include "Modeling/CombinedStructure.h"
 #include "Modeling/CtDataSource.h"
@@ -18,6 +18,7 @@
 #include <QVTKOpenGLNativeWidget.h>
 
 #include <SMP/Common/vtkSMPToolsAPI.h>
+
 
 App::App(int argc, char* argv[]) :
         Argc(argc),

@@ -38,7 +38,7 @@ protected:
     ~App();
 
 private:
-    void InitializeWithTestData();
+    auto InitializeWithTestData() -> void;
 
     static App* Self;
 

@@ -1,7 +1,7 @@
 #pragma once
 
 #include "StructureArtifact.h"
-#include "../../Types.h"
+#include "../../Utils/Types.h"
 
 #include <vtkNew.h>
 
@@ -79,19 +79,6 @@ public:
     auto
     UpdateBasicStructureIds() noexcept -> void { BasicStructureIds = BasicStructureIdProv(*this); }
 
-    [[nodiscard]] auto
-    ArtifactValues(DoublePoint point, StructureId structureId) const noexcept -> Result {
-        bool pointOccupiedByStructure = std::any_of(BasicStructureIds.cbegin(), BasicStructureIds.cend(),
-                                                    [&](StructureId id) { return id == structureId; });
-
-        Result result {};
-
-//        for (const auto& artifact : Artifacts)
-//            result[artifact.GetSubType()] += artifact.EvaluateAtPosition(point, pointOccupiedByStructure);
-
-        return result;
-    }
-
     template<typename Calculate>
     auto
     ArtifactValue(Calculate calculate) const noexcept -> void {
@@ -143,14 +130,6 @@ public:
 
     auto
     RemoveStructureArtifactList(uidx_t removeIdx) -> void;
-
-    [[nodiscard]] auto
-    ArtifactValues(DoublePoint point, StructureId structureId) const noexcept -> StructureArtifactList::Result {
-        return std::transform_reduce(
-                ArtifactLists.cbegin(), ArtifactLists.cend(), StructureArtifactList::Result{}, std::plus{},
-                [&](auto const& artifactList) { return artifactList.ArtifactValues(point, structureId); }
-        );
-    }
 
     template<typename Calculate>
     auto
