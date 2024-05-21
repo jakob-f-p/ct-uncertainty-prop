@@ -44,8 +44,5 @@ public slots:
     UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) -> void;
 
 private:
-    auto
-    GetUpdatedFilter(Pipeline const& pipeline) -> vtkImageAlgorithm&;
-
     CtDataSource* DataSource;
 };

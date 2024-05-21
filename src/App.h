@@ -1,5 +1,7 @@
 #pragma once
 
+#include <vtkNew.h>
+
 #include <memory>
 
 class QApplication;
@@ -7,6 +9,7 @@ class QApplication;
 class CtDataSource;
 class CtStructureTree;
 class PipelineList;
+class PipelineGroupList;
 class MainWindow;
 
 class App {
@@ -48,5 +51,7 @@ private:
     std::unique_ptr<QApplication> QApp;
     std::unique_ptr<MainWindow> MainWin;
     std::unique_ptr<CtStructureTree> CtDataTree;
+    vtkNew<CtDataSource> DataSource;
     std::unique_ptr<PipelineList> Pipelines;
+    std::unique_ptr<PipelineGroupList> PipelineGroups;
 };

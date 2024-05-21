@@ -11,6 +11,7 @@
 #include "Artifacts/Structure/StructureArtifact.h"
 #include "Artifacts/Structure/StructureArtifactListCollection.h"
 #include "Artifacts/PipelineList.h"
+#include "PipelineGroups/PipelineGroupList.h"
 
 #include <QApplication>
 #include <QSurfaceFormat>
@@ -26,12 +27,35 @@ App::App(int argc, char* argv[]) :
         QApp(new QApplication(Argc, Argv)),
         MainWin(nullptr),
         CtDataTree(new CtStructureTree()),
-        Pipelines(new PipelineList(*CtDataTree)) {
+        DataSource([&]() {
+            vtkNew<CtDataSource> dataSource;
+            dataSource->SetDataTree(CtDataTree.get());
+            return dataSource;
+        }()),
+        Pipelines(new PipelineList(*CtDataTree, *DataSource)),
+        PipelineGroups([&pipelines = *Pipelines]() {
+            auto* const pipelineGroupList = new PipelineGroupList();
+
+            auto const& removeDependentPipelineGroups = [pipelineGroupList](PipelineEvent const& event) {
+                if (event.Type != PipelineEventType::PRE_REMOVE)
+                    return;
+
+                if (event.PipelinePointer == nullptr)
+                    throw std::runtime_error("pipeline pointer may not be nullptr");
+
+                auto pipelineGroups = pipelineGroupList->FindPipelineGroupsByBasePipeline(*event.PipelinePointer);
+                for (auto const* group : pipelineGroups)
+                    pipelineGroupList->RemovePipelineGroup(*group);
+            };
+            pipelines.AddPipelineEventCallback(removeDependentPipelineGroups);
+
+            return pipelineGroupList;
+        }()) {
 
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 
     auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
-//    smpToolsApi.SetBackend("STDTHREAD");
+    //    smpToolsApi.SetBackend("STDTHREAD");
 }
 
 App::~App() {
@@ -61,7 +85,7 @@ auto App::Run() -> int {
 
     InitializeWithTestData();
 
-    MainWin = std::make_unique<MainWindow>(*CtDataTree, *Pipelines);
+    MainWin = std::make_unique<MainWindow>(*CtDataTree, *DataSource, *Pipelines);
     MainWin->show();
 
     return QApplication::exec();
@@ -110,7 +134,7 @@ void App::InitializeWithTestData() {
     StructureArtifact motionStructureArtifact(std::move(motionArtifact));
     motionStructureArtifact.SetName("1");
 
-    auto& basicStructure1Artifacts = pipeline.GetStructureArtifactListCollectionForIdx(1);
+    auto& basicStructure1Artifacts = pipeline.GetStructureArtifactListCollection(1);
     basicStructure1Artifacts.AddStructureArtifact(std::move(motionStructureArtifact));
 
 

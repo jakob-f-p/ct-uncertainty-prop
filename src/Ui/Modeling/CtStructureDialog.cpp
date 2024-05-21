@@ -19,7 +19,7 @@ CtStructureDialog::CtStructureDialog(QWidget* structureWidget, DialogMode mode, 
 
     setModal(true);
 
-    setWindowTitle(mode == DialogMode::CREATE ? "Create" : "Edit");
+    setWindowTitle(mode == DialogMode::CREATE ? "Create" : "EDIT");
 
     Layout->setSizeConstraint(QLayout::SizeConstraint::SetMinimumSize);
 

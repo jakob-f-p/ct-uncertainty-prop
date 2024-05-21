@@ -1,10 +1,8 @@
 #include "ArtifactsWidget.h"
 
 #include "PipelinesWidget.h"
-#include "../../Artifacts/Image/ImageArtifactConcatenation.h"
-#include "../../Artifacts/Structure/StructureArtifactListCollection.h"
+#include "../../Artifacts/Pipeline.h"
 #include "../../Artifacts/PipelineList.h"
-#include "../../Modeling/CtDataSource.h"
 
 #include <QDockWidget>
 #include <QFrame>
@@ -69,29 +67,16 @@ ArtifactRenderWidget::ArtifactRenderWidget(PipelineList& pipelines,
         RenderWidget([&]() -> vtkImageAlgorithm& {
             DataSource = &dataSource;
 
-            return GetUpdatedFilter(pipeline);
+            return pipeline.GetImageAlgorithm();
         }(), parent) {
 
-    pipelines.AddPipelineEventCallback([&]() { Render(); });
+    pipelines.AddTreeEventCallback([&]() { Render(); });
 }
 
 ArtifactRenderWidget::~ArtifactRenderWidget() = default;
 
 auto ArtifactRenderWidget::UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) -> void {
-    UpdateImageAlgorithm(GetUpdatedFilter(newPipeline));
+    UpdateImageAlgorithm(newPipeline.GetImageAlgorithm());
 
     Render();
-}
-
-auto ArtifactRenderWidget::GetUpdatedFilter(Pipeline const& pipeline) -> vtkImageAlgorithm& {
-    auto& treeArtifacts = pipeline.GetTreeArtifacts();
-    auto& treeArtifactsFilter = treeArtifacts.GetFilter();
-    treeArtifactsFilter.SetInputConnection(DataSource->GetOutputPort());
-
-    auto& imageArtifactConcatenation = pipeline.GetImageArtifactConcatenation();
-    imageArtifactConcatenation.UpdateArtifactFilter();
-    auto& imageArtifactStartFilter = imageArtifactConcatenation.GetStartFilter();
-    imageArtifactStartFilter.SetInputConnection(treeArtifactsFilter.GetOutputPort());
-
-    return imageArtifactConcatenation.GetEndFilter();
 }

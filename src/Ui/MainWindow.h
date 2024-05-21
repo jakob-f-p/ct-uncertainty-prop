@@ -10,8 +10,8 @@ class PipelineList;
 
 class MainWindow : public QMainWindow {
 public:
-    explicit MainWindow(CtStructureTree& ctStructureTree, PipelineList& pipelineList);
+    explicit MainWindow(CtStructureTree& ctStructureTree, CtDataSource& dataSource, PipelineList& pipelineList);
 
 private:
-    vtkNew<CtDataSource> DataSource;
+    CtDataSource& DataSource;
 };

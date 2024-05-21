@@ -13,9 +13,9 @@ class PipelineList;
 class QVariant;
 
 enum struct CtStructureTreeEventType : uint8_t {
-    Add,
-    Remove,
-    Edit
+    ADD,
+    REMOVE,
+    EDIT
 };
 
 struct CtStructureTreeEvent {
@@ -86,7 +86,7 @@ public:
 
     void SetData(uidx_t structureIdx, const QVariant& data);
 
-    using TreeEventCallback = std::function<void(const CtStructureTreeEvent&)>;
+    using TreeEventCallback = std::function<void(CtStructureTreeEvent const&)>;
     void AddTreeEventCallback(TreeEventCallback&& treeEventCallback);
 
     [[nodiscard]] auto

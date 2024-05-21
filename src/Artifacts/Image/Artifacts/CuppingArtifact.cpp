@@ -8,8 +8,8 @@
 #include <QFormLayout>
 
 CuppingArtifact::CuppingArtifact() = default;
-CuppingArtifact::CuppingArtifact(CuppingArtifact&&) = default;
-auto CuppingArtifact::operator= (CuppingArtifact&&) -> CuppingArtifact& = default;
+CuppingArtifact::CuppingArtifact(CuppingArtifact&&) noexcept = default;
+auto CuppingArtifact::operator= (CuppingArtifact&&) noexcept -> CuppingArtifact& = default;
 CuppingArtifact::~CuppingArtifact() = default;
 
 auto CuppingArtifact::UpdateFilterParameters() -> void {

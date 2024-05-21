@@ -1,5 +1,8 @@
 #pragma once
 
+#include "../../../Utils/Types.h"
+#include "../../../PipelineGroups/ObjectProperty.h"
+
 #include <QWidget>
 
 #include <vtkNew.h>
@@ -21,15 +24,21 @@ public:
     CuppingArtifact();
     CuppingArtifact(CuppingArtifact const&) = delete;
     auto operator= (CuppingArtifact const&) -> CuppingArtifact& = delete;
-    CuppingArtifact(CuppingArtifact&&);
-    auto operator= (CuppingArtifact&&) -> CuppingArtifact&;
+    CuppingArtifact(CuppingArtifact&&) noexcept ;
+    auto operator= (CuppingArtifact&&) noexcept -> CuppingArtifact&;
     ~CuppingArtifact();
+
+    [[nodiscard]] auto
+    GetDarkIntensity() const noexcept -> float { return DarkIntensityValue; }
 
     auto
     SetDarkIntensity(float darkIntensityValue) -> void { DarkIntensityValue = darkIntensityValue; }
 
+    [[nodiscard]] auto
+    GetCenter() const noexcept -> FloatPoint { return Center; }
+
     auto
-    SetCenter(std::array<float, 3> center) -> void { Center = center; }
+    SetCenter(FloatPoint center) -> void { Center = center; }
 
     auto
     UpdateFilterParameters() -> void;
@@ -37,12 +46,24 @@ public:
     [[nodiscard]] auto
     GetFilter() -> vtkImageAlgorithm&;
 
+    [[nodiscard]] auto
+    GetProperties() noexcept -> PipelineParameterProperties {
+        PipelineParameterProperties properties;
+        properties.emplace_back(FloatObjectProperty("Dark Intensity",
+                                                    [this] { return GetDarkIntensity(); },
+                                                    [this](float intensity) { this->SetDarkIntensity(intensity); }));
+        properties.emplace_back(FloatPointObjectProperty("Center",
+                                                         [this] { return GetCenter(); },
+                                                         [this](FloatPoint center) { this->SetCenter(center); }));
+        return properties;
+    };
+
 private:
     friend class CuppingArtifactData;
 
     float DarkIntensityValue = 0.0F;
 
-    std::array<float, 3> Center { 0.0F, 0.0F, 0.0F };
+    FloatPoint Center { 0.0F, 0.0F, 0.0F };
 
     vtkNew<CuppingArtifactFilter> Filter;
 };
@@ -56,7 +77,7 @@ struct CuppingArtifactData {
 
     float DarkIntensityValue = 0.0F;
 
-    std::array<float, 3> Center = { 0.0F, 0.0F, 0.0F };
+    FloatPoint Center = { 0.0F, 0.0F, 0.0F };
 
     auto
     PopulateFromArtifact(const CuppingArtifact& artifact) noexcept -> void;

@@ -2,9 +2,11 @@
 
 #include "Image/ImageArtifactConcatenation.h"
 #include "Structure/StructureArtifactListCollection.h"
+#include "../Modeling/CtDataSource.h"
 #include "../Modeling/CtStructureTree.h"
 
-Pipeline::Pipeline(CtStructureTree const& structureTree) :
+Pipeline::Pipeline(CtStructureTree const& structureTree, CtDataSource& dataSource) :
+        DataSource(dataSource),
         TreeStructureArtifacts(new TreeStructureArtifactListCollection(structureTree)),
         ImageArtifactConcat(new ImageArtifactConcatenation()) {
 
@@ -18,31 +20,38 @@ auto Pipeline::GetName() const noexcept -> std::string {
     return Name;
 }
 
-auto Pipeline::GetStructureArtifactListCollectionForIdx(uidx_t structureIdx) const -> StructureArtifactList& {
+auto Pipeline::GetStructureArtifactListCollection(uint16_t structureIdx) const -> StructureArtifactList& {
     return TreeStructureArtifacts->GetForCtStructureIdx(structureIdx);
-}
-
-auto Pipeline::GetTreeArtifacts() const -> TreeStructureArtifactListCollection& {
-    return *TreeStructureArtifacts;
 }
 
 auto Pipeline::GetImageArtifactConcatenation() const -> ImageArtifactConcatenation& {
     return *ImageArtifactConcat;
 }
 
+auto Pipeline::GetImageAlgorithm() const -> vtkImageAlgorithm& {
+    auto& treeArtifactsFilter = TreeStructureArtifacts->GetFilter();
+    treeArtifactsFilter.SetInputConnection(DataSource.GetOutputPort());
+
+    ImageArtifactConcat->UpdateArtifactFilter();
+    auto& imageArtifactStartFilter = ImageArtifactConcat->GetStartFilter();
+    imageArtifactStartFilter.SetInputConnection(treeArtifactsFilter.GetOutputPort());
+
+    return ImageArtifactConcat->GetEndFilter();
+}
+
 void Pipeline::ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) const {
     switch (event.Type) {
-        case CtStructureTreeEventType::Add: {
+        case CtStructureTreeEventType::ADD: {
             TreeStructureArtifacts->AddStructureArtifactList(event.Idx);
             break;
         }
 
-        case CtStructureTreeEventType::Remove: {
+        case CtStructureTreeEventType::REMOVE: {
             TreeStructureArtifacts->RemoveStructureArtifactList(event.Idx);
             break;
         }
 
-        case CtStructureTreeEventType::Edit: {}
+        case CtStructureTreeEventType::EDIT: {}
     }
 }
 

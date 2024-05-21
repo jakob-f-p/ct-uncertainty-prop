@@ -2,6 +2,7 @@
 
 #include "StructureArtifactsWidgetDialog.h"
 #include "../../../Artifacts/Pipeline.h"
+#include "../../../Utils/Types.h"
 
 StructureArtifactsWidgetDelegate::StructureArtifactsWidgetDelegate(Pipeline const& pipeline, QWidget* parent) :
         QStyledItemDelegate(parent),
@@ -9,7 +10,7 @@ StructureArtifactsWidgetDelegate::StructureArtifactsWidgetDelegate(Pipeline cons
 }
 
 auto StructureArtifactsWidgetDelegate::createEditor(QWidget* parent,
-                                                    QStyleOptionViewItem const& option,
+                                                    QStyleOptionViewItem const& /*option*/,
                                                     QModelIndex const& index) const -> QWidget* {
     if (!index.isValid())
         return nullptr;
@@ -18,7 +19,7 @@ auto StructureArtifactsWidgetDelegate::createEditor(QWidget* parent,
     if (!structureIdx)
         throw std::runtime_error("Invalid internal id");
 
-    auto& structureWrapper = APipeline.GetStructureArtifactListCollectionForIdx(*structureIdx);
+    auto& structureWrapper = APipeline.GetStructureArtifactListCollection(*structureIdx);
     auto title = index.data().toString().toStdString();
     auto* dialog = new StructureArtifactsWidgetDialog(structureWrapper, title, parent);
 

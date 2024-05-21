@@ -20,10 +20,10 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& d
         QMainWindow(parent),
         RenderingWidget(new RenderWidget(dataSource)),
         ResetCameraButton(new QPushButton("Reset Camera")),
-        AddStructureButton(new QPushButton("Add Structure")),
+        AddStructureButton(new QPushButton("ADD Structure")),
         CombineWithStructureButton(new QPushButton("Combine With Structure")),
         RefineWithStructureButton(new QPushButton("Refine With Structure")),
-        RemoveStructureButton(new QPushButton("Remove Structure")),
+        RemoveStructureButton(new QPushButton("REMOVE Structure")),
         CtStructureButtons { AddStructureButton,
                              CombineWithStructureButton,
                              RefineWithStructureButton,
@@ -144,7 +144,7 @@ void ModelingWidget::OpenBasicAndCombinedStructureCreateDialog(
     });
 }
 
-void ModelingWidget::UpdateButtonStates(QItemSelection const& selected, QItemSelection const&) {
+void ModelingWidget::UpdateButtonStates(QItemSelection const& selected, QItemSelection const& /*unused*/) {
     auto modelIndexList = selected.indexes();
     if (modelIndexList.size() > 1)
         throw std::runtime_error("Invalid selection");

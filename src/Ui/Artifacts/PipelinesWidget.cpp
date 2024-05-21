@@ -46,7 +46,8 @@ PipelinesWidget::PipelinesWidget(PipelineList& pipelines, QWidget* parent) :
 
     vLayout->addWidget(StructureArtifactModelingWidget);
 
-    Pipelines.AddPipelineEventCallback([widget = StructureArtifactModelingWidget]() { widget->ResetModel(); });
+    Pipelines.AddTreeEventCallback(
+            [widget = StructureArtifactModelingWidget]() { widget->ResetModel(); });
 
     vLayout->addWidget(ImageArtifactModelingWidget);
 

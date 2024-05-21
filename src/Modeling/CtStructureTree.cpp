@@ -22,7 +22,7 @@ void CtStructureTree::AddBasicStructure(BasicStructure&& basicStructure, Combine
         basicStructure.ParentIdx = std::nullopt;
         Structures.emplace_back(std::move(basicStructure));
         RootIdx = 0;
-        EmitEvent({ CtStructureTreeEventType::Add, 0 });
+        EmitEvent({ CtStructureTreeEventType::ADD, 0 });
 
         MTime.Modified();
         return;
@@ -42,7 +42,7 @@ void CtStructureTree::AddBasicStructure(BasicStructure&& basicStructure, Combine
     basicStructure.ParentIdx = parentIdx;
     Structures.emplace(std::next(Structures.begin(), insertionIdx), std::move(basicStructure));
 
-    EmitEvent({ CtStructureTreeEventType::Add, insertionIdx });
+    EmitEvent({ CtStructureTreeEventType::ADD, insertionIdx });
 }
 
 auto CtStructureTree::AddBasicStructure(const BasicStructureData& basicStructureData, CombinedStructure* parent) -> void {
@@ -77,8 +77,8 @@ void CtStructureTree::CombineWithBasicStructure(BasicStructure&& basicStructure,
     Structures.emplace(std::next(Structures.begin(), combinedInsertionIdx), std::move(combinedStructure));
     Structures.emplace(std::next(Structures.begin(), basicInsertionIdx), std::move(basicStructure));
 
-    EmitEvent({ CtStructureTreeEventType::Add, combinedInsertionIdx });
-    EmitEvent({ CtStructureTreeEventType::Add, basicInsertionIdx });
+    EmitEvent({ CtStructureTreeEventType::ADD, combinedInsertionIdx });
+    EmitEvent({ CtStructureTreeEventType::ADD, basicInsertionIdx });
 }
 
 void CtStructureTree::CombineWithBasicStructure(const BasicStructureData& basicStructureData,
@@ -125,8 +125,8 @@ void CtStructureTree::RefineWithBasicStructure(const BasicStructureData& newStru
     Structures.emplace(std::next(Structures.begin(), combinedInsertionIdx), std::move(combinedStructure));
     Structures.emplace(std::next(Structures.begin(), basicInsertionIdx), std::move(newBasicStructure));
 
-    EmitEvent({ CtStructureTreeEventType::Add, combinedInsertionIdx });
-    EmitEvent({ CtStructureTreeEventType::Add, basicInsertionIdx });
+    EmitEvent({ CtStructureTreeEventType::ADD, combinedInsertionIdx });
+    EmitEvent({ CtStructureTreeEventType::ADD, basicInsertionIdx });
 
     if (!parentIdx) {
         RootIdx = 0;
@@ -146,7 +146,7 @@ void CtStructureTree::RemoveBasicStructure(uidx_t removeIdx) {
     if (RootIdx == removeIdx) {
         Structures.erase(Structures.begin());
         RootIdx = std::nullopt;
-        EmitEvent({ CtStructureTreeEventType::Remove, removeIdx });
+        EmitEvent({ CtStructureTreeEventType::REMOVE, removeIdx });
         return;
     }
 
@@ -160,7 +160,7 @@ void CtStructureTree::RemoveBasicStructure(uidx_t removeIdx) {
     parent.RemoveStructureIndex(removeIdx);
     Structures.erase(std::next(Structures.begin(), removeIdx));
     DecrementParentAndChildIndices(removeIdx);
-    EmitEvent({ CtStructureTreeEventType::Remove, removeIdx });
+    EmitEvent({ CtStructureTreeEventType::REMOVE, removeIdx });
 
     if (parent.StructureCount() == 1) {
         const idx_t grandParentIdx = GetParentIdxOf(parent);
@@ -177,7 +177,7 @@ void CtStructureTree::RemoveBasicStructure(uidx_t removeIdx) {
                    Structures[remainingIdx]);
         Structures.erase(std::next(Structures.begin(), parentIdx));
         DecrementParentAndChildIndices(parentIdx);
-        EmitEvent({ CtStructureTreeEventType::Remove, static_cast<uidx_t>(parentIdx) });
+        EmitEvent({ CtStructureTreeEventType::REMOVE, static_cast<uidx_t>(parentIdx) });
     }
 
     MTime.Modified();
@@ -313,7 +313,7 @@ void CtStructureTree::SetData(uidx_t structureIdx, const QVariant& data) {
         basicData.PopulateStructure(std::get<BasicStructure>(structureVariant));
     }
 
-    EmitEvent({ CtStructureTreeEventType::Edit, structureIdx });
+    EmitEvent({ CtStructureTreeEventType::EDIT, structureIdx });
 }
 
 auto CtStructureTree::HasRoot() const noexcept -> bool {

@@ -3,6 +3,7 @@
 #include <QWidget>
 
 #include <vtkNew.h>
+#include "../../../PipelineGroups/ObjectProperty.h"
 
 class GaussianArtifactFilter;
 class GaussianArtifactData;
@@ -24,11 +25,35 @@ public:
     auto operator= (GaussianArtifact&&) -> GaussianArtifact&;
     ~GaussianArtifact();
 
+    [[nodiscard]] auto
+    GetMean() const noexcept -> float { return Mean; }
+
+    auto
+    SetMean(float mean) -> void { Mean = mean; }
+
+    [[nodiscard]] auto
+    GetStandardDeviation() const noexcept -> float { return Sd; }
+
+    auto
+    SetStandardDeviation(float sd) -> void { Sd = sd; }
+
     auto
     UpdateFilterParameters() -> void;
 
     [[nodiscard]] auto
     GetFilter() -> vtkImageAlgorithm&;
+
+    [[nodiscard]] auto
+    GetProperties() noexcept -> PipelineParameterProperties {
+        PipelineParameterProperties properties;
+        properties.emplace_back(FloatObjectProperty("Mean",
+                                                    [this] { return GetMean(); },
+                                                    [this](float mean) { this->SetMean(mean); }));
+        properties.emplace_back(FloatObjectProperty("Standard Deviation",
+                                                    [this] { return GetStandardDeviation(); },
+                                                    [this](float sd) { this->SetStandardDeviation(sd); }));
+        return properties;
+    };
 
 private:
     friend class GaussianArtifactData;
