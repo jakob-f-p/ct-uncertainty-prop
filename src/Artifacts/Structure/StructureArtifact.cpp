@@ -12,6 +12,10 @@ auto StructureArtifact::GetViewName() const noexcept -> std::string {
     return viewName;
 }
 
+auto StructureArtifact::GetProperties() noexcept -> PipelineParameterProperties {
+    return std::visit([](auto& artifact) { return artifact.GetProperties(); }, Artifact);
+}
+
 auto StructureArtifact::GetSubType() const noexcept -> StructureArtifact::SubType {
     return GetSubType(Artifact);
 }

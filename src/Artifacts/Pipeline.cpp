@@ -5,7 +5,11 @@
 #include "../Modeling/CtDataSource.h"
 #include "../Modeling/CtStructureTree.h"
 
-Pipeline::Pipeline(CtStructureTree const& structureTree, CtDataSource& dataSource) :
+Pipeline::Pipeline(CtStructureTree& structureTree, CtDataSource& dataSource, std::string name) :
+        Name(name.empty()
+                ? "Pipeline " + std::to_string(PipelineId++)
+                : std::move(name)),
+        StructureTree(structureTree),
         DataSource(dataSource),
         TreeStructureArtifacts(new TreeStructureArtifactListCollection(structureTree)),
         ImageArtifactConcat(new ImageArtifactConcatenation()) {
@@ -20,8 +24,16 @@ auto Pipeline::GetName() const noexcept -> std::string {
     return Name;
 }
 
-auto Pipeline::GetStructureArtifactListCollection(uint16_t structureIdx) const -> StructureArtifactList& {
+auto Pipeline::GetCtStructureTree() const noexcept -> CtStructureTree& {
+    return StructureTree;
+}
+
+auto Pipeline::GetStructureArtifactList(uint16_t structureIdx) const -> StructureArtifactList& {
     return TreeStructureArtifacts->GetForCtStructureIdx(structureIdx);
+}
+
+auto Pipeline::GetStructureArtifactListCollection() const -> TreeStructureArtifactListCollection& {
+    return *TreeStructureArtifacts;
 }
 
 auto Pipeline::GetImageArtifactConcatenation() const -> ImageArtifactConcatenation& {
@@ -60,3 +72,5 @@ auto Pipeline::operator==(const Pipeline& other) const noexcept -> bool {
             && &TreeStructureArtifacts == &other.TreeStructureArtifacts
             && &ImageArtifactConcat == &other.ImageArtifactConcat;
 }
+
+uint16_t Pipeline::PipelineId = 1;

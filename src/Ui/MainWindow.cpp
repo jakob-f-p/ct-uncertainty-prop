@@ -1,12 +1,14 @@
 #include "MainWindow.h"
 
-#include "Modeling/ModelingWidget.h"
 #include "Artifacts/ArtifactsWidget.h"
+#include "Modeling/ModelingWidget.h"
+#include "PipelineGroups/PipelineGroupsWidget.h"
 #include "Segmentation/SegmentationWidget.h"
 
 MainWindow::MainWindow(CtStructureTree& ctStructureTree,
                        CtDataSource& dataSource,
-                       PipelineList& pipelineList) :
+                       PipelineList& pipelineList,
+                       PipelineGroupList& pipelineGroups) :
         DataSource(dataSource) {
     resize(1400, 700);
 
@@ -18,10 +20,12 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree,
     auto* modelingWidget = new ModelingWidget(ctStructureTree, DataSource);
     auto* artifactsWidget = new ArtifactsWidget(pipelineList, DataSource);
     auto* segmentationWidget = new SegmentationWidget(DataSource);
+    auto* pipelineGroupsWidget = new PipelineGroupsWidget(pipelineGroups);
 
     tabWidget->addTab(modelingWidget, "Modeling");
     tabWidget->addTab(artifactsWidget, "Artifacts");
     tabWidget->addTab(segmentationWidget, "Segmentation");
+    tabWidget->addTab(pipelineGroupsWidget, "Pipeline Groups");
 
     setCentralWidget(tabWidget);
 
@@ -30,4 +34,10 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree,
             segmentationWidget->UpdateDataSource(artifactsWidget->GetCurrentFilter());
     };
     connect(tabWidget, &QTabWidget::currentChanged, this, updateSegmentationDataSource);
+
+    auto updatePipelineGroupsPipelines = [=](int idx) {
+        if (idx == tabWidget->indexOf(pipelineGroupsWidget))
+            pipelineGroupsWidget->UpdatePipelineList();
+    };
+    connect(tabWidget, &QTabWidget::currentChanged, this, updatePipelineGroupsPipelines);
 }

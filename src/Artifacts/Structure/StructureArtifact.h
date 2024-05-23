@@ -99,6 +99,9 @@ public:
     [[nodiscard]] auto
     GetViewName() const noexcept -> std::string;
 
+    [[nodiscard]] auto
+    GetProperties() noexcept -> PipelineParameterProperties;
+
     using StructureEvaluator = std::function<float(DoublePoint)>;
 
     [[nodiscard]] auto

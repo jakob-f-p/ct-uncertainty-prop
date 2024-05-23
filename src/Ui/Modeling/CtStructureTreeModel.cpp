@@ -180,3 +180,10 @@ void CtStructureTreeModel::RemoveBasicStructure(const QModelIndex &index) {
 auto CtStructureTreeModel::HasRoot() -> bool {
     return Tree.HasRoot();
 }
+
+CtStructureTreeReadOnlyModel::CtStructureTreeReadOnlyModel(CtStructureTree const& ctStructureTree, QObject* parent) :
+        CtStructureTreeModel(const_cast<CtStructureTree&>(ctStructureTree)) {}
+
+auto CtStructureTreeReadOnlyModel::flags(QModelIndex const& index) const -> Qt::ItemFlags {
+    return QAbstractItemModel::flags(index);
+}

@@ -5,6 +5,7 @@
 #include <functional>
 #include <string>
 
+
 template<typename T>
 requires std::is_copy_assignable_v<T> && std::is_copy_constructible_v<T>
 class ObjectProperty {

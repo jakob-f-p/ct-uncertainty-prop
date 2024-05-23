@@ -95,6 +95,9 @@ public:
     [[nodiscard]] auto
     GetViewName() const noexcept -> std::string;
 
+    [[nodiscard]] auto
+    GetProperties() noexcept -> PipelineParameterProperties;
+
     auto
     SetCompositionType(CompositionType compositionType) noexcept -> void { CompType = compositionType; }
 

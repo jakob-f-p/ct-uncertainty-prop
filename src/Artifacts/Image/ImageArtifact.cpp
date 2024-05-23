@@ -24,6 +24,11 @@ auto ImageArtifact::GetViewName() const noexcept -> std::string {
     return std::visit([](auto const& artifact) { return artifact.GetViewName(); }, Artifact);
 }
 
+auto ImageArtifact::GetProperties() noexcept -> PipelineParameterProperties {
+    return std::visit([](auto& artifact) { return artifact.GetProperties(); },
+                      Artifact);
+}
+
 auto ImageArtifact::ContainsImageArtifact(const ImageArtifact& imageArtifact) -> bool {
     return std::visit(Overload {
             [] (BasicImageArtifact&)               { return false; },

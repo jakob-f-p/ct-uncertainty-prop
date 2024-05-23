@@ -5,22 +5,26 @@
 #include <functional>
 #include <vector>
 
+class PipelineList;
+
 class PipelineGroupList {
 public:
+    explicit PipelineGroupList(PipelineList const& pipelines);
+
     [[nodiscard]] auto
     GetName() const noexcept -> std::string;
 
     [[nodiscard]] auto
-    IsEmpty() const noexcept -> bool;
+    GetBasePipelines() const noexcept -> std::vector<Pipeline const*>;
 
     [[nodiscard]] auto
-    GetSize() const noexcept -> int;
+    GetSize() const noexcept -> uint8_t;
 
     [[nodiscard]] auto
     Get(int idx) noexcept -> PipelineGroup&;
 
     auto
-    AddPipelineGroup(Pipeline const& pipeline) -> PipelineGroup&;
+    AddPipelineGroup(Pipeline const& pipeline, std::string name = "") -> PipelineGroup&;
 
     auto
     RemovePipelineGroup(PipelineGroup const& pipelineGroup) -> void;
@@ -31,4 +35,5 @@ public:
 private:
     std::string Name;
     std::vector<std::unique_ptr<PipelineGroup>> PipelineGroups;
+    PipelineList const& Pipelines;
 };

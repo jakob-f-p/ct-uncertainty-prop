@@ -9,7 +9,7 @@
 
 class PipelineGroup {
 public:
-    explicit PipelineGroup(Pipeline const& basePipeline);
+    explicit PipelineGroup(Pipeline const& basePipeline, std::string name = "");
 
     [[nodiscard]] auto
     GetName() const noexcept -> std::string;
@@ -17,17 +17,22 @@ public:
     [[nodiscard]] auto
     GetBasePipeline() const noexcept -> Pipeline const&;
 
+    [[nodiscard]] auto
+    GetParameterSpace() noexcept -> PipelineParameterSpace&;
+
     auto
     AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
-                     ParameterSpanVariant&& parameterSpan) -> ParameterSpanVariant&;
+                     PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan&;
 
     auto
     RemoveParameterSpan(ArtifactVariantPointer artifactVariantPointer,
-                        ParameterSpanVariant const& parameterSpan) -> void;
+                        PipelineParameterSpan const& parameterSpan) -> void;
 
 private:
     std::string Name;
     Pipeline const& BasePipeline;
     std::vector<Pipeline> Pipelines;
     PipelineParameterSpace ParameterSpace;
+
+    static uint16_t PipelineGroupId;
 };

@@ -18,6 +18,9 @@ public:
     GetViewName() const noexcept -> std::string;
 
     [[nodiscard]] auto
+    GetProperties() noexcept -> PipelineParameterProperties;
+
+    [[nodiscard]] auto
     ContainsImageArtifact(ImageArtifact const& imageArtifact) -> bool;
 
     [[nodiscard]] auto

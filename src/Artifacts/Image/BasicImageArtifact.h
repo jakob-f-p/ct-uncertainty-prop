@@ -104,6 +104,9 @@ public:
     [[nodiscard]] auto
     GetViewName() const noexcept -> std::string;
 
+    [[nodiscard]] auto
+    GetProperties() noexcept -> PipelineParameterProperties;
+
     auto
     AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm&;
 

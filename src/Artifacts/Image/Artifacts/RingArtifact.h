@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../../../PipelineGroups/ObjectProperty.h"
+
 #include <QWidget>
 
 #include <vtkNew.h>
@@ -45,6 +47,12 @@ public:
 
     [[nodiscard]] auto
     GetFilter() -> vtkImageAlgorithm&;
+
+    [[nodiscard]] auto
+    GetProperties() noexcept -> PipelineParameterProperties {
+        // TODO
+        return {};
+    }
 
 private:
     friend class RingArtifactData;

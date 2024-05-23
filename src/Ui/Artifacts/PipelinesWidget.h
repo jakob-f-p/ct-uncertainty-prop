@@ -18,12 +18,6 @@ class PipelinesWidget : public QWidget {
 public:
     explicit PipelinesWidget(PipelineList& pipelines, QWidget* parent = nullptr);
 
-    [[nodiscard]] static auto
-    GetHeaderStyleSheet() noexcept -> QString;
-
-    [[nodiscard]] static auto
-    GenerateIcon(const std::string& filePrefix) noexcept -> QIcon;
-
     auto GetCurrentPipeline() -> Pipeline&;
 
 signals:

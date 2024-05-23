@@ -4,7 +4,10 @@
 
 #include <QListView>
 
+class StructureArtifact;
 class StructureArtifactList;
+class StructureArtifactsReadOnlyModel;
+
 
 class StructureArtifactsView : public QListView {
 public:
@@ -22,4 +25,21 @@ private:
 
         void setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const override;
     };
+};
+
+
+class StructureArtifactsReadOnlyView : public QListView {
+    Q_OBJECT
+
+public:
+    explicit StructureArtifactsReadOnlyView(StructureArtifactList const& structureArtifactList);
+
+signals:
+    void StructureArtifactChanged(StructureArtifact* structureArtifact);
+
+private slots:
+    void OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected);
+
+private:
+    StructureArtifactsReadOnlyModel* Model;
 };

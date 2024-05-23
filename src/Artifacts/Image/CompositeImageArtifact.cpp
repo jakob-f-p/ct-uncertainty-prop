@@ -69,6 +69,10 @@ auto CompositeImageArtifact::GetViewName() const noexcept -> std::string {
     return viewName;
 }
 
+auto CompositeImageArtifact::GetProperties() noexcept -> PipelineParameterProperties {
+    return {};
+}
+
 auto CompositeImageArtifact::ContainsImageArtifact(const ImageArtifact& imageArtifact) const noexcept -> bool {
     return std::any_of(ImageArtifacts.begin(), ImageArtifacts.end(), [&](auto& child) {
         if (child.get() == &imageArtifact)

@@ -2,7 +2,10 @@
 
 #include <QTreeView>
 
+class ImageArtifact;
+class ImageArtifactsReadOnlyModel;
 class Pipeline;
+
 
 class ImageArtifactsView : public QTreeView {
 public:
@@ -18,4 +21,24 @@ protected:
     auto hasHiddenIndices() const -> bool;
 
     static auto getLevel(const QModelIndex& index) -> int;
+};
+
+
+class ImageArtifactsReadOnlyView : public ImageArtifactsView {
+    Q_OBJECT
+
+public:
+    explicit ImageArtifactsReadOnlyView(Pipeline const& pipeline, QWidget* parent = nullptr);
+
+    [[nodiscard]] auto
+    model() const noexcept -> ImageArtifactsReadOnlyModel*;
+
+signals:
+    void ImageArtifactChanged(ImageArtifact* imageArtifact);
+
+private slots:
+    void OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected);
+
+private:
+    ImageArtifactsReadOnlyModel* ArtifactsModel;
 };

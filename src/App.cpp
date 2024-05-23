@@ -34,7 +34,7 @@ App::App(int argc, char* argv[]) :
         }()),
         Pipelines(new PipelineList(*CtDataTree, *DataSource)),
         PipelineGroups([&pipelines = *Pipelines]() {
-            auto* const pipelineGroupList = new PipelineGroupList();
+            auto* const pipelineGroupList = new PipelineGroupList(pipelines);
 
             auto const& removeDependentPipelineGroups = [pipelineGroupList](PipelineEvent const& event) {
                 if (event.Type != PipelineEventType::PRE_REMOVE)
@@ -85,7 +85,7 @@ auto App::Run() -> int {
 
     InitializeWithTestData();
 
-    MainWin = std::make_unique<MainWindow>(*CtDataTree, *DataSource, *Pipelines);
+    MainWin = std::make_unique<MainWindow>(*CtDataTree, *DataSource, *Pipelines, *PipelineGroups);
     MainWin->show();
 
     return QApplication::exec();
@@ -134,7 +134,7 @@ void App::InitializeWithTestData() {
     StructureArtifact motionStructureArtifact(std::move(motionArtifact));
     motionStructureArtifact.SetName("1");
 
-    auto& basicStructure1Artifacts = pipeline.GetStructureArtifactListCollection(1);
+    auto& basicStructure1Artifacts = pipeline.GetStructureArtifactList(1);
     basicStructure1Artifacts.AddStructureArtifact(std::move(motionStructureArtifact));
 
 

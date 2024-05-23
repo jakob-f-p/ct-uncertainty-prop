@@ -19,7 +19,7 @@ ArtifactsDialog::ArtifactsDialog(QWidget* widget, Mode mode, QWidget* parent) :
 
     setModal(true);
 
-    setWindowTitle(mode == Mode::EDIT ? "EDIT Image Artifact" : "Create Image Artifact");
+    setWindowTitle(mode == Mode::EDIT ? "Edit Image Artifact" : "Create Image Artifact");
 
     VLayout->setAlignment(Qt::AlignTop);
 

@@ -61,3 +61,13 @@ protected:
 
     CtStructureTree& Tree;
 };
+
+
+class CtStructureTreeReadOnlyModel : public CtStructureTreeModel {
+public:
+    explicit CtStructureTreeReadOnlyModel(CtStructureTree const& ctStructureTree, QObject* parent = nullptr);
+
+    [[nodiscard]] auto
+    flags(QModelIndex const& index) const -> Qt::ItemFlags override;
+};
+

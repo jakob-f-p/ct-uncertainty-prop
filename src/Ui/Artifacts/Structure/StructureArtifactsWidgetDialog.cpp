@@ -37,7 +37,7 @@ StructureArtifactsWidgetDialog::StructureArtifactsWidgetDialog(StructureArtifact
 
     auto* titleBarHLayout = new QHBoxLayout();
     auto* titleLabel = new QLabel(QString::fromStdString(title));
-    titleLabel->setStyleSheet(PipelinesWidget::GetHeaderStyleSheet());
+    titleLabel->setStyleSheet(GetHeaderStyleSheet());
     titleBarHLayout->addWidget(titleLabel);
 
     titleBarHLayout->addStretch();
@@ -45,10 +45,10 @@ StructureArtifactsWidgetDialog::StructureArtifactsWidgetDialog(StructureArtifact
     auto* buttonBar = new QWidget();
     auto* buttonBarHLayout = new QHBoxLayout(buttonBar);
     buttonBarHLayout->setContentsMargins(0, 5, 0, 0);
-    AddButton->setIcon(PipelinesWidget::GenerateIcon("Plus"));
-    RemoveButton->setIcon(PipelinesWidget::GenerateIcon("Minus"));
-    MoveUpButton->setIcon(PipelinesWidget::GenerateIcon("ArrowUp"));
-    MoveDownButton->setIcon(PipelinesWidget::GenerateIcon("ArrowDown"));
+    AddButton->setIcon(GenerateIcon("Plus"));
+    RemoveButton->setIcon(GenerateIcon("Minus"));
+    MoveUpButton->setIcon(GenerateIcon("ArrowUp"));
+    MoveDownButton->setIcon(GenerateIcon("ArrowDown"));
     buttonBarHLayout->addWidget(AddButton);
     buttonBarHLayout->addWidget(RemoveButton);
     buttonBarHLayout->addWidget(MoveDownButton);

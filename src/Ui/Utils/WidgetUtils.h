@@ -78,3 +78,18 @@ protected:
     [[nodiscard]] auto virtual
     getDialog(QModelIndex const& modelIndex, QWidget* parent) const noexcept -> QDialog* = 0;
 };
+
+[[nodiscard]] auto static
+GenerateIcon(const std::string &filePrefix) noexcept -> QIcon {
+    QIcon icon;
+    QString const qFilePrefix = QString::fromStdString(filePrefix);
+    icon.addPixmap(QPixmap(":/" + qFilePrefix + "Normal.png"), QIcon::Normal);
+    icon.addPixmap(QPixmap(":/" + qFilePrefix + "Disabled.png"), QIcon::Disabled);
+    return icon;
+}
+
+[[nodiscard]] auto static
+GetHeaderStyleSheet() noexcept -> QString {
+    return "font-size: 14px; font-weight: bold";
+}
+

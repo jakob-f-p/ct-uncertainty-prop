@@ -7,7 +7,7 @@ class StructureArtifactData;
 
 class StructureArtifactsModel : public QAbstractItemModel {
 public:
-    explicit StructureArtifactsModel(StructureArtifactList& structureWrapper, QObject* parent = nullptr);
+    explicit StructureArtifactsModel(StructureArtifactList& artifactList, QObject* parent = nullptr);
 
     auto index(int row, int column, const QModelIndex& parent) const -> QModelIndex override;
 
@@ -17,22 +17,36 @@ public:
 
     auto columnCount(const QModelIndex& parent) const -> int override;
 
+    enum Roles : uint16_t {
+        DATA = Qt::UserRole,
+        POINTER = 1 + Qt::UserRole
+    };
+
     auto data(const QModelIndex& index, int role) const -> QVariant override;
 
-    Qt::ItemFlags flags(const QModelIndex& index) const override;
+    auto flags(const QModelIndex& index) const -> Qt::ItemFlags override;
 
-    bool setData(const QModelIndex &index, const QVariant &value, int role) override;
+    auto setData(const QModelIndex &index, const QVariant &value, int role) -> bool override;
 
-    QModelIndex AddStructureArtifact(const StructureArtifactData& data, const QModelIndex& siblingIndex);
+    auto AddStructureArtifact(const StructureArtifactData& data, const QModelIndex& siblingIndex) -> QModelIndex;
 
     void RemoveStructureArtifact(const QModelIndex& index);
 
-    QModelIndex MoveUp(const QModelIndex& index);
+    auto MoveUp(const QModelIndex& index) -> QModelIndex;
 
-    QModelIndex MoveDown(const QModelIndex& index);
+    auto MoveDown(const QModelIndex& index) -> QModelIndex;
 
 protected:
-    QModelIndex Move(const QModelIndex& sourceIndex, int displacement);
+    auto Move(const QModelIndex& sourceIndex, int displacement) -> QModelIndex;
 
     StructureArtifactList& StructureWrapper;
+};
+
+
+class StructureArtifactsReadOnlyModel : public StructureArtifactsModel {
+public:
+    explicit StructureArtifactsReadOnlyModel(StructureArtifactList const& artifactList, QObject* parent = nullptr);
+
+    [[nodiscard]] auto
+    flags(QModelIndex const& index) const -> Qt::ItemFlags override;
 };

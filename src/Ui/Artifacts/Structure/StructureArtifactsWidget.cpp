@@ -1,10 +1,11 @@
 #include "StructureArtifactsWidget.h"
 
+#include "StructureArtifactsWidgetDelegate.h"
 #include "../Image/ImageArtifactsView.h"
 #include "../PipelinesWidget.h"
-#include "StructureArtifactsWidgetDelegate.h"
-#include "../../../App.h"
 #include "../../Modeling/CtStructureTreeModel.h"
+#include "../../Utils/WidgetUtils.h"
+#include "../../../App.h"
 
 #include <QLabel>
 #include <QStackedLayout>
@@ -17,7 +18,7 @@ StructureArtifactsWidget::StructureArtifactsWidget(QWidget* parent) :
     auto* vLayout = new QVBoxLayout(this);
 
     auto* titleLabel = new QLabel("Structure Artifacts");
-    titleLabel->setStyleSheet(PipelinesWidget::GetHeaderStyleSheet());
+    titleLabel->setStyleSheet(GetHeaderStyleSheet());
     vLayout->addWidget(titleLabel);
 
     vLayout->addLayout(Views);

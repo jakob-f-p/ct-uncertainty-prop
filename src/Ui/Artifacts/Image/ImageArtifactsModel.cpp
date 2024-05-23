@@ -63,30 +63,31 @@ auto ImageArtifactsModel::data(const QModelIndex& index, int role) const -> QVar
         return {};
 
     switch (role) {
-        case Qt::DisplayRole: {
-            ImageArtifact const& artifact = Concatenation.Get(static_cast<uidx_t>(index.internalId()));
+        case Qt::DisplayRole:
+            return QString::fromStdString(
+                    Concatenation.Get(static_cast<uidx_t>(index.internalId())).GetViewName());
 
-            return QString::fromStdString(artifact.GetViewName());
-        }
+        case ImageArtifactsModel::DATA: // Qt::UserRole
+            return QVariant::fromValue(ImageArtifactData(
+                    Concatenation.Get(static_cast<uidx_t>(index.internalId()))));
 
-        case Qt::UserRole: {
-            ImageArtifact const& artifact = Concatenation.Get(static_cast<uidx_t>(index.internalId()));
-
-            return QVariant::fromValue(ImageArtifactData(artifact));
-        }
+        case ImageArtifactsModel::POINTER:
+            return QVariant::fromValue(&Concatenation.Get(static_cast<uidx_t>(index.internalId())));
 
         default: return {};
     }
 }
 
 auto ImageArtifactsModel::headerData(int section, Qt::Orientation orientation, int role) const -> QVariant {
-    if (section != 0 || orientation != Qt::Horizontal || role != Qt::DisplayRole) return {};
+    if (section != 0 || orientation != Qt::Horizontal || role != Qt::DisplayRole)
+        return {};
 
     return "Image Artifacts";
 }
 
-Qt::ItemFlags ImageArtifactsModel::flags(const QModelIndex& index) const {
-    if (!index.isValid()) return {};
+auto ImageArtifactsModel::flags(const QModelIndex& index) const -> Qt::ItemFlags {
+    if (!index.isValid())
+        return {};
 
     return Qt::ItemIsSelectable | Qt::ItemIsEnabled | Qt::ItemIsEditable;
 }
@@ -156,7 +157,7 @@ auto ImageArtifactsModel::AddImageArtifact(const ImageArtifactData& data,
     Concatenation.AddImageArtifact(std::move(newImageArtifact), parentArtifact, insertionIndex);
     endInsertRows();
 
-    int childIndex = insertionIndex == -1 ? rowCount(parentIndex) - 1 : insertionIndex;
+    int const childIndex = insertionIndex == -1 ? rowCount(parentIndex) - 1 : insertionIndex;
     return index(childIndex, 0, parentIndex);
 }
 
@@ -173,4 +174,13 @@ auto ImageArtifactsModel::Move(const QModelIndex& sourceIndex, int displacement)
     endMoveRows();
 
     return index(newIdx, 0, sourceIndex.parent());
+}
+
+
+ImageArtifactsReadOnlyModel::ImageArtifactsReadOnlyModel(ImageArtifactConcatenation const& imageArtifactConcatenation,
+                                                         QObject* parent) :
+        ImageArtifactsModel(const_cast<ImageArtifactConcatenation&>(imageArtifactConcatenation), parent) {}
+
+auto ImageArtifactsReadOnlyModel::flags(QModelIndex const& index) const -> Qt::ItemFlags {
+    return QAbstractItemModel::flags(index);
 }

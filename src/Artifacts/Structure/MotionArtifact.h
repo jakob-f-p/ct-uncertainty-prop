@@ -2,6 +2,7 @@
 
 #include "../../Utils/Types.h"
 #include "../../Utils/SimpleTransform.h"
+#include "../../PipelineGroups/ObjectProperty.h"
 
 #include <QWidget>
 
@@ -17,6 +18,9 @@ class QFormLayout;
 class MotionArtifact {
 public:
     using Data = MotionArtifactData;
+
+    [[nodiscard]] auto
+    GetCtNumberFactor() const noexcept -> float { return CtNumberFactor; }
 
     auto
     SetCtNumberFactor(float factor) noexcept -> void { CtNumberFactor = factor; }
@@ -39,6 +43,16 @@ public:
         return functionValue < 0.0F
                 ? tissueValue * CtNumberFactor + 1000.0F
                 : 0.0F;
+    }
+
+    [[nodiscard]] auto
+    GetProperties() noexcept -> PipelineParameterProperties {
+        PipelineParameterProperties properties;
+        properties.emplace_back(
+                FloatObjectProperty("Ct Number Factor",
+                                    [this] { return GetCtNumberFactor(); },
+                                    [this](float ctNumberFactor) { this->SetCtNumberFactor(ctNumberFactor); }));
+        return properties;
     }
 
 private:

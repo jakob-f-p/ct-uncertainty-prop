@@ -1,19 +1,20 @@
 #include "PipelineParameterSpace.h"
 
-auto PipelineParameterSpanSet::AddParameterSpan(ParameterSpanVariant&& spanVariant) -> ParameterSpanVariant& {
-    return ParameterSpans.emplace_back(std::move(spanVariant));
+#include "PipelineParameterSpan.h"
+
+#include <numeric>
+#include <ranges>
+
+
+PipelineParameterSpanSet::PipelineParameterSpanSet(ArtifactVariantPointer artifactVariantPointer) :
+        ArtifactPointer(std::move(artifactVariantPointer)) {}
+
+auto PipelineParameterSpanSet::AddParameterSpan(PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan& {
+    return ParameterSpans.emplace_back(std::move(parameterSpan));
 }
 
-auto PipelineParameterSpanSet::RemoveParameterSpan(ParameterSpanVariant const& spanVariant) -> void {
-    auto it = std::find_if(ParameterSpans.begin(), ParameterSpans.end(),
-                 [&spanVariant](auto& variant) {
-        return std::visit([&spanVariant](auto const& span) {
-            using SpanType = std::decay_t<decltype(span)>;
-
-            return std::holds_alternative<SpanType>(spanVariant)
-                    && span == std::get<SpanType>(spanVariant);
-        }, variant);
-    });
+auto PipelineParameterSpanSet::RemoveParameterSpan(PipelineParameterSpan const& parameterSpan) -> void {
+    auto it = std::find(ParameterSpans.begin(), ParameterSpans.end(), parameterSpan);
 
     if (it == ParameterSpans.end())
         throw std::runtime_error("Cannot remove given parameter span because it does not exist.");
@@ -21,46 +22,148 @@ auto PipelineParameterSpanSet::RemoveParameterSpan(ParameterSpanVariant const& s
     ParameterSpans.erase(it);
 }
 
+auto PipelineParameterSpanSet::GetName() const noexcept -> std::string {
+    return ArtifactPointer.GetName();
+}
+
+auto PipelineParameterSpanSet::GetArtifactPointer() const noexcept -> ArtifactVariantPointer {
+    return ArtifactPointer;
+}
+
+auto PipelineParameterSpanSet::GetSize() const noexcept -> uint16_t {
+    return ParameterSpans.size();
+}
+
+auto PipelineParameterSpanSet::Get(uint16_t idx) -> PipelineParameterSpan& {
+    return ParameterSpans.at(idx);
+}
+
+auto PipelineParameterSpanSet::GetIdx(PipelineParameterSpan const& parameterSpan) const -> uint16_t {
+    auto it = std::find(ParameterSpans.cbegin(), ParameterSpans.cend(), parameterSpan);
+
+    if (it == ParameterSpans.cend())
+        throw std::runtime_error("Given parameter span not found");
+
+    return std::distance(ParameterSpans.cbegin(), it);
+}
+
+auto PipelineParameterSpanSet::operator==(const PipelineParameterSpanSet& other) const noexcept -> bool {
+    return this == &other;
+}
+
+
 auto PipelineParameterSpace::AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
-                                              ParameterSpanVariant&& parameterSpan) -> ParameterSpanVariant& {
-    bool const isNullptr = std::visit([](auto artifactP) { return artifactP == nullptr; },
-                                      artifactVariantPointer);
-    if (isNullptr)
+                                              PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan& {
+    if (artifactVariantPointer.IsNullptr())
         throw std::runtime_error("Given artifact pointer must not be nullptr");
 
-    auto& parameterSpanSet = ArtifactParametersMap.at(artifactVariantPointer);
-    return parameterSpanSet.AddParameterSpan(std::move(parameterSpan));
+    if (!ContainsSetForArtifactPointer(artifactVariantPointer))
+        ParameterSpanSets.emplace_back(artifactVariantPointer);
+
+    auto& parameterSpanSet = GetSetForArtifactPointer(artifactVariantPointer);
+    return AddParameterSpan(parameterSpanSet, std::move(parameterSpan));
+}
+
+auto PipelineParameterSpace::AddParameterSpan(PipelineParameterSpanSet& spanSet,
+                                              PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan& {
+    if (std::find(ParameterSpanSets.cbegin(), ParameterSpanSets.cend(), spanSet) == ParameterSpanSets.cend())
+        throw std::runtime_error("Span set does not exist in parameter space");
+
+    return spanSet.AddParameterSpan(std::move(parameterSpan));
 }
 
 auto PipelineParameterSpace::RemoveParameterSpan(ArtifactVariantPointer artifactVariantPointer,
-                                                 ParameterSpanVariant const& parameterSpan) -> void {
-    auto& parameterSpanSet = ArtifactParametersMap.at(artifactVariantPointer);
-
-    parameterSpanSet.RemoveParameterSpan(parameterSpan);
+                                                 PipelineParameterSpan const& parameterSpan) -> void {
+    RemoveParameterSpan(GetSetForArtifactPointer(artifactVariantPointer), parameterSpan);
 }
 
-auto PipelineParameterSpace::AddParameterSpanSet(ArtifactVariantPointer artifactVariantPointer)
+auto PipelineParameterSpace::RemoveParameterSpan(PipelineParameterSpanSet& spanSet,
+                                                 PipelineParameterSpan const& parameterSpan) -> void {
+    spanSet.RemoveParameterSpan(parameterSpan);
+
+    if (spanSet.GetSize() == 0) {
+        auto it = std::find(ParameterSpanSets.cbegin(), ParameterSpanSets.cend(), spanSet);
+        ParameterSpanSets.erase(it);
+    }
+}
+
+auto PipelineParameterSpace::GetNumberOfSpans() const noexcept -> uint16_t {
+    auto numbersOfSpans = ParameterSpanSets
+                          | std::views::transform([](auto& set) { return set.GetSize(); });
+
+    return std::reduce(numbersOfSpans.begin(), numbersOfSpans.end(), 0, std::plus{});
+}
+
+auto PipelineParameterSpace::GetNumberOfSpanSets() const noexcept -> uint16_t {
+    return ParameterSpanSets.size();
+}
+
+auto PipelineParameterSpace::GetSpanSet(uint16_t idx) -> PipelineParameterSpanSet& {
+    if (idx >= ParameterSpanSets.size())
+        throw std::runtime_error("Span set index out of range");
+
+    for (auto& spanSet : ParameterSpanSets) {
+        if (idx == 0)
+            return spanSet;
+
+        idx--;
+    }
+
+    throw std::runtime_error("Span set not found");
+}
+
+auto PipelineParameterSpace::GetSpanSet(PipelineParameterSpan const& parameterSpan) -> PipelineParameterSpanSet& {
+    for (auto& spanSet : ParameterSpanSets) {
+        for (int i = 0; i < spanSet.GetSize(); i++) {
+            auto& span = spanSet.Get(i);
+
+            if (span == parameterSpan)
+                return spanSet;
+        }
+    }
+
+    throw std::runtime_error("Span set not found");
+}
+
+auto PipelineParameterSpace::GetSpanSetIdx(PipelineParameterSpanSet const& spanSet) const -> uint16_t {
+    uidx_t idx = 0;
+
+    for (auto const& set : ParameterSpanSets) {
+        if (spanSet == set)
+            return idx;
+
+        idx++;
+    }
+
+    throw std::runtime_error("Span set not found");
+}
+
+auto PipelineParameterSpace::GetSpanSetName(PipelineParameterSpanSet const& spanSet) const -> std::string {
+    auto it = std::find(ParameterSpanSets.cbegin(), ParameterSpanSets.cend(), spanSet);
+
+    if (it == ParameterSpanSets.cend())
+        throw std::runtime_error("Span set not found");
+
+    return it->GetName();
+}
+
+auto PipelineParameterSpace::ContainsSetForArtifactPointer(ArtifactVariantPointer artifactVariantPointer) const noexcept
+        -> bool {
+
+    auto it = std::find_if(ParameterSpanSets.cbegin(), ParameterSpanSets.cend(),
+                           [&](auto const& set) { return set.ArtifactPointer == artifactVariantPointer; });
+
+    return it != ParameterSpanSets.cend();
+}
+
+auto PipelineParameterSpace::GetSetForArtifactPointer(ArtifactVariantPointer artifactVariantPointer)
         -> PipelineParameterSpanSet& {
-    if (ArtifactParametersMap.contains(artifactVariantPointer))
-        throw std::runtime_error("Cannot add parameter span set for given variant pointer."
-                                 "A span set already exists.");
 
-    auto [ it, successful] = ArtifactParametersMap.emplace(artifactVariantPointer, PipelineParameterSpanSet());
-    if (!successful)
-        throw std::runtime_error("Could not add parameter span set");
+    auto it = std::find_if(ParameterSpanSets.begin(), ParameterSpanSets.end(),
+                           [&](auto const& set) { return set.ArtifactPointer == artifactVariantPointer; });
 
-    return it->second;
-}
+    if (it == ParameterSpanSets.end())
+        throw std::runtime_error("No set for given artifact pointer exists");
 
-auto PipelineParameterSpace::RemoveParameterSpanSet(ArtifactVariantPointer artifactVariantPointer) -> void {
-    if (!ArtifactParametersMap.contains(artifactVariantPointer))
-        throw std::runtime_error("Cannot remove parameter span set for given variant pointer. No span set exists.");
-
-    auto numberOfRemovedElements = ArtifactParametersMap.erase(artifactVariantPointer);
-    if (numberOfRemovedElements == 0)
-        throw std::runtime_error("Could not remove parameter span set");
-}
-
-auto PipelineParameterSpace::HasParameterSpanSet(ArtifactVariantPointer artifactVariantPointer) const noexcept -> bool {
-    return ArtifactParametersMap.contains(artifactVariantPointer);
+    return *it;
 }

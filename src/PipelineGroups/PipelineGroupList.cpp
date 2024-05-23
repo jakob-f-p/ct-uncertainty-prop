@@ -1,28 +1,37 @@
 #include "PipelineGroupList.h"
 
 #include "PipelineGroup.h"
+#include "../Artifacts/PipelineList.h"
 #include "../Modeling/CtStructureTree.h"
 
 #include <ranges>
+
+PipelineGroupList::PipelineGroupList(const PipelineList& pipelines) :
+        Pipelines(pipelines) {}
 
 auto PipelineGroupList::GetName() const noexcept -> std::string {
     return Name;
 }
 
-auto PipelineGroupList::IsEmpty() const noexcept -> bool {
-    return PipelineGroups.empty();
+auto PipelineGroupList::GetSize() const noexcept -> uint8_t {
+    return PipelineGroups.size();
 }
 
-auto PipelineGroupList::GetSize() const noexcept -> int {
-    return static_cast<int>(PipelineGroups.size());
+auto PipelineGroupList::GetBasePipelines() const noexcept -> std::vector<Pipeline const*> {
+    std::vector<Pipeline const*> basePipelines;
+
+    for (int i = 0; i < Pipelines.GetSize(); i++)
+        basePipelines.emplace_back(&Pipelines.Get(i));
+
+    return basePipelines;
 }
 
 auto PipelineGroupList::Get(int idx) noexcept -> PipelineGroup& {
     return *PipelineGroups.at(idx);
 }
 
-auto PipelineGroupList::AddPipelineGroup(Pipeline const& pipeline) -> PipelineGroup& {
-    return *PipelineGroups.emplace_back(std::make_unique<PipelineGroup>(pipeline));
+auto PipelineGroupList::AddPipelineGroup(Pipeline const& pipeline, std::string name) -> PipelineGroup& {
+    return *PipelineGroups.emplace_back(std::make_unique<PipelineGroup>(pipeline, name));
 }
 
 void PipelineGroupList::RemovePipelineGroup(PipelineGroup const& pipeline) {
@@ -37,11 +46,9 @@ void PipelineGroupList::RemovePipelineGroup(PipelineGroup const& pipeline) {
 auto PipelineGroupList::FindPipelineGroupsByBasePipeline(Pipeline const& basePipeline) const noexcept
         -> std::vector<PipelineGroup const*> {
     auto filteredPipelineGroups = PipelineGroups
-            | std::views::filter([&](auto& group) { return group->GetBasePipeline() == basePipeline; });
+            | std::views::filter([&](auto& group) { return group->GetBasePipeline() == basePipeline; })
+            | std::views::transform([](auto& group) { return group.get(); })
+            | std::views::common;
 
-    std::vector<PipelineGroup const*> pipelineGroups;
-    for (auto& group : filteredPipelineGroups)
-        pipelineGroups.emplace_back(group.get());
-
-    return pipelineGroups;
+    return { filteredPipelineGroups.begin(), filteredPipelineGroups.end() };
 }

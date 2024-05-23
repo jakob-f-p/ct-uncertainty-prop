@@ -129,6 +129,11 @@ auto BasicImageArtifact::GetViewName() const noexcept -> std::string {
     return SubTypeToString(GetSubType()) + (Name.empty() ? "" : (" (" + Name + ")"));
 }
 
+auto BasicImageArtifact::GetProperties() noexcept -> PipelineParameterProperties {
+    return std::visit([](auto& artifact) -> PipelineParameterProperties { return artifact.GetProperties(); },
+                      Artifact);
+}
+
 auto BasicImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm& {
     return std::visit([&](auto& artifact) -> vtkImageAlgorithm& {
         vtkImageAlgorithm& filter = artifact.GetFilter();

@@ -2,6 +2,7 @@
 
 #include "Image/ImageArtifactsWidget.h"
 #include "Structure/StructureArtifactsWidget.h"
+#include "../Utils/WidgetUtils.h"
 #include "../../Artifacts/Pipeline.h"
 #include "../../Artifacts/PipelineList.h"
 
@@ -98,9 +99,7 @@ void PipelinesWidget::NextPipeline() {
 
 void PipelinesWidget::UpdatePipelineView() {
     std::string const pipelineName = GetCurrentPipeline().GetName();
-    QString const pipelineTitleString = pipelineName.empty()
-                           ? QString::fromStdString("Pipeline " + std::to_string(CurrentPipelineIndex + 1))
-                           : QString::fromStdString(pipelineName);
+    QString const pipelineTitleString = QString::fromStdString(pipelineName);
     PipelineTitle->setText(pipelineTitleString);
 
     PreviousPipelineButton->setEnabled(CurrentPipelineIndex > 0);
@@ -112,18 +111,6 @@ void PipelinesWidget::UpdatePipelineView() {
     ImageArtifactModelingWidget->SetCurrentView(CurrentPipelineIndex);
 
     emit PipelineViewUpdated(GetCurrentPipeline());
-}
-
-auto PipelinesWidget::GenerateIcon(const std::string &filePrefix) noexcept -> QIcon {
-    QIcon icon;
-    QString const qFilePrefix = QString::fromStdString(filePrefix);
-    icon.addPixmap(QPixmap(":/" + qFilePrefix + "Normal.png"), QIcon::Normal);
-    icon.addPixmap(QPixmap(":/" + qFilePrefix + "Disabled.png"), QIcon::Disabled);
-    return icon;
-}
-
-auto PipelinesWidget::GetHeaderStyleSheet() noexcept -> QString {
-    return "font-size: 14px; font-weight: bold";
 }
 
 void PipelinesWidget::InitializeViews() {

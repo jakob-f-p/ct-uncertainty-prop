@@ -24,6 +24,10 @@ auto PipelineList::Get(int idx) noexcept -> Pipeline& {
     return *Pipelines.at(idx);
 }
 
+auto PipelineList::Get(int idx) const noexcept -> Pipeline const& {
+    return *Pipelines.at(idx);
+}
+
 auto PipelineList::AddPipeline() -> Pipeline& {
     return *Pipelines.emplace_back(std::make_unique<Pipeline>(StructureTree, DataSource));
 }

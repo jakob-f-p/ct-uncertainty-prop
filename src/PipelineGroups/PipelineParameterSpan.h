@@ -19,9 +19,17 @@ public:
         operator== (NumberDetails const& other) const noexcept -> bool {
             return Min == other.Min && Max == other.Max && Step == other.Step;
         };
+
+        [[nodiscard]] auto
+        ToString() const noexcept -> std::string {
+            return "{ " + std::to_string(Min) + ", " + std::to_string(Step) + ", " + std::to_string(Max) + " }";
+        }
     };
 
-    ParameterSpan(ObjectProperty<T> objectProperty, NumberDetails numbers) :
+    ParameterSpan(ObjectProperty<T> objectProperty, NumberDetails numbers, std::string name = "") :
+            Name(name.empty()
+                    ? objectProperty.GetName() + " " + numbers.ToString()
+                    : std::move(name)),
             Property(std::move(objectProperty)),
             Numbers(std::move(numbers)) {};
     ParameterSpan(ParameterSpan&& other) noexcept = default;
@@ -29,6 +37,9 @@ public:
     ParameterSpan(ParameterSpan const& other) = delete;
     auto operator= (ParameterSpan const& other) -> ParameterSpan& = delete;
     ~ParameterSpan() = default;
+
+    [[nodiscard]] auto
+    GetName() const noexcept -> std::string { return Name; }
 
     [[nodiscard]] auto
     CanAdvance() const noexcept -> bool {
@@ -51,6 +62,7 @@ public:
     };
 
 private:
+    std::string Name;
     ObjectProperty<T> Property;
     NumberDetails Numbers;
 };
@@ -88,3 +100,24 @@ ParameterSpan<FloatPoint>::Advance() noexcept -> void {
 
     Property.Set(next);
 }
+
+
+struct PipelineParameterSpan {
+
+    template<typename... Args>
+    PipelineParameterSpan(Args&&... args) : SpanVariant(std::forward<Args>(args)...) {};
+
+    [[nodiscard]] auto
+    GetName() const noexcept -> std::string { return std::visit([](auto const& span) { return span.GetName(); },
+                                                                SpanVariant); }
+
+    [[nodiscard]] auto
+    operator== (PipelineParameterSpan const& other) const noexcept -> bool {
+        return this == &other
+               || SpanVariant == other.SpanVariant;
+    }
+
+private:
+    using ParameterSpanVariant = std::variant<ParameterSpan<float>, ParameterSpan<FloatPoint>>;
+    ParameterSpanVariant SpanVariant;
+};

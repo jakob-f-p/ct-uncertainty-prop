@@ -3,10 +3,10 @@
 #include "../../../Artifacts/Structure/StructureArtifact.h"
 #include "../../../Artifacts/Structure/StructureArtifactListCollection.h"
 
-StructureArtifactsModel::StructureArtifactsModel(StructureArtifactList& structureWrapper,
+StructureArtifactsModel::StructureArtifactsModel(StructureArtifactList& artifactList,
                                                  QObject* parent) :
         QAbstractItemModel(parent),
-        StructureWrapper(structureWrapper) {
+        StructureWrapper(artifactList) {
 }
 
 auto StructureArtifactsModel::index(int row, int column, QModelIndex const& parent) const -> QModelIndex {
@@ -37,20 +37,23 @@ auto StructureArtifactsModel::data(QModelIndex const& index, int role) const -> 
     if (!index.isValid())
         return {};
 
-    const auto* artifact = static_cast<StructureArtifact*>(index.internalPointer());
+    auto* artifact = static_cast<StructureArtifact*>(index.internalPointer());
+
     if (!artifact)
         throw std::runtime_error("Artifact must not be null");
 
     switch (role) {
         case Qt::DisplayRole: return QString::fromStdString(artifact->GetViewName());
 
-        case Qt::UserRole: {
+        case Roles::DATA: { // Qt::UserRole
             StructureArtifactData data {};
 
             data.PopulateFromArtifact(*artifact);
 
             return QVariant::fromValue(data);
         }
+
+        case Roles::POINTER: return QVariant::fromValue(artifact);
 
         default: return {};
     }
@@ -79,7 +82,7 @@ auto StructureArtifactsModel::AddStructureArtifact(StructureArtifactData const& 
                                                    QModelIndex const& siblingIndex) -> QModelIndex {
     StructureArtifact artifact(data);
 
-    int insertionIndex = siblingIndex.isValid()
+    int const insertionIndex = siblingIndex.isValid()
             ? siblingIndex.row() + 1
             : StructureWrapper.GetNumberOfArtifacts();
 
@@ -118,8 +121,8 @@ auto StructureArtifactsModel::MoveDown(QModelIndex const& index) -> QModelIndex 
 auto StructureArtifactsModel::Move(QModelIndex const& sourceIndex, int displacement) -> QModelIndex {
     auto* structureArtifact = static_cast<StructureArtifact*>(sourceIndex.internalPointer());
 
-    int prevIdx = sourceIndex.row();
-    int newIdx = sourceIndex.row() + displacement;
+    int const prevIdx = sourceIndex.row();
+    int const newIdx = sourceIndex.row() + displacement;
 
     beginMoveRows({}, prevIdx, prevIdx,
                   {}, newIdx > prevIdx ? newIdx + 1 : newIdx);
@@ -127,4 +130,12 @@ auto StructureArtifactsModel::Move(QModelIndex const& sourceIndex, int displacem
     endMoveRows();
 
     return index(newIdx, 0, {});
+}
+
+StructureArtifactsReadOnlyModel::StructureArtifactsReadOnlyModel(StructureArtifactList const& artifactList,
+                                                                 QObject* parent) :
+        StructureArtifactsModel(const_cast<StructureArtifactList&>(artifactList), parent) {}
+
+auto StructureArtifactsReadOnlyModel::flags(QModelIndex const& index) const -> Qt::ItemFlags {
+    return QAbstractItemModel::flags(index);
 }

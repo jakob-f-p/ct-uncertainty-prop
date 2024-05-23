@@ -24,13 +24,13 @@ void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, cons
     int currentLevel = getLevel(index);
     QRect frame(rect.right() + 1, rect.top(), indent, rect.height());
 
-    QModelIndex parent = index.parent();
+    QModelIndex const parent = index.parent();
     QModelIndex ancestor = parent.parent();
 
     QStyleOptionViewItem opt;
     initViewItemOption(&opt);
 
-    QPoint oldBrushOrigin = painter->brushOrigin();
+    QPoint const oldBrushOrigin = painter->brushOrigin();
     QStyle::State extraFlags = QStyle::State_None;
     if (isEnabled())
         extraFlags |= QStyle::State_Enabled;
@@ -47,7 +47,7 @@ void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, cons
 
         const bool expanded = isExpanded(index);
         const bool children = index.model()->hasChildren(index);
-        QModelIndex successorIndex = index.model()->sibling(index.row() + 1, 0, index);
+        QModelIndex const successorIndex = index.model()->sibling(index.row() + 1, 0, index);
         bool moreSiblings = successorIndex.isValid();
 
         opt.state = QStyle::State_Item | extraFlags
@@ -57,16 +57,17 @@ void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, cons
 
         style()->drawPrimitive(QStyle::PE_IndicatorBranch, &opt, painter, this);
 
-        bool isRootLevel = !parent.isValid();
+        bool const isRootLevel = !parent.isValid();
         bool parentIsSequentialComposition = false;
         if (parent.isValid()) {
             auto data = parent.data(Qt::UserRole).value<ImageArtifactData>();
             parentIsSequentialComposition = std::holds_alternative<CompositeImageArtifactData>(data.Data)
-                    && std::get<CompositeImageArtifactData>(data.Data).Data.CompositionType == CompositeImageArtifact::CompositionType::SEQUENTIAL;
+                    && std::get<CompositeImageArtifactData>(data.Data).Data.CompositionType
+                            == CompositeImageArtifact::CompositionType::SEQUENTIAL;
         }
 
         if (isRootLevel || parentIsSequentialComposition) {
-            QFont oldFont(painter->font());
+            QFont const oldFont(painter->font());
 
             QFont smallFont(painter->font());
             smallFont.setPointSize(5);
@@ -133,4 +134,38 @@ int ImageArtifactsView::getLevel(const QModelIndex& index) {
         level++;
 
     return level;
+}
+
+
+ImageArtifactsReadOnlyView::ImageArtifactsReadOnlyView(Pipeline const& pipeline, QWidget* parent) :
+        ImageArtifactsView(const_cast<Pipeline*>(&pipeline), parent),
+        ArtifactsModel(new ImageArtifactsReadOnlyModel(pipeline.GetImageArtifactConcatenation())){
+
+    setModel(ArtifactsModel);
+
+    connect(this, &ImageArtifactsReadOnlyView::selectionChanged,
+            this, &ImageArtifactsReadOnlyView::OnSelectionChanged);
+}
+
+auto ImageArtifactsReadOnlyView::model() const noexcept -> ImageArtifactsReadOnlyModel* {
+    return ArtifactsModel;
+}
+
+void ImageArtifactsReadOnlyView::OnSelectionChanged(QItemSelection const& selected,
+                                                    QItemSelection const& /*deselected*/) {
+    QModelIndexList const selectedIndices = selected.indexes();
+
+    if (selectedIndices.empty()) {
+        emit ImageArtifactChanged(nullptr);
+        return;
+    }
+
+    if (selectedIndices.size() > 1)
+        throw std::runtime_error("Invalid selection size");
+
+    QModelIndex const selectedIndex = selectedIndices.at(0);
+
+    auto* imageArtifact = selectedIndex.data(ImageArtifactsModel::POINTER).value<ImageArtifact*>();
+
+    emit ImageArtifactChanged(imageArtifact);
 }

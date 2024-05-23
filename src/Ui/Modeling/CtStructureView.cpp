@@ -21,8 +21,12 @@ auto CtStructureView::CtStructureDelegate::getDialog(QModelIndex const& modelInd
     auto const& dataVariant = modelIndex.data(Qt::UserRole).value<StructureDataVariant>();
 
     CtStructureDialog* dialog = std::visit(Overload {
-            [=](CombinedStructureData const&) -> CtStructureDialog* { return new CombinedStructureDialog(CtStructureDialog::DialogMode::EDIT, parent); },
-            [=](BasicStructureData const&) -> CtStructureDialog*    { return new BasicStructureDialog(CtStructureDialog::DialogMode::EDIT, parent); },
+            [=](CombinedStructureData const&) -> CtStructureDialog* {
+                return new CombinedStructureDialog(CtStructureDialog::DialogMode::EDIT, parent);
+            },
+            [=](BasicStructureData const&) -> CtStructureDialog*    {
+                return new BasicStructureDialog(CtStructureDialog::DialogMode::EDIT, parent);
+            },
     }, dataVariant);
 
     return dialog;
@@ -45,4 +49,29 @@ void CtStructureView::CtStructureDelegate::setModelData(QWidget* editor,
             : QVariant::fromValue(GetWidgetData<CombinedStructureWidget>(editor));
 
     model->setData(index, editedData);
+}
+
+CtStructureReadOnlyView::CtStructureReadOnlyView(CtStructureTree const& ctStructureTree) :
+        CtStructureView(const_cast<CtStructureTree&>(ctStructureTree)) {}
+
+auto CtStructureReadOnlyView::model() const noexcept -> CtStructureTreeReadOnlyModel* {
+    return StructureTreeModel;
+}
+
+void CtStructureReadOnlyView::OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected) {
+    QModelIndexList const selectedIndices = selected.indexes();
+
+    if (selectedIndices.empty()) {
+        emit CtStructureChanged({});
+        return;
+    }
+
+    if (selectedIndices.size() > 1)
+        throw std::runtime_error("Invalid selection size");
+
+    QModelIndex const selectedIndex = selectedIndices.at(0);
+
+    auto structureIdx = idx_t::FromSigned(selectedIndex.internalId());
+
+    emit CtStructureChanged(structureIdx);
 }

@@ -32,6 +32,9 @@ public:
     [[nodiscard]] auto
     Get(int idx) noexcept -> Pipeline&;
 
+    [[nodiscard]] auto
+    Get(int idx) const noexcept -> Pipeline const&;
+
     auto
     AddPipeline() -> Pipeline&;
 

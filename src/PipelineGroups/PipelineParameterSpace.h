@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ArtifactVariantPointer.h"
 #include "PipelineParameterSpan.h"
 
 #include <unordered_map>
@@ -8,48 +9,89 @@
 class ImageArtifact;
 class StructureArtifact;
 
-using ParameterSpanVariant = std::variant<ParameterSpan<float>, ParameterSpan<FloatPoint>>;
 
 class PipelineParameterSpanSet {
 public:
-    auto
-    AddParameterSpan(ParameterSpanVariant&& spanVariant) -> ParameterSpanVariant&;
+    explicit PipelineParameterSpanSet(ArtifactVariantPointer artifactVariantPointer);
 
     auto
-    RemoveParameterSpan(ParameterSpanVariant const& spanVariant) -> void;
+    AddParameterSpan(PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan&;
+
+    auto
+    RemoveParameterSpan(PipelineParameterSpan const& parameterSpan) -> void;
+
+    [[nodiscard]] auto
+    GetName() const noexcept -> std::string;
+
+    [[nodiscard]] auto
+    GetArtifactPointer() const noexcept -> ArtifactVariantPointer;
+
+    [[nodiscard]] auto
+    GetSize() const noexcept -> uint16_t;
+
+    [[nodiscard]] auto
+    Get(uint16_t idx) -> PipelineParameterSpan&;
+
+    [[nodiscard]] auto
+    GetIdx(PipelineParameterSpan const& parameterSpan) const -> uint16_t;
+
+    [[nodiscard]] auto
+    operator== (PipelineParameterSpanSet const& other) const noexcept -> bool;
 
 private:
-    friend class PipelineParameterSpanSet;
+    friend class PipelineParameterSpace;
 
-    using ParameterSpanSet = std::vector<ParameterSpanVariant>;
+    using ParameterSpanSet = std::vector<PipelineParameterSpan>;
 
+    ArtifactVariantPointer ArtifactPointer;
     ParameterSpanSet ParameterSpans;
 };
 
-
-using ArtifactVariantPointer = std::variant<ImageArtifact*, StructureArtifact*>;
 
 class PipelineParameterSpace {
 public:
     auto
     AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
-                     ParameterSpanVariant&& parameterSpan) -> ParameterSpanVariant&;
+                     PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan&;
+
+    auto
+    AddParameterSpan(PipelineParameterSpanSet& spanSet,
+                     PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan&;
 
     auto
     RemoveParameterSpan(ArtifactVariantPointer artifactVariantPointer,
-                        ParameterSpanVariant const& parameterSpan) -> void;
+                        PipelineParameterSpan const& parameterSpan) -> void;
+
+    auto
+    RemoveParameterSpan(PipelineParameterSpanSet& spanSet,
+                        PipelineParameterSpan const& parameterSpan) -> void;
 
     [[nodiscard]] auto
-    HasParameterSpanSet(ArtifactVariantPointer artifactVariantPointer) const noexcept -> bool;
+    GetNumberOfSpans() const noexcept -> uint16_t;
 
-    auto
-    AddParameterSpanSet(ArtifactVariantPointer artifactVariantPointer) -> PipelineParameterSpanSet&;
+    [[nodiscard]] auto
+    GetNumberOfSpanSets() const noexcept -> uint16_t;
 
-    auto
-    RemoveParameterSpanSet(ArtifactVariantPointer artifactVariantPointer) -> void;
+    [[nodiscard]] auto
+    GetSpanSet(uint16_t idx) -> PipelineParameterSpanSet&;
+
+    [[nodiscard]] auto
+    GetSpanSet(PipelineParameterSpan const& parameterSpan) -> PipelineParameterSpanSet&;
+
+    [[nodiscard]] auto
+    GetSpanSetIdx(PipelineParameterSpanSet const& spanSet) const -> uint16_t;
+
+    [[nodiscard]] auto
+    GetSpanSetName(PipelineParameterSpanSet const& spanSet) const -> std::string;
 
 private:
-    using ArtifactParameterSpansMap = std::unordered_map<ArtifactVariantPointer, PipelineParameterSpanSet>;
+    friend class PipelineParameterSpaceModel;
 
-    ArtifactParameterSpansMap ArtifactParametersMap;
+    [[nodiscard]] auto
+    ContainsSetForArtifactPointer(ArtifactVariantPointer artifactVariantPointer) const noexcept -> bool;
+
+    [[nodiscard]] auto
+    GetSetForArtifactPointer(ArtifactVariantPointer artifactVariantPointer) -> PipelineParameterSpanSet&;
+
+    std::vector<PipelineParameterSpanSet> ParameterSpanSets;
 };

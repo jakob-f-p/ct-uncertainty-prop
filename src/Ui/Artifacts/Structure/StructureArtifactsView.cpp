@@ -31,3 +31,28 @@ void StructureArtifactsView::StructureArtifactsDelegate::setModelData(QWidget* e
 
     model->setData(index, QVariant::fromValue(data));
 }
+
+StructureArtifactsReadOnlyView::StructureArtifactsReadOnlyView(StructureArtifactList const& structureArtifactList) :
+        Model(new StructureArtifactsReadOnlyModel(structureArtifactList)) {
+
+    setModel(Model);
+}
+
+void StructureArtifactsReadOnlyView::OnSelectionChanged(QItemSelection const& selected,
+                                                        QItemSelection const& deselected) {
+    QModelIndexList const selectedIndices = selected.indexes();
+
+    if (selectedIndices.empty()) {
+        emit StructureArtifactChanged(nullptr);
+        return;
+    }
+
+    if (selectedIndices.size() > 1)
+        throw std::runtime_error("Invalid selection size");
+
+    QModelIndex const selectedIndex = selectedIndices.at(0);
+
+    auto* structureArtifact = selectedIndex.data(StructureArtifactsModel::POINTER).value<StructureArtifact*>();
+
+    emit StructureArtifactChanged(structureArtifact);
+}

@@ -1,9 +1,10 @@
 #include "ImageArtifactsWidget.h"
 
-#include "../ArtifactsDialog.h"
 #include "ImageArtifactsModel.h"
 #include "ImageArtifactsView.h"
+#include "../ArtifactsDialog.h"
 #include "../PipelinesWidget.h"
+#include "../../Utils/WidgetUtils.h"
 #include "../../../Artifacts/Image/ImageArtifact.h"
 
 #include <QLabel>
@@ -15,9 +16,9 @@ ImageArtifactsWidget::ImageArtifactsWidget(QWidget* parent) :
         QWidget(parent),
         Views(new QStackedLayout()),
         CreateDialog(nullptr),
-        AddChildButton(new QPushButton("ADD Child Artifact")),
-        AddSiblingButton(new QPushButton("ADD Sibling Artifact")),
-        RemoveButton(new QPushButton("REMOVE Artifact")),
+        AddChildButton(new QPushButton("Add Child Artifact")),
+        AddSiblingButton(new QPushButton("Add Sibling Artifact")),
+        RemoveButton(new QPushButton("Remove Artifact")),
         MoveUpButton(new QPushButton("")),
         MoveDownButton(new QPushButton("")),
         Buttons({ AddChildButton,
@@ -29,14 +30,14 @@ ImageArtifactsWidget::ImageArtifactsWidget(QWidget* parent) :
     auto* vLayout = new QVBoxLayout(this);
 
     auto* titleLabel = new QLabel("Image Artifacts");
-    titleLabel->setStyleSheet(PipelinesWidget::GetHeaderStyleSheet());
+    titleLabel->setStyleSheet(GetHeaderStyleSheet());
     vLayout->addWidget(titleLabel);
 
     auto* buttonBar = new QWidget();
     auto* buttonBarHLayout = new QHBoxLayout(buttonBar);
     buttonBarHLayout->setContentsMargins(0, 5, 0, 0);
-    MoveUpButton->setIcon(PipelinesWidget::GenerateIcon("ArrowUp"));
-    MoveDownButton->setIcon(PipelinesWidget::GenerateIcon("ArrowDown"));
+    MoveUpButton->setIcon(GenerateIcon("ArrowUp"));
+    MoveDownButton->setIcon(GenerateIcon("ArrowDown"));
     buttonBarHLayout->addWidget(AddChildButton);
     buttonBarHLayout->addWidget(AddSiblingButton);
     buttonBarHLayout->addWidget(RemoveButton);

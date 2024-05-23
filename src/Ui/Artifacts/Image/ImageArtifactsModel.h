@@ -11,25 +11,30 @@ public:
     explicit ImageArtifactsModel(ImageArtifactConcatenation& imageArtifactConcatenation,
                                  QObject* parent = nullptr);
 
-    auto
+    [[nodiscard]] auto
     index(int row, int column, const QModelIndex& parent) const -> QModelIndex override;
 
-    auto
+    [[nodiscard]] auto
     parent(const QModelIndex& childModelIndex) const -> QModelIndex override;
 
-    auto
+    [[nodiscard]] auto
     rowCount(const QModelIndex& parentModelIndex) const -> int override;
 
-    auto
+    [[nodiscard]] auto
     columnCount(const QModelIndex& parent) const -> int override;
 
-    auto
+    enum Roles : uint16_t {
+        DATA = Qt::UserRole,
+        POINTER = 1 + Qt::UserRole
+    };
+
+    [[nodiscard]] auto
     data(const QModelIndex& index, int role) const -> QVariant override;
 
-    auto
+    [[nodiscard]] auto
     headerData(int section, Qt::Orientation orientation, int role) const -> QVariant override;
 
-    auto
+    [[nodiscard]] auto
     flags(const QModelIndex& index) const -> Qt::ItemFlags override;
 
     auto
@@ -51,6 +56,8 @@ public:
     MoveDown(const QModelIndex& index) -> QModelIndex;
 
 private:
+    friend class PipelineArtifactsModel;
+
     auto
     AddImageArtifact(const ImageArtifactData& data, const QModelIndex& parentIndex, int insertionIndex) -> QModelIndex;
 
@@ -58,4 +65,14 @@ private:
     Move(const QModelIndex& sourceIndex, int displacement) -> QModelIndex;
 
     ImageArtifactConcatenation& Concatenation;
+};
+
+
+class ImageArtifactsReadOnlyModel : public ImageArtifactsModel {
+public:
+    explicit ImageArtifactsReadOnlyModel(ImageArtifactConcatenation const& imageArtifactConcatenation,
+                                         QObject* parent = nullptr);
+
+    [[nodiscard]] auto
+    flags(QModelIndex const& index) const -> Qt::ItemFlags override;
 };
