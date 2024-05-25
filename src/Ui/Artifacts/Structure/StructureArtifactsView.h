@@ -34,11 +34,14 @@ class StructureArtifactsReadOnlyView : public QListView {
 public:
     explicit StructureArtifactsReadOnlyView(StructureArtifactList const& structureArtifactList);
 
+    auto
+    Select(StructureArtifact const& structureArtifact) -> void;
+
 signals:
     void StructureArtifactChanged(StructureArtifact* structureArtifact);
 
-private slots:
-    void OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected);
+protected:
+    void selectionChanged(QItemSelection const& selected, QItemSelection const& deselected) override;
 
 private:
     StructureArtifactsReadOnlyModel* Model;

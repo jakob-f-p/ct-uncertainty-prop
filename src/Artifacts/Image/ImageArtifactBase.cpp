@@ -49,7 +49,7 @@ template<ImageArtifactBaseDetails::TArtifactWidget ArtifactWidget, typename Arti
 auto ImageArtifactBaseDetails::ImageArtifactBaseWidget<ArtifactWidget, ArtifactData>::GetData() const noexcept -> ArtifactData {
     ArtifactData data {};
 
-    data.Name = NameEdit->GetData();
+    data.Name = NameEdit->GetText();
     data.Data = ArtifactEditWidget->GetData();
 
     return data;
@@ -57,6 +57,6 @@ auto ImageArtifactBaseDetails::ImageArtifactBaseWidget<ArtifactWidget, ArtifactD
 
 template<ImageArtifactBaseDetails::TArtifactWidget ArtifactWidget, typename ArtifactData>
 auto ImageArtifactBaseDetails::ImageArtifactBaseWidget<ArtifactWidget, ArtifactData>::Populate(const ArtifactData& data) noexcept -> void {
-    NameEdit->SetData(data.Name);
+    NameEdit->SetText(data.Name);
     ArtifactEditWidget->Populate(data.Data);
 }

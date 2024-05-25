@@ -38,7 +38,9 @@ protected:
                            vtkInformationVector *outputVector) override;
 
     auto
-    ExecuteDataWithImageInformation(vtkImageData* input, vtkImageData* output, vtkInformation* outInfo) -> void override;
+    ExecuteDataWithImageInformation(vtkImageData* input,
+                                    vtkImageData* output,
+                                    vtkInformation* outInfo) -> void override;
 
     struct Algorithm {
         WindMillArtifactFilter* Self;

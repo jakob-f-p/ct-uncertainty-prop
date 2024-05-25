@@ -57,6 +57,7 @@ public:
 
 private:
     friend class ImageArtifactsModel;
+    friend class ImageArtifactsReadOnlyModel1;
 
     [[nodiscard]] auto
     GetStart() noexcept -> ImageArtifact&;

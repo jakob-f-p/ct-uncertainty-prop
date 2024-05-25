@@ -3,13 +3,11 @@
 #include "../Utils/OptionalWidget.h"
 #include "../../PipelineGroups/ArtifactVariantPointer.h"
 
+#include <QGroupBox>
 #include <QSplitter>
 #include <QWidget>
 
-class CtStructureTree;
 class CtStructureReadOnlyView;
-class FloatParameterSpanWidget;
-class FloatPointParameterSpanWidget;
 class ImageArtifactsReadOnlyView;
 class NameLineEdit;
 class ObjectPropertyGroup;
@@ -29,6 +27,8 @@ class PipelineParameterSpanWidget : public QWidget {
 protected:
     explicit PipelineParameterSpanWidget(Pipeline const& pipeline, QWidget* parent = nullptr);
 
+    ArtifactVariantPointer CurrentArtifactPointer;
+
     QFormLayout* FLayout;
     NameLineEdit* NameEdit;
     QSpinBox* NumberOfPipelinesSpinBox;
@@ -43,13 +43,8 @@ class PipelineParameterSpanCreateWidget : public PipelineParameterSpanWidget {
 public:
     explicit PipelineParameterSpanCreateWidget(Pipeline const& pipeline, QWidget* parent = nullptr);
 
-    struct Data {
-        QString Name;
-        ArtifactVariantPointer ArtifactPointer;
-    };
-
     [[nodiscard]] auto
-    GetData() const noexcept -> Data;
+    GetPipelineParameterSpan() const -> PipelineParameterSpan;
 
 signals:
     void Accept();
@@ -59,38 +54,36 @@ private:
     QDialogButtonBox* DialogButtonBox;
 };
 
+
 class PipelineParameterSpanReadOnlyWidget : public PipelineParameterSpanWidget {
     Q_OBJECT
 
 public:
     explicit PipelineParameterSpanReadOnlyWidget(Pipeline const& pipeline,
                                                  PipelineParameterSpan& parameterSpan,
-                                                 ArtifactVariantPointer artifactVariantPointer,
                                                  QWidget* parent = nullptr);
-
-private:
-    QDialogButtonBox* DialogButtonBox;
 };
 
 
-class PipelineArtifactsView : public QStackedWidget {
+class PipelineArtifactsView : public QGroupBox {
     Q_OBJECT
 
 public:
     explicit PipelineArtifactsView(Pipeline const& pipeline);
 
+    auto
+    SelectArtifact(ArtifactVariantPointer artifactPointer) -> void;
+
+signals:
+    void ArtifactChanged(ArtifactVariantPointer artifactVariantPointer);
+
+private:
     enum View : uint8_t {
         IMAGE_ARTIFACTS = 0,
         STRUCTURE_ARTIFACTS = 1,
     };
 
-signals:
-    void ArtifactChanged(ArtifactVariantPointer artifactVariantPointer);
-    
-public slots:
-    void Show(View view);
-
-private:
+    QComboBox* SelectViewComboBox;
     ImageArtifactsReadOnlyView* ImageArtifactsView;
     PipelineStructureArtifactsView* StructureArtifactsView;
 };
@@ -101,6 +94,9 @@ class PipelineStructureArtifactsView : public QSplitter {
 
 public:
     explicit PipelineStructureArtifactsView(Pipeline const& pipeline, QWidget* parent = nullptr);
+
+    auto
+    Select(StructureArtifact const& structureArtifact) -> void;
 
 signals:
     void StructureArtifactChanged(StructureArtifact* structureArtifact);

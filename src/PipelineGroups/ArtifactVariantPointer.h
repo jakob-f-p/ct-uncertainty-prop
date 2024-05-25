@@ -3,8 +3,6 @@
 #include "ObjectProperty.h"
 
 #include <string>
-#include <unordered_map>
-#include <variant>
 
 class ImageArtifact;
 class StructureArtifact;
@@ -13,8 +11,13 @@ struct ArtifactVariantPointer {
 
     ArtifactVariantPointer() : ArtifactPointer(static_cast<ImageArtifact*>(nullptr)) {};
 
-    explicit ArtifactVariantPointer(auto&& artifactPointer)
-            : ArtifactPointer(std::forward<decltype(artifactPointer)>(artifactPointer)) {}
+    template<typename PointerType>
+    requires std::is_pointer_v<PointerType>
+    explicit ArtifactVariantPointer(PointerType artifactPointer)
+            : ArtifactPointer(artifactPointer) {}
+
+    [[nodiscard]] auto
+    GetVariant() const noexcept -> std::variant<ImageArtifact*, StructureArtifact*> const&;
 
     [[nodiscard]] auto
     GetName() const noexcept -> std::string;
@@ -27,10 +30,6 @@ struct ArtifactVariantPointer {
 
     [[nodiscard]] auto
     operator ==(ArtifactVariantPointer const& other) const noexcept -> bool = default;
-
-    struct Hash {
-        auto operator()(ArtifactVariantPointer const& o) const noexcept;
-    };
 
 private:
     std::variant<ImageArtifact*, StructureArtifact*> ArtifactPointer;

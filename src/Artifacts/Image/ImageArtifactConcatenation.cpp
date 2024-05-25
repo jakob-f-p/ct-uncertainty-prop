@@ -4,7 +4,8 @@
 #include "Filters/PassThroughImageArtifactFilter.h"
 
 ImageArtifactConcatenation::ImageArtifactConcatenation() noexcept :
-        Start(new ImageArtifact { std::move(CompositeImageArtifact(CompositeImageArtifact::CompositionType::SEQUENTIAL)) }) {}
+        Start(new ImageArtifact { std::move(CompositeImageArtifact(
+                CompositeImageArtifact::CompositionType::SEQUENTIAL)) }) {}
 
 ImageArtifactConcatenation::~ImageArtifactConcatenation() = default;
 
@@ -34,7 +35,8 @@ auto ImageArtifactConcatenation::AddImageArtifact(ImageArtifact&& imageArtifact,
 
 void ImageArtifactConcatenation::RemoveImageArtifact(ImageArtifact& imageArtifact) {
     if (!ContainsImageArtifact(imageArtifact))
-        throw std::runtime_error("Cannot remove given image artifact because it does not exist within this image artifact concatenation");
+        throw std::runtime_error("Cannot remove given image artifact because it does not exist within this"
+                                 "image artifact concatenation");
 
     if (imageArtifact.IsComposite() && Start.get() == &imageArtifact)
         throw std::runtime_error("Cannot remove root image artifact");
@@ -46,7 +48,8 @@ void ImageArtifactConcatenation::RemoveImageArtifact(ImageArtifact& imageArtifac
 
 void ImageArtifactConcatenation::MoveChildImageArtifact(ImageArtifact const& imageArtifact, int newIdx) {
     if (!ContainsImageArtifact(imageArtifact))
-        throw std::runtime_error("Cannot move given image artifact because it does not exist within this image artifact concatenation");
+        throw std::runtime_error("Cannot move given image artifact because it does not exist within this"
+                                 "image artifact concatenation");
 
     if (imageArtifact.IsComposite() && Start.get() == &imageArtifact)
         throw std::runtime_error("Cannot move root image artifact");

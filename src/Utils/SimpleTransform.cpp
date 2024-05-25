@@ -51,7 +51,7 @@ SimpleTransformWidget::SimpleTransformWidget() :
         TransformRows(new CoordinateRowWidget(true)){
 
     TransformRows->AppendCoordinatesRow({ -100.0, 100.0, 2.0, 0.0      }, "Translate");
-    TransformRows->AppendCoordinatesRow({    0.0, 360.0, 1.0, 0.0, "°" }, "Rotate");
+    TransformRows->AppendCoordinatesRow({    0.0, 360.0, 1.0, 0.0, 1, "°" }, "Rotate");
     TransformRows->AppendCoordinatesRow({  -10.0,  10.0, 0.1, 1.0      }, "Scale");
 
     auto* vLayout = new QVBoxLayout(this);

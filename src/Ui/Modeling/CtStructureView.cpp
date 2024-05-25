@@ -2,6 +2,7 @@
 
 #include "CtStructureDialog.h"
 #include "CtStructureTreeModel.h"
+#include "../Utils/ModelUtils.h"
 #include "../../Modeling/CtStructureTree.h"
 #include "../../Utils/Overload.h"
 
@@ -52,13 +53,19 @@ void CtStructureView::CtStructureDelegate::setModelData(QWidget* editor,
 }
 
 CtStructureReadOnlyView::CtStructureReadOnlyView(CtStructureTree const& ctStructureTree) :
-        CtStructureView(const_cast<CtStructureTree&>(ctStructureTree)) {}
+        CtStructureView(const_cast<CtStructureTree&>(ctStructureTree)),
+        StructureTreeModel(new CtStructureTreeReadOnlyModel(ctStructureTree)) {
+
+    setModel(StructureTreeModel);
+}
 
 auto CtStructureReadOnlyView::model() const noexcept -> CtStructureTreeReadOnlyModel* {
     return StructureTreeModel;
 }
 
-void CtStructureReadOnlyView::OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected) {
+void CtStructureReadOnlyView::selectionChanged(QItemSelection const& selected, QItemSelection const& deselected) {
+    QTreeView::selectionChanged(selected, deselected);
+
     QModelIndexList const selectedIndices = selected.indexes();
 
     if (selectedIndices.empty()) {
@@ -74,4 +81,29 @@ void CtStructureReadOnlyView::OnSelectionChanged(QItemSelection const& selected,
     auto structureIdx = idx_t::FromSigned(selectedIndex.internalId());
 
     emit CtStructureChanged(structureIdx);
+}
+
+auto CtStructureReadOnlyView::Select(BasicStructure const& basicStructure) -> void {
+    auto match = Search(*StructureTreeModel, TreeModelRoles::POINTER_CONST,
+                        QVariant::fromValue(&basicStructure), rootIndex());
+
+    if (match == QModelIndex{})
+        throw std::runtime_error("Basic structure not found");
+
+    collapseAll();
+    expand(match);
+
+    selectionModel()->clearSelection();
+    selectionModel()->select(match, QItemSelectionModel::SelectionFlag::Select);
+}
+
+auto CtStructureReadOnlyView::Select(CombinedStructure const& combinedStructure) -> void {
+    auto match = Search(*StructureTreeModel, TreeModelRoles::POINTER_CONST,
+                        QVariant::fromValue(&combinedStructure), rootIndex());
+
+    if (match == QModelIndex{})
+        throw std::runtime_error("Combined structure not found");
+
+    selectionModel()->clearSelection();
+    selectionModel()->select(match, QItemSelectionModel::SelectionFlag::Select);
 }

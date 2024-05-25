@@ -4,42 +4,46 @@
 #include "../Utils/WidgetUtils.h"
 #include "../../PipelineGroups/PipelineGroup.h"
 
+#include <QFormLayout>
 #include <QLabel>
 #include <QPushButton>
-#include <QVBoxLayout>
+#include <QSpinBox>
+
 
 PipelineGroupWidget::PipelineGroupWidget(PipelineGroup& pipelineGroup, QWidget* parent) :
         QWidget(parent),
         Group(pipelineGroup),
-        AddParameterSpanButton([]() {
-            auto* button = new QPushButton();
-            button->setIcon(GenerateIcon("Plus"));
-            return button;
+        NumberOfPipelinesSpinBox([&pipelineGroup]() {
+            auto* spinBox = new QSpinBox();
+            spinBox->setRange(0, 10000);
+            spinBox->setValue(pipelineGroup.GetParameterSpace().GetNumberOfPipelines());
+            spinBox->setEnabled(false);
+            return spinBox;
         }()),
-        RemoveParameterSpanButton([]() {
-            auto* button = new QPushButton();
-            button->setIcon(GenerateIcon("Minus"));
-            return button;
-        }()),
+        AddParameterSpanButton(new QPushButton(GenerateIcon("Plus"), " Add")),
+        RemoveParameterSpanButton(new QPushButton(GenerateIcon("Minus"), " Remove")),
         ParameterSpaceView(new PipelineParameterSpaceView(pipelineGroup.GetParameterSpace())),
         SelectionModel(ParameterSpaceView->selectionModel()) {
 
-    auto* vLayout = new QVBoxLayout(this);
+    auto* fLayout = new QFormLayout(this);
 
     auto* title = new QLabel(QString::fromStdString(Group.GetName()));
     title->setStyleSheet(GetHeaderStyleSheet());
-    vLayout->addWidget(title);
+    fLayout->addRow(title);
+
+    fLayout->addRow("Number of pipelines", NumberOfPipelinesSpinBox);
 
     auto* basePipelineName = new QLabel(QString::fromStdString(Group.GetBasePipeline().GetName()));
-    vLayout->addWidget(basePipelineName);
+    fLayout->addRow("Base pipeline", basePipelineName);
 
     auto* buttonBar = new QWidget();
     auto* buttonBarHLayout = new QHBoxLayout(buttonBar);
+    buttonBarHLayout->addStretch();
     buttonBarHLayout->addWidget(AddParameterSpanButton);
     buttonBarHLayout->addWidget(RemoveParameterSpanButton);
-    vLayout->addWidget(buttonBar);
+    fLayout->addRow(buttonBar);
 
-    vLayout->addWidget(ParameterSpaceView);
+    fLayout->addRow(ParameterSpaceView);
 
     UpdateButtonStatus();
 
@@ -47,6 +51,22 @@ PipelineGroupWidget::PipelineGroupWidget(PipelineGroup& pipelineGroup, QWidget* 
     connect(RemoveParameterSpanButton, &QPushButton::clicked, this, &PipelineGroupWidget::OnRemoveParameterSpan);
 
     connect(SelectionModel, &QItemSelectionModel::selectionChanged, this, &PipelineGroupWidget::OnSelectionChanged);
+}
+
+void PipelineGroupWidget::AddParameterSpan(PipelineParameterSpan&& parameterSpan) {
+    QModelIndex const index = ParameterSpaceView->model()->AddParameterSpan(std::move(parameterSpan));
+
+    SelectionModel->clearSelection();
+    SelectionModel->select(index, QItemSelectionModel::SelectionFlag::Select);
+
+    UpdateButtonStatus();
+    UpdateNumberOfPipelines();
+}
+
+void PipelineGroupWidget::UpdateNumberOfPipelines() {
+    NumberOfPipelinesSpinBox->setValue(Group.GetParameterSpace().GetNumberOfPipelines());
+
+    emit NumberOfPipelinesUpdated();
 }
 
 auto PipelineGroupWidget::UpdateButtonStatus() -> void {
@@ -61,30 +81,20 @@ auto PipelineGroupWidget::UpdateButtonStatus() -> void {
     RemoveParameterSpanButton->setEnabled(isParameterSpan);
 }
 
-void PipelineGroupWidget::AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
-                                           PipelineParameterSpan&& parameterSpan) {
-    QModelIndex const index = ParameterSpaceView->model()->AddParameterSpan(artifactVariantPointer,
-                                                                            std::move(parameterSpan));
-
-    SelectionModel->clearSelection();
-    SelectionModel->select(index, QItemSelectionModel::SelectionFlag::Select);
-
-    UpdateButtonStatus();
-}
-
 void PipelineGroupWidget::OnRemoveParameterSpan() {
     QModelIndex const index = SelectionModel->selection().indexes().at(0);
     ParameterSpaceView->model()->RemoveParameterSpan(index);
 
     SelectionModel->clearSelection();
     UpdateButtonStatus();
+    UpdateNumberOfPipelines();
 }
 
-void PipelineGroupWidget::OnSelectionChanged(QItemSelection const& selected, QItemSelection const&  /*deselected*/) {
+void PipelineGroupWidget::OnSelectionChanged(QItemSelection const& selected, QItemSelection const& /*deselected*/) {
     QModelIndexList const selectedIndices = selected.indexes();
 
     if (selectedIndices.empty()) {
-        emit ParameterSpanChanged(nullptr, {});
+        emit ParameterSpanChanged(nullptr);
         return;
     }
 
@@ -94,8 +104,10 @@ void PipelineGroupWidget::OnSelectionChanged(QItemSelection const& selected, QIt
     QModelIndex const selectedIndex = selectedIndices.at(0);
     QModelIndex const parentIndex = selectedIndex.parent();
 
-    if (!selectedIndex.data(PipelineParameterSpaceModel::Roles::IS_PARAMETER_SPAN).toBool())
-        throw std::runtime_error("Selected index must be a a parameter span");
+    if (!selectedIndex.data(PipelineParameterSpaceModel::Roles::IS_PARAMETER_SPAN).toBool()) {
+        emit ParameterSpanChanged(nullptr);
+        return;
+    }
 
     if (!parentIndex.isValid())
         throw std::runtime_error("Parent index has to be valid");
@@ -103,8 +115,5 @@ void PipelineGroupWidget::OnSelectionChanged(QItemSelection const& selected, QIt
     auto* parameterSpan
             = selectedIndex.data(PipelineParameterSpaceModel::POINTER).value<PipelineParameterSpan*>();
 
-    auto* parameterSpanSet
-            = parentIndex.data(PipelineParameterSpaceModel::POINTER).value<PipelineParameterSpanSet*>();
-
-    emit ParameterSpanChanged(parameterSpan, parameterSpanSet->GetArtifactPointer());
+    emit ParameterSpanChanged(parameterSpan);
 }

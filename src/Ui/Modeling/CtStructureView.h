@@ -30,7 +30,6 @@ private:
 };
 
 
-
 class CtStructureReadOnlyView : public CtStructureView {
     Q_OBJECT
 
@@ -40,12 +39,19 @@ public:
     [[nodiscard]] auto
     model() const noexcept -> CtStructureTreeReadOnlyModel*;
 
+    auto
+    Select(BasicStructure const& basicStructure) -> void;
+
+    auto
+    Select(CombinedStructure const& combinedStructure) -> void;
+
 signals:
     void CtStructureChanged(idx_t structureIdx);
 
-private slots:
-    void OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected);
+protected:
+    void selectionChanged(QItemSelection const& selected, QItemSelection const& deselected) override;
 
 private:
+    friend class PipelineStructureArtifactsView;
     CtStructureTreeReadOnlyModel* StructureTreeModel;
 };

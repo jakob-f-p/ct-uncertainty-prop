@@ -6,10 +6,12 @@ struct ArtifactVariantPointer;
 class PipelineGroup;
 class PipelineParameterSpaceView;
 class PipelineParameterSpan;
+class PipelineParameterSpanSet;
 
 class QItemSelection;
 class QItemSelectionModel;
 class QPushButton;
+class QSpinBox;
 
 
 class PipelineGroupWidget : public QWidget {
@@ -18,10 +20,17 @@ class PipelineGroupWidget : public QWidget {
 public:
     explicit PipelineGroupWidget(PipelineGroup& pipelineGroup, QWidget* parent = nullptr);
 
+    void AddParameterSpan(PipelineParameterSpan&& parameterSpan);
+
+public slots:
+    void UpdateNumberOfPipelines();
+
 signals:
-    void ParameterSpanChanged(PipelineParameterSpan* parameterSpan, ArtifactVariantPointer artifactVariantPointer);
+    void ParameterSpanChanged(PipelineParameterSpan* parameterSpan);
 
     void RequestCreateParameterSpan();
+
+    void NumberOfPipelinesUpdated();
 
 private slots:
     void OnRemoveParameterSpan();
@@ -29,13 +38,12 @@ private slots:
     void OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected);
 
 private:
-    void AddParameterSpan(ArtifactVariantPointer artifactVariantPointer, PipelineParameterSpan&& parameterSpan);
-
     auto
     UpdateButtonStatus() -> void;
 
     PipelineGroup const& Group;
 
+    QSpinBox* NumberOfPipelinesSpinBox;
     QPushButton* AddParameterSpanButton;
     QPushButton* RemoveParameterSpanButton;
     PipelineParameterSpaceView* ParameterSpaceView;

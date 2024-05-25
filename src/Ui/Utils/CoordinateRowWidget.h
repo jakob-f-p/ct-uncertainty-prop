@@ -10,11 +10,12 @@ class CoordinateRowWidget : public QWidget {
 
 public:
     struct NumericSettings {
-        double Min;
-        double Max;
-        double StepSize;
-        double DefaultValue;
-        QString Suffix;
+        double Min = -100.0;
+        double Max = 100.0;
+        double StepSize = 1.0;
+        double DefaultValue = 0.0;
+        uint8_t Decimals = 1;
+        QString Suffix = "";
     };
 
     explicit CoordinateRowWidget(bool hasLabel);
@@ -49,6 +50,9 @@ public:
 
     auto
     SetRowData(uint8_t rowIdx, RowData data) -> void;
+
+signals:
+    void ValueChanged();
 
 private:
     struct SpinBoxRow {

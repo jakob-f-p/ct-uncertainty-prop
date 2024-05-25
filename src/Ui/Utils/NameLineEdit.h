@@ -6,10 +6,17 @@ class NameLineEdit : public QLineEdit {
     Q_OBJECT
 
 public:
+    explicit NameLineEdit(QWidget* parent = nullptr) : QLineEdit(parent) {
+        connect(this, &QLineEdit::textChanged, this, &NameLineEdit::TextChanged);
+    }
+
     [[nodiscard]] auto
-    GetData() noexcept -> QString { return text(); };
+    GetText() noexcept -> QString { return text(); };
 
     auto
-    SetData(const QString& name) noexcept -> void { setText(name); };
+    SetText(QString const& name) noexcept -> void { setText(name); };
+
+signals:
+    void TextChanged(QString const& text);
 };
 

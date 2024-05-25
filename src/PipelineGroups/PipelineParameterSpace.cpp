@@ -47,6 +47,11 @@ auto PipelineParameterSpanSet::GetIdx(PipelineParameterSpan const& parameterSpan
     return std::distance(ParameterSpans.cbegin(), it);
 }
 
+auto PipelineParameterSpanSet::GetNumberOfPipelines() const noexcept -> uint16_t {
+    return std::transform_reduce(ParameterSpans.cbegin(), ParameterSpans.cend(), 1, std::multiplies{},
+                                 [](auto const& span) { return span.GetNumberOfPipelines(); });
+}
+
 auto PipelineParameterSpanSet::operator==(const PipelineParameterSpanSet& other) const noexcept -> bool {
     return this == &other;
 }
@@ -56,9 +61,6 @@ auto PipelineParameterSpace::AddParameterSpan(ArtifactVariantPointer artifactVar
                                               PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan& {
     if (artifactVariantPointer.IsNullptr())
         throw std::runtime_error("Given artifact pointer must not be nullptr");
-
-    if (!ContainsSetForArtifactPointer(artifactVariantPointer))
-        ParameterSpanSets.emplace_back(artifactVariantPointer);
 
     auto& parameterSpanSet = GetSetForArtifactPointer(artifactVariantPointer);
     return AddParameterSpan(parameterSpanSet, std::move(parameterSpan));
@@ -96,6 +98,11 @@ auto PipelineParameterSpace::GetNumberOfSpans() const noexcept -> uint16_t {
 
 auto PipelineParameterSpace::GetNumberOfSpanSets() const noexcept -> uint16_t {
     return ParameterSpanSets.size();
+}
+
+auto PipelineParameterSpace::GetNumberOfPipelines() const noexcept -> uint16_t {
+    return std::transform_reduce(ParameterSpanSets.cbegin(), ParameterSpanSets.cend(), 1, std::multiplies{},
+                                 [](auto const& spanSet) { return spanSet.GetNumberOfPipelines(); });
 }
 
 auto PipelineParameterSpace::GetSpanSet(uint16_t idx) -> PipelineParameterSpanSet& {
@@ -158,6 +165,9 @@ auto PipelineParameterSpace::ContainsSetForArtifactPointer(ArtifactVariantPointe
 
 auto PipelineParameterSpace::GetSetForArtifactPointer(ArtifactVariantPointer artifactVariantPointer)
         -> PipelineParameterSpanSet& {
+
+    if (!ContainsSetForArtifactPointer(artifactVariantPointer))
+        ParameterSpanSets.emplace_back(artifactVariantPointer);
 
     auto it = std::find_if(ParameterSpanSets.begin(), ParameterSpanSets.end(),
                            [&](auto const& set) { return set.ArtifactPointer == artifactVariantPointer; });

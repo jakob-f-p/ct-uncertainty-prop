@@ -3,6 +3,10 @@
 #include "../Artifacts/Image/ImageArtifact.h"
 #include "../Artifacts/Structure/StructureArtifact.h"
 
+auto ArtifactVariantPointer::GetVariant() const noexcept -> std::variant<ImageArtifact*, StructureArtifact*> const& {
+    return ArtifactPointer;
+}
+
 auto ArtifactVariantPointer::GetName() const noexcept -> std::string {
     return std::visit([](auto* artifact) -> std::string { return artifact->GetViewName(); },
                       ArtifactPointer);
@@ -19,9 +23,4 @@ auto ArtifactVariantPointer::GetProperties() -> PipelineParameterProperties {
 auto ArtifactVariantPointer::IsNullptr() const noexcept -> bool {
     return std::visit([](auto artifactP) { return artifactP == nullptr; },
                       ArtifactPointer);
-}
-
-auto ArtifactVariantPointer::Hash::operator()(const ArtifactVariantPointer& o) const noexcept {
-    return std::visit([](auto artifactP) { return reinterpret_cast<uintptr_t>(artifactP); },
-                      o.ArtifactPointer);
 }

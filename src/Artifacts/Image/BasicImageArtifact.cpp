@@ -59,7 +59,7 @@ auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::GetData() const no
 }
 
 auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::Populate(const Data& data) noexcept -> void {
-    SubType subType = std::visit([&](const auto& data) {
+    SubType const subType = std::visit([&](const auto& data) {
         return BasicImageArtifact::GetSubType(ArtifactTypeT<decltype(data)>());
     }, data);
 

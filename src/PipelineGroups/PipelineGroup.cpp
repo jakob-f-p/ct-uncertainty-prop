@@ -5,7 +5,7 @@
 
 PipelineGroup::PipelineGroup(Pipeline const& basePipeline, std::string name) :
         Name(name.empty()
-             ? "Pipeline " + std::to_string(PipelineGroupId++)
+             ? "Pipeline Group " + std::to_string(PipelineGroupId++)
              : std::move(name)),
         BasePipeline(basePipeline) {};
 
@@ -18,6 +18,10 @@ auto PipelineGroup::GetBasePipeline() const noexcept -> Pipeline const& {
 }
 
 auto PipelineGroup::GetParameterSpace() noexcept -> PipelineParameterSpace& {
+    return ParameterSpace;
+}
+
+auto PipelineGroup::GetParameterSpace() const noexcept -> PipelineParameterSpace const& {
     return ParameterSpace;
 }
 

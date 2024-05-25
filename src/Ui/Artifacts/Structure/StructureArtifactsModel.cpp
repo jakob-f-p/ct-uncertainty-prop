@@ -139,3 +139,10 @@ StructureArtifactsReadOnlyModel::StructureArtifactsReadOnlyModel(StructureArtifa
 auto StructureArtifactsReadOnlyModel::flags(QModelIndex const& index) const -> Qt::ItemFlags {
     return QAbstractItemModel::flags(index);
 }
+
+auto StructureArtifactsReadOnlyModel::headerData(int section, Qt::Orientation orientation, int role) const -> QVariant {
+    if (section != 0 || orientation != Qt::Horizontal || role != Qt::DisplayRole)
+        return {};
+
+    return "Artifacts";
+}

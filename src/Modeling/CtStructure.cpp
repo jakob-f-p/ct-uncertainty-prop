@@ -54,7 +54,7 @@ template<TStructureWidget StructureWidget, typename Data>
 auto CtStructureBaseWidget<StructureWidget, Data>::GetData() const noexcept -> Data {
     Data data {};
 
-    data.Name = NameEdit->GetData();
+    data.Name = NameEdit->GetText();
     data.Transform = TransformWidget->GetData();
 
     data.Data = SubWidget->GetData();
@@ -64,7 +64,7 @@ auto CtStructureBaseWidget<StructureWidget, Data>::GetData() const noexcept -> D
 
 template<TStructureWidget StructureWidget, typename Data>
 auto CtStructureBaseWidget<StructureWidget, Data>::Populate(const Data& data) noexcept -> void {
-    NameEdit->SetData(data.Name);
+    NameEdit->SetText(data.Name);
     TransformWidget->SetData(data.Transform);
 
     SubWidget->Populate(data.Data);

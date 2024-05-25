@@ -36,6 +36,9 @@ public:
     GetIdx(PipelineParameterSpan const& parameterSpan) const -> uint16_t;
 
     [[nodiscard]] auto
+    GetNumberOfPipelines() const noexcept -> uint16_t;
+
+    [[nodiscard]] auto
     operator== (PipelineParameterSpanSet const& other) const noexcept -> bool;
 
 private:
@@ -71,6 +74,9 @@ public:
 
     [[nodiscard]] auto
     GetNumberOfSpanSets() const noexcept -> uint16_t;
+
+    [[nodiscard]] auto
+    GetNumberOfPipelines() const noexcept -> uint16_t;
 
     [[nodiscard]] auto
     GetSpanSet(uint16_t idx) -> PipelineParameterSpanSet&;

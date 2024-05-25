@@ -33,11 +33,14 @@ public:
     [[nodiscard]] auto
     model() const noexcept -> ImageArtifactsReadOnlyModel*;
 
+    auto
+    Select(ImageArtifact const& imageArtifact) -> void;
+
 signals:
     void ImageArtifactChanged(ImageArtifact* imageArtifact);
 
-private slots:
-    void OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected);
+protected:
+    void selectionChanged(QItemSelection const& selected, QItemSelection const& deselected) override;
 
 private:
     ImageArtifactsReadOnlyModel* ArtifactsModel;

@@ -51,7 +51,8 @@ public:
         properties.emplace_back(
                 FloatObjectProperty("Ct Number Factor",
                                     [this] { return GetCtNumberFactor(); },
-                                    [this](float ctNumberFactor) { this->SetCtNumberFactor(ctNumberFactor); }));
+                                    [this](float ctNumberFactor) { this->SetCtNumberFactor(ctNumberFactor); },
+                                    { 0.01, 10.00, 0.01, 2 }));
         return properties;
     }
 

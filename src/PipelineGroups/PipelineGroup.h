@@ -20,6 +20,9 @@ public:
     [[nodiscard]] auto
     GetParameterSpace() noexcept -> PipelineParameterSpace&;
 
+    [[nodiscard]] auto
+    GetParameterSpace() const noexcept -> PipelineParameterSpace const&;
+
     auto
     AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
                      PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan&;

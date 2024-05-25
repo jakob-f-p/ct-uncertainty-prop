@@ -50,10 +50,7 @@ public:
     data(const QModelIndex& index, int role) const -> QVariant override;
 
     [[nodiscard]] auto
-    AddParameterSpan(ArtifactVariantPointer artifactPointer, PipelineParameterSpan&& parameterSpan) -> QModelIndex;
-
-    [[nodiscard]] auto
-    AddParameterSpan(PipelineParameterSpanSet& spanSet, PipelineParameterSpan&& parameterSpan) -> QModelIndex;
+    AddParameterSpan(PipelineParameterSpan&& parameterSpan) -> QModelIndex;
 
     auto
     RemoveParameterSpan(QModelIndex const& index) -> void;

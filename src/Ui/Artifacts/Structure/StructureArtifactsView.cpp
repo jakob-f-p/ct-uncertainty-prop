@@ -1,7 +1,8 @@
 #include "StructureArtifactsView.h"
 
-#include "../ArtifactsDialog.h"
 #include "StructureArtifactsModel.h"
+#include "../ArtifactsDialog.h"
+#include "../../Utils/ModelUtils.h"
 #include "../../../Artifacts/Structure/StructureArtifact.h"
 
 StructureArtifactsView::StructureArtifactsView(StructureArtifactList& structureArtifactList) {
@@ -38,8 +39,22 @@ StructureArtifactsReadOnlyView::StructureArtifactsReadOnlyView(StructureArtifact
     setModel(Model);
 }
 
-void StructureArtifactsReadOnlyView::OnSelectionChanged(QItemSelection const& selected,
+auto StructureArtifactsReadOnlyView::Select(StructureArtifact const& structureArtifact) -> void {
+    auto structureArtifactPointer = QVariant::fromValue(const_cast<StructureArtifact*>(&structureArtifact));
+    auto match = Search(*Model, StructureArtifactsModel::Roles::POINTER,
+                        QVariant::fromValue(structureArtifactPointer), rootIndex());
+
+    if (match == QModelIndex{})
+        throw std::runtime_error("Structure artifact not found");
+
+    selectionModel()->clearSelection();
+    selectionModel()->select(match, QItemSelectionModel::SelectionFlag::Select);
+}
+
+void StructureArtifactsReadOnlyView::selectionChanged(QItemSelection const& selected,
                                                         QItemSelection const& deselected) {
+    QListView::selectionChanged(selected, deselected);
+
     QModelIndexList const selectedIndices = selected.indexes();
 
     if (selectedIndices.empty()) {

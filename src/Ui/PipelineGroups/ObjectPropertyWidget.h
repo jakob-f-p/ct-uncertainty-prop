@@ -15,17 +15,29 @@ class QDoubleSpinBox;
 class QVBoxLayout;
 
 class FloatParameterSpanWidget : public QWidget {
+    Q_OBJECT
+
 public:
     explicit FloatParameterSpanWidget(FloatObjectProperty const& property, QWidget* parent = nullptr);
 
     auto
-    SetParameterSpan(ParameterSpan<float> floatParameterSpan) noexcept -> void;
+    SetParameterSpan(ParameterSpan<float> const& floatParameterSpan) noexcept -> void;
+
+    struct ParameterSpanData {
+        FloatObjectProperty Property;
+        ParameterSpan<float>::NumberDetails Numbers;
+    };
+
+    [[nodiscard]] auto
+    GetParameterSpanData() -> ParameterSpanData;
+
+signals:
+    void ValueChanged();
 
 private:
-    NameLineEdit* NameEdit;
+    FloatObjectProperty const& Property;
 
     QDoubleSpinBox* Current;
-
     QDoubleSpinBox* Min;
     QDoubleSpinBox* Step;
     QDoubleSpinBox* Max;
@@ -33,20 +45,30 @@ private:
 
 
 class FloatPointParameterSpanWidget : public QWidget {
+    Q_OBJECT
+
 public:
     explicit FloatPointParameterSpanWidget(FloatPointObjectProperty const& property, QWidget* parent = nullptr);
 
     auto
-    SetParameterSpan(ParameterSpan<FloatPoint> floatParameterSpan) noexcept -> void;
+    SetParameterSpan(ParameterSpan<FloatPoint> const& parameterSpan) noexcept -> void;
+
+    struct ParameterSpanData {
+        FloatPointObjectProperty Property;
+        ParameterSpan<FloatPoint>::NumberDetails Numbers;
+    };
+
+    [[nodiscard]] auto
+    GetParameterSpanData() -> ParameterSpanData;
+
+signals:
+    void ValueChanged();
 
 private:
-    NameLineEdit* NameEdit;
+    FloatPointObjectProperty const& Property;
 
     CoordinateRowWidget* Current;
-
-    CoordinateRowWidget* Min;
-    CoordinateRowWidget* Step;
-    CoordinateRowWidget* Max;
+    CoordinateRowWidget* MinMaxStep;
 };
 
 
@@ -56,9 +78,18 @@ class ObjectPropertyGroup : public QGroupBox {
 public:
     explicit ObjectPropertyGroup(ArtifactVariantPointer artifactVariantPointer, QWidget* parent = nullptr);
 
+    [[nodiscard]] auto
+    GetParameterSpan(ArtifactVariantPointer artifactPointer, std::string name) -> PipelineParameterSpan;
+
+    auto
+    SetParameterSpan(PipelineParameterSpan const& parameterSpan) -> void;
+
+signals:
+    void ValueChanged();
+
 private:
     auto
-    UpdatePropertyWidget();
+    UpdatePropertyWidget() -> void;
 
     using PropertyWidgetPointer = std::variant<FloatParameterSpanWidget*, FloatPointParameterSpanWidget*>;
 

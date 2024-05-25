@@ -37,6 +37,9 @@ public:
     GetMTime() const noexcept -> vtkMTimeType;
 
     [[nodiscard]] auto
+    Contains(StructureArtifact const& structureArtifact) const noexcept -> bool;
+
+    [[nodiscard]] auto
     Get(int idx) -> StructureArtifact&;
 
     [[nodiscard]] auto
@@ -140,6 +143,12 @@ public:
 
     [[nodiscard]] auto
     GetFilter() const -> vtkImageAlgorithm&;
+
+    [[nodiscard]] auto
+    GetStructureArtifactList(StructureArtifact const& structureArtifact) const -> StructureArtifactList const&;
+
+    [[nodiscard]] auto
+    GetIdx(StructureArtifactList const& structureArtifactList) const -> uidx_t;
 
 private:
     CtStructureTree const& StructureTree;

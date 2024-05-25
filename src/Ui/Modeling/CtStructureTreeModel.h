@@ -10,7 +10,8 @@ struct CombinedStructureData;
 
 enum TreeModelRoles : uint16_t {
     STRUCTURE_DATA_VARIANT = Qt::UserRole,
-    IS_BASIC_STRUCTURE
+    IS_BASIC_STRUCTURE,
+    POINTER_CONST
 };
 
 class CtStructureTreeModel : public QAbstractItemModel {

@@ -7,7 +7,10 @@
 
 PipelineParameterSpaceView::PipelineParameterSpaceView(PipelineParameterSpace& pipelineGroups) :
         ParameterSpaceModel(new PipelineParameterSpaceModel(pipelineGroups)) {
+
     setModel(ParameterSpaceModel);
+
+    setHeaderHidden(true);
 }
 
 auto PipelineParameterSpaceView::model() const noexcept -> PipelineParameterSpaceModel* {
@@ -23,20 +26,20 @@ auto PipelineParameterSpaceModel::index(int row, int column, QModelIndex const& 
     if (!hasIndex(row, column, parent))
         return {};
 
-    return createIndex(row, column);
+    return createIndex(row, column, parent.row());
 }
 
 auto PipelineParameterSpaceModel::parent(QModelIndex const& child) const -> QModelIndex {
-    if (!child.isValid() || !child.parent().isValid())
+    if (!child.isValid())
         return {};
 
-    QModelIndex const parent = child.parent();
+    bool const isSpanSet = static_cast<int>(child.internalId()) == -1; // === parent.isInvalid()
+    if (isSpanSet)
+        return {};
 
-    PipelineParameterSpanSet const& spanSet = ParameterSpace.GetSpanSet(child.row());
+    uint16_t const parentIdx = static_cast<int>(child.internalId());
 
-    uint16_t const parentIdx = ParameterSpace.GetSpanSetIdx(spanSet);
-
-    return createIndex(parentIdx, 0);
+    return createIndex(parentIdx, 0, -1);
 }
 
 auto PipelineParameterSpaceModel::rowCount(QModelIndex const& parent) const -> int {
@@ -54,10 +57,10 @@ auto PipelineParameterSpaceModel::columnCount(QModelIndex const& /*parent*/) con
 }
 
 auto PipelineParameterSpaceModel::flags(QModelIndex const& index) const -> Qt::ItemFlags {
-    if (index.isValid() || !index.data(Roles::IS_PARAMETER_SPAN).toBool())
+    if (!index.isValid() || !index.data(Roles::IS_PARAMETER_SPAN).toBool())
         return QAbstractItemModel::flags(index);
 
-    return Qt::ItemIsEnabled;
+    return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
 }
 
 auto PipelineParameterSpaceModel::data(QModelIndex const& index, int role) const -> QVariant {
@@ -88,8 +91,8 @@ auto PipelineParameterSpaceModel::data(QModelIndex const& index, int role) const
     }
 }
 
-auto PipelineParameterSpaceModel::AddParameterSpan(ArtifactVariantPointer artifactPointer,
-                                                   PipelineParameterSpan&& parameterSpan) -> QModelIndex {
+auto PipelineParameterSpaceModel::AddParameterSpan(PipelineParameterSpan&& parameterSpan) -> QModelIndex {
+    auto artifactPointer = parameterSpan.GetArtifact();
     auto const& spanSet = ParameterSpace.GetSetForArtifactPointer(artifactPointer);
 
     uidx_t const spanSetRowIdx = ParameterSpace.GetSpanSetIdx(spanSet);
@@ -97,23 +100,11 @@ auto PipelineParameterSpaceModel::AddParameterSpan(ArtifactVariantPointer artifa
 
     uidx_t const insertionIdx = spanSet.GetSize();
 
-    beginInsertRows(parentModelIndex, insertionIdx, insertionIdx);
+//    beginInsertRows(parentModelIndex, insertionIdx, insertionIdx);
+    beginResetModel();
     auto const& span = ParameterSpace.AddParameterSpan(artifactPointer, std::move(parameterSpan));
-    endInsertRows();
-
-    return index(insertionIdx, 0, parentModelIndex);
-}
-
-auto PipelineParameterSpaceModel::AddParameterSpan(PipelineParameterSpanSet& spanSet,
-                                                   PipelineParameterSpan&& parameterSpan) -> QModelIndex {
-    uidx_t const spanSetRowIdx = ParameterSpace.GetSpanSetIdx(spanSet);
-    QModelIndex const parentModelIndex = index(spanSetRowIdx, 0, {});
-
-    uidx_t const insertionIdx = spanSet.GetSize();
-
-    beginInsertRows(parentModelIndex, insertionIdx, insertionIdx);
-    auto const& span = ParameterSpace.AddParameterSpan(spanSet, std::move(parameterSpan));
-    endInsertRows();
+    endResetModel();
+//    endInsertRows();
 
     return index(insertionIdx, 0, parentModelIndex);
 }

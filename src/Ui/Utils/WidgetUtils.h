@@ -92,4 +92,3 @@ GenerateIcon(const std::string &filePrefix) noexcept -> QIcon {
 GetHeaderStyleSheet() noexcept -> QString {
     return "font-size: 14px; font-weight: bold";
 }
-

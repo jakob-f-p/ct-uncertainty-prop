@@ -11,10 +11,18 @@
 #include <QGroupBox>
 #include <QLabel>
 #include <QPushButton>
+#include <QSpinBox>
 #include <QVBoxLayout>
 
 PipelineGroupListWidget::PipelineGroupListWidget(PipelineGroupList& pipelineGroups) :
         PipelineGroups(pipelineGroups),
+        NumberOfPipelinesSpinBox([&pipelineGroups]() {
+            auto* spinBox = new QSpinBox();
+            spinBox->setRange(0, 10000);
+            spinBox->setValue(pipelineGroups.GetNumberOfPipelines());
+            spinBox->setEnabled(false);
+            return spinBox;
+        }()),
         AddPipelineGroupButton([]() {
             auto* button = new QPushButton();
             button->setIcon(GenerateIcon("Plus"));
@@ -29,25 +37,25 @@ PipelineGroupListWidget::PipelineGroupListWidget(PipelineGroupList& pipelineGrou
         ListView(new PipelineGroupListView(pipelineGroups)),
         SelectionModel(ListView->selectionModel()) {
 
-    auto* vLayout = new QVBoxLayout(this);
+    auto* fLayout = new QFormLayout(this);
 
     auto* title = new QLabel("Pipeline Groups");
     title->setStyleSheet(GetHeaderStyleSheet());
-    vLayout->addWidget(title);
+    fLayout->addRow(title);
 
-    auto* filterGroup = new QGroupBox("Filter");
-    auto* filterGroupFLayout = new QFormLayout(filterGroup);
+    fLayout->addRow("Number of pipelines", NumberOfPipelinesSpinBox);
+
+    fLayout->addRow("Filter by pipeline", BasePipelineFilterComboBox);
     UpdateBasePipelineFilterComboBoxItems();
-    filterGroupFLayout->addRow("Base Pipeline", BasePipelineFilterComboBox);
-    vLayout->addWidget(filterGroup);
 
     auto* buttonBar = new QWidget();
     auto* buttonBarHLayout = new QHBoxLayout(buttonBar);
+    buttonBarHLayout->addStretch();
     buttonBarHLayout->addWidget(AddPipelineGroupButton);
     buttonBarHLayout->addWidget(RemovePipelineGroupButton);
-    vLayout->addWidget(buttonBar);
+    fLayout->addRow(buttonBar);
 
-    vLayout->addWidget(ListView);
+    fLayout->addRow(ListView);
 
     UpdateButtonStatus();
 
@@ -59,6 +67,10 @@ PipelineGroupListWidget::PipelineGroupListWidget(PipelineGroupList& pipelineGrou
 
 void PipelineGroupListWidget::UpdatePipelineList() noexcept {
     UpdateBasePipelineFilterComboBoxItems();
+}
+
+void PipelineGroupListWidget::UpdateNumberOfPipelines() {
+    NumberOfPipelinesSpinBox->setValue(PipelineGroups.GetNumberOfPipelines());
 }
 
 auto PipelineGroupListWidget::UpdateBasePipelineFilterComboBoxItems() noexcept -> void {
@@ -159,6 +171,6 @@ PipelineGroupCreateDialog::PipelineGroupCreateDialog(std::vector<std::pair<QStri
 }
 
 auto PipelineGroupCreateDialog::GetData() const noexcept -> Data {
-    return { NameEdit->GetData().toStdString(),
+    return { NameEdit->GetText().toStdString(),
              BasePipelineComboBox->currentData().value<Pipeline const*>() };
 }

@@ -14,6 +14,12 @@ auto StructureArtifactList::GetMTime() const noexcept -> vtkMTimeType {
 }
 
 
+auto StructureArtifactList::Contains(StructureArtifact const& structureArtifact) const noexcept -> bool {
+    auto it = std::find(Artifacts.cbegin(), Artifacts.cend(), structureArtifact);
+
+    return it != Artifacts.cend();
+}
+
 auto StructureArtifactList::Get(int idx) -> StructureArtifact& {
     if (idx < 0 || idx >= Artifacts.size())
         throw std::runtime_error("Structure artifact index out of range");
@@ -144,4 +150,26 @@ void TreeStructureArtifactListCollection::RemoveStructureArtifactList(uidx_t rem
 
 auto TreeStructureArtifactListCollection::GetFilter() const -> vtkImageAlgorithm& {
     return *Filter;
+}
+
+auto TreeStructureArtifactListCollection::GetStructureArtifactList(StructureArtifact const& structureArtifact) const
+        -> StructureArtifactList const& {
+
+    auto it = std::find_if(ArtifactLists.begin(), ArtifactLists.end(),
+                           [&structureArtifact](auto const& list) { return list.Contains(structureArtifact); });
+
+    if (it == ArtifactLists.cend())
+        throw std::runtime_error("Could not find the list for given structure artifact");
+
+    return *it;
+}
+
+auto TreeStructureArtifactListCollection::GetIdx(StructureArtifactList const& structureArtifactList) const -> uidx_t {
+    auto it = std::find_if(ArtifactLists.cbegin(), ArtifactLists.cend(),
+                           [&structureArtifactList](auto const& list) { return &list == &structureArtifactList; });
+
+    if (it == ArtifactLists.cend())
+        throw std::runtime_error("Could not find given list");
+
+    return std::distance(ArtifactLists.cbegin(), it);
 }

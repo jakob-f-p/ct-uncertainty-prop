@@ -3,7 +3,10 @@
 #include "ObjectProperty.h"
 #include "../Utils/Types.h"
 
+#include <algorithm>
+#include <format>
 #include <functional>
+#include <utility>
 
 class Pipeline;
 
@@ -22,11 +25,15 @@ public:
 
         [[nodiscard]] auto
         ToString() const noexcept -> std::string {
-            return "{ " + std::to_string(Min) + ", " + std::to_string(Step) + ", " + std::to_string(Max) + " }";
+            return std::format("{{ [{}, {}] -> {} }}", Min, Max, Step);
         }
     };
 
-    ParameterSpan(ObjectProperty<T> objectProperty, NumberDetails numbers, std::string name = "") :
+    ParameterSpan(ArtifactVariantPointer artifactPointer,
+                  ObjectProperty<T> objectProperty,
+                  NumberDetails numbers,
+                  std::string name = "") :
+            ArtifactPointer(artifactPointer),
             Name(name.empty()
                     ? objectProperty.GetName() + " " + numbers.ToString()
                     : std::move(name)),
@@ -40,6 +47,12 @@ public:
 
     [[nodiscard]] auto
     GetName() const noexcept -> std::string { return Name; }
+
+    auto
+    SetName(std::string name) noexcept -> void { Name = std::move(name); }
+
+    [[nodiscard]] auto
+    GetPropertyName() const noexcept -> std::string { return Property.GetName(); }
 
     [[nodiscard]] auto
     CanAdvance() const noexcept -> bool {
@@ -57,11 +70,26 @@ public:
     }
 
     [[nodiscard]] auto
+    GetNumberOfPipelines() const noexcept -> uint32_t {
+        if (Numbers.Step == 0)
+            return 1;
+
+        return ((Numbers.Max - Numbers.Min) / Numbers.Step) + 1;
+    }
+
+    [[nodiscard]] auto
+    GetArtifact() const noexcept -> ArtifactVariantPointer { return ArtifactPointer; }
+
+    [[nodiscard]] auto
+    GetNumbers() const noexcept -> NumberDetails { return Numbers; }
+
+    [[nodiscard]] auto
     operator== (ParameterSpan const& other) const noexcept -> bool {
         return Property == other.Property && Numbers == other.Numbers;
     };
 
 private:
+    ArtifactVariantPointer ArtifactPointer;
     std::string Name;
     ObjectProperty<T> Property;
     NumberDetails Numbers;
@@ -101,6 +129,28 @@ ParameterSpan<FloatPoint>::Advance() noexcept -> void {
     Property.Set(next);
 }
 
+template<>
+[[nodiscard]] auto inline
+ParameterSpan<FloatPoint>::GetNumberOfPipelines() const noexcept -> uint32_t {
+    if (std::any_of(Numbers.Step.begin(), Numbers.Step.end(), [](float step) { return step == 0.0; }))
+        return 0;
+
+    std::array<uint32_t, 3> numberOfPipelinesPerCoordinate {};
+    for (int i = 0; i < 3; i++)
+        numberOfPipelinesPerCoordinate[i] = ((Numbers.Max[i] - Numbers.Min[i]) / Numbers.Step[i]) + 1;
+
+    return *std::min_element(numberOfPipelinesPerCoordinate.begin(), numberOfPipelinesPerCoordinate.end());
+}
+
+template<>
+[[nodiscard]] auto inline
+ParameterSpan<FloatPoint>::NumberDetails::ToString() const noexcept -> std::string {
+    return std::format("{{ [({}, {}, {}), ({}, {}, {})] -> ({}, {}, {}) }}",
+                       Min.at(0), Min.at(1), Min.at(2),
+                       Max.at(0), Max.at(1), Max.at(2),
+                       Step.at(0), Step.at(1), Step.at(2));
+}
+
 
 struct PipelineParameterSpan {
 
@@ -108,8 +158,28 @@ struct PipelineParameterSpan {
     PipelineParameterSpan(Args&&... args) : SpanVariant(std::forward<Args>(args)...) {};
 
     [[nodiscard]] auto
+    GetArtifact() const noexcept -> ArtifactVariantPointer {
+        return std::visit([](auto const& span) { return span.GetArtifact(); }, SpanVariant);
+    }
+
+    [[nodiscard]] auto
     GetName() const noexcept -> std::string { return std::visit([](auto const& span) { return span.GetName(); },
                                                                 SpanVariant); }
+
+    [[nodiscard]] auto
+    GetPropertyName() const noexcept -> std::string {
+        return std::visit([](auto const& span) { return span.GetPropertyName(); }, SpanVariant);
+    }
+
+    auto
+    SetName(const std::string& name) noexcept -> void { std::visit([&](auto& span) { span.SetName(name); },
+                                                                   SpanVariant); }
+
+    [[nodiscard]] auto
+    GetNumberOfPipelines() const noexcept -> uint32_t {
+        return std::visit([](auto const& span) { return span.GetNumberOfPipelines(); },
+                          SpanVariant);
+    }
 
     [[nodiscard]] auto
     operator== (PipelineParameterSpan const& other) const noexcept -> bool {
@@ -118,6 +188,8 @@ struct PipelineParameterSpan {
     }
 
 private:
+    friend class ObjectPropertyGroup;
+
     using ParameterSpanVariant = std::variant<ParameterSpan<float>, ParameterSpan<FloatPoint>>;
     ParameterSpanVariant SpanVariant;
 };

@@ -102,6 +102,10 @@ auto CtStructureTreeModel::data(const QModelIndex& index, int role) const -> QVa
             return isBasic;
         }
 
+        case TreeModelRoles::POINTER_CONST:
+            return std::visit([](auto const& structure) { return QVariant::fromValue(&structure); },
+                              structureVariant);
+
         default: return {};
     }
 }

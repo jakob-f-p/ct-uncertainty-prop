@@ -13,6 +13,7 @@ class QComboBox;
 class QItemSelection;
 class QItemSelectionModel;
 class QPushButton;
+class QSpinBox;
 
 
 class PipelineGroupListWidget : public QWidget {
@@ -23,6 +24,8 @@ public:
 
 public slots:
     void UpdatePipelineList() noexcept;
+
+    void UpdateNumberOfPipelines();
 
 signals:
     void PipelineGroupChanged(PipelineGroup* pipelineGroup);
@@ -42,6 +45,7 @@ private:
 
     PipelineGroupList& PipelineGroups;
 
+    QSpinBox* NumberOfPipelinesSpinBox;
     QPushButton* AddPipelineGroupButton;
     QPushButton* RemovePipelineGroupButton;
     QComboBox* BasePipelineFilterComboBox;

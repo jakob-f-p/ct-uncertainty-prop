@@ -23,8 +23,11 @@ public:
     [[nodiscard]] auto
     Get(int idx) noexcept -> PipelineGroup&;
 
+    [[nodiscard]] auto
+    GetNumberOfPipelines() const noexcept -> uint16_t;
+
     auto
-    AddPipelineGroup(Pipeline const& pipeline, std::string name = "") -> PipelineGroup&;
+    AddPipelineGroup(Pipeline const& pipeline, const std::string& name = "") -> PipelineGroup&;
 
     auto
     RemovePipelineGroup(PipelineGroup const& pipelineGroup) -> void;

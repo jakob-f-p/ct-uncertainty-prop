@@ -39,7 +39,9 @@ auto CompositeImageArtifactDetails::CompositeImageArtifactWidgetImpl::GetData() 
     return { CompositionTypeComboBox->currentData().value<CompositionType>()};
 }
 
-auto CompositeImageArtifactDetails::CompositeImageArtifactWidgetImpl::Populate(const CompositeImageArtifactData& data) noexcept -> void {
+auto CompositeImageArtifactDetails::CompositeImageArtifactWidgetImpl::Populate(
+        CompositeImageArtifactData const& data) noexcept -> void {
+
     if (int idx = CompositionTypeComboBox->findData(QVariant::fromValue(data.CompositionType));
             idx != -1)
         CompositionTypeComboBox->setCurrentIndex(idx);

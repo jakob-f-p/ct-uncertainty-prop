@@ -30,7 +30,12 @@ auto PipelineGroupList::Get(int idx) noexcept -> PipelineGroup& {
     return *PipelineGroups.at(idx);
 }
 
-auto PipelineGroupList::AddPipelineGroup(Pipeline const& pipeline, std::string name) -> PipelineGroup& {
+auto PipelineGroupList::GetNumberOfPipelines() const noexcept -> uint16_t {
+    return std::transform_reduce(PipelineGroups.cbegin(), PipelineGroups.cend(), 0, std::plus{},
+                                 [](auto const& group) { return group->GetParameterSpace().GetNumberOfPipelines(); });
+}
+
+auto PipelineGroupList::AddPipelineGroup(Pipeline const& pipeline, std::string const& name) -> PipelineGroup& {
     return *PipelineGroups.emplace_back(std::make_unique<PipelineGroup>(pipeline, name));
 }
 

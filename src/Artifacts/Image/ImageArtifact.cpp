@@ -1,14 +1,19 @@
 #include "ImageArtifact.h"
 
 #include "../../Utils/Overload.h"
+#include "../../PipelineGroups/ObjectProperty.h"
 
 #include <QComboBox>
 #include <QFormLayout>
 
 ImageArtifact::ImageArtifact(ImageArtifactData const& data) {
         Artifact = std::visit(Overload {
-                [](BasicImageArtifactData const& basicData) -> ImageArtifactVariant { return BasicImageArtifact(basicData); },
-                [](CompositeImageArtifactData const& compositeData) -> ImageArtifactVariant { return CompositeImageArtifact(compositeData); }
+                [](BasicImageArtifactData const& basicData) -> ImageArtifactVariant {
+                    return BasicImageArtifact(basicData);
+                },
+                [](CompositeImageArtifactData const& compositeData) -> ImageArtifactVariant {
+                    return CompositeImageArtifact(compositeData);
+                }
         }, data.Data);
 }
 
@@ -25,8 +30,7 @@ auto ImageArtifact::GetViewName() const noexcept -> std::string {
 }
 
 auto ImageArtifact::GetProperties() noexcept -> PipelineParameterProperties {
-    return std::visit([](auto& artifact) { return artifact.GetProperties(); },
-                      Artifact);
+    return std::visit([](auto& artifact) { return artifact.GetProperties(); }, Artifact);
 }
 
 auto ImageArtifact::ContainsImageArtifact(const ImageArtifact& imageArtifact) -> bool {
@@ -41,7 +45,7 @@ auto ImageArtifact::GetParent() const -> ImageArtifact* {
 }
 
 auto ImageArtifact::SetParent(ImageArtifact* parent) -> void {
-    return std::visit([=](auto& artifact) { return artifact.SetParent(parent); }, Artifact);
+    std::visit([=](auto& artifact) { artifact.SetParent(parent); }, Artifact);
 }
 
 auto ImageArtifact::ToComposite() -> CompositeImageArtifact& {
@@ -91,14 +95,19 @@ auto ImageArtifact::IndexOf(const ImageArtifact& imageArtifact, uint16_t& curren
 }
 
 auto ImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm& {
-    return std::visit([&](auto& artifact) -> vtkImageAlgorithm& { return artifact.AppendImageFilters(inputAlgorithm); }, Artifact);
+    return std::visit([&](auto& artifact) -> vtkImageAlgorithm& { return artifact.AppendImageFilters(inputAlgorithm); },
+                      Artifact);
 }
 
 ImageArtifactData::ImageArtifactData(const ImageArtifact& artifact) :
         Data([&]() {
             return std::visit(Overload {
-                    [&](BasicImageArtifact const&) -> ImageArtifactDataVariant { return BasicImageArtifactData{}; },
-                    [&](CompositeImageArtifact const&) -> ImageArtifactDataVariant { return CompositeImageArtifactData{}; }
+                    [&](BasicImageArtifact const&) -> ImageArtifactDataVariant {
+                        return BasicImageArtifactData{};
+                    },
+                    [&](CompositeImageArtifact const&) -> ImageArtifactDataVariant {
+                        return CompositeImageArtifactData{};
+                    }
             }, artifact.Artifact);
         }()) {
     PopulateFromArtifact(artifact);
@@ -110,8 +119,12 @@ ImageArtifactData::ImageArtifactData(CompositeImageArtifactData&& data) : Data(s
 
 auto ImageArtifactData::PopulateFromArtifact(const ImageArtifact& imageArtifact) noexcept -> void {
     std::visit(Overload {
-            [&](BasicImageArtifactData& basic) { basic.PopulateFromArtifact(std::get<BasicImageArtifact>(imageArtifact.Artifact)); },
-            [&](CompositeImageArtifactData& composite) { composite.PopulateFromArtifact(std::get<CompositeImageArtifact>(imageArtifact.Artifact)); }
+            [&](BasicImageArtifactData& basic) {
+                basic.PopulateFromArtifact(std::get<BasicImageArtifact>(imageArtifact.Artifact));
+            },
+            [&](CompositeImageArtifactData& composite) {
+                composite.PopulateFromArtifact(std::get<CompositeImageArtifact>(imageArtifact.Artifact));
+            }
     }, Data);
 }
 
@@ -157,8 +170,8 @@ auto ImageArtifactWidget::Populate(const ImageArtifactData& data) noexcept -> vo
     Layout->setRowVisible(TypeComboBox, false);
 
     std::visit(Overload {
-            [&](BasicImageArtifactWidget* widget) { return widget->Populate(std::get<BasicImageArtifactData>(data.Data)); },
-            [&](CompositeImageArtifactWidget* widget) { return widget->Populate(std::get<CompositeImageArtifactData>(data.Data)); }
+            [&](BasicImageArtifactWidget* widget) { widget->Populate(std::get<BasicImageArtifactData>(data.Data)); },
+            [&](CompositeImageArtifactWidget* widget) { widget->Populate(std::get<CompositeImageArtifactData>(data.Data)); }
     }, TypeWidget);
 }
 

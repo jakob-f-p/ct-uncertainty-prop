@@ -83,7 +83,7 @@ StructureArtifactWidget::StructureArtifactWidget() :
 auto StructureArtifactWidget::GetData() const noexcept -> StructureArtifactData {
     StructureArtifactData data;
 
-    data.Name = NameEdit->GetData();
+    data.Name = NameEdit->GetText();
     data.Data = std::visit([](auto* widget) { return DataVariant { widget->GetData() }; },
                            WidgetVariant);
 
@@ -91,7 +91,7 @@ auto StructureArtifactWidget::GetData() const noexcept -> StructureArtifactData 
 }
 
 auto StructureArtifactWidget::Populate(const StructureArtifactData& data) noexcept -> void {
-    NameEdit->SetData(data.Name);
+    NameEdit->SetText(data.Name);
 
     StructureArtifact::SubType const subType = std::visit([&](const auto& data) {
         return StructureArtifact::GetSubType(ArtifactTypeT<decltype(data)>());

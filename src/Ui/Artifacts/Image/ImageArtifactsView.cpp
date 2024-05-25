@@ -2,6 +2,7 @@
 
 #include "ImageArtifactsModel.h"
 #include "ImageArtifactsDelegate.h"
+#include "../../Utils/ModelUtils.h"
 #include "../../../Artifacts/Image/ImageArtifact.h"
 #include "../../../Artifacts/Pipeline.h"
 
@@ -142,17 +143,35 @@ ImageArtifactsReadOnlyView::ImageArtifactsReadOnlyView(Pipeline const& pipeline,
         ArtifactsModel(new ImageArtifactsReadOnlyModel(pipeline.GetImageArtifactConcatenation())){
 
     setModel(ArtifactsModel);
-
-    connect(this, &ImageArtifactsReadOnlyView::selectionChanged,
-            this, &ImageArtifactsReadOnlyView::OnSelectionChanged);
 }
 
 auto ImageArtifactsReadOnlyView::model() const noexcept -> ImageArtifactsReadOnlyModel* {
     return ArtifactsModel;
 }
 
-void ImageArtifactsReadOnlyView::OnSelectionChanged(QItemSelection const& selected,
-                                                    QItemSelection const& /*deselected*/) {
+auto ImageArtifactsReadOnlyView::Select(ImageArtifact const& imageArtifact) -> void {
+    auto imageArtifactPointer = const_cast<ImageArtifact*>(&imageArtifact);
+    auto match = Search(*ArtifactsModel, ImageArtifactsModel::Roles::POINTER,
+                        QVariant::fromValue(imageArtifactPointer), rootIndex());
+
+    if (match == QModelIndex{})
+        throw std::runtime_error("Image artifact not found");
+
+    QModelIndexList ancestorIndices;
+    for (QModelIndex current = match.parent(); current.isValid(); current = current.parent())
+        ancestorIndices.prepend(current);
+
+    collapseAll();
+    for (auto const& ancestorIndex : ancestorIndices)
+        expand(ancestorIndex);
+
+    selectionModel()->clearSelection();
+    selectionModel()->select(match, QItemSelectionModel::SelectionFlag::Select);
+}
+
+void ImageArtifactsReadOnlyView::selectionChanged(QItemSelection const& selected, QItemSelection const& deselected) {
+    QTreeView::selectionChanged(selected, deselected);
+
     QModelIndexList const selectedIndices = selected.indexes();
 
     if (selectedIndices.empty()) {

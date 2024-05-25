@@ -10,12 +10,13 @@ CoordinateRowWidget::CoordinateRowWidget(CoordinateRowWidget::NumericSettings nu
         HasLabel(!labelText.isEmpty()) {
     GLayout->setContentsMargins(0, 0, 0, 0);
 
-    AppendCoordinatesRow(std::move(numericSettings), labelText);
+    AppendCoordinatesRow(numericSettings, labelText);
 }
 
 CoordinateRowWidget::CoordinateRowWidget(bool hasLabel) :
         GLayout(new QGridLayout(this)),
         HasLabel(hasLabel) {
+
     GLayout->setContentsMargins(0, 0, 0, 0);
 }
 
@@ -48,6 +49,10 @@ auto CoordinateRowWidget::AppendCoordinatesRow(const NumericSettings& numericSet
         spinBoxRow.SetSpinBox(i, *coordinateSpinBox);
     }
     Rows.emplace_back(spinBoxRow);
+
+    for (auto* spinBox : std::vector({ spinBoxRow.X, spinBoxRow.Y, spinBoxRow.Z }))
+        connect(spinBox, &QDoubleSpinBox::valueChanged,
+                this, [this]() { emit ValueChanged(); });
 }
 
 auto CoordinateRowWidget::GetRowData(uint8_t rowIdx) const -> CoordinateRowWidget::RowData {
