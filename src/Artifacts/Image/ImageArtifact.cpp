@@ -6,16 +6,17 @@
 #include <QComboBox>
 #include <QFormLayout>
 
-ImageArtifact::ImageArtifact(ImageArtifactData const& data) {
-        Artifact = std::visit(Overload {
+ImageArtifact::ImageArtifact(ImageArtifactData const& data) :
+        Artifact([&data]() {
+            return std::visit(Overload {
                 [](BasicImageArtifactData const& basicData) -> ImageArtifactVariant {
                     return BasicImageArtifact(basicData);
                 },
                 [](CompositeImageArtifactData const& compositeData) -> ImageArtifactVariant {
                     return CompositeImageArtifact(compositeData);
                 }
-        }, data.Data);
-}
+            }, data.Data);
+        }()) {}
 
 ImageArtifact::ImageArtifact(BasicImageArtifact&& basicImageArtifact) :
         Artifact(std::move(basicImageArtifact)) {

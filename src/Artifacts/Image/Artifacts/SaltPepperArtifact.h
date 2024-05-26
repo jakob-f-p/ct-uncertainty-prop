@@ -20,7 +20,7 @@ public:
     using Data = SaltPepperArtifactData;
 
     SaltPepperArtifact();
-    SaltPepperArtifact(SaltPepperArtifact const&) = delete;
+    SaltPepperArtifact(SaltPepperArtifact const& other);
     auto operator= (SaltPepperArtifact const&) -> SaltPepperArtifact& = delete;
     SaltPepperArtifact(SaltPepperArtifact&&);
     auto operator= (SaltPepperArtifact&&) -> SaltPepperArtifact&;

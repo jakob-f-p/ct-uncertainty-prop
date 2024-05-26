@@ -8,8 +8,12 @@
 #include <QFormLayout>
 
 CuppingArtifact::CuppingArtifact() = default;
+CuppingArtifact::CuppingArtifact(CuppingArtifact const& other)  :
+            DarkIntensityValue(other.DarkIntensityValue),
+            Center(other.Center) {}
 CuppingArtifact::CuppingArtifact(CuppingArtifact&&) noexcept = default;
 auto CuppingArtifact::operator= (CuppingArtifact&&) noexcept -> CuppingArtifact& = default;
+
 CuppingArtifact::~CuppingArtifact() = default;
 
 auto CuppingArtifact::UpdateFilterParameters() -> void {

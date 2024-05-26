@@ -94,7 +94,9 @@ public:
     using BasicImageArtifactVariant = std::variant<BASIC_IMAGE_ARTIFACT_TYPES>;
 
     BasicImageArtifact() = default;
-    explicit BasicImageArtifact(const BasicImageArtifactData& data);
+    BasicImageArtifact(BasicImageArtifact const& other) = default;
+    BasicImageArtifact(BasicImageArtifact&& other) = default;
+    explicit BasicImageArtifact(BasicImageArtifactData const& data);
     explicit BasicImageArtifact(auto&& basicArtifact) :
             Artifact(std::forward<decltype(basicArtifact)>(basicArtifact)) {}
 

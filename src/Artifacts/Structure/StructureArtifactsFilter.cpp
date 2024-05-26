@@ -48,18 +48,6 @@ auto StructureArtifactsFilter::SetStructureArtifactCollection(
     Modified();
 }
 
-auto StructureArtifactsFilter::SetCtStructureTree(CtStructureTree* structureTree) -> void {
-    if (structureTree == StructureTree)
-        return;
-
-    StructureTree = structureTree;
-    Modified();
-}
-
-auto StructureArtifactsFilter::GetCtStructureTree() const -> CtStructureTree* {
-    return StructureTree;
-}
-
 auto StructureArtifactsFilter::RequestInformation(vtkInformation* request,
                                                   vtkInformationVector** inputVector,
                                                   vtkInformationVector *outputVector) -> int {

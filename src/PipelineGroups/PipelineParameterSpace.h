@@ -43,6 +43,7 @@ public:
 
 private:
     friend class PipelineParameterSpace;
+    friend class ParameterSpanSetState;
 
     using ParameterSpanSet = std::vector<PipelineParameterSpan>;
 
@@ -92,6 +93,7 @@ public:
 
 private:
     friend class PipelineParameterSpaceModel;
+    friend class ParameterSpaceState;
 
     [[nodiscard]] auto
     ContainsSetForArtifactPointer(ArtifactVariantPointer artifactVariantPointer) const noexcept -> bool;

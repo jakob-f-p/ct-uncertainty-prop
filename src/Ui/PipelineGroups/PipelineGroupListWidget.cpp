@@ -105,6 +105,7 @@ void PipelineGroupListWidget::OnAddPipelineGroup() {
         SelectionModel->clearSelection();
         SelectionModel->select(index, QItemSelectionModel::SelectionFlag::Select);
         UpdateButtonStatus();
+        UpdateNumberOfPipelines();
     });
 
     dialog->show();

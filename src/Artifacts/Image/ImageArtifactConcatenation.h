@@ -27,6 +27,7 @@ struct ImageArtifactConcatenationEvent {
 class ImageArtifactConcatenation {
 public:
     ImageArtifactConcatenation() noexcept;
+    ImageArtifactConcatenation(ImageArtifactConcatenation const& other);
     ~ImageArtifactConcatenation();
 
     [[nodiscard]] auto

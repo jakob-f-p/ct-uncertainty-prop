@@ -11,6 +11,13 @@
 
 #include <utility>
 
+SimpleTransform::SimpleTransform(SimpleTransform const& other) :
+        TranslationValues(other.TranslationValues),
+        RotationAngles(other.RotationAngles),
+        ScaleFactors(other.ScaleFactors),
+        Transform(),
+        Matrix(other.Matrix) {}
+
 auto SimpleTransform::GetMTime() const noexcept -> vtkMTimeType {
     return Transform->GetMTime();
 }

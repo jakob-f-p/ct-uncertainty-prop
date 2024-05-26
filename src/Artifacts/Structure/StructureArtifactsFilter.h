@@ -22,11 +22,6 @@ public:
     [[nodiscard]] auto
     GetStructureArtifactCollection() const -> TreeStructureArtifactListCollection*;
 
-    auto SetCtStructureTree(CtStructureTree* structureTree) -> void;
-
-    [[nodiscard]] auto
-    GetCtStructureTree() const -> CtStructureTree*;
-
     struct Algorithm {
         StructureArtifactsFilter* Self;
         vtkImageData* VolumeData;

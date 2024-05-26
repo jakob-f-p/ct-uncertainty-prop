@@ -21,7 +21,7 @@ public:
     using Data = RingArtifactData;
 
     RingArtifact();
-    RingArtifact(RingArtifact const&) = delete;
+    RingArtifact(RingArtifact const& other);
     auto operator= (RingArtifact const&) -> RingArtifact& = delete;
     RingArtifact(RingArtifact&&);
     auto operator= (RingArtifact&&) -> RingArtifact&;

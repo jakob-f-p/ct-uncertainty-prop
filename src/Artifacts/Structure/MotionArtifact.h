@@ -19,6 +19,12 @@ class MotionArtifact {
 public:
     using Data = MotionArtifactData;
 
+    MotionArtifact() = default;
+    MotionArtifact(MotionArtifact const& other) = default;
+    auto operator= (MotionArtifact const&) -> MotionArtifact& = delete;
+    MotionArtifact(MotionArtifact&&) = default;
+    auto operator= (MotionArtifact&&) -> MotionArtifact& = default;
+
     [[nodiscard]] auto
     GetCtNumberFactor() const noexcept -> float { return CtNumberFactor; }
 

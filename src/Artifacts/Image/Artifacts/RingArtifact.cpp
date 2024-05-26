@@ -8,8 +8,14 @@
 #include <QFormLayout>
 
 RingArtifact::RingArtifact() = default;
+RingArtifact::RingArtifact(RingArtifact const& other) :
+        BrightIntensityValue(other.BrightIntensityValue),
+        DarkIntensityValue(other.DarkIntensityValue),
+        BrightRingWidth(other.BrightRingWidth),
+        DarkRingWidth(other.DarkRingWidth) {}
 RingArtifact::RingArtifact(RingArtifact&&) = default;
 auto RingArtifact::operator= (RingArtifact&&) -> RingArtifact& = default;
+
 RingArtifact::~RingArtifact() = default;
 
 auto RingArtifact::UpdateFilterParameters() -> void {

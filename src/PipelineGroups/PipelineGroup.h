@@ -23,6 +23,9 @@ public:
     [[nodiscard]] auto
     GetParameterSpace() const noexcept -> PipelineParameterSpace const&;
 
+    [[nodiscard]] auto
+    CreatePipelines() const noexcept -> std::vector<Pipeline>;
+
     auto
     AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
                      PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan&;
@@ -38,4 +41,14 @@ private:
     PipelineParameterSpace ParameterSpace;
 
     static uint16_t PipelineGroupId;
+};
+
+
+class PipelineBatch {
+public:
+    explicit PipelineBatch(PipelineGroup const& pipelineGroup);
+
+private:
+    PipelineGroup const& Group;
+    std::vector<Pipeline> Pipelines;
 };

@@ -19,7 +19,6 @@ namespace ObjectPropertyDetails {
 }
 
 template<typename T>
-requires std::is_copy_assignable_v<T> && std::is_copy_constructible_v<T>
 class ObjectProperty {
     using GetterFunction = std::function<T()>;
     using SetterFunction = std::function<void(T)>;
@@ -34,7 +33,7 @@ public:
             Name(std::move(name)),
             Getter(std::move(getter)),
             Setter(std::move(setter)),
-            Range(std::move(propertyRange)) {};
+            Range(propertyRange) {};
     ObjectProperty(ObjectProperty&& other) noexcept = default;
     auto operator= (ObjectProperty&& other) noexcept -> ObjectProperty& = default;
     ObjectProperty(ObjectProperty const& other) = default;

@@ -78,6 +78,14 @@ TreeStructureArtifactListCollection::TreeStructureArtifactListCollection(CtStruc
         StructureTree(ctStructureTree) {
     Filter->SetStructureArtifactCollection(this);
 };
+
+TreeStructureArtifactListCollection::TreeStructureArtifactListCollection(
+        TreeStructureArtifactListCollection const& other) :
+        StructureTree(other.StructureTree),
+        ArtifactLists(other.ArtifactLists) {
+    Filter->SetStructureArtifactCollection(this);
+}
+
 TreeStructureArtifactListCollection::~TreeStructureArtifactListCollection() = default;
 
 auto TreeStructureArtifactListCollection::GetMTime() -> vtkMTimeType {

@@ -7,8 +7,12 @@
 #include <QFormLayout>
 
 GaussianArtifact::GaussianArtifact() = default;
-GaussianArtifact::GaussianArtifact(GaussianArtifact&&) = default;
+GaussianArtifact::GaussianArtifact(GaussianArtifact const& other) :
+        Mean(other.Mean),
+        Sd(other.Sd) {}
+GaussianArtifact::GaussianArtifact(GaussianArtifact&&) noexcept = default;
 auto GaussianArtifact::operator= (GaussianArtifact&&) -> GaussianArtifact& = default;
+
 GaussianArtifact::~GaussianArtifact() = default;
 
 auto GaussianArtifact::UpdateFilterParameters() -> void {

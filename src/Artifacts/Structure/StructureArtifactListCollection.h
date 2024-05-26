@@ -120,6 +120,7 @@ private:
 class TreeStructureArtifactListCollection {
 public:
     explicit TreeStructureArtifactListCollection(CtStructureTree const& ctStructureTree);
+    TreeStructureArtifactListCollection(TreeStructureArtifactListCollection const& other);
     ~TreeStructureArtifactListCollection();
 
     [[nodiscard]] auto

@@ -13,6 +13,7 @@ public:
     explicit ImageArtifact(ImageArtifactData const& data);
     ImageArtifact(BasicImageArtifact&& basicImageArtifact);
     ImageArtifact(CompositeImageArtifact&& compositeImageArtifact);
+    ImageArtifact(ImageArtifact const& other) = default;
 
     [[nodiscard]] auto
     GetViewName() const noexcept -> std::string;

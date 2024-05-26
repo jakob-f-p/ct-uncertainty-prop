@@ -8,8 +8,11 @@
 #include <QFormLayout>
 
 StairStepArtifact::StairStepArtifact() = default;
+StairStepArtifact::StairStepArtifact(StairStepArtifact const& other) :
+        SamplingRate(other.SamplingRate) {}
 StairStepArtifact::StairStepArtifact(StairStepArtifact&&) = default;
 auto StairStepArtifact::operator= (StairStepArtifact&&) -> StairStepArtifact& = default;
+
 StairStepArtifact::~StairStepArtifact() = default;
 
 auto StairStepArtifact::UpdateFilterParameters() -> void {

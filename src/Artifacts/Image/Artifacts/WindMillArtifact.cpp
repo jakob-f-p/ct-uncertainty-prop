@@ -8,8 +8,14 @@
 #include <QFormLayout>
 
 WindMillArtifact::WindMillArtifact() = default;
+WindMillArtifact::WindMillArtifact(WindMillArtifact const& other) :
+        BrightAngularWidth(other.BrightAngularWidth),
+        DarkAngularWidth(other.DarkAngularWidth),
+        BrightIntensityValue(other.BrightIntensityValue),
+        DarkIntensityValue(other.DarkIntensityValue) {}
 WindMillArtifact::WindMillArtifact(WindMillArtifact&&) = default;
 auto WindMillArtifact::operator= (WindMillArtifact&&) -> WindMillArtifact& = default;
+
 WindMillArtifact::~WindMillArtifact() = default;
 
 auto WindMillArtifact::UpdateFilterParameters() -> void {

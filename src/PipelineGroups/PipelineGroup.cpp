@@ -36,3 +36,17 @@ auto PipelineGroup::RemoveParameterSpan(ArtifactVariantPointer artifactVariantPo
 }
 
 uint16_t PipelineGroup::PipelineGroupId = 1;
+
+auto PipelineGroup::CreatePipelines() const noexcept -> std::vector<Pipeline> {
+    std::vector<Pipeline> pipelines;
+    pipelines.reserve(ParameterSpace.GetNumberOfPipelines());
+
+
+
+    return pipelines;
+}
+
+
+PipelineBatch::PipelineBatch(PipelineGroup const& pipelineGroup) :
+        Group(pipelineGroup),
+        Pipelines(pipelineGroup.CreatePipelines()) {}

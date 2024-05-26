@@ -81,11 +81,13 @@ public:
     using SubType = StructureArtifactDetails::SubType;
 
     StructureArtifact() = default;
-    explicit StructureArtifact(StructureArtifactData const& data);
-    explicit StructureArtifact(auto&& structureArtifactSubType)
-            : Artifact(std::forward<decltype(structureArtifactSubType)>(structureArtifactSubType)) {}
+    StructureArtifact(StructureArtifact const&) = default;
+    auto operator= (StructureArtifact const&) -> StructureArtifact& = delete;
     StructureArtifact(StructureArtifact&&) = default;
     auto operator= (StructureArtifact&&) -> StructureArtifact& = default;
+    explicit StructureArtifact(StructureArtifactData const& data);
+    explicit StructureArtifact(MotionArtifact&& structureArtifactSubType)
+            : Artifact(std::move(structureArtifactSubType)) {}
 
     [[nodiscard]] auto
     GetMTime() const noexcept -> vtkMTimeType { return MTime.GetMTime(); }

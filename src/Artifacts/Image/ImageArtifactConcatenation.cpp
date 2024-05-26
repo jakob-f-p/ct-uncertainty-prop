@@ -7,6 +7,12 @@ ImageArtifactConcatenation::ImageArtifactConcatenation() noexcept :
         Start(new ImageArtifact { std::move(CompositeImageArtifact(
                 CompositeImageArtifact::CompositionType::SEQUENTIAL)) }) {}
 
+ImageArtifactConcatenation::ImageArtifactConcatenation(ImageArtifactConcatenation const& other) :
+        Start(new ImageArtifact(*other.Start)) {
+
+    UpdateArtifactFilter();
+}
+
 ImageArtifactConcatenation::~ImageArtifactConcatenation() = default;
 
 auto ImageArtifactConcatenation::ContainsImageArtifact(ImageArtifact const& imageArtifact) const noexcept -> bool {

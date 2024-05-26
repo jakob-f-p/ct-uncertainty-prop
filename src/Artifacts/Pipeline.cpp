@@ -18,6 +18,13 @@ Pipeline::Pipeline(CtStructureTree& structureTree, CtDataSource& dataSource, std
         TreeStructureArtifacts->AddStructureArtifactList(i);
 };
 
+Pipeline::Pipeline(Pipeline const& other) :
+        Name(other.Name),
+        StructureTree(other.StructureTree),
+        DataSource(other.DataSource),
+        TreeStructureArtifacts(new TreeStructureArtifactListCollection(*other.TreeStructureArtifacts)),
+        ImageArtifactConcat(new ImageArtifactConcatenation(*other.ImageArtifactConcat)) {}
+
 Pipeline::~Pipeline() = default;
 
 auto Pipeline::GetName() const noexcept -> std::string {

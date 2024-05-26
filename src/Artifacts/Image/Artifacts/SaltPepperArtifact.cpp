@@ -7,8 +7,14 @@
 #include <QFormLayout>
 
 SaltPepperArtifact::SaltPepperArtifact() = default;
+SaltPepperArtifact::SaltPepperArtifact(SaltPepperArtifact const& other) :
+        SaltAmount(other.SaltAmount),
+        PepperAmount(other.PepperAmount),
+        SaltIntensityValue(other.SaltIntensityValue),
+        PepperIntensityValue(other.PepperIntensityValue) {}
 SaltPepperArtifact::SaltPepperArtifact(SaltPepperArtifact&&) = default;
 auto SaltPepperArtifact::operator= (SaltPepperArtifact&&) -> SaltPepperArtifact& = default;
+
 SaltPepperArtifact::~SaltPepperArtifact() = default;
 
 auto SaltPepperArtifact::UpdateFilterParameters() -> void {

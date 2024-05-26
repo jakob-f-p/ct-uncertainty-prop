@@ -54,11 +54,22 @@ CompositeImageArtifact::CompositeImageArtifact(CompositionType compositionType) 
         CompType(compositionType) {
 }
 
-CompositeImageArtifact::CompositeImageArtifact(const CompositeImageArtifactData& data) :
+CompositeImageArtifact::CompositeImageArtifact(CompositeImageArtifactData const& data) :
         CompositeImageArtifact(data.Data.CompositionType) {
     data.PopulateArtifact(*this);
-
 }
+
+CompositeImageArtifact::CompositeImageArtifact(CompositeImageArtifact const& other) :
+        ImageArtifacts([&other]() {
+            std::vector<std::unique_ptr<ImageArtifact>> imageArtifacts;
+            imageArtifacts.reserve(other.ImageArtifacts.size());
+
+            for (auto const& imageArtifact : other.ImageArtifacts)
+                imageArtifacts.emplace_back(new ImageArtifact(*imageArtifact));
+
+            return imageArtifacts;
+        }()),
+        CompType(other.CompType) {}
 
 CompositeImageArtifact::CompositeImageArtifact(CompositeImageArtifact&&) = default;
 

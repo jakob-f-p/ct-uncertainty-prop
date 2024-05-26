@@ -35,8 +35,15 @@ private:
                                       0.0, 0.0, 1.0, 0.0 };
 };
 
+
 class SimpleTransform {
 public:
+    SimpleTransform() = default;
+    SimpleTransform(SimpleTransform const& other);
+    auto operator= (SimpleTransform const&) -> SimpleTransform& = delete;
+    SimpleTransform(SimpleTransform&&) = default;
+    auto operator= (SimpleTransform&&) -> SimpleTransform& = default;
+
     [[nodiscard]] auto
     GetMTime() const noexcept -> vtkMTimeType;
 
@@ -66,6 +73,7 @@ auto SimpleTransform::TransformPoint(Point point) const noexcept -> Point {
              Matrix(1, 0) * point[0] + Matrix(1, 1) * point[1] + Matrix(1, 2) * point[2] + Matrix(1, 3),
              Matrix(2, 0) * point[0] + Matrix(2, 1) * point[1] + Matrix(2, 2) * point[2] + Matrix(2, 3) };
 }
+
 
 class SimpleTransformWidget : public QWidget {
     Q_OBJECT

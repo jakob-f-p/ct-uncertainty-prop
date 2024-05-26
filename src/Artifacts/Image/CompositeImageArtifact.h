@@ -86,7 +86,7 @@ public:
 
     explicit CompositeImageArtifact(CompositeImageArtifactData const& data);
     explicit CompositeImageArtifact(CompositionType compositionType = CompositionType::SEQUENTIAL);
-    CompositeImageArtifact(CompositeImageArtifact const&) = delete;
+    CompositeImageArtifact(CompositeImageArtifact const& other);
     CompositeImageArtifact(CompositeImageArtifact&&);
     auto operator= (CompositeImageArtifact const&) -> CompositeImageArtifact& = delete;
     auto operator= (CompositeImageArtifact&&) -> CompositeImageArtifact&;

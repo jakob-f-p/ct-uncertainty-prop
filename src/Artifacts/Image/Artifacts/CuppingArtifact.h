@@ -22,7 +22,7 @@ public:
     using Data = CuppingArtifactData;
 
     CuppingArtifact();
-    CuppingArtifact(CuppingArtifact const&) = delete;
+    CuppingArtifact(CuppingArtifact const& other);
     auto operator= (CuppingArtifact const&) -> CuppingArtifact& = delete;
     CuppingArtifact(CuppingArtifact&&) noexcept ;
     auto operator= (CuppingArtifact&&) noexcept -> CuppingArtifact&;

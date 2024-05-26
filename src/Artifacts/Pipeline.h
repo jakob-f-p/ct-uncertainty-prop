@@ -17,6 +17,7 @@ class vtkImageAlgorithm;
 class Pipeline {
 public:
     explicit Pipeline(CtStructureTree& structureTree, CtDataSource& dataSource, std::string name = "");
+    Pipeline(Pipeline const& other);
     ~Pipeline();
 
     [[nodiscard]] auto

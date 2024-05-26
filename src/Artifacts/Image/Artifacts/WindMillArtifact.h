@@ -21,7 +21,7 @@ public:
     using Data = WindMillArtifactData;
 
     WindMillArtifact();
-    WindMillArtifact(WindMillArtifact const&) = delete;
+    WindMillArtifact(WindMillArtifact const& other);
     auto operator= (WindMillArtifact const&) -> WindMillArtifact& = delete;
     WindMillArtifact(WindMillArtifact&&);
     auto operator= (WindMillArtifact&&) -> WindMillArtifact&;

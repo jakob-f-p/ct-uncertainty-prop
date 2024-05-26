@@ -19,7 +19,7 @@ public:
     using Data = StairStepArtifactData;
 
     StairStepArtifact();
-    StairStepArtifact(StairStepArtifact const&) = delete;
+    StairStepArtifact(StairStepArtifact const& other);
     auto operator= (StairStepArtifact const&) -> StairStepArtifact& = delete;
     StairStepArtifact(StairStepArtifact&&);
     auto operator= (StairStepArtifact&&) -> StairStepArtifact&;

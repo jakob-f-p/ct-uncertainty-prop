@@ -6,6 +6,7 @@
 #include <algorithm>
 #include <format>
 #include <functional>
+#include <limits>
 #include <utility>
 
 class Pipeline;
@@ -89,6 +90,9 @@ public:
     };
 
 private:
+    template<typename T>
+    friend class SpanState;
+
     ArtifactVariantPointer ArtifactPointer;
     std::string Name;
     ObjectProperty<T> Property;
@@ -132,12 +136,14 @@ ParameterSpan<FloatPoint>::Advance() noexcept -> void {
 template<>
 [[nodiscard]] auto inline
 ParameterSpan<FloatPoint>::GetNumberOfPipelines() const noexcept -> uint32_t {
-    if (std::any_of(Numbers.Step.begin(), Numbers.Step.end(), [](float step) { return step == 0.0; }))
+    if (std::all_of(Numbers.Step.begin(), Numbers.Step.end(), [](float step) { return step == 0.0; }))
         return 0;
 
     std::array<uint32_t, 3> numberOfPipelinesPerCoordinate {};
     for (int i = 0; i < 3; i++)
-        numberOfPipelinesPerCoordinate[i] = ((Numbers.Max[i] - Numbers.Min[i]) / Numbers.Step[i]) + 1;
+        numberOfPipelinesPerCoordinate[i] = Numbers.Step[i] == 0.0
+                ? std::numeric_limits<int>::max()
+                : static_cast<int>((static_cast<float>(Numbers.Max[i] - Numbers.Min[i]) / Numbers.Step[i])) + 1;
 
     return *std::min_element(numberOfPipelinesPerCoordinate.begin(), numberOfPipelinesPerCoordinate.end());
 }
@@ -182,6 +188,13 @@ struct PipelineParameterSpan {
     }
 
     [[nodiscard]] auto
+    CanAdvance() const noexcept -> bool { return std::visit([](auto const& span) { return span.CanAdvance(); },
+                                                            SpanVariant); }
+
+    auto
+    Advance() noexcept -> void { std::visit([](auto& span) { return span.Advance(); }, SpanVariant); }
+
+    [[nodiscard]] auto
     operator== (PipelineParameterSpan const& other) const noexcept -> bool {
         return this == &other
                || SpanVariant == other.SpanVariant;
@@ -189,6 +202,7 @@ struct PipelineParameterSpan {
 
 private:
     friend class ObjectPropertyGroup;
+    friend class ParameterSpanState;
 
     using ParameterSpanVariant = std::variant<ParameterSpan<float>, ParameterSpan<FloatPoint>>;
     ParameterSpanVariant SpanVariant;

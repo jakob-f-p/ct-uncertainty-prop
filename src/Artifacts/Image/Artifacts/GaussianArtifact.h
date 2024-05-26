@@ -19,9 +19,9 @@ public:
     using Data = GaussianArtifactData;
 
     GaussianArtifact();
-    GaussianArtifact(GaussianArtifact const&) = delete;
+    GaussianArtifact(GaussianArtifact const& other);
     auto operator= (GaussianArtifact const&) -> GaussianArtifact& = delete;
-    GaussianArtifact(GaussianArtifact&&);
+    GaussianArtifact(GaussianArtifact&&) noexcept ;
     auto operator= (GaussianArtifact&&) -> GaussianArtifact&;
     ~GaussianArtifact();
 
