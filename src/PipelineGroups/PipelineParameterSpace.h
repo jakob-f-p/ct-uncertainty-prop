@@ -39,6 +39,9 @@ public:
     GetNumberOfPipelines() const noexcept -> uint16_t;
 
     [[nodiscard]] auto
+    SpanStatesProduct() -> std::vector<ParameterSpanSetState>;
+
+    [[nodiscard]] auto
     operator== (PipelineParameterSpanSet const& other) const noexcept -> bool;
 
 private:
@@ -91,15 +94,23 @@ public:
     [[nodiscard]] auto
     GetSpanSetName(PipelineParameterSpanSet const& spanSet) const -> std::string;
 
+    [[nodiscard]] auto
+    GenerateSpaceStates() -> std::vector<PipelineParameterSpaceState>;
+
 private:
     friend class PipelineParameterSpaceModel;
-    friend class ParameterSpaceState;
+    friend class PipelineParameterSpaceState;
 
     [[nodiscard]] auto
     ContainsSetForArtifactPointer(ArtifactVariantPointer artifactVariantPointer) const noexcept -> bool;
 
     [[nodiscard]] auto
     GetSetForArtifactPointer(ArtifactVariantPointer artifactVariantPointer) -> PipelineParameterSpanSet&;
+
+    auto
+    GenerateSpaceStatesRecursive(std::vector<PipelineParameterSpan*> const& spans,
+                                 std::vector<PipelineParameterSpaceState>& states,
+                                 int depth) -> void;
 
     std::vector<PipelineParameterSpanSet> ParameterSpanSets;
 };

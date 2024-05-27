@@ -49,14 +49,14 @@ public:
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties {
         PipelineParameterProperties properties;
-        properties.emplace_back(FloatObjectProperty("Dark Intensity",
-                                                    [this] { return GetDarkIntensity(); },
-                                                    [this](float intensity) { this->SetDarkIntensity(intensity); },
-                                                    FloatObjectProperty::PropertyRange{ -1000.0, 0.0 }));
-        properties.emplace_back(FloatPointObjectProperty("Center",
-                                                         [this] { return GetCenter(); },
-                                                         [this](FloatPoint center) { this->SetCenter(center); },
-                                                         {}));
+        properties.Add(FloatObjectProperty("Dark Intensity",
+                                           [this] { return GetDarkIntensity(); },
+                                           [this](float intensity) { this->SetDarkIntensity(intensity); },
+                                           FloatObjectProperty::PropertyRange{ -1000.0, 0.0 }));
+        properties.Add(FloatPointObjectProperty("Center",
+                                                [this] { return GetCenter(); },
+                                                [this](FloatPoint center) { this->SetCenter(center); },
+                                                {}));
         return properties;
     };
 

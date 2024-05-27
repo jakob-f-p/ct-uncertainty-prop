@@ -54,7 +54,7 @@ public:
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties {
         PipelineParameterProperties properties;
-        properties.emplace_back(
+        properties.Add(
                 FloatObjectProperty("Ct Number Factor",
                                     [this] { return GetCtNumberFactor(); },
                                     [this](float ctNumberFactor) { this->SetCtNumberFactor(ctNumberFactor); },

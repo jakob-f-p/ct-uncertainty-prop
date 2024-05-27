@@ -11,6 +11,9 @@ class PipelineGroupWidget;
 class PipelineParameterSpan;
 class PipelineParameterSpanWidget;
 
+class QPushButton;
+
+
 class PipelineGroupsWidget : public QMainWindow {
 public:
     explicit PipelineGroupsWidget(PipelineGroupList& pipelineGroups);
@@ -27,4 +30,6 @@ private:
     PipelineGroupListWidget* GroupListWidget;
     OptionalWidget<PipelineGroupWidget>* GroupWidget;
     OptionalWidget<PipelineParameterSpanWidget>* ParameterSpanWidget;
+
+    QPushButton* CalculateImagesButton;
 };

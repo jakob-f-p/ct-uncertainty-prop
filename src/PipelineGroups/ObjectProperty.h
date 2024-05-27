@@ -37,7 +37,7 @@ public:
     ObjectProperty(ObjectProperty&& other) noexcept = default;
     auto operator= (ObjectProperty&& other) noexcept -> ObjectProperty& = default;
     ObjectProperty(ObjectProperty const& other) = default;
-    auto operator= (ObjectProperty const& other) -> ObjectProperty& = delete;
+    auto operator= (ObjectProperty const& other) -> ObjectProperty& = default;
 
     [[nodiscard]] auto
     GetName() const noexcept -> std::string { return Name; }
@@ -85,6 +85,72 @@ private:
 
 using FloatObjectProperty = ObjectProperty<float>;
 using FloatPointObjectProperty = ObjectProperty<FloatPoint>;
-using PipelineParameterPropertyVariant = std::variant<FloatObjectProperty, FloatPointObjectProperty>;
 
-using PipelineParameterProperties = std::vector<PipelineParameterPropertyVariant>;
+class PipelineParameterProperty {
+    using PipelineParameterPropertyVariant = std::variant<FloatObjectProperty, FloatPointObjectProperty>;
+
+public:
+    template<typename Args>
+    PipelineParameterProperty(Args&& args) :
+            PropertyVariant(std::forward<Args>(args)) {}
+
+    [[nodiscard]] auto
+    GetName() const noexcept -> std::string {
+        return std::visit([](auto const& property) { return property.GetName(); }, PropertyVariant);
+    }
+
+    template<typename T>
+    [[nodiscard]] auto
+    IsType() const noexcept -> bool { return std::holds_alternative<ObjectProperty<T>>(PropertyVariant); }
+
+    template<typename T>
+    [[nodiscard]] auto
+    Get() noexcept -> ObjectProperty<T>& { return std::get<ObjectProperty<T>>(PropertyVariant); }
+
+    [[nodiscard]] auto
+    Variant() noexcept -> PipelineParameterPropertyVariant& { return PropertyVariant; }
+
+private:
+    PipelineParameterPropertyVariant PropertyVariant;
+};
+
+
+
+class PipelineParameterProperties {
+public:
+    template<typename T>
+    [[nodiscard]] auto
+    GetPropertyByName(std::string name) -> ObjectProperty<T>& {
+        auto it = std::find_if(Properties.begin(), Properties.end(),
+                               [&name](auto& property) { return property.template IsType<T>()
+                                                                 && property.GetName() == name; });
+
+        if (it == Properties.end())
+            throw std::runtime_error("No property with given name found");
+
+        return (*it).template Get<T>();
+    }
+
+    [[nodiscard]] auto
+    GetNames() -> std::vector<std::string> {
+        std::vector<std::string> names;
+        names.reserve(Properties.size());
+
+        for (const auto& property : Properties)
+            names.emplace_back(property.GetName());
+
+        return names;
+    }
+
+    template<typename... Args>
+    auto
+    Add(Args&&... args) -> auto {
+        Properties.emplace_back(std::forward<Args>(args)...);
+    }
+
+    [[nodiscard]] auto
+    At(uidx_t idx) -> PipelineParameterProperty& { return Properties.at(idx); }
+
+private:
+    std::vector<PipelineParameterProperty> Properties;
+};

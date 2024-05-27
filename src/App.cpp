@@ -12,6 +12,7 @@
 #include "Artifacts/Structure/StructureArtifactListCollection.h"
 #include "Artifacts/PipelineList.h"
 #include "PipelineGroups/PipelineGroupList.h"
+#include "PipelineGroups/PipelineParameterSpan.h"
 
 #include <QApplication>
 #include <QSurfaceFormat>
@@ -142,7 +143,7 @@ void App::InitializeWithTestData() {
 
     BasicImageArtifact gaussianArtifact(GaussianArtifact{});
     gaussianArtifact.SetName("sequential gaussian");
-    imageArtifactConcatenation.AddImageArtifact(std::move(gaussianArtifact));
+    auto& gaussian = imageArtifactConcatenation.AddImageArtifact(std::move(gaussianArtifact));
 
     CompositeImageArtifact compositeImageArtifact;
     compositeImageArtifact.SetCompositionType(CompositeImageArtifactDetails::CompositionType::PARALLEL);
@@ -186,4 +187,15 @@ void App::InitializeWithTestData() {
     StairStepArtifact stairStepArtifact;
     stairStepArtifact.SetRelativeZAxisSamplingRate(0.75);
     imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(stairStepArtifact) } });
+
+
+    PipelineGroup& pipelineGroup = PipelineGroups->AddPipelineGroup(pipeline, "MyPipeline");
+
+    auto gaussianProperties = gaussian.GetProperties();
+    auto& gaussianMeanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
+    ParameterSpan<float> gaussianMeanSpan (ArtifactVariantPointer(&gaussian),
+                                           gaussianMeanProperty,
+                                           { gaussianMeanProperty.Get(), gaussianMeanProperty.Get() + 5, 1.0 },
+                                           "My Mean Property");
+    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(gaussianMeanSpan));
 }

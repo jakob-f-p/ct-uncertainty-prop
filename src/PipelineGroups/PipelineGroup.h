@@ -1,15 +1,19 @@
 #pragma once
 
 #include "../Artifacts/Pipeline.h"
-#include "PipelineParameterSpace.h"
+#include "ArtifactVariantPointer.h"
 
 #include <string>
 #include <vector>
 
+class PipelineParameterSpace;
+class PipelineParameterSpan;
+class PipelineParameterSpaceState;
 
 class PipelineGroup {
 public:
     explicit PipelineGroup(Pipeline const& basePipeline, std::string name = "");
+    ~PipelineGroup();
 
     [[nodiscard]] auto
     GetName() const noexcept -> std::string;
@@ -23,9 +27,6 @@ public:
     [[nodiscard]] auto
     GetParameterSpace() const noexcept -> PipelineParameterSpace const&;
 
-    [[nodiscard]] auto
-    CreatePipelines() const noexcept -> std::vector<Pipeline>;
-
     auto
     AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
                      PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan&;
@@ -35,20 +36,11 @@ public:
                         PipelineParameterSpan const& parameterSpan) -> void;
 
 private:
+    friend class PipelineBatch;
+
     std::string Name;
     Pipeline const& BasePipeline;
-    std::vector<Pipeline> Pipelines;
-    PipelineParameterSpace ParameterSpace;
+    std::unique_ptr<PipelineParameterSpace> ParameterSpace;
 
     static uint16_t PipelineGroupId;
-};
-
-
-class PipelineBatch {
-public:
-    explicit PipelineBatch(PipelineGroup const& pipelineGroup);
-
-private:
-    PipelineGroup const& Group;
-    std::vector<Pipeline> Pipelines;
 };

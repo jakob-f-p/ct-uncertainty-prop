@@ -46,14 +46,14 @@ public:
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties {
         PipelineParameterProperties properties;
-        properties.emplace_back(FloatObjectProperty("Mean",
-                                                    [this] { return GetMean(); },
-                                                    [this](float mean) { this->SetMean(mean); },
-                                                    { -2000.0, 2000.0 }));
-        properties.emplace_back(FloatObjectProperty("Standard Deviation",
-                                                    [this] { return GetStandardDeviation(); },
-                                                    [this](float sd) { this->SetStandardDeviation(sd); },
-                                                    { 0.0, 2000.0 }));
+        properties.Add(FloatObjectProperty("Mean",
+                                           [this] { return GetMean(); },
+                                           [this](float mean) { this->SetMean(mean); },
+                                           { -2000.0, 2000.0 }));
+        properties.Add(FloatObjectProperty("Standard Deviation",
+                                           [this] { return GetStandardDeviation(); },
+                                           [this](float sd) { this->SetStandardDeviation(sd); },
+                                           { 0.0, 2000.0 }));
         return properties;
     };
 

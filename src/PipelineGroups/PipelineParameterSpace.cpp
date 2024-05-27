@@ -52,6 +52,49 @@ auto PipelineParameterSpanSet::GetNumberOfPipelines() const noexcept -> uint16_t
                                  [](auto const& span) { return span.GetNumberOfPipelines(); });
 }
 
+auto PipelineParameterSpanSet::SpanStatesProduct() -> std::vector<ParameterSpanSetState> {
+    std::vector<ParameterSpanSetState> spanSetStates;
+    spanSetStates.reserve(GetNumberOfPipelines());
+
+    if (ParameterSpans.empty())
+        return spanSetStates;
+
+    std::vector<size_t> indices (ParameterSpans.size(), 0);
+
+    // TODO: remove
+    return spanSetStates;
+//    while (true) {
+//        std::string current;
+//        for (size_t i = 0; i < ParameterSpans.size(); ++i) {
+//            current += ParameterSpans[i][indices[i]];
+//        }
+//        result.push_back(current);
+//
+//        // Increment the indices from the last set to the first
+//        size_t setIndex = sets.size();
+//        while (setIndex > 0) {
+//            --setIndex;
+//            if (indices[setIndex] + 1 < sets[setIndex].size()) {
+//                // Move to the next element in the current set
+//                ++indices[setIndex];
+//                break;
+//            } else {
+//                // Reset the current set and move to the next one
+//                indices[setIndex] = 0;
+//            }
+//        }
+//
+//        // If we've reset the first set, we're done
+//        if (setIndex == 0 && indices[0] == 0) {
+//            break;
+//        }
+//    }
+//
+//    return result;
+//    for (auto& span : ParameterSpans) {
+//    }
+}
+
 auto PipelineParameterSpanSet::operator==(const PipelineParameterSpanSet& other) const noexcept -> bool {
     return this == &other;
 }
@@ -154,6 +197,21 @@ auto PipelineParameterSpace::GetSpanSetName(PipelineParameterSpanSet const& span
     return it->GetName();
 }
 
+auto PipelineParameterSpace::GenerateSpaceStates() -> std::vector<PipelineParameterSpaceState> {
+    std::vector<PipelineParameterSpaceState> spaceStates;
+    spaceStates.reserve(GetNumberOfPipelines());
+
+    std::vector<PipelineParameterSpan*> spans;
+    spans.reserve(GetNumberOfSpans());
+    for (auto& spanSet : ParameterSpanSets)
+        for (auto& span : spanSet.ParameterSpans)
+            spans.push_back(&span);
+
+    GenerateSpaceStatesRecursive(spans, spaceStates, 0);
+
+    return spaceStates;
+}
+
 auto PipelineParameterSpace::ContainsSetForArtifactPointer(ArtifactVariantPointer artifactVariantPointer) const noexcept
         -> bool {
 
@@ -176,4 +234,17 @@ auto PipelineParameterSpace::GetSetForArtifactPointer(ArtifactVariantPointer art
         throw std::runtime_error("No set for given artifact pointer exists");
 
     return *it;
+}
+
+auto PipelineParameterSpace::GenerateSpaceStatesRecursive(std::vector<PipelineParameterSpan*> const& spans,
+                                                          std::vector<PipelineParameterSpaceState>& states,
+                                                          int depth) -> void {
+    if (depth == spans.size()) {
+        states.emplace_back(*this);
+        return;
+    }
+
+    ParameterSpanStateSourceIterator it (*spans.at(depth));
+    for (; it != it.End(); ++it)
+        GenerateSpaceStatesRecursive(spans, states, depth + 1);
 }

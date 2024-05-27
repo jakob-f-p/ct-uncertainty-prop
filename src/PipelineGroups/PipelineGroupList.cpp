@@ -1,6 +1,7 @@
 #include "PipelineGroupList.h"
 
 #include "PipelineGroup.h"
+#include "PipelineParameterSpace.h"
 #include "../Artifacts/PipelineList.h"
 #include "../Modeling/CtStructureTree.h"
 

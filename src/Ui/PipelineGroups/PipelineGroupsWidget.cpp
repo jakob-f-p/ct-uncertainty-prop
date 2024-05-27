@@ -6,20 +6,31 @@
 
 #include "../../PipelineGroups/ArtifactVariantPointer.h"
 #include "../../PipelineGroups/PipelineGroup.h"
+#include "../../PipelineGroups/PipelineParameterSpace.h"
 
 #include <QHBoxLayout>
+#include <QPushButton>
 
 PipelineGroupsWidget::PipelineGroupsWidget(PipelineGroupList& pipelineGroups) :
         GroupListWidget(new PipelineGroupListWidget(pipelineGroups)),
         GroupWidget(new OptionalWidget<PipelineGroupWidget>("Select a pipeline group")),
-        ParameterSpanWidget(new OptionalWidget<PipelineParameterSpanWidget>("Select a parameter span")) {
+        ParameterSpanWidget(new OptionalWidget<PipelineParameterSpanWidget>("Select a parameter span")),
+        CalculateImagesButton(new QPushButton("Generate Pipeline Images")){
 
     auto* centralWidget = new QWidget();
+    auto* vLayout = new QVBoxLayout(centralWidget);
 
-    auto* hLayout = new QHBoxLayout(centralWidget);
-    hLayout->addWidget(GroupListWidget);
-    hLayout->addWidget(GroupWidget);
-    hLayout->addWidget(ParameterSpanWidget);
+    auto* parameterSpaceWidget = new QWidget();
+    auto* parameterSpaceEditHLayout = new QHBoxLayout(parameterSpaceWidget);
+    parameterSpaceEditHLayout->addWidget(GroupListWidget);
+    parameterSpaceEditHLayout->addWidget(GroupWidget);
+    parameterSpaceEditHLayout->addWidget(ParameterSpanWidget);
+    vLayout->addWidget(parameterSpaceWidget);
+
+    auto* renderButtonBarWidget = new QWidget();
+    auto* renderButtonBarHLayout = new QHBoxLayout(renderButtonBarWidget);
+    renderButtonBarHLayout->addWidget(CalculateImagesButton);
+    vLayout->addWidget(renderButtonBarWidget);
 
     setCentralWidget(centralWidget);
 

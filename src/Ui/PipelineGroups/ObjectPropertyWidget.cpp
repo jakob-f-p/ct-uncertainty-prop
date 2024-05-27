@@ -139,10 +139,9 @@ ObjectPropertyGroup::ObjectPropertyGroup(ArtifactVariantPointer artifactVariantP
         SelectPropertyComboBox([&]() {
             auto* comboBox = new QComboBox();
 
-            for (auto const& propertyVariant: ParameterProperties) {
-                auto name = std::visit([](auto const& property) { return property.GetName(); }, propertyVariant);
+            auto propertyNames = ParameterProperties.GetNames();
+            for (auto const& name : propertyNames)
                 comboBox->addItem(QString::fromStdString(name));
-            }
 
             return comboBox;
         }()) {
@@ -157,7 +156,8 @@ ObjectPropertyGroup::ObjectPropertyGroup(ArtifactVariantPointer artifactVariantP
             this, [this]() { UpdatePropertyWidget(); });
 }
 
-auto ObjectPropertyGroup::GetParameterSpan(ArtifactVariantPointer artifactPointer, std::string name) -> PipelineParameterSpan {
+auto ObjectPropertyGroup::GetParameterSpan(ArtifactVariantPointer artifactPointer,
+                                           std::string name) -> PipelineParameterSpan {
     return std::visit(Overload {
         [&, artifactPointer](FloatParameterSpanWidget* widget) -> PipelineParameterSpan {
             auto data = widget->GetParameterSpanData();
@@ -185,11 +185,11 @@ auto ObjectPropertyGroup::UpdatePropertyWidget() -> void {
         delete widget;
     }, PropertyWidget);
 
-    auto& propertyVariant = ParameterProperties.at(idx);
+    auto& property = ParameterProperties.At(idx);
     PropertyWidget = std::visit(Overload {
         [](FloatObjectProperty& p) -> PropertyWidgetPointer { return new FloatParameterSpanWidget(p); },
         [](FloatPointObjectProperty& p) -> PropertyWidgetPointer { return new FloatPointParameterSpanWidget(p); },
-    }, propertyVariant);
+    }, property.Variant());
 
     std::visit([this](auto* widget) { VLayout->addWidget(widget); }, PropertyWidget);
 

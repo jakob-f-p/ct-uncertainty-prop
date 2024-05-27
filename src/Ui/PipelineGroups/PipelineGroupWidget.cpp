@@ -3,6 +3,7 @@
 #include "PipelineParameterSpaceView.h"
 #include "../Utils/WidgetUtils.h"
 #include "../../PipelineGroups/PipelineGroup.h"
+#include "../../PipelineGroups/PipelineParameterSpace.h"
 
 #include <QFormLayout>
 #include <QLabel>
