@@ -22,15 +22,15 @@ class PipelineGroupListWidget : public QWidget {
 public:
     explicit PipelineGroupListWidget(PipelineGroupList& pipelineGroups);
 
-public slots:
+public Q_SLOTS:
     void UpdatePipelineList() noexcept;
 
     void UpdateNumberOfPipelines();
 
-signals:
+Q_SIGNALS:
     void PipelineGroupChanged(PipelineGroup* pipelineGroup);
 
-private slots:
+private Q_SLOTS:
     void OnAddPipelineGroup();
     void OnRemovePipelineGroup();
 

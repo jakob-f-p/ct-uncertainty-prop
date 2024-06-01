@@ -101,7 +101,7 @@ auto ImageArtifactsModel::setData(const QModelIndex& index, const QVariant& valu
     auto data = value.value<ImageArtifactData>();
     data.PopulateArtifact(artifact);
 
-    emit dataChanged(index, index);
+    Q_EMIT dataChanged(index, index);
     return true;
 }
 

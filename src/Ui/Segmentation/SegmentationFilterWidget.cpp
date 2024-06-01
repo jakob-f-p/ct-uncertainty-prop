@@ -4,10 +4,10 @@
 
 #include <QVBoxLayout>
 
-SegmentationFilterWidget::SegmentationFilterWidget() :
+SegmentationFilterWidget::SegmentationFilterWidget(ThresholdFilter& thresholdFilter) :
         VLayout(new QVBoxLayout(this)),
         FilterWidget(new ThresholdFilterWidget()),
-        SegmentationFilter(ThresholdFilter::New()) {
+        SegmentationFilter(&thresholdFilter) {
 
     FilterWidget->Populate(dynamic_cast<ThresholdFilter&>(*SegmentationFilter));
     VLayout->addWidget(FilterWidget);

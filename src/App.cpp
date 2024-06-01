@@ -11,8 +11,10 @@
 #include "Artifacts/Structure/StructureArtifact.h"
 #include "Artifacts/Structure/StructureArtifactListCollection.h"
 #include "Artifacts/PipelineList.h"
+#include "Segmentation/ThresholdFilter.h"
 #include "PipelineGroups/PipelineGroupList.h"
 #include "PipelineGroups/PipelineParameterSpan.h"
+#include "Utils/PythonInterpreter.h"
 
 #include <QApplication>
 #include <QSurfaceFormat>
@@ -51,7 +53,8 @@ App::App(int argc, char* argv[]) :
             pipelines.AddPipelineEventCallback(removeDependentPipelineGroups);
 
             return pipelineGroupList;
-        }()) {
+        }()),
+        PyInterpreter(new PythonInterpreter()) {
 
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 
@@ -86,7 +89,8 @@ auto App::Run() -> int {
 
     InitializeWithTestData();
 
-    MainWin = std::make_unique<MainWindow>(*CtDataTree, *DataSource, *Pipelines, *PipelineGroups);
+    MainWin = std::make_unique<MainWindow>(*CtDataTree, *DataSource, *ThresholdFilterAlgorithm,
+                                           *Pipelines, *PipelineGroups);
     MainWin->show();
 
     return QApplication::exec();
@@ -107,6 +111,14 @@ auto App::GetCtDataTree() const -> CtStructureTree& {
 
 auto App::GetPipelines() const -> PipelineList& {
     return *Pipelines;
+}
+
+auto App::GetThresholdFilter() const -> vtkImageAlgorithm& {
+    return *ThresholdFilterAlgorithm;
+}
+
+auto App::GetPythonInterpreter() const -> PythonInterpreter& {
+    return *PyInterpreter;
 }
 
 void App::InitializeWithTestData() {
@@ -189,7 +201,7 @@ void App::InitializeWithTestData() {
     imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(stairStepArtifact) } });
 
 
-    PipelineGroup& pipelineGroup = PipelineGroups->AddPipelineGroup(pipeline, "MyPipeline");
+    PipelineGroup& pipelineGroup = PipelineGroups->AddPipelineGroup(pipeline, "MyPipelineGroup");
 
     auto gaussianProperties = gaussian.GetProperties();
     auto& gaussianMeanProperty = gaussianProperties.GetPropertyByName<float>("Mean");

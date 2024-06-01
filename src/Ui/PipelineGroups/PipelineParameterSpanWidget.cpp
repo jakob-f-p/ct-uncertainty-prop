@@ -127,12 +127,12 @@ PipelineArtifactsView::PipelineArtifactsView(Pipeline const& pipeline) :
 
     connect(ImageArtifactsView, &ImageArtifactsReadOnlyView::ImageArtifactChanged,
             this, [this](ImageArtifact* imageArtifact) {
-        emit ArtifactChanged(ArtifactVariantPointer(imageArtifact));
+        Q_EMIT ArtifactChanged(ArtifactVariantPointer(imageArtifact));
     });
 
     connect(StructureArtifactsView, &PipelineStructureArtifactsView::StructureArtifactChanged,
             this, [this](StructureArtifact* structureArtifact) {
-        emit ArtifactChanged(ArtifactVariantPointer(structureArtifact));
+        Q_EMIT ArtifactChanged(ArtifactVariantPointer(structureArtifact));
     });
 
     connect(SelectViewComboBox, &QComboBox::currentIndexChanged,
@@ -142,7 +142,7 @@ PipelineArtifactsView::PipelineArtifactsView(Pipeline const& pipeline) :
             case STRUCTURE_ARTIFACTS: stackedView->setCurrentWidget(StructureArtifactsView); break;
         }
 
-        emit ArtifactChanged({});
+        Q_EMIT ArtifactChanged({});
     });
 }
 
@@ -182,7 +182,7 @@ PipelineStructureArtifactsView::PipelineStructureArtifactsView(Pipeline const& p
         artifactsView->setSizeAdjustPolicy(QAbstractScrollArea::SizeAdjustPolicy::AdjustToContentsOnFirstShow);
         ArtifactsView->UpdateWidget(artifactsView);
 
-        emit StructureArtifactChanged(nullptr);
+        Q_EMIT StructureArtifactChanged(nullptr);
 
         connect(&ArtifactsView->Widget(), &StructureArtifactsReadOnlyView::StructureArtifactChanged,
                 this, &PipelineStructureArtifactsView::StructureArtifactChanged);

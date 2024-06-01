@@ -6,16 +6,25 @@
 
 #include "../../PipelineGroups/ArtifactVariantPointer.h"
 #include "../../PipelineGroups/PipelineGroup.h"
+#include "../../PipelineGroups/PipelineGroupList.h"
 #include "../../PipelineGroups/PipelineParameterSpace.h"
 
 #include <QHBoxLayout>
+#include <QProgressBar>
 #include <QPushButton>
+
+#include <mutex>
 
 PipelineGroupsWidget::PipelineGroupsWidget(PipelineGroupList& pipelineGroups) :
         GroupListWidget(new PipelineGroupListWidget(pipelineGroups)),
         GroupWidget(new OptionalWidget<PipelineGroupWidget>("Select a pipeline group")),
         ParameterSpanWidget(new OptionalWidget<PipelineParameterSpanWidget>("Select a parameter span")),
-        CalculateImagesButton(new QPushButton("Generate Pipeline Images")){
+        CalculateImagesButton(new QPushButton("Generate Image Data")),
+        CalculateImagesProgressBar([]() {
+            auto* progressBar = new QProgressBar();
+            progressBar->setRange(0, 1000);
+            return progressBar;
+        }()) {
 
     auto* centralWidget = new QWidget();
     auto* vLayout = new QVBoxLayout(centralWidget);
@@ -27,15 +36,35 @@ PipelineGroupsWidget::PipelineGroupsWidget(PipelineGroupList& pipelineGroups) :
     parameterSpaceEditHLayout->addWidget(ParameterSpanWidget);
     vLayout->addWidget(parameterSpaceWidget);
 
-    auto* renderButtonBarWidget = new QWidget();
-    auto* renderButtonBarHLayout = new QHBoxLayout(renderButtonBarWidget);
-    renderButtonBarHLayout->addWidget(CalculateImagesButton);
-    vLayout->addWidget(renderButtonBarWidget);
+    auto* renderBarWidget = new QWidget();
+    auto* renderBarHLayout = new QHBoxLayout(renderBarWidget);
+    renderBarHLayout->addWidget(CalculateImagesButton);
+    renderBarHLayout->addWidget(CalculateImagesProgressBar);
+    vLayout->addWidget(renderBarWidget);
 
     setCentralWidget(centralWidget);
 
     connect(GroupListWidget, &PipelineGroupListWidget::PipelineGroupChanged,
             this, [&](PipelineGroup* pipelineGroup) { OnPipelineGroupChanged(pipelineGroup); });
+
+    connect(CalculateImagesButton, &QPushButton::clicked, this, [this, &pipelineGroups]() {
+        CalculateImagesButton->setEnabled(false);
+
+        std::mutex progressMutex;
+        auto progressCallback = [this, &progressMutex](double progress) {
+            std::scoped_lock<std::mutex> const lock (progressMutex);
+            CalculateImagesProgressBar->setValue(static_cast<int>(progress * 1000.0));
+        };
+
+        CalculateImagesProgressBar->setFormat("Generating Image Data (Task 1/2)... %p%");
+        pipelineGroups.GenerateImages(progressCallback);
+
+        CalculateImagesProgressBar->setFormat("Exporting Images... (Task 2/2) %p%");
+        pipelineGroups.ExportImages(progressCallback);
+
+        CalculateImagesProgressBar->reset();
+        CalculateImagesButton->setEnabled(true);
+    });
 }
 
 void PipelineGroupsWidget::UpdatePipelineList() noexcept {

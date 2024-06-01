@@ -45,7 +45,7 @@ public:
     auto
     Select(CombinedStructure const& combinedStructure) -> void;
 
-signals:
+Q_SIGNALS:
     void CtStructureChanged(idx_t structureIdx);
 
 protected:

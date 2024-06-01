@@ -63,7 +63,7 @@ FloatParameterSpanWidget::FloatParameterSpanWidget(FloatObjectProperty const& pr
 
     for (auto* spinBox : std::vector({ Min, Max, Step }))
         connect(spinBox, &QDoubleSpinBox::valueChanged,
-                this, [this]() { emit ValueChanged(); });
+                this, [this]() { Q_EMIT ValueChanged(); });
 }
 
 auto FloatParameterSpanWidget::SetParameterSpan(ParameterSpan<float> const& floatParameterSpan) noexcept -> void {
@@ -111,7 +111,7 @@ FloatPointParameterSpanWidget::FloatPointParameterSpanWidget(FloatPointObjectPro
     MinMaxStep->SetRowData(1, currentData);
 
     connect(MinMaxStep, &CoordinateRowWidget::ValueChanged,
-            this, [this]() { emit ValueChanged(); });
+            this, [this]() { Q_EMIT ValueChanged(); });
 }
 
 auto FloatPointParameterSpanWidget::SetParameterSpan(ParameterSpan<FloatPoint> const& parameterSpan) noexcept -> void {

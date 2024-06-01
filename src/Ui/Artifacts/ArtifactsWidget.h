@@ -39,7 +39,7 @@ public:
                                   QWidget* parent = nullptr);
     ~ArtifactRenderWidget() override;
 
-public slots:
+public Q_SLOTS:
     auto
     UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) -> void;
 

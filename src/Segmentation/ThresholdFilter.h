@@ -48,7 +48,7 @@ public:
     auto
     SetFilterData(ThresholdFilter& thresholdFilter) -> void;
 
-private slots:
+private Q_SLOTS:
     void UpdateSpinBoxVisibility(int idx);
 
 private:

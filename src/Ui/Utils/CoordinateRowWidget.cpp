@@ -52,7 +52,7 @@ auto CoordinateRowWidget::AppendCoordinatesRow(const NumericSettings& numericSet
 
     for (auto* spinBox : std::vector({ spinBoxRow.X, spinBoxRow.Y, spinBoxRow.Z }))
         connect(spinBox, &QDoubleSpinBox::valueChanged,
-                this, [this]() { emit ValueChanged(); });
+                this, [this]() { Q_EMIT ValueChanged(); });
 }
 
 auto CoordinateRowWidget::GetRowData(uint8_t rowIdx) const -> CoordinateRowWidget::RowData {

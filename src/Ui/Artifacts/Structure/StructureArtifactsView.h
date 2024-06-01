@@ -37,7 +37,7 @@ public:
     auto
     Select(StructureArtifact const& structureArtifact) -> void;
 
-signals:
+Q_SIGNALS:
     void StructureArtifactChanged(StructureArtifact* structureArtifact);
 
 protected:

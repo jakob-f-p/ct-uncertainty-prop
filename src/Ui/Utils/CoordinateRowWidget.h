@@ -51,7 +51,7 @@ public:
     auto
     SetRowData(uint8_t rowIdx, RowData data) -> void;
 
-signals:
+Q_SIGNALS:
     void ValueChanged();
 
 private:

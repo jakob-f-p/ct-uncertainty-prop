@@ -16,7 +16,7 @@ public:
     auto
     SetText(QString const& name) noexcept -> void { setText(name); };
 
-signals:
+Q_SIGNALS:
     void TextChanged(QString const& text);
 };
 

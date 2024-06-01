@@ -73,6 +73,8 @@ qt_add_resources(uncertainty_propagation images
         FILES ${RESOURCES_FOLDER} "Resources/ArrowLeftDisabled.png"
 )
 
+target_compile_definitions(uncertainty_propagation PRIVATE QT_NO_KEYWORDS)
+
 
 ### add VTK ###
 set(VTK_COMPONENTS
@@ -80,6 +82,7 @@ set(VTK_COMPONENTS
         FiltersCore
         GUISupportQt
         InteractionStyle
+        IOLegacy
         RenderingAnnotation
         RenderingCore
         RenderingQt
@@ -110,7 +113,7 @@ endif ()
 
 
 ### add Python ###
-find_package(Python 3.9 REQUIRED COMPONENTS Interpreter Development)
+#find_package(Python 3.9 REQUIRED COMPONENTS Interpreter Development)
 
 #get_cmake_property(_variableNames VARIABLES)
 #list (SORT _variableNames)
@@ -120,4 +123,19 @@ find_package(Python 3.9 REQUIRED COMPONENTS Interpreter Development)
 #    endif ()
 #endforeach()
 
-target_link_libraries(uncertainty_propagation PRIVATE Python::Python Python::Module)
+#target_link_libraries(uncertainty_propagation PRIVATE Python::Python Python::Module)
+
+file(GLOB_RECURSE UNCERTAINTY_PROPAGATION_PY_MODULES CONFIGURE_DEPENDS "*.py" "*.yaml")
+
+set(PYTHON_MODULES_DIRECTORY "${CMAKE_BINARY_DIR}/PyModules")
+file(MAKE_DIRECTORY ${PYTHON_MODULES_DIRECTORY})
+
+foreach (py_module ${UNCERTAINTY_PROPAGATION_PY_MODULES})
+    message(STATUS "Module=${py_module}")
+    message(STATUS "ModuleDir=${CMAKE_BINARY_DIR}/PyModules")
+    configure_file(${py_module} "${CMAKE_BINARY_DIR}/PyModules" COPYONLY)
+endforeach ()
+
+target_compile_definitions(uncertainty_propagation PUBLIC
+        PYTHON_MODULES_DIRECTORY="${PYTHON_MODULES_DIRECTORY}"
+        FEATURE_EXTRACTION_PARAMETERS_FILE="${PYTHON_MODULES_DIRECTORY}/params.yaml")

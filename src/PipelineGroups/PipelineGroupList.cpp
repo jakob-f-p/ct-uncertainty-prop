@@ -6,6 +6,7 @@
 #include "../Modeling/CtStructureTree.h"
 
 #include <ranges>
+#include <unordered_map>
 
 PipelineGroupList::PipelineGroupList(const PipelineList& pipelines) :
         Pipelines(pipelines) {}
@@ -57,4 +58,39 @@ auto PipelineGroupList::FindPipelineGroupsByBasePipeline(Pipeline const& basePip
             | std::views::common;
 
     return { filteredPipelineGroups.begin(), filteredPipelineGroups.end() };
+}
+
+auto PipelineGroupList::GenerateImages(ProgressEventCallback const& callback) -> void {
+    std::vector<double> progressList (PipelineGroups.size(), 0.0);
+    callback(0.0);
+
+    for (int i = 0; i < PipelineGroups.size(); i++) {
+        auto progressCallback = [&progressList, i, callback](double current) {
+            progressList[i] = current;
+
+            double const totalProgress = std::reduce(progressList.cbegin(), progressList.cend())
+                                                 / static_cast<double>(progressList.size());
+            callback(totalProgress);
+        };
+
+        PipelineGroups[i]->GenerateImages(progressCallback);
+    }
+}
+
+auto
+PipelineGroupList::ExportImages(PipelineGroupList::ProgressEventCallback const& callback) -> void {
+    std::vector<double> progressList (PipelineGroups.size(), 0.0);
+    callback(0.0);
+
+    for (int i = 0; i < PipelineGroups.size(); i++) {
+        auto progressCallback = [&progressList, i, callback](double current) {
+            progressList[i] = current;
+
+            double const totalProgress = std::reduce(progressList.cbegin(), progressList.cend())
+                                         / static_cast<double>(progressList.size());
+            callback(totalProgress);
+        };
+
+        PipelineGroups[i]->ExportImages(i, progressCallback);
+    }
 }

@@ -4,13 +4,16 @@
 
 #include <memory>
 
-class QApplication;
-
 class CtDataSource;
 class CtStructureTree;
 class PipelineList;
 class PipelineGroupList;
+class PythonInterpreter;
+class ThresholdFilter;
+
+class QApplication;
 class MainWindow;
+class vtkImageAlgorithm;
 
 class App {
 public:
@@ -36,6 +39,12 @@ public:
     [[nodiscard]] auto
     GetPipelines() const -> PipelineList&;
 
+    [[nodiscard]] auto
+    GetThresholdFilter() const -> vtkImageAlgorithm&;
+
+    [[nodiscard]] auto
+    GetPythonInterpreter() const -> PythonInterpreter&;
+
 protected:
     App(int argc, char* argv[]);
     ~App();
@@ -52,6 +61,8 @@ private:
     std::unique_ptr<MainWindow> MainWin;
     std::unique_ptr<CtStructureTree> CtDataTree;
     vtkNew<CtDataSource> DataSource;
+    vtkNew<ThresholdFilter> ThresholdFilterAlgorithm;
     std::unique_ptr<PipelineList> Pipelines;
     std::unique_ptr<PipelineGroupList> PipelineGroups;
+    std::unique_ptr<PythonInterpreter> PyInterpreter;
 };

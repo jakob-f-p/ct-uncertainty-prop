@@ -57,18 +57,18 @@ public:
                               QStyleOptionViewItem const& option,
                               QModelIndex const& index) const override {}
 
-protected slots:
+protected Q_SLOTS:
     void commitEdit() {
         auto* ctStructureEditDialog = qobject_cast<QDialog*>(sender());
 
-        emit commitData(ctStructureEditDialog);
-        emit closeEditor(ctStructureEditDialog);
+        Q_EMIT commitData(ctStructureEditDialog);
+        Q_EMIT closeEditor(ctStructureEditDialog);
     }
 
     void discardChanges() {
         auto* ctStructureEditDialog = qobject_cast<QDialog*>(sender());
 
-        emit closeEditor(ctStructureEditDialog);
+        Q_EMIT closeEditor(ctStructureEditDialog);
     }
 
 protected:

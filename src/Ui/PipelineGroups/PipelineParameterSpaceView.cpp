@@ -120,6 +120,18 @@ auto PipelineParameterSpaceModel::RemoveParameterSpan(QModelIndex const& index) 
     auto& spanSet = ParameterSpace.GetSpanSet(index.parent().row());
 
     beginResetModel();
+
     spanSet.RemoveParameterSpan(*parameterSpan);
+
+    if (spanSet.GetSize() == 0) {
+        auto spanSetIt = std::find(ParameterSpace.ParameterSpanSets.cbegin(), ParameterSpace.ParameterSpanSets.cend(),
+                                   spanSet);
+
+        if (spanSetIt == ParameterSpace.ParameterSpanSets.cend())
+            throw std::runtime_error("Parameter span set not found");
+
+        ParameterSpace.ParameterSpanSets.erase(spanSetIt);
+    }
+
     endResetModel();
 }

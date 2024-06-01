@@ -123,7 +123,7 @@ void PipelineGroupListWidget::OnSelectionChanged(const QItemSelection& selected,
     QModelIndexList const selectedIndices = selected.indexes();
 
     if (selectedIndices.empty()) {
-        emit PipelineGroupChanged(nullptr);
+        Q_EMIT PipelineGroupChanged(nullptr);
         return;
     }
 
@@ -134,7 +134,7 @@ void PipelineGroupListWidget::OnSelectionChanged(const QItemSelection& selected,
 
     auto* pipelineGroup = selectedIndex.data(Qt::UserRole).value<PipelineGroup*>();
 
-    emit PipelineGroupChanged(pipelineGroup);
+    Q_EMIT PipelineGroupChanged(pipelineGroup);
 }
 
 

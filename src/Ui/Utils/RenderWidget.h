@@ -19,7 +19,7 @@ public:
     [[nodiscard]] auto
     GetCurrentFilter() -> vtkImageAlgorithm&;
 
-public slots:
+public Q_SLOTS:
     auto
     ResetCamera() const -> void;
 

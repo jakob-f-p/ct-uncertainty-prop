@@ -12,16 +12,17 @@ class PipelineParameterSpan;
 class PipelineParameterSpanWidget;
 
 class QPushButton;
+class QProgressBar;
 
 
 class PipelineGroupsWidget : public QMainWindow {
 public:
     explicit PipelineGroupsWidget(PipelineGroupList& pipelineGroups);
 
-public slots:
+public Q_SLOTS:
     void UpdatePipelineList() noexcept;
 
-private slots:
+private Q_SLOTS:
     void OnPipelineGroupChanged(PipelineGroup* pipelineGroup);
     void OnParameterSpanChanged(PipelineGroup* pipelineGroup, PipelineParameterSpan* parameterSpan);
     void OnRequestCreateParameterSpan(PipelineGroup* pipelineGroup);
@@ -32,4 +33,5 @@ private:
     OptionalWidget<PipelineParameterSpanWidget>* ParameterSpanWidget;
 
     QPushButton* CalculateImagesButton;
+    QProgressBar* CalculateImagesProgressBar;
 };

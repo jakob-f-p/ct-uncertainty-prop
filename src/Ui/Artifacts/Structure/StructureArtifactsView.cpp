@@ -58,7 +58,7 @@ void StructureArtifactsReadOnlyView::selectionChanged(QItemSelection const& sele
     QModelIndexList const selectedIndices = selected.indexes();
 
     if (selectedIndices.empty()) {
-        emit StructureArtifactChanged(nullptr);
+        Q_EMIT StructureArtifactChanged(nullptr);
         return;
     }
 
@@ -69,5 +69,5 @@ void StructureArtifactsReadOnlyView::selectionChanged(QItemSelection const& sele
 
     auto* structureArtifact = selectedIndex.data(StructureArtifactsModel::POINTER).value<StructureArtifact*>();
 
-    emit StructureArtifactChanged(structureArtifact);
+    Q_EMIT StructureArtifactChanged(structureArtifact);
 }

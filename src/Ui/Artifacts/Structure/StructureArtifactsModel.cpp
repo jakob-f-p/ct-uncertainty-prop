@@ -73,7 +73,7 @@ auto StructureArtifactsModel::setData(QModelIndex const& index, QVariant const& 
     auto data = value.value<StructureArtifactData>();
     data.PopulateArtifact(*artifact);
 
-    emit dataChanged(index, index);
+    Q_EMIT dataChanged(index, index);
 
     return true;
 }

@@ -46,7 +46,7 @@ public:
     [[nodiscard]] auto
     GetPipelineParameterSpan() const -> PipelineParameterSpan;
 
-signals:
+Q_SIGNALS:
     void Accept();
     void Reject();
 
@@ -74,7 +74,7 @@ public:
     auto
     SelectArtifact(ArtifactVariantPointer artifactPointer) -> void;
 
-signals:
+Q_SIGNALS:
     void ArtifactChanged(ArtifactVariantPointer artifactVariantPointer);
 
 private:
@@ -98,7 +98,7 @@ public:
     auto
     Select(StructureArtifact const& structureArtifact) -> void;
 
-signals:
+Q_SIGNALS:
     void StructureArtifactChanged(StructureArtifact* structureArtifact);
 
 private:

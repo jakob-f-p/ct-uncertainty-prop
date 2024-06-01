@@ -9,10 +9,10 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-SegmentationWidget::SegmentationWidget(CtDataSource& dataSource) :
+SegmentationWidget::SegmentationWidget(CtDataSource& dataSource, ThresholdFilter& thresholdFilter) :
         ResetCameraButton(new QPushButton("Reset Camera")),
         RenderButton(new QPushButton("Render")),
-        FilterWidget(new SegmentationFilterWidget()),
+        FilterWidget(new SegmentationFilterWidget(thresholdFilter)),
         RenderWidget(new SegmentationRenderWidget(dataSource, FilterWidget->GetFilter())) {
 
     connect(FilterWidget, &SegmentationFilterWidget::FilterModified,

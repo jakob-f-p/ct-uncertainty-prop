@@ -7,6 +7,7 @@
 
 MainWindow::MainWindow(CtStructureTree& ctStructureTree,
                        CtDataSource& dataSource,
+                       ThresholdFilter& thresholdFilter,
                        PipelineList& pipelineList,
                        PipelineGroupList& pipelineGroups) :
         DataSource(dataSource) {
@@ -19,7 +20,7 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree,
 
     auto* modelingWidget = new ModelingWidget(ctStructureTree, DataSource);
     auto* artifactsWidget = new ArtifactsWidget(pipelineList, DataSource);
-    auto* segmentationWidget = new SegmentationWidget(DataSource);
+    auto* segmentationWidget = new SegmentationWidget(DataSource, thresholdFilter);
     auto* pipelineGroupsWidget = new PipelineGroupsWidget(pipelineGroups);
 
     tabWidget->addTab(modelingWidget, "Modeling");

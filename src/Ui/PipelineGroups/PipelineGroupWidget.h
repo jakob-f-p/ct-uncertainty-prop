@@ -22,17 +22,17 @@ public:
 
     void AddParameterSpan(PipelineParameterSpan&& parameterSpan);
 
-public slots:
+public Q_SLOTS:
     void UpdateNumberOfPipelines();
 
-signals:
+Q_SIGNALS:
     void ParameterSpanChanged(PipelineParameterSpan* parameterSpan);
 
     void RequestCreateParameterSpan();
 
     void NumberOfPipelinesUpdated();
 
-private slots:
+private Q_SLOTS:
     void OnRemoveParameterSpan();
 
     void OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected);

@@ -22,7 +22,7 @@ public:
         setCurrentWidget(PlaceholderWidget);
     }
 
-public slots:
+public Q_SLOTS:
     auto
     UpdateWidget(WidgetType* widget) noexcept -> void {
         if (MainWidget) {

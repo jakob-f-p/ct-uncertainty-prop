@@ -26,6 +26,13 @@ public:
     [[nodiscard]] auto
     GetNumberOfPipelines() const noexcept -> uint16_t;
 
+    using ProgressEventCallback = std::function<void(double)>;
+    auto
+    GenerateImages(ProgressEventCallback const& callback = [](double){}) -> void;
+
+    auto
+    ExportImages(ProgressEventCallback const& callback = [](double) {}) -> void;
+
     auto
     AddPipelineGroup(Pipeline const& pipeline, const std::string& name = "") -> PipelineGroup&;
 

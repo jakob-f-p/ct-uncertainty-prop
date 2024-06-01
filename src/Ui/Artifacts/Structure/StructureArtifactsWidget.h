@@ -18,7 +18,7 @@ public:
     void AddView(Pipeline& pipeline);
     void RemoveCurrentView();
 
-public slots:
+public Q_SLOTS:
     void ResetModel();
 
 private:

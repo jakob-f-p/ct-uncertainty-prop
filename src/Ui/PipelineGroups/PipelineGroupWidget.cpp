@@ -52,6 +52,8 @@ PipelineGroupWidget::PipelineGroupWidget(PipelineGroup& pipelineGroup, QWidget* 
     connect(RemoveParameterSpanButton, &QPushButton::clicked, this, &PipelineGroupWidget::OnRemoveParameterSpan);
 
     connect(SelectionModel, &QItemSelectionModel::selectionChanged, this, &PipelineGroupWidget::OnSelectionChanged);
+
+    connect(this, &PipelineGroupWidget::ParameterSpanChanged, this, [this]() { UpdateButtonStatus(); });
 }
 
 void PipelineGroupWidget::AddParameterSpan(PipelineParameterSpan&& parameterSpan) {
@@ -67,7 +69,7 @@ void PipelineGroupWidget::AddParameterSpan(PipelineParameterSpan&& parameterSpan
 void PipelineGroupWidget::UpdateNumberOfPipelines() {
     NumberOfPipelinesSpinBox->setValue(Group.GetParameterSpace().GetNumberOfPipelines());
 
-    emit NumberOfPipelinesUpdated();
+    Q_EMIT NumberOfPipelinesUpdated();
 }
 
 auto PipelineGroupWidget::UpdateButtonStatus() -> void {
@@ -95,7 +97,7 @@ void PipelineGroupWidget::OnSelectionChanged(QItemSelection const& selected, QIt
     QModelIndexList const selectedIndices = selected.indexes();
 
     if (selectedIndices.empty()) {
-        emit ParameterSpanChanged(nullptr);
+        Q_EMIT ParameterSpanChanged(nullptr);
         return;
     }
 
@@ -106,7 +108,7 @@ void PipelineGroupWidget::OnSelectionChanged(QItemSelection const& selected, QIt
     QModelIndex const parentIndex = selectedIndex.parent();
 
     if (!selectedIndex.data(PipelineParameterSpaceModel::Roles::IS_PARAMETER_SPAN).toBool()) {
-        emit ParameterSpanChanged(nullptr);
+        Q_EMIT ParameterSpanChanged(nullptr);
         return;
     }
 
@@ -116,5 +118,5 @@ void PipelineGroupWidget::OnSelectionChanged(QItemSelection const& selected, QIt
     auto* parameterSpan
             = selectedIndex.data(PipelineParameterSpaceModel::POINTER).value<PipelineParameterSpan*>();
 
-    emit ParameterSpanChanged(parameterSpan);
+    Q_EMIT ParameterSpanChanged(parameterSpan);
 }

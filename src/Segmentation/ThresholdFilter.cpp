@@ -1,15 +1,20 @@
 #include "ThresholdFilter.h"
 
+#include "../Utils/vtkImageDataArrayIterator.h"
+
 #include <QComboBox>
 #include <QDoubleSpinBox>
 #include <QFormLayout>
 
 #include <vtkFloatArray.h>
 #include <vtkImageData.h>
+#include <vtkImageIterator.h>
+#include <vtkImageProgressIterator.h>
 #include <vtkInformation.h>
 #include <vtkInformationVector.h>
 #include <vtkObjectFactory.h>
 #include <vtkPointData.h>
+#include <vtkTypeInt16Array.h>
 
 vtkStandardNewMacro(ThresholdFilter);
 
@@ -19,12 +24,67 @@ ThresholdFilter::ThresholdFilter() {
     OutValue = -1001.0;
 }
 
-void ThresholdFilter::ThreadedRequestData(vtkInformation* request, vtkInformationVector** inputVector,
-                                          vtkInformationVector* outputVector, vtkImageData*** inData,
-                                          vtkImageData** outData, int* outExt, int id) {
-    inData[0][0]->GetPointData()->SetActiveScalars("Radiodensities");
+template<typename IT, typename OT>
+void ThresholdFilterExecute(ThresholdFilter* self, vtkImageData* inData, vtkImageData* outData,
+                            int outExt[6], int id, IT*, OT*) {
 
-    vtkImageThreshold::ThreadedRequestData(request, inputVector, outputVector, inData, outData, outExt, id);
+    vtkImageIterator<IT> inIt(inData, outExt);
+    vtkImageDataArrayIterator<vtkTypeInt8> maskIt(inData, outExt, "Segmentation Mask");
+    vtkImageProgressIterator<OT> outIt(outData, outExt, self, id);
+
+    int const replaceIn = self->GetReplaceIn();
+    int const replaceOut = self->GetReplaceOut();
+
+    IT const lowerThreshold = std::clamp(self->GetLowerThreshold(),
+                                         inData->GetScalarTypeMin(), inData->GetScalarTypeMax());
+    IT const upperThreshold = std::clamp(self->GetUpperThreshold(),
+                                         inData->GetScalarTypeMin(), inData->GetScalarTypeMax());
+
+    OT const inValue  = std::clamp(self->GetInValue(),  inData->GetScalarTypeMin(), inData->GetScalarTypeMax());
+    OT const outValue = std::clamp(self->GetOutValue(), inData->GetScalarTypeMin(), inData->GetScalarTypeMax());
+
+    for (; !outIt.IsAtEnd(); inIt.NextSpan(), maskIt.NextSpan(), outIt.NextSpan()) {
+        IT* inSI = inIt.BeginSpan();
+        OT* outSI = outIt.BeginSpan();
+        vtkTypeInt8* maskSI = maskIt.BeginSpan();
+        OT* outSIEnd = outIt.EndSpan();
+
+        for (; outSI != outSIEnd; ++inSI, ++maskSI, ++outSI) {
+            IT const value = (*inSI);
+            bool const valueIsWithinBounds = lowerThreshold <= value && value <= upperThreshold;
+
+            *maskSI = valueIsWithinBounds
+                    ? 1
+                    : 0;
+
+            *outSI = valueIsWithinBounds
+                    ? (replaceIn  ? inValue  : static_cast<OT>(value))
+                    : (replaceOut ? outValue : static_cast<OT>(value));
+        }
+    }
+}
+
+template<typename T>
+void ThresholdFilterExecute1(ThresholdFilter* self, vtkImageData* inData, vtkImageData* outData, int outExt[6],
+                             int id, T*) {
+    switch (outData->GetScalarType()) {
+        vtkTemplateMacro(ThresholdFilterExecute(self, inData, outData, outExt, id,
+                                                static_cast<T*>(nullptr), static_cast<VTK_TT*>(nullptr)));
+        default:
+            vtkGenericWarningMacro("Execute: Unknown input ScalarType");
+    }
+}
+
+void ThresholdFilter::ThreadedRequestData(vtkInformation* vtkNotUsed(request),
+                                          vtkInformationVector** vtkNotUsed(inputVector),
+                                          vtkInformationVector* vtkNotUsed(outputVector),
+                                          vtkImageData*** inData, vtkImageData** outData, int outExt[6], int id) {
+    switch (inData[0][0]->GetScalarType()) {
+        vtkTemplateMacro(ThresholdFilterExecute1(this, inData[0][0], outData[0], outExt, id,
+                                                 static_cast<VTK_TT*>(nullptr)));
+        default:
+            vtkErrorMacro(<< "Execute: Unknown input ScalarType");
+    }
 }
 
 void ThresholdFilter::PrepareImageData(vtkInformationVector** inputVector, vtkInformationVector* outputVector,
@@ -41,7 +101,16 @@ void ThresholdFilter::PrepareImageData(vtkInformationVector** inputVector, vtkIn
     inData->GetPointData()->AddArray(segmentedRadiodensitiesArray);
     inData->GetPointData()->SetActiveScalars("Segmented Radiodensities");
 
+    vtkNew<vtkTypeInt16Array> segmentationMaskArray;
+    segmentationMaskArray->SetNumberOfComponents(1);
+    segmentationMaskArray->SetName("Segmentation Mask");
+    segmentationMaskArray->SetNumberOfTuples(inData->GetNumberOfPoints());
+    segmentationMaskArray->FillValue(0);
+    inData->GetPointData()->AddArray(segmentationMaskArray);
+
     vtkThreadedImageAlgorithm::PrepareImageData(inputVector, outputVector, inDataObjects, outDataObjects);
+
+    inData->GetPointData()->SetActiveScalars("Radiodensities");
 }
 
 auto ThresholdFilterWidget::FilterModeToString(ThresholdFilterWidget::FilterMode mode) -> std::string {
@@ -126,8 +195,8 @@ auto ThresholdFilterWidget::SetFilterData(ThresholdFilter& thresholdFilter) -> v
     auto const mode = ModeComboBox->currentData().value<FilterMode>();
 
     switch (mode) {
-        case FilterMode::UPPER:   thresholdFilter.ThresholdByUpper(upper);        break;
-        case FilterMode::LOWER:   thresholdFilter.ThresholdByLower(lower);        break;
+        case FilterMode::UPPER:   thresholdFilter.ThresholdByUpper(upper); break;
+        case FilterMode::LOWER:   thresholdFilter.ThresholdByLower(lower); break;
         case FilterMode::BETWEEN: thresholdFilter.ThresholdBetween(lower, upper); break;
         default: break;
     }

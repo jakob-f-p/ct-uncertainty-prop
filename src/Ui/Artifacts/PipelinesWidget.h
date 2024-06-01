@@ -20,10 +20,10 @@ public:
 
     auto GetCurrentPipeline() -> Pipeline&;
 
-signals:
+Q_SIGNALS:
     void PipelineViewUpdated(Pipeline& newPipeline);
 
-private slots:
+private Q_SLOTS:
     void AddPipeline();
     void RemovePipeline();
     void PreviousPipeline();

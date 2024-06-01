@@ -36,7 +36,7 @@ public:
     auto
     Select(ImageArtifact const& imageArtifact) -> void;
 
-signals:
+Q_SIGNALS:
     void ImageArtifactChanged(ImageArtifact* imageArtifact);
 
 protected:

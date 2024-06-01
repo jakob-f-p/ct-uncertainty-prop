@@ -130,7 +130,7 @@ auto CtStructureTreeModel::setData(const QModelIndex &index, const QVariant &val
 
     Tree.SetData(index.internalId(), value);
 
-    emit dataChanged(index, index);
+    Q_EMIT dataChanged(index, index);
     return true;
 }
 

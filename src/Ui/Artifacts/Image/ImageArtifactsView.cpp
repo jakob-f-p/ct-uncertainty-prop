@@ -175,7 +175,7 @@ void ImageArtifactsReadOnlyView::selectionChanged(QItemSelection const& selected
     QModelIndexList const selectedIndices = selected.indexes();
 
     if (selectedIndices.empty()) {
-        emit ImageArtifactChanged(nullptr);
+        Q_EMIT ImageArtifactChanged(nullptr);
         return;
     }
 
@@ -186,5 +186,5 @@ void ImageArtifactsReadOnlyView::selectionChanged(QItemSelection const& selected
 
     auto* imageArtifact = selectedIndex.data(ImageArtifactsModel::POINTER).value<ImageArtifact*>();
 
-    emit ImageArtifactChanged(imageArtifact);
+    Q_EMIT ImageArtifactChanged(imageArtifact);
 }

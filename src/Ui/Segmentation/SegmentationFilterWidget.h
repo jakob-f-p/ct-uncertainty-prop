@@ -4,6 +4,7 @@
 
 #include <vtkSmartPointer.h>
 
+class ThresholdFilter;
 class ThresholdFilterWidget;
 
 class QVBoxLayout;
@@ -14,16 +15,16 @@ class SegmentationFilterWidget : public QWidget {
     Q_OBJECT
 
 public:
-    SegmentationFilterWidget();
+    SegmentationFilterWidget(ThresholdFilter& thresholdFilter);
     ~SegmentationFilterWidget() override;
 
     [[nodiscard]] auto
     GetFilter() const -> vtkImageAlgorithm&;
 
-public slots:
+public Q_SLOTS:
     void UpdateFilter();
 
-signals:
+Q_SIGNALS:
     void FilterModified(vtkImageAlgorithm& segmentationFilter);
 
 private:

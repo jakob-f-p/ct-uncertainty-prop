@@ -31,7 +31,7 @@ public:
     [[nodiscard]] auto
     GetParameterSpanData() -> ParameterSpanData;
 
-signals:
+Q_SIGNALS:
     void ValueChanged();
 
 private:
@@ -61,7 +61,7 @@ public:
     [[nodiscard]] auto
     GetParameterSpanData() -> ParameterSpanData;
 
-signals:
+Q_SIGNALS:
     void ValueChanged();
 
 private:
@@ -84,7 +84,7 @@ public:
     auto
     SetParameterSpan(PipelineParameterSpan const& parameterSpan) -> void;
 
-signals:
+Q_SIGNALS:
     void ValueChanged();
 
 private:

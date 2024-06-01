@@ -110,7 +110,7 @@ void PipelinesWidget::UpdatePipelineView() {
     StructureArtifactModelingWidget->SetCurrentView(CurrentPipelineIndex);
     ImageArtifactModelingWidget->SetCurrentView(CurrentPipelineIndex);
 
-    emit PipelineViewUpdated(GetCurrentPipeline());
+    Q_EMIT PipelineViewUpdated(GetCurrentPipeline());
 }
 
 void PipelinesWidget::InitializeViews() {

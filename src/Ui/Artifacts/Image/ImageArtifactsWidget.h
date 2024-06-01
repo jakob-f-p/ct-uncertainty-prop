@@ -21,7 +21,7 @@ public:
     void AddView(Pipeline& pipeline);
     void RemoveCurrentView();
 
-protected slots:
+protected Q_SLOTS:
     void AddChildArtifact();
     void AddSiblingArtifact();
     void RemoveArtifact();

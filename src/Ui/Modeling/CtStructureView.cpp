@@ -69,7 +69,7 @@ void CtStructureReadOnlyView::selectionChanged(QItemSelection const& selected, Q
     QModelIndexList const selectedIndices = selected.indexes();
 
     if (selectedIndices.empty()) {
-        emit CtStructureChanged({});
+        Q_EMIT CtStructureChanged({});
         return;
     }
 
@@ -80,7 +80,7 @@ void CtStructureReadOnlyView::selectionChanged(QItemSelection const& selected, Q
 
     auto structureIdx = idx_t::FromSigned(selectedIndex.internalId());
 
-    emit CtStructureChanged(structureIdx);
+    Q_EMIT CtStructureChanged(structureIdx);
 }
 
 auto CtStructureReadOnlyView::Select(BasicStructure const& basicStructure) -> void {

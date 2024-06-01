@@ -9,10 +9,11 @@ class QPushButton;
 class CtDataSource;
 class SegmentationFilterWidget;
 class SegmentationRenderWidget;
+class ThresholdFilter;
 
 class SegmentationWidget : public QMainWindow {
 public:
-    explicit SegmentationWidget(CtDataSource& dataSource);
+    explicit SegmentationWidget(CtDataSource& dataSource, ThresholdFilter& thresholdFilter);
 
     auto
     UpdateDataSource(vtkImageAlgorithm& dataSource) -> void;
@@ -35,7 +36,7 @@ public:
                                       QWidget* parent = nullptr);
     ~SegmentationRenderWidget() override;
 
-public slots:
+public Q_SLOTS:
     auto
     UpdateDataSource(vtkImageAlgorithm& dataSource) -> void;
 

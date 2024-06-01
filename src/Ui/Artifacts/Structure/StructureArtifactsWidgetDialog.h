@@ -16,7 +16,7 @@ public:
                                             std::string& title,
                                             QWidget* parent = nullptr);
 
-protected slots:
+protected Q_SLOTS:
     void AddArtifact();
     void RemoveArtifact();
     void MoveUp();
