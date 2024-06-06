@@ -33,9 +33,9 @@ auto StructureArtifactList::GetNumberOfArtifacts() const noexcept -> uidx_t {
 
 void StructureArtifactList::AddStructureArtifact(StructureArtifact&& structureArtifact, int insertionIdx) {
     if (insertionIdx == -1)
-        Artifacts.emplace_back(std::move(structureArtifact));
-    else
-        Artifacts.emplace(std::next(Artifacts.begin(), insertionIdx), std::move(structureArtifact));
+        insertionIdx = Artifacts.size();
+
+    Artifacts.emplace(std::next(Artifacts.begin(), insertionIdx), std::move(structureArtifact));
 
     std::sort(Artifacts.begin(), Artifacts.end(),
               [](auto const& a, auto const& b) { return a.GetSubType() < b.GetSubType(); });

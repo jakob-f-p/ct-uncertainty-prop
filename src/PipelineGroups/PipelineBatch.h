@@ -71,4 +71,3 @@ private:
     PipelineStates States;
     PipelineImages Images;
 };
-

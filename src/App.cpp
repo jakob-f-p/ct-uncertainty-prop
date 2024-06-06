@@ -122,8 +122,6 @@ auto App::GetPythonInterpreter() const -> PythonInterpreter& {
 }
 
 void App::InitializeWithTestData() {
-    auto& pipeline = Pipelines->AddPipeline();
-
     BasicStructure sphere(Sphere{});
     sphere.SetTissueType(BasicStructureDetails::GetTissueTypeByName("Cancellous Bone"));
     sphere.SetTransformData({ 40.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f });
@@ -139,6 +137,16 @@ void App::InitializeWithTestData() {
     CtDataTree->AddBasicStructure(std::move(sphere));
     CtDataTree->CombineWithBasicStructure(std::move(box), std::move(combinedStructure));
 
+
+    auto& pipelineA = Pipelines->AddPipeline();
+    auto& pipelineB = Pipelines->AddPipeline();
+
+    auto& structureArtifactsA = pipelineA.GetStructureArtifactList(1);
+    auto& structureArtifactsB = pipelineB.GetStructureArtifactList(1);
+
+    ImageArtifactConcatenation& imageArtifactConcatenationA = pipelineA.GetImageArtifactConcatenation();
+    ImageArtifactConcatenation& imageArtifactConcatenationB = pipelineB.GetImageArtifactConcatenation();
+
     MotionArtifact motionArtifact {};
     motionArtifact.SetCtNumberFactor(5.0);
     motionArtifact.SetTransform({ 1.0, 0.0, 0.0,
@@ -147,61 +155,79 @@ void App::InitializeWithTestData() {
     StructureArtifact motionStructureArtifact(std::move(motionArtifact));
     motionStructureArtifact.SetName("1");
 
-    auto& basicStructure1Artifacts = pipeline.GetStructureArtifactList(1);
-    basicStructure1Artifacts.AddStructureArtifact(std::move(motionStructureArtifact));
-
-
-    ImageArtifactConcatenation& imageArtifactConcatenation = pipeline.GetImageArtifactConcatenation();
+    structureArtifactsA.AddStructureArtifact(std::move(motionStructureArtifact));
 
     BasicImageArtifact gaussianArtifact(GaussianArtifact{});
     gaussianArtifact.SetName("sequential gaussian");
-    auto& gaussian = imageArtifactConcatenation.AddImageArtifact(std::move(gaussianArtifact));
+    auto& gaussian = imageArtifactConcatenationA.AddImageArtifact(std::move(gaussianArtifact));
 
     CompositeImageArtifact compositeImageArtifact;
     compositeImageArtifact.SetCompositionType(CompositeImageArtifactDetails::CompositionType::PARALLEL);
-    auto& composite = imageArtifactConcatenation.AddImageArtifact(std::move(compositeImageArtifact));
+    auto& composite = imageArtifactConcatenationA.AddImageArtifact(std::move(compositeImageArtifact));
 
     CompositeImageArtifact compositeImageArtifact1;
     compositeImageArtifact1.SetCompositionType(CompositeImageArtifactDetails::CompositionType::SEQUENTIAL);
-    auto& composite1 = imageArtifactConcatenation.AddImageArtifact(std::move(compositeImageArtifact1), &composite);
+    auto& composite1 = imageArtifactConcatenationA.AddImageArtifact(std::move(compositeImageArtifact1), &composite);
     BasicImageArtifact gaussianArtifact2(GaussianArtifact{});
     BasicImageArtifact gaussianArtifact3(GaussianArtifact{});
-    imageArtifactConcatenation.AddImageArtifact(std::move(gaussianArtifact2), &composite1);
-    imageArtifactConcatenation.AddImageArtifact(std::move(gaussianArtifact3), &composite1);
+    imageArtifactConcatenationA.AddImageArtifact(std::move(gaussianArtifact2), &composite1);
+    imageArtifactConcatenationA.AddImageArtifact(std::move(gaussianArtifact3), &composite1);
 
     BasicImageArtifact gaussianArtifact1(GaussianArtifact{});
-    imageArtifactConcatenation.AddImageArtifact(std::move(gaussianArtifact1), &composite);
+    imageArtifactConcatenationA.AddImageArtifact(std::move(gaussianArtifact1), &composite);
 
     BasicImageArtifact gaussianArtifact4(GaussianArtifact{});
-    imageArtifactConcatenation.AddImageArtifact(std::move(gaussianArtifact4));
+    imageArtifactConcatenationA.AddImageArtifact(std::move(gaussianArtifact4));
 
     SaltPepperArtifact saltPepperArtifact;
     saltPepperArtifact.SetSaltAmount(0.001);
     saltPepperArtifact.SetSaltIntensity(1000.0);
-    imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(saltPepperArtifact) } });
+    imageArtifactConcatenationA.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(saltPepperArtifact) } });
 
     RingArtifact ringArtifact;
     ringArtifact.SetBrightIntensity(500.0);
     ringArtifact.SetBrightRingWidth(15.0);
     ringArtifact.SetDarkRingWidth(5.0);
-    imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(ringArtifact) } });
+    imageArtifactConcatenationA.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(ringArtifact) } });
 
     WindMillArtifact windMillArtifact;
     windMillArtifact.SetBrightIntensity(500.0);
     windMillArtifact.SetBrightAngularWidth(15.0);
     windMillArtifact.SetDarkAngularWidth(15.0);
-    imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(windMillArtifact) } });
+    imageArtifactConcatenationA.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(windMillArtifact) } });
 
     CuppingArtifact cuppingArtifact;
     cuppingArtifact.SetDarkIntensity(-500.0);
-    imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(cuppingArtifact) } });
+    imageArtifactConcatenationA.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(cuppingArtifact) } });
 
     StairStepArtifact stairStepArtifact;
     stairStepArtifact.SetRelativeZAxisSamplingRate(0.75);
-    imageArtifactConcatenation.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(stairStepArtifact) } });
+    imageArtifactConcatenationA.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(stairStepArtifact) } });
+
+    MotionArtifact motionArtifactB {};
+    motionArtifactB.SetCtNumberFactor(5.0);
+    motionArtifactB.SetTransform({ 1.0, 0.0, 0.0,
+                                  0.0, 0.0, 0.0,
+                                  1.0, 1.0, 1.0 });
+    StructureArtifact motionStructureArtifactB(std::move(motionArtifactB));
+    motionStructureArtifactB.SetName("1");
+
+    structureArtifactsB.AddStructureArtifact(std::move(motionStructureArtifactB));
+
+    GaussianArtifact gaussianArtifactB1sub {};
+    gaussianArtifactB1sub.SetMean(100.0);
+    gaussianArtifactB1sub.SetStandardDeviation(20.0);
+    BasicImageArtifact gaussianArtifactB1(gaussianArtifactB1sub);
+    gaussianArtifactB1.SetName("gaussian(100.0, 20.0)");
+    auto& gaussianB1 = imageArtifactConcatenationB.AddImageArtifact(std::move(gaussianArtifactB1));
+    CuppingArtifact cuppingArtifactBsub;
+    cuppingArtifactBsub.SetDarkIntensity(-200.0);
+    BasicImageArtifact cuppingArtifactB(cuppingArtifactBsub);
+    cuppingArtifactB.SetName("cupping(-200.0)");
+    auto& cuppingB = imageArtifactConcatenationB.AddImageArtifact(std::move(cuppingArtifactB));
 
 
-    PipelineGroup& pipelineGroup = PipelineGroups->AddPipelineGroup(pipeline, "MyPipelineGroup");
+    PipelineGroup& pipelineGroupA = PipelineGroups->AddPipelineGroup(pipelineA, "PipelineGroup A");
 
     auto gaussianProperties = gaussian.GetProperties();
     auto& gaussianMeanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
@@ -209,5 +235,28 @@ void App::InitializeWithTestData() {
                                            gaussianMeanProperty,
                                            { gaussianMeanProperty.Get(), gaussianMeanProperty.Get() + 5, 1.0 },
                                            "My Mean Property");
-    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(gaussianMeanSpan));
+    pipelineGroupA.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(gaussianMeanSpan));
+
+
+    PipelineGroup& pipelineGroupB = PipelineGroups->AddPipelineGroup(pipelineB, "PipelineGroup B");
+
+    auto gaussianB1Properties = gaussianB1.GetProperties();
+    auto& gaussianB1MeanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
+    ParameterSpan<float> gaussianB1MeanSpan (ArtifactVariantPointer(&gaussianB1),
+                                             gaussianMeanProperty,
+                                             { gaussianMeanProperty.Get(), gaussianMeanProperty.Get() + 2, 1.0 },
+                                             "Mean 1");
+    pipelineGroupB.AddParameterSpan(ArtifactVariantPointer(&gaussianB1), std::move(gaussianB1MeanSpan));
+
+    auto cuppingBProperties = cuppingB.GetProperties();
+    auto& cuppingBCenterProperty = cuppingBProperties.GetPropertyByName<FloatPoint>("Center");
+    ParameterSpan<FloatPoint> cuppingBCenterSpan (ArtifactVariantPointer(&cuppingB),
+                                                  cuppingBCenterProperty,
+                                                  { cuppingBCenterProperty.Get(),
+                                                    { static_cast<float>(cuppingBCenterProperty.Get()[0] + 2.0),
+                                                      cuppingBCenterProperty.Get()[1],
+                                                      cuppingBCenterProperty.Get()[2] },
+                                               1.0 },
+                                             "Cupping 2");
+    pipelineGroupB.AddParameterSpan(ArtifactVariantPointer(&cuppingB), std::move(cuppingBCenterSpan));
 }

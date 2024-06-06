@@ -12,25 +12,24 @@ from multiprocessing import cpu_count, Manager, Pool
 from pathlib import Path
 from radiomics import featureextractor
 from radiomics.scripts import segment
-from typing import List, Tuple
-
+from typing import List, Tuple, Dict
 
 logger = logging.getLogger(__file__)
 
 
 def run(params_file: Path, data_files: DataPaths, out_dir: Path):
     number_of_images = len(data_files)
-    is_multiprocessing = number_of_images > 0
+    is_multiprocessing = number_of_images > 1
 
     log_file: Path = out_dir / 'log.txt'
     logging_config, queue_listener = get_logging_config(is_multiprocessing, log_file)
 
     try:
         logger.info('Starting PyRadiomics (version: %s)', radiomics.__version__)
-        case_generator = get_case_generator(data_files)
+        cases = get_cases(data_files)
         results = extract_features(params_file, data_files, out_dir, number_of_images, is_multiprocessing,
-                                   case_generator, logging_config)
-        write_outputs(results, out_dir, True, True, True)
+                                   cases, logging_config)
+        write_outputs(results, out_dir)
         logger.info('Finished extraction successfully...')
     except (KeyboardInterrupt, SystemExit):
         logger.info('Cancelling Extraction')
@@ -44,10 +43,10 @@ def run(params_file: Path, data_files: DataPaths, out_dir: Path):
 def get_logging_config(is_multiprocessing: bool, log_file: Path):
     queue_listener = None
 
-    logfile_level = logging.NOTSET
-    verbosity = 4
-    verbose_level = (6 - verbosity) * 10  # convert to python logging level
-    logger_level = min(logfile_level, verbose_level)
+    verbose_level = 30
+    logger_level = 20
+
+    log_file.unlink()
 
     logging_config = {
         'version': 1,
@@ -79,9 +78,6 @@ def get_logging_config(is_multiprocessing: bool, log_file: Path):
         logging_config['formatters']['default']['format'] = \
             '[%(asctime)s] %(levelname)-.1s: (%(threadName)s) %(name)s: %(message)s'
 
-    f = open(str(log_file), 'w+')
-    f.close()
-
     # Set up logging to file
     if is_multiprocessing:
         q = Manager().Queue(-1)
@@ -90,11 +86,11 @@ def get_logging_config(is_multiprocessing: bool, log_file: Path):
         logging_config['handlers']['logfile'] = {
             'class': 'logging.handlers.QueueHandler',
             'queue': q,
-            'level': logfile_level,
+            'level': logger_level,
             'formatter': 'default'
         }
 
-        file_handler = logging.FileHandler(filename=log_file)
+        file_handler = logging.FileHandler(filename=log_file, mode='a')
         file_handler.setFormatter(logging.Formatter(fmt=logging_config['formatters']['default'].get('format'),
                                                     datefmt=logging_config['formatters']['default'].get('datefmt')))
 
@@ -105,7 +101,7 @@ def get_logging_config(is_multiprocessing: bool, log_file: Path):
             'class': 'logging.FileHandler',
             'filename': log_file,
             'mode': 'a',
-            'level': logfile_level,
+            'level': logger_level,
             'formatter': 'default'
         }
     logging_config['loggers']['radiomics']['handlers'].append('logfile')
@@ -115,16 +111,17 @@ def get_logging_config(is_multiprocessing: bool, log_file: Path):
     return logging_config, queue_listener
 
 
-def get_case_generator(data_paths) -> List[Tuple[int, dict]]:
+def get_cases(data_paths) -> List[Tuple[int, Dict[str, str]]]:
     generator = []
     for i in range(0, len(data_paths)):
         data_path = data_paths[i]
-        generator.append((i + 1, {"Image": data_path.image.name, "Mask": data_path.mask.name}))
+        generator.append((i + 1, {"Image": str(data_path.image), "Mask": str(data_path.mask)}))
+
     return generator
 
 
-def extract_features(params_path: Path, data_paths, out_path: Path, number_of_images,
-                     is_multiprocessing: bool, case_generator, logging_config: dict):
+def extract_features(params_path: Path, data_paths, out_dir: Path, number_of_images,
+                     is_multiprocessing: bool, cases, logging_config: dict):
     extractor = featureextractor.RadiomicsFeatureExtractor(str(params_path))
 
     if not is_multiprocessing:
@@ -137,9 +134,9 @@ def extract_features(params_path: Path, data_paths, out_path: Path, number_of_im
         try:
             task = pool.map_async(partial(segment.extractSegment_parallel,
                                           extractor=extractor,
-                                          out_dir=out_path,
+                                          out_dir=out_dir,
                                           logging_config=logging_config),
-                                  case_generator,
+                                  cases,
                                   chunksize=min(10, number_of_images))
             # Wait for the results to be done. task.get() without timeout performs a blocking call, which prevents
             # the program from processing the KeyboardInterrupt if it occurs
@@ -153,14 +150,18 @@ def extract_features(params_path: Path, data_paths, out_path: Path, number_of_im
         finally:
             pool.join()
     else:
-        for case in case_generator:
+        for case in cases:
             results.append(segment.extractSegment(*case,
                                                   extractor=extractor,
-                                                  out_dir=out_path))
+                                                  out_dir=out_dir))
+
+    for feature_filepath in out_dir.glob("features_*.csv"):
+        feature_filepath.unlink() # delete
+
     return results
 
 
-def write_outputs(results, out_dir: Path, write_csv: bool, write_txt: bool, write_json: bool):
+def write_outputs(results, out_dir: Path):
     logger.info('Processing results...')
 
     # Store the header of all calculated features
@@ -174,31 +175,29 @@ def write_outputs(results, out_dir: Path, write_csv: bool, write_txt: bool, writ
 
     headers = list(results[0].keys()) + sorted(additional_headers)
 
+    csv_filepath: Path = out_dir / "results.csv"
+    txt_filepath: Path = out_dir / "results.txt"
+    json_filepath: Path = out_dir / "results.json"
+    for filepath in [csv_filepath, txt_filepath, json_filepath]:
+        open(str(filepath), 'w').close()  # clear
+
     for case_idx, case in enumerate(results, start=1):
-        case['Image'] = case['Image']
-        case['Mask'] = case['Mask']
+        with open(csv_filepath, 'a') as csv_file:
+            writer = csv.DictWriter(csv_file, headers, lineterminator='\n', extrasaction='ignore')
+            if case_idx == 1:
+                writer.writeheader()
+            writer.writerow(case)
 
-        if write_csv:
-            file_path: Path = out_dir / "results.csv"
-            with open(file_path, 'w+') as csv_file:
-                writer = csv.DictWriter(csv_file, headers, lineterminator='\n', extrasaction='ignore')
-                if case_idx == 1:
-                    writer.writeheader()
-                writer.writerow(case)  # if skip_nans is enabled, nan-values are written as empty strings
+        with open(txt_filepath, 'a') as txt_file:
+            for image, mask in case.items():
+                txt_file.write("Case-{}_{}: {}\n".format(case_idx, image, mask))
 
-        if write_txt:
-            file_path: Path = out_dir / "results.txt"
-            with open(file_path, 'w+') as txt_file:
-                for image, mask in case.items():
-                    txt_file.write("Case-{}_{}: {}\n".format(case_idx, image, mask))
+    class NumpyEncoder(json.JSONEncoder):
+        def default(self, obj):
+            if isinstance(obj, numpy.ndarray):
+                return obj.tolist()
+            return json.JSONEncoder.default(self, obj)
 
-    if write_json:
-        class NumpyEncoder(json.JSONEncoder):
-            def default(self, obj):
-                if isinstance(obj, numpy.ndarray):
-                    return obj.tolist()
-                return json.JSONEncoder.default(self, obj)
-
-        file_path: Path = out_dir / "results.json"
-        with open(file_path, 'w+') as json_file:
-            json.dump(results, json_file, cls=NumpyEncoder, indent=2)
+    json_filepath: Path = out_dir / "results.json"
+    with open(json_filepath, 'w+') as json_file:
+        json.dump(results, json_file, cls=NumpyEncoder, indent=2)

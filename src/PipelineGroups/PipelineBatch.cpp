@@ -1,15 +1,15 @@
 #include "PipelineBatch.h"
 
-#include <pybind11/embed.h>
-#include <pybind11/stl.h>
-#include <pybind11/stl/filesystem.h>
-
 #include "ImageScalarsWriter.h"
 #include "PipelineGroup.h"
 #include "PipelineParameterSpace.h"
 #include "PipelineParameterSpaceState.h"
 #include "../Utils/PythonInterpreter.h"
 #include "../App.h"
+
+#include <pybind11/embed.h>
+#include <pybind11/stl.h>
+#include <pybind11/stl/filesystem.h>
 
 #include <vtkImageAlgorithm.h>
 #include <vtkImageData.h>
@@ -131,27 +131,15 @@ auto PipelineBatch::ExtractFeatures() -> void {
         return *((*optionalImage).Paths);
     });
 
-    using std::filesystem::path;
-
-    path const featureExtractionParametersFile = path{ FEATURE_EXTRACTION_PARAMETERS_FILE }.make_preferred();
-
-
-    namespace py = pybind11;
+    std::filesystem::path const featureExtractionParametersFile
+            = std::filesystem::path { FEATURE_EXTRACTION_PARAMETERS_FILE }.make_preferred();
 
     auto& interpreter = App::GetInstance()->GetPythonInterpreter();
-    auto& extractFeaturesModule = interpreter.GetExtractFeaturesModule();
 
-    extractFeaturesModule.emplace(pybind11::module_::import("extract_features"), "" );
-    extractFeaturesModule->Path = extractFeaturesModule->Module.attr("__file__").cast<std::filesystem::path>();
-
-    std::string const addArgvFileName = "import sys\n"
-                                        "sys.argv = ['" + extractFeaturesModule->Path.generic_string() + "']\n"
-                                        "print('sys.argv', sys.argv)";
-    py::exec(addArgvFileName);
-
-    extractFeaturesModule->Module.attr("run")(featureExtractionParametersFile,
-                                              exportPathVector,
-                                              ExportPathPair::FeatureDirectory);
+    interpreter.ExecuteFunction("extract_features", "run",
+                                featureExtractionParametersFile,
+                                exportPathVector,
+                                ExportPathPair::FeatureDirectory);
 }
 
 auto PipelineBatch::DoExport::operator()(std::optional<Image>& optionalImage) const -> void {
@@ -164,11 +152,11 @@ auto PipelineBatch::DoExport::operator()(std::optional<Image>& optionalImage) co
 
     uint32_t const stateIdx = Batch.GetIdx(image.State);
     path const imagePath
-            = path(ExportPathPair::DataDirectory) /= path(std::format("Volume-{}-{}.vtk", GroupIdx, stateIdx));
+            = path(ExportPathPair::InputDirectory) /= path(std::format("Volume-{}-{}.vtk", GroupIdx, stateIdx));
     path const maskPath
-            = path(ExportPathPair::DataDirectory) /= path(std::format("Mask-{}-{}.vtk", GroupIdx, stateIdx));
+            = path(ExportPathPair::InputDirectory) /= path(std::format("Mask-{}-{}.vtk", GroupIdx, stateIdx));
 //    path const segmentationPath
-//            = path(ExportPathPair::DataDirectoryPath) /= path(std::format("Segmentation-{}-{}.vtk", GroupIdx, stateIdx));
+//            = path(ExportPathPair::InputDirectory) /= path(std::format("Segmentation-{}-{}.vtk", GroupIdx, stateIdx));
 
     vtkNew<ImageScalarsWriter> imageExporter;
     imageExporter->SetInputData(image.ImageData);

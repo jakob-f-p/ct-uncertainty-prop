@@ -52,8 +52,8 @@ CtDataSource::CtDataSource() :
         PhysicalDimensions{},
         NumberOfVoxels{} {
 #ifdef BUILD_TYPE_DEBUG
-//    int const defaultResolution = 64;
-    int const defaultResolution = 16;
+    int const defaultResolution = 64;
+//    int const defaultResolution = 16;
 #else
     int const defaultResolution = 256;
 #endif

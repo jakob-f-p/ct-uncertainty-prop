@@ -3,14 +3,11 @@
 #include <filesystem>
 #include <iostream>
 #include <span>
+#include <utility>
+
 
 class PythonInterpreter : public pybind11::scoped_interpreter {
 public:
-    struct ImportedModule {
-        pybind11::module_ Module;
-        std::filesystem::path Path;
-    };
-
     explicit PythonInterpreter(int argc = 0, const char* const* argv = nullptr) :
             pybind11::scoped_interpreter(
                     [argc, argv]() {
@@ -20,29 +17,68 @@ public:
                         config.parse_argv = 0;
                         config.install_signal_handlers = 1;
 
-                        AddPythonLibPath(config);
+                        AddPythonLibPaths(config);
 
                         return pybind11::scoped_interpreter(&config, argc, argv, true);
-                    }()),
-                    ExtractFeaturesModule(std::nullopt) {
+                    }()) {
 
-        namespace py = pybind11;
+        std::string const setMultiprocessingPath = "import multiprocessing\n"
+                                                   "import os.path\n"
+                                                   "import sys\n"
+                                                   "executable_path = os.path.join(sys.exec_prefix, 'python.exe')\n"
+#ifdef PYTHON_MODULES_DIRECTORY
+                                                   "print('executable_path', executable_path)\n"
+#endif
+                                                   "multiprocessing.set_executable(executable_path)";
+        pybind11::exec(setMultiprocessingPath);
 
-        std::string const setMultiprocessingExecutable = "import multiprocessing\n"
-                                                         "import os.path\n"
-                                                         "import sys\n"
-                                                         "executable_path = os.path.join(sys.exec_prefix, 'python.exe')\n"
-                                                         "print('executable_path', executable_path)\n"
-                                                         "multiprocessing.set_executable(executable_path)";
-        py::exec(setMultiprocessingExecutable);
+        AddImportedModule("extract_features");
     }
 
-    [[nodiscard]] auto
-    GetExtractFeaturesModule() noexcept -> std::optional<ImportedModule>& { return ExtractFeaturesModule; }
+    template<typename ...T>
+    auto
+    ExecuteFunction(std::string const& moduleName, std::string const& functionName, T... args) -> auto {
+        auto& module = NameModuleMap.at(moduleName);
+
+        return module.ExecuteFunction(functionName, args...);
+    }
+
+    struct ImportedModule {
+    public:
+        explicit ImportedModule(std::string const& name) :
+                Module({ pybind11::module_::import(name.c_str()) }) {};
+
+        template<typename ...T>
+        [[nodiscard]] auto
+        ExecuteFunction(std::string const& functionName, T... args) -> auto {
+            Module.reload();
+
+            SetArgvPathToModulePath();
+
+            Module.attr(functionName.c_str())(args...);
+        }
+
+    private:
+        auto
+        SetArgvPathToModulePath() -> void {
+            std::string const addArgvFileName = "import sys\n"
+                                                "sys.argv = ['" + GetModulePath().generic_string() + "']";
+
+            pybind11::exec(addArgvFileName);
+        }
+
+        [[nodiscard]] auto
+        GetModulePath() const -> std::filesystem::path {
+            return Module.attr("__file__").cast<std::filesystem::path>();
+        }
+
+        std::string Name;
+        pybind11::module_ Module;
+    };
 
 private:
     auto static
-    AddPythonLibPath(PyConfig& config) -> void {
+    AddPythonLibPaths(PyConfig& config) -> void {
         PyStatus status;
         status = PyConfig_Read(&config);
         if (PyStatus_Exception(status) != 0)
@@ -72,13 +108,14 @@ private:
             auto searchIt = std::find(oldSearchPaths.begin(), oldSearchPaths.end(), path.native());
             PyWideStringList_Append(&config.module_search_paths, path.native().data());
         }
-
-#ifdef BUILD_TYPE_DEBUG
-        std::span const newSearchPaths(config.module_search_paths.items, config.module_search_paths.length);
-        for (auto* const searchPath: newSearchPaths)
-            std::wcout << searchPath << "\n";
-#endif
     }
 
-    std::optional<ImportedModule> ExtractFeaturesModule;
+    auto
+    AddImportedModule(std::string moduleName) -> void {
+        auto moduleNameCopy = moduleName;
+        NameModuleMap.emplace(std::move(moduleName), std::move(moduleNameCopy));
+    }
+
+
+    std::unordered_map<std::string, ImportedModule> NameModuleMap;
 };

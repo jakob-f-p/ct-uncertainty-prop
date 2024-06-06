@@ -29,7 +29,7 @@ void ThresholdFilterExecute(ThresholdFilter* self, vtkImageData* inData, vtkImag
                             int outExt[6], int id, IT*, OT*) {
 
     vtkImageIterator<IT> inIt(inData, outExt);
-    vtkImageDataArrayIterator<vtkTypeInt8> maskIt(inData, outExt, "Segmentation Mask");
+    vtkImageDataArrayIterator<vtkTypeInt16> maskIt(inData, outExt, "Segmentation Mask");
     vtkImageProgressIterator<OT> outIt(outData, outExt, self, id);
 
     int const replaceIn = self->GetReplaceIn();
@@ -46,7 +46,7 @@ void ThresholdFilterExecute(ThresholdFilter* self, vtkImageData* inData, vtkImag
     for (; !outIt.IsAtEnd(); inIt.NextSpan(), maskIt.NextSpan(), outIt.NextSpan()) {
         IT* inSI = inIt.BeginSpan();
         OT* outSI = outIt.BeginSpan();
-        vtkTypeInt8* maskSI = maskIt.BeginSpan();
+        vtkTypeInt16* maskSI = maskIt.BeginSpan();
         OT* outSIEnd = outIt.EndSpan();
 
         for (; outSI != outSIEnd; ++inSI, ++maskSI, ++outSI) {
