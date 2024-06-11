@@ -94,3 +94,29 @@ PipelineGroupList::ExportImages(PipelineGroupList::ProgressEventCallback const& 
         PipelineGroups[i]->ExportImages(i, progressCallback);
     }
 }
+
+auto PipelineGroupList::ExtractFeatures(PipelineGroupList::ProgressEventCallback const& callback) -> void {
+    std::vector<double> progressList (PipelineGroups.size(), 0.0);
+    std::vector<int> groupSizeVector (PipelineGroups.size(), 0.0);
+    std::vector<double> groupSizeWeightVector (PipelineGroups.size(), 0.0);
+    std::transform(PipelineGroups.begin(), PipelineGroups.end(), groupSizeVector.begin(),
+                   [](auto const& group) { return group->GetParameterSpace().GetNumberOfPipelines(); });
+    int const totalNumberOfPipelines = std::reduce(groupSizeVector.cbegin(), groupSizeVector.cend());
+    std::transform(groupSizeVector.cbegin(), groupSizeVector.cend(), groupSizeWeightVector.begin(),
+                   [=](int size) { return static_cast<double>(size) / static_cast<double>(totalNumberOfPipelines); });
+
+    callback(0.0);
+
+    for (int i = 0; i < PipelineGroups.size(); i++) {
+        auto progressCallback = [&progressList, &groupSizeWeightVector, i, callback](double current) {
+            progressList[i] = current;
+
+            double const totalProgress = std::transform_reduce(progressList.cbegin(), progressList.cend(),
+                                                               groupSizeWeightVector.cbegin(),
+                                                               0.0, std::plus{}, std::multiplies{});
+            callback(totalProgress);
+        };
+
+        PipelineGroups[i]->ExtractFeatures(progressCallback);
+    }
+}

@@ -51,9 +51,16 @@ auto PipelineGroup::GenerateImages(ProgressEventCallback const& callback) -> voi
 
 auto PipelineGroup::ExportImages(uint32_t groupIdx, PipelineGroup::ProgressEventCallback const& callback) -> void {
     if (!Batch)
-        throw std::runtime_error("Cannot export");
+        throw std::runtime_error("Cannot export. Batch has not been generated");
 
     Batch->ExportImages(groupIdx, callback);
+}
+
+auto PipelineGroup::ExtractFeatures(PipelineGroup::ProgressEventCallback const& callback) -> void {
+    if (!Batch)
+        throw std::runtime_error("Cannot extract features. Batch has not been generated");
+
+    Batch->ExtractFeatures(callback);
 }
 
 auto PipelineGroup::AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,

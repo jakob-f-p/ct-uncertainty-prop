@@ -46,7 +46,7 @@ public:
     using ExportPathVector = std::vector<ExportPathPair>;
 
     auto
-    ExtractFeatures() -> void;
+    ExtractFeatures(ProgressEventCallback const& callback = [](double) {}) -> void;
 
 private:
     [[nodiscard]] auto

@@ -56,11 +56,14 @@ PipelineGroupsWidget::PipelineGroupsWidget(PipelineGroupList& pipelineGroups) :
             CalculateImagesProgressBar->setValue(static_cast<int>(progress * 1000.0));
         };
 
-        CalculateImagesProgressBar->setFormat("Generating Image Data (Task 1/2)... %p%");
+        CalculateImagesProgressBar->setFormat("Generating Image Data (Task 1/3)... %p%");
         pipelineGroups.GenerateImages(progressCallback);
 
-        CalculateImagesProgressBar->setFormat("Exporting Images... (Task 2/2) %p%");
+        CalculateImagesProgressBar->setFormat("Exporting Images... (Task 2/3) %p%");
         pipelineGroups.ExportImages(progressCallback);
+
+        CalculateImagesProgressBar->setFormat("Extracting Features... (Task 3/3) %p%");
+        pipelineGroups.ExtractFeatures(progressCallback);
 
         CalculateImagesProgressBar->reset();
         CalculateImagesButton->setEnabled(true);

@@ -34,6 +34,9 @@ public:
     ExportImages(ProgressEventCallback const& callback = [](double) {}) -> void;
 
     auto
+    ExtractFeatures(ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
     AddPipelineGroup(Pipeline const& pipeline, const std::string& name = "") -> PipelineGroup&;
 
     auto

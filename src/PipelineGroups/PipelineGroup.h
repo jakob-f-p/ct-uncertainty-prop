@@ -40,6 +40,9 @@ public:
     ExportImages(uint32_t groupIdx, ProgressEventCallback const& callback = [](double) {}) -> void;
 
     auto
+    ExtractFeatures(ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
     AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
                      PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan&;
 

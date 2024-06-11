@@ -8,6 +8,7 @@
 #include "../App.h"
 
 #include <pybind11/embed.h>
+#include <pybind11/functional.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
 
@@ -96,8 +97,6 @@ auto PipelineBatch::ExportImages(uint32_t groupIdx, ProgressEventCallback const&
     }
 
     imageExportThread.join();
-
-    ExtractFeatures();
 }
 
 auto PipelineBatch::GetIdx(PipelineParameterSpaceState const& state) const -> uint32_t {
@@ -121,7 +120,7 @@ PYBIND11_EMBEDDED_MODULE(datapaths, m) {
     py::class_<PipelineBatch::ExportPathVector>(m, "DataPaths");
 }
 
-auto PipelineBatch::ExtractFeatures() -> void {
+auto PipelineBatch::ExtractFeatures(ProgressEventCallback const& callback) -> void {
     ExportPathVector exportPathVector;
     exportPathVector.reserve(Images.size());
     std::transform(Images.cbegin(), Images.cend(), std::back_inserter(exportPathVector), [](auto const& optionalImage) {
@@ -136,10 +135,11 @@ auto PipelineBatch::ExtractFeatures() -> void {
 
     auto& interpreter = App::GetInstance()->GetPythonInterpreter();
 
-    interpreter.ExecuteFunction("extract_features", "run",
+    interpreter.ExecuteFunction("extract_features", "extract",
                                 featureExtractionParametersFile,
                                 exportPathVector,
-                                ExportPathPair::FeatureDirectory);
+                                ExportPathPair::FeatureDirectory,
+                                callback);
 }
 
 auto PipelineBatch::DoExport::operator()(std::optional<Image>& optionalImage) const -> void {
@@ -178,7 +178,5 @@ auto PipelineBatch::DoExport::operator()(std::optional<Image>& optionalImage) co
 
     image.Paths.emplace(imagePath, maskPath);
 
-    Progress = static_cast<double>(NumberOfExportedImages) / static_cast<double>(NumberOfImages);
-
-    NumberOfExportedImages++;
+    Progress = static_cast<double>(NumberOfExportedImages++ + 1) / static_cast<double>(NumberOfImages);
 }
