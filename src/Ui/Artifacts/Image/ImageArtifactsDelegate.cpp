@@ -3,7 +3,7 @@
 #include "../ArtifactsDialog.h"
 #include "../../../Artifacts/Image/ImageArtifact.h"
 
-auto ImageArtifactsDelegate::getDialog(QModelIndex const& index, QWidget* parent) const noexcept -> QDialog* {
+auto ImageArtifactsDelegate::getDialog(QModelIndex const& /*index*/, QWidget* parent) const noexcept -> QDialog* {
     return new ImageArtifactDialog(ArtifactsDialog::Mode::EDIT, parent);
 }
 

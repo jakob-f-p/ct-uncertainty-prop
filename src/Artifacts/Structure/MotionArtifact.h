@@ -29,10 +29,10 @@ public:
     GetCtNumberFactor() const noexcept -> float { return CtNumberFactor; }
 
     auto
-    SetCtNumberFactor(float factor) noexcept -> void { CtNumberFactor = factor; }
+    SetCtNumberFactor(float factor) noexcept -> void { CtNumberFactor = factor; Modified(); }
 
     auto
-    SetTransform(SimpleTransformData const& data) noexcept -> void { Transform.SetData(data); }
+    SetTransform(SimpleTransformData const& data) noexcept -> void { Transform.SetData(data); Modified(); }
 
     [[nodiscard]] auto
     EvaluateAtPosition(DoublePoint const& point,
@@ -62,11 +62,18 @@ public:
         return properties;
     }
 
+    [[nodiscard]] auto
+    GetMTime() const noexcept -> vtkMTimeType { return MTime; }
+
+    auto
+    Modified() noexcept -> void { MTime.Modified(); }
+
 private:
     friend struct MotionArtifactData;
 
     SimpleTransform Transform;
     float CtNumberFactor = 0.0F;
+    vtkTimeStamp MTime;
 };
 
 

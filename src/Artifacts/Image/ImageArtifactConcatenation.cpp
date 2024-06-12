@@ -78,6 +78,10 @@ auto ImageArtifactConcatenation::UpdateArtifactFilter() -> void {
     EndFilter->SetInputConnection(secondToLastFilter.GetOutputPort());
 }
 
+auto ImageArtifactConcatenation::GetFilterMTime() const noexcept -> vtkMTimeType {
+    return EndFilter->GetMTime();
+}
+
 void
 ImageArtifactConcatenation::AddEventCallback(void* receiver, ImageArtifactConcatenation::EventCallback&& callback) {
     if (receiver == nullptr)

@@ -114,6 +114,8 @@ auto PipelineParameterSpace::AddParameterSpan(PipelineParameterSpanSet& spanSet,
     if (std::find(ParameterSpanSets.cbegin(), ParameterSpanSets.cend(), spanSet) == ParameterSpanSets.cend())
         throw std::runtime_error("Span set does not exist in parameter space");
 
+    MTime.Modified();
+
     return spanSet.AddParameterSpan(std::move(parameterSpan));
 }
 
@@ -130,6 +132,8 @@ auto PipelineParameterSpace::RemoveParameterSpan(PipelineParameterSpanSet& spanS
         auto it = std::find(ParameterSpanSets.cbegin(), ParameterSpanSets.cend(), spanSet);
         ParameterSpanSets.erase(it);
     }
+
+    MTime.Modified();
 }
 
 auto PipelineParameterSpace::GetNumberOfSpans() const noexcept -> uint16_t {
@@ -245,6 +249,9 @@ auto PipelineParameterSpace::GenerateSpaceStatesRecursive(std::vector<PipelinePa
     }
 
     ParameterSpanStateSourceIterator it (*spans.at(depth));
-    for (; it != it.End(); ++it)
+    auto endIt = it.End();
+    for (; it != endIt; ++it) {
+        *it;
         GenerateSpaceStatesRecursive(spans, states, depth + 1);
+    }
 }

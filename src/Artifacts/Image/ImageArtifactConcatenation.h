@@ -5,6 +5,7 @@
 #include <memory>
 
 #include <vtkNew.h>
+#include <vtkType.h>
 
 class ImageArtifact;
 class PassThroughImageArtifactFilter;
@@ -46,6 +47,9 @@ public:
 
     auto
     UpdateArtifactFilter() -> void;
+
+    [[nodiscard]] auto
+    GetFilterMTime() const noexcept -> vtkMTimeType;
 
     [[nodiscard]] auto
     GetStartFilter() const -> vtkImageAlgorithm&;

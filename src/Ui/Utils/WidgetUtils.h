@@ -75,7 +75,7 @@ protected:
     auto
     eventFilter(QObject* object, QEvent* event) -> bool override { return false; }
 
-    [[nodiscard]] auto virtual
+    [[nodiscard]] virtual auto
     getDialog(QModelIndex const& modelIndex, QWidget* parent) const noexcept -> QDialog* = 0;
 };
 

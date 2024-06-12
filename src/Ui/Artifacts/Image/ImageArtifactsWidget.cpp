@@ -112,6 +112,16 @@ void ImageArtifactsWidget::AddChildArtifact() {
 
 void ImageArtifactsWidget::AddSiblingArtifact() {
     CreateDialog = new ImageArtifactDialog(ArtifactsDialog::Mode::CREATE, this);
+
+    CreateDialog->updateGeometry();
+    auto sizeHint = CreateDialog->sizeHint();
+    auto minSizeHint = CreateDialog->minimumSizeHint();
+    auto minSize = CreateDialog->minimumSize();
+    auto maxSize = CreateDialog->maximumSize();
+    auto geom = CreateDialog->geometry();
+    auto geomUpdated = CreateDialog->geometry();
+    auto visible = CreateDialog->isVisible();
+    auto policy = CreateDialog->sizePolicy();
     CreateDialog->show();
 
     connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {

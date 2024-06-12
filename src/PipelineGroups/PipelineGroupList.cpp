@@ -91,7 +91,7 @@ PipelineGroupList::ExportImages(PipelineGroupList::ProgressEventCallback const& 
             callback(totalProgress);
         };
 
-        PipelineGroups[i]->ExportImages(i, progressCallback);
+        PipelineGroups[i]->ExportImages(progressCallback);
     }
 }
 

@@ -29,15 +29,12 @@ public:
     [[nodiscard]] auto
     GetParameterSpace() const noexcept -> PipelineParameterSpace const&;
 
-    [[nodiscard]] auto
-    GetBatch() const -> PipelineBatch const&;
-
     using ProgressEventCallback = std::function<void(double)>;
     auto
     GenerateImages(ProgressEventCallback const& callback = [](double) {}) -> void;
 
     auto
-    ExportImages(uint32_t groupIdx, ProgressEventCallback const& callback = [](double) {}) -> void;
+    ExportImages(ProgressEventCallback const& callback = [](double) {}) -> void;
 
     auto
     ExtractFeatures(ProgressEventCallback const& callback = [](double) {}) -> void;
@@ -54,9 +51,10 @@ private:
     friend class PipelineBatch;
 
     std::string Name;
+    uint16_t const GroupId;
     Pipeline const& BasePipeline;
     std::unique_ptr<PipelineParameterSpace> ParameterSpace;
-    std::unique_ptr<PipelineBatch> Batch = nullptr;
+    std::unique_ptr<PipelineBatch> Batch;
 
     static uint16_t PipelineGroupId;
 };

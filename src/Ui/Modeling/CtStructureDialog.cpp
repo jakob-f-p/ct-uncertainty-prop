@@ -15,7 +15,6 @@ CtStructureDialog::CtStructureDialog(QWidget* structureWidget, DialogMode mode, 
         throw std::runtime_error("Structure widget must not be null");
 
     setMinimumSize(800, 800);
-    setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 
     setModal(true);
 

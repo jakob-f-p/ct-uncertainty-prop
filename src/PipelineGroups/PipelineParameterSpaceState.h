@@ -53,7 +53,7 @@ struct SpanStateSourceIterator {
     auto operator=(SpanStateSourceIterator const&) -> SpanStateSourceIterator& = default;
     ~SpanStateSourceIterator();
 
-    [[nodiscard]] auto
+    auto
     operator*() const -> SpanState<T> const&;
 
     auto
@@ -108,7 +108,7 @@ struct ParameterSpanStateSourceIterator {
 
     explicit ParameterSpanStateSourceIterator(PipelineParameterSpan& parameterSpan);
 
-    [[nodiscard]] auto
+    auto
     operator*() const -> ParameterSpanState;
 
     auto

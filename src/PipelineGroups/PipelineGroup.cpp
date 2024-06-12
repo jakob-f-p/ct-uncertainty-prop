@@ -14,6 +14,7 @@ PipelineGroup::PipelineGroup(Pipeline const& basePipeline, std::string name) :
         Name(name.empty()
              ? "Pipeline Group " + std::to_string(PipelineGroupId++)
              : std::move(name)),
+        GroupId(PipelineGroupId++),
         BasePipeline(basePipeline),
         ParameterSpace(new PipelineParameterSpace()),
         Batch(new PipelineBatch(*this)) {};
@@ -36,24 +37,17 @@ auto PipelineGroup::GetParameterSpace() const noexcept -> PipelineParameterSpace
     return *ParameterSpace;
 }
 
-auto PipelineGroup::GetBatch() const -> PipelineBatch const& {
-    if (!Batch)
-        throw std::runtime_error("Cannot get batch because it is nullptr");
-
-    return *Batch;
-}
-
 auto PipelineGroup::GenerateImages(ProgressEventCallback const& callback) -> void {
     Batch = std::make_unique<PipelineBatch>(*this);
 
     Batch->GenerateImages(callback);
 }
 
-auto PipelineGroup::ExportImages(uint32_t groupIdx, PipelineGroup::ProgressEventCallback const& callback) -> void {
+auto PipelineGroup::ExportImages(PipelineGroup::ProgressEventCallback const& callback) -> void {
     if (!Batch)
         throw std::runtime_error("Cannot export. Batch has not been generated");
 
-    Batch->ExportImages(groupIdx, callback);
+    Batch->ExportImages(callback);
 }
 
 auto PipelineGroup::ExtractFeatures(PipelineGroup::ProgressEventCallback const& callback) -> void {
@@ -73,4 +67,4 @@ auto PipelineGroup::RemoveParameterSpan(ArtifactVariantPointer artifactVariantPo
     ParameterSpace->RemoveParameterSpan(artifactVariantPointer, parameterSpan);
 }
 
-uint16_t PipelineGroup::PipelineGroupId = 1;
+uint16_t PipelineGroup::PipelineGroupId = 0;

@@ -6,19 +6,22 @@ import numpy
 import radiomics
 import threading
 
-from datapaths import DataPaths
+from datapaths import DataPaths, extraction_params_file, feature_directory
 from functools import partial
 from multiprocessing import cpu_count, Manager, Pool
 from multiprocessing.pool import AsyncResult
 from pathlib import Path
 from radiomics import featureextractor
 from radiomics.scripts import segment
-from typing import Dict, Callable, List, OrderedDict, Tuple 
+from typing import Dict, Callable, List, OrderedDict, Tuple, cast
 
 logger = logging.getLogger(__file__)
 
+FeatureExtractionResult = List[OrderedDict[str, float]]
+
 
 class FeatureExtraction:
+    id: int
     params_file: Path
     data_files: DataPaths
     number_of_images: int
@@ -29,18 +32,19 @@ class FeatureExtraction:
     logging_queue_listener: logging.handlers.QueueListener
     progress_callback: Callable[[float], None]
 
-    def __init__(self, params_file: Path, data_files: DataPaths,
-                 out_dir: Path, progress_callback: Callable[[float], None]):
-        self.params_file = params_file
+    def __init__(self, id: int, data_files: DataPaths, progress_callback: Callable[[float], None]):
+        self.id = id
+        self.params_file = extraction_params_file
         self.data_files = data_files
         self.number_of_images = len(data_files)
         self.is_multiprocessing = self.number_of_images > 1
-        self.out_dir = out_dir
+        self.out_dir = feature_directory
         self.log_file = self.out_dir / "log.txt"
         self.logging_config, self.logging_queue_listener = self.get_logging_config()
         self.progress_callback = progress_callback
 
-    def run(self) -> None:
+    def run(self) -> FeatureExtractionResult:
+        results = []
         try:
             logger.info("Starting PyRadiomics (version: %s)", radiomics.__version__)
             cases = self.get_cases()
@@ -51,7 +55,20 @@ class FeatureExtraction:
             logger.info("Cancelling Extraction")
         finally:
             if self.logging_queue_listener is not None:
+                for item in self.logging_queue_listener.handlers:
+                    if isinstance(item, logging.Handler):
+                        handler = cast(logging.Handler, item)
+                        handler.close()
                 self.logging_queue_listener.stop()
+
+        result_feature_dicts: FeatureExtractionResult = []
+        for res_dict in results:
+            res_feature_dict = dict(res_dict)
+            for key in list(res_feature_dict):
+                if not cast(str, key).startswith("original"):
+                    del res_feature_dict[key]
+            result_feature_dicts.append(cast(OrderedDict[str, float], res_feature_dict))
+        return result_feature_dicts
 
     def get_logging_config(self) -> (Dict, logging.handlers.QueueListener):
         queue_listener = None
@@ -131,12 +148,9 @@ class FeatureExtraction:
     def extract_features(self, cases) -> List[OrderedDict]:
         extractor = featureextractor.RadiomicsFeatureExtractor(str(self.params_file))
 
-        if not self.is_multiprocessing:
-            return []
-
         results = []
         number_of_workers = min(cpu_count() - 1, self.number_of_images)
-        if number_of_workers > 1:  # multiple cases, parallel processing enabled
+        if self.is_multiprocessing and number_of_workers > 1:
             async_results: List[AsyncResult] = []
             with Pool(number_of_workers) as pool:
                 for case in cases:
@@ -193,9 +207,9 @@ class FeatureExtraction:
 
         headers = list(results[0].keys()) + sorted(additional_headers)
 
-        csv_filepath: Path = self.out_dir / "results.csv"
-        txt_filepath: Path = self.out_dir / "results.txt"
-        json_filepath: Path = self.out_dir / "results.json"
+        csv_filepath: Path = self.out_dir / "results-{}.csv".format(self.id)
+        txt_filepath: Path = self.out_dir / "results-{}.txt".format(self.id)
+        json_filepath: Path = self.out_dir / "results-{}.json".format(self.id)
         for filepath in [csv_filepath, txt_filepath, json_filepath]:
             open(str(filepath), "w").close()  # clear
 
@@ -216,12 +230,13 @@ class FeatureExtraction:
                     return obj.tolist()
                 return json.JSONEncoder.default(self, obj)
 
-        json_filepath: Path = self.out_dir / "results.json"
         with open(json_filepath, "w+") as json_file:
             json.dump(results, json_file, cls=NumpyEncoder, indent=2)
 
 
-def extract(params_file: Path, data_files: DataPaths, out_dir: Path,
-            progress_callback: Callable[[float], None]) -> None:
-    extraction = FeatureExtraction(params_file, data_files, out_dir, progress_callback)
-    extraction.run()
+def extract(id: int, data_files: DataPaths, progress_callback: Callable[[float], None]) -> FeatureExtractionResult:
+    extraction = FeatureExtraction(id, data_files, progress_callback)
+
+    result: FeatureExtractionResult = extraction.run()
+
+    return result

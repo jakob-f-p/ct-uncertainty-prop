@@ -3,6 +3,7 @@
 #include <vtkSmartPointer.h>
 
 #include <filesystem>
+#include <map>
 #include <memory>
 #include <optional>
 #include <vector>
@@ -41,9 +42,12 @@ public:
     GenerateImages(ProgressEventCallback const& callback = [](double) {}) -> void;
 
     auto
-    ExportImages(uint32_t groupIdx, ProgressEventCallback const& callback = [](double) {}) -> void;
+    ExportImages(ProgressEventCallback const& callback = [](double) {}) -> void;
 
     using ExportPathVector = std::vector<ExportPathPair>;
+
+    using FeatureMap = std::map<std::string, double>;
+    using FeatureMaps = std::vector<FeatureMap>;
 
     auto
     ExtractFeatures(ProgressEventCallback const& callback = [](double) {}) -> void;
@@ -70,4 +74,5 @@ private:
     ParameterSpaceState InitialState;
     PipelineStates States;
     PipelineImages Images;
+    std::optional<FeatureMaps> Features;
 };

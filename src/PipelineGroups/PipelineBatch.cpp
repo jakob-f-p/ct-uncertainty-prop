@@ -36,10 +36,15 @@ PipelineBatch::PipelineBatch(PipelineGroup const& pipelineGroup) :
 
             return pipelineStates;
         }()),
-        Images(States.size(), std::nullopt) {}
+        Images(States.size(), std::nullopt),
+        Features(std::nullopt) {}
 
 auto PipelineBatch::GenerateImages(ProgressEventCallback const& callback) -> void {
     auto numberOfStates = States.size();
+
+    auto& radiodensitiesAlgorithm = Group.GetBasePipeline().GetImageAlgorithm();
+    auto& thresholdAlgorithm = App::GetInstance()->GetThresholdFilter();
+    thresholdAlgorithm.SetInputConnection(radiodensitiesAlgorithm.GetOutputPort());
 
     for (int i = 0; i < numberOfStates; i++) {
         double const progress = static_cast<double>(i) / static_cast<double>(numberOfStates);
@@ -49,14 +54,13 @@ auto PipelineBatch::GenerateImages(ProgressEventCallback const& callback) -> voi
         if (!state)
             throw std::runtime_error("State must not be nullptr");
 
-        auto& radiodensitiesAlgorithm = Group.GetBasePipeline().GetImageAlgorithm();
-        auto& thresholdAlgorithm = App::GetInstance()->GetThresholdFilter();
-        thresholdAlgorithm.SetInputConnection(radiodensitiesAlgorithm.GetOutputPort());
-
         state->Apply();
         thresholdAlgorithm.Update();
 
-        Images[i].emplace(*state, thresholdAlgorithm.GetOutput(), std::nullopt);
+        vtkNew<vtkImageData> output;
+        output->DeepCopy(thresholdAlgorithm.GetOutput());
+
+        Images[i].emplace(*state, output, std::nullopt);
     }
 
     InitialState->Apply();
@@ -68,7 +72,7 @@ std::filesystem::path const PipelineBatch::ExportPathPair::InputDirectory
 std::filesystem::path const PipelineBatch::ExportPathPair::FeatureDirectory
         = (std::filesystem::path(DataDirectory) /= { "features" });
 
-auto PipelineBatch::ExportImages(uint32_t groupIdx, ProgressEventCallback const& callback) -> void {
+auto PipelineBatch::ExportImages(ProgressEventCallback const& callback) -> void {
     std::atomic_uint numberOfExportedImages = 0;
     size_t const numberOfImages = Images.size();
     std::atomic<double> latestProgress = -1.0;
@@ -80,11 +84,10 @@ auto PipelineBatch::ExportImages(uint32_t groupIdx, ProgressEventCallback const&
     std::filesystem::create_directory(ExportPathPair::InputDirectory);
     std::filesystem::create_directory(ExportPathPair::FeatureDirectory);
 
-    std::thread imageExportThread ([this, groupIdx, &timeStampString,
-                                    &latestProgress, &numberOfExportedImages, numberOfImages]() {
+    std::thread imageExportThread ([this, &timeStampString, &latestProgress, &numberOfExportedImages, numberOfImages] {
         std::for_each(std::execution::par_unseq,
                       Images.begin(), Images.end(),
-                      DoExport { *this, groupIdx, timeStampString,
+                      DoExport { *this, Group.GroupId, timeStampString,
                                  latestProgress, numberOfExportedImages, numberOfImages });
     });
 
@@ -115,9 +118,15 @@ PYBIND11_EMBEDDED_MODULE(datapaths, m) {
     py::class_<PipelineBatch::ExportPathPair>(m, "PathPair")
             .def(py::init<std::filesystem::path const&, std::filesystem::path const&>())
             .def_readonly("image", &PipelineBatch::ExportPathPair::Radiodensities)
-            .def_readonly("mask", &PipelineBatch::ExportPathPair::Mask);
+            .def_readonly("mask", &PipelineBatch::ExportPathPair::Mask)
+            .def("__repr__", [](PipelineBatch::ExportPathPair const& pathPair) {
+                return std::format("({}, {})", pathPair.Radiodensities.string(), pathPair.Mask.string());
+            });
 
     py::class_<PipelineBatch::ExportPathVector>(m, "DataPaths");
+
+    m.attr("extraction_params_file") = std::filesystem::path { FEATURE_EXTRACTION_PARAMETERS_FILE }.make_preferred();
+    m.attr("feature_directory") = PipelineBatch::ExportPathPair::FeatureDirectory;
 }
 
 auto PipelineBatch::ExtractFeatures(ProgressEventCallback const& callback) -> void {
@@ -130,16 +139,12 @@ auto PipelineBatch::ExtractFeatures(ProgressEventCallback const& callback) -> vo
         return *((*optionalImage).Paths);
     });
 
-    std::filesystem::path const featureExtractionParametersFile
-            = std::filesystem::path { FEATURE_EXTRACTION_PARAMETERS_FILE }.make_preferred();
-
     auto& interpreter = App::GetInstance()->GetPythonInterpreter();
 
-    interpreter.ExecuteFunction("extract_features", "extract",
-                                featureExtractionParametersFile,
-                                exportPathVector,
-                                ExportPathPair::FeatureDirectory,
-                                callback);
+    pybind11::object const featureObject = interpreter.ExecuteFunction("extract_features", "extract",
+                                                                       Group.GroupId, exportPathVector, callback);
+
+    Features.emplace(featureObject.cast<FeatureMaps>());
 }
 
 auto PipelineBatch::DoExport::operator()(std::optional<Image>& optionalImage) const -> void {

@@ -13,11 +13,12 @@ ArtifactsDialog::ArtifactsDialog(QWidget* widget, Mode mode, QWidget* parent) :
     if (!widget)
         throw std::runtime_error("Given widget cannot be nullptr");
 
-    VLayout->setSizeConstraint(QLayout::SizeConstraint::SetFixedSize);
-    setMinimumSize(600, 400);
+    setMinimumSize(400, 400);
     setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 
     setModal(true);
+
+    VLayout->setSizeConstraint(QLayout::SizeConstraint::SetMinimumSize);
 
     setWindowTitle(mode == Mode::EDIT ? "Edit Image Artifact" : "Create Image Artifact");
 

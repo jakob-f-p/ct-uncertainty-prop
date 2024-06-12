@@ -233,7 +233,7 @@ void App::InitializeWithTestData() {
     auto& gaussianMeanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
     ParameterSpan<float> gaussianMeanSpan (ArtifactVariantPointer(&gaussian),
                                            gaussianMeanProperty,
-                                           { gaussianMeanProperty.Get(), gaussianMeanProperty.Get() + 5, 1.0 },
+                                           { gaussianMeanProperty.Get(), gaussianMeanProperty.Get() + 250, 50.0 },
                                            "My Mean Property");
     pipelineGroupA.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(gaussianMeanSpan));
 

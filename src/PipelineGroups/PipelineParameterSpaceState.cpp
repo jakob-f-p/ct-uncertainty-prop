@@ -37,7 +37,7 @@ template class SpanState<FloatPoint>;
 
 
 template<typename T>
-SpanStateSourceIterator<T>::SpanStateSourceIterator(ParameterSpan<T>& parameterSpan)  :
+SpanStateSourceIterator<T>::SpanStateSourceIterator(ParameterSpan<T>& parameterSpan) :
         Span(&parameterSpan),
         CurrentState(SpanState<T>(parameterSpan)),
         InitialState(CurrentState),
@@ -96,6 +96,7 @@ template class SpanStateSourceIterator<float>;
 template class SpanStateSourceIterator<FloatPoint>;
 
 static_assert(std::input_iterator<SpanStateSourceIterator<float>>);
+static_assert(std::input_iterator<SpanStateSourceIterator<FloatPoint>>);
 
 
 

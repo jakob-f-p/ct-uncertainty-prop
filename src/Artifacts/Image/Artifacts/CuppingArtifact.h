@@ -55,7 +55,8 @@ public:
                                            FloatObjectProperty::PropertyRange{ -1000.0, 0.0 }));
         properties.Add(FloatPointObjectProperty("Center",
                                                 [this] { return GetCenter(); },
-                                                [this](FloatPoint center) { this->SetCenter(center); },
+                                                [this](FloatPoint center) { this->SetCenter(center);
+                                                                            this->UpdateFilterParameters(); },
                                                 {}));
         return properties;
     };

@@ -3,6 +3,8 @@
 #include "ArtifactVariantPointer.h"
 #include "PipelineParameterSpan.h"
 
+#include <vtkTimeStamp.h>
+
 #include <unordered_map>
 #include <variant>
 
@@ -113,4 +115,5 @@ private:
                                  int depth) -> void;
 
     std::vector<PipelineParameterSpanSet> ParameterSpanSets;
+    vtkTimeStamp MTime;
 };

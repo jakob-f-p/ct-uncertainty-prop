@@ -90,13 +90,18 @@ public:
             : Artifact(std::move(structureArtifactSubType)) {}
 
     [[nodiscard]] auto
-    GetMTime() const noexcept -> vtkMTimeType { return MTime.GetMTime(); }
+    GetMTime() const noexcept -> vtkMTimeType {
+        return std::visit([](auto const& artifact) { return artifact.GetMTime(); }, Artifact);
+    }
 
     [[nodiscard]] auto
     GetName() const noexcept -> std::string { return Name; }
 
     auto
-    SetName(const std::string& name) noexcept -> void { Name = name; MTime.Modified(); }
+    SetName(const std::string& name) noexcept -> void {
+        Name = name;
+        std::visit([](auto& artifact) { artifact.Modified(); }, Artifact);
+    }
 
     [[nodiscard]] auto
     GetViewName() const noexcept -> std::string;
@@ -123,7 +128,7 @@ public:
     GetSubType() const noexcept -> SubType;
 
     [[nodiscard]] auto
-    operator== (StructureArtifact const& other) const noexcept -> bool { return MTime == other.MTime; }
+    operator== (StructureArtifact const& other) const noexcept -> bool { return GetMTime() == other.GetMTime(); }
 
 private:
     friend struct StructureArtifactData;
@@ -134,7 +139,6 @@ private:
 
     std::string Name;
     StructureArtifactVariant Artifact;
-    vtkTimeStamp MTime;
 };
 
 

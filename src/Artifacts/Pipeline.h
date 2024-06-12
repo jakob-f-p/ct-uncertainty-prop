@@ -4,6 +4,8 @@
 #include <memory>
 #include <string>
 
+#include <vtkType.h>
+
 class CtDataSource;
 class CtStructureTree;
 class ImageArtifactConcatenation;
@@ -21,6 +23,9 @@ public:
 
     [[nodiscard]] auto
     GetName() const noexcept -> std::string;
+
+    [[nodiscard]] auto
+    GetMTime() const noexcept -> vtkMTimeType;
 
     [[nodiscard]] auto
     GetCtStructureTree() const noexcept -> CtStructureTree&;

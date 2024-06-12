@@ -26,8 +26,8 @@ public:
                                                    "import os.path\n"
                                                    "import sys\n"
                                                    "executable_path = os.path.join(sys.exec_prefix, 'python.exe')\n"
-#ifdef PYTHON_MODULES_DIRECTORY
-                                                   "print('executable_path', executable_path)\n"
+#ifdef BUILD_TYPE_DEBUG
+                                                   "print('python_executable_path', executable_path)\n"
 #endif
                                                    "multiprocessing.set_executable(executable_path)";
         pybind11::exec(setMultiprocessingPath);
@@ -37,7 +37,7 @@ public:
 
     template<typename ...T>
     auto
-    ExecuteFunction(std::string const& moduleName, std::string const& functionName, T... args) -> auto {
+    ExecuteFunction(std::string const& moduleName, std::string const& functionName, T... args) -> pybind11::object {
         auto& module = NameModuleMap.at(moduleName);
 
         return module.ExecuteFunction(functionName, args...);
@@ -49,13 +49,13 @@ public:
                 Module({ pybind11::module_::import(name.c_str()) }) {};
 
         template<typename ...T>
-        [[nodiscard]] auto
-        ExecuteFunction(std::string const& functionName, T... args) -> auto {
+        auto
+        ExecuteFunction(std::string const& functionName, T... args) -> pybind11::object {
             Module.reload();
 
             SetArgvPathToModulePath();
 
-            Module.attr(functionName.c_str())(args...);
+            return Module.attr(functionName.c_str())(args...);
         }
 
     private:

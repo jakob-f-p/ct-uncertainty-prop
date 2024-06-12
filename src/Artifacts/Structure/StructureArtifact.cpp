@@ -49,8 +49,6 @@ auto StructureArtifactData::PopulateArtifact(StructureArtifact& artifact) const 
     artifact.SetName(Name.toStdString());
     std::visit([&](auto& artifact) { std::get<DataTypeT<decltype(artifact)>>(Data).PopulateArtifact(artifact); },
                artifact.Artifact);
-
-    artifact.MTime.Modified();
 }
 
 StructureArtifactWidget::StructureArtifactWidget() :

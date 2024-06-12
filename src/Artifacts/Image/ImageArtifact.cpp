@@ -131,8 +131,10 @@ auto ImageArtifactData::PopulateFromArtifact(const ImageArtifact& imageArtifact)
 
 auto ImageArtifactData::PopulateArtifact(ImageArtifact& imageArtifact) const noexcept -> void {
     std::visit(Overload {
-            [&](BasicImageArtifactData const& basic) { basic.PopulateArtifact(std::get<BasicImageArtifact>(imageArtifact.Artifact)); },
-            [&](CompositeImageArtifactData const& composite) { composite.PopulateArtifact(std::get<CompositeImageArtifact>(imageArtifact.Artifact)); }
+            [&](BasicImageArtifactData const& basic) {
+                basic.PopulateArtifact(std::get<BasicImageArtifact>(imageArtifact.Artifact)); },
+            [&](CompositeImageArtifactData const& composite) {
+                composite.PopulateArtifact(std::get<CompositeImageArtifact>(imageArtifact.Artifact)); }
     }, Data);
 }
 

@@ -10,8 +10,8 @@ auto MotionArtifactData::PopulateFromArtifact(MotionArtifact const& artifact) no
 }
 
 auto MotionArtifactData::PopulateArtifact(MotionArtifact& artifact) const noexcept -> void {
-    artifact.Transform.SetData(Transform);
-    artifact.CtNumberFactor = CtNumberFactor;
+    artifact.SetCtNumberFactor(CtNumberFactor);
+    artifact.SetTransform(Transform);
 }
 
 MotionArtifactWidget::MotionArtifactWidget() :
