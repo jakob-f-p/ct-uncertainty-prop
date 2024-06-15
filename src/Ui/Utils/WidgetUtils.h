@@ -80,12 +80,17 @@ protected:
 };
 
 [[nodiscard]] auto static
-GenerateIcon(const std::string &filePrefix) noexcept -> QIcon {
+GenerateIcon(const std::string &fileNamePrefix) noexcept -> QIcon {
     QIcon icon;
-    QString const qFilePrefix = QString::fromStdString(filePrefix);
+    QString const qFilePrefix = QString::fromStdString(fileNamePrefix);
     icon.addPixmap(QPixmap(":/" + qFilePrefix + "Normal.png"), QIcon::Normal);
     icon.addPixmap(QPixmap(":/" + qFilePrefix + "Disabled.png"), QIcon::Disabled);
     return icon;
+}
+
+[[nodiscard]] auto static
+GenerateSimpleIcon(const std::string &fileName) noexcept -> QIcon {
+    return QIcon(QPixmap(":/" + QString::fromStdString(fileName) + ".png"));
 }
 
 [[nodiscard]] auto static

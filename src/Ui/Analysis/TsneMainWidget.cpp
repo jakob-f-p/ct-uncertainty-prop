@@ -1,21 +1,13 @@
 #include "TsneMainWidget.h"
 
+#include "TsneChartWidget.h"
 #include "../../Modeling/CtDataSource.h"
 #include "../../PipelineGroups/PipelineGroupList.h"
 
-#include <QChart>
-#include <QChartView>
-#include <QFrame>
-#include <QPushButton>
-#include <QScatterSeries>
 #include <QSplitter>
-#include <QValueAxis>
-#include <QVBoxLayout>
+#include <QPushButton>
 
 #include <vtkImageData.h>
-
-#include <algorithm>
-#include <limits>
 
 
 TsneMainWidget::TsneMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource) :
@@ -59,106 +51,6 @@ auto TsneMainWidget::UpdateData() -> void {
         ChartWidget->ShowWidget();
     else
         ChartWidget->HideWidget();
-}
-
-
-TsneChartWidget::TsneChartWidget() :
-        BatchListData(nullptr),
-        ChartView(new QChartView()) {
-
-    ChartView->setRenderHint(QPainter::RenderHint::Antialiasing);
-    auto* vLayout = new QVBoxLayout(this);
-    vLayout->addWidget(ChartView);
-
-    UpdateData(BatchListData);
-}
-
-auto TsneChartWidget::UpdateData(PipelineBatchListData const* batchListData) -> void {
-    BatchListData = batchListData;
-
-    if (!BatchListData)
-        return;
-
-    std::vector<QScatterSeries*> scatterSeriesVector;
-    scatterSeriesVector.reserve(BatchListData->Data.size());
-    for (auto const& batchData : BatchListData->Data) {
-        auto* scatterSeries = new QScatterSeries();
-        scatterSeries->setName(QString::fromStdString(batchData.Group.GetName()));
-        scatterSeries->setMarkerSize(scatterSeries->markerSize() * 0.75);
-
-        QList<QPointF> points;
-        std::transform(batchData.StateDataList.cbegin(), batchData.StateDataList.cend(),
-                       std::back_inserter(points),
-                       [](auto const psData) {
-            return QPointF(psData.TsneCoordinates.at(0), psData.TsneCoordinates.at(1));
-        });
-        scatterSeries->append(points);
-
-        scatterSeriesVector.emplace_back(scatterSeries);
-    }
-
-    auto* chart = new QChart();
-    chart->setTheme(QChart::ChartTheme::ChartThemeQt);
-    chart->setTitle("t-SNE analysis");
-    auto titleFont = chart->titleFont();
-    titleFont.setPointSize(static_cast<int>(static_cast<double>(titleFont.pointSize()) * 2.0));
-    chart->setTitleFont(titleFont);
-    chart->legend()->setAlignment(Qt::AlignBottom);
-    for (auto* scatterSeries : scatterSeriesVector)
-        chart->addSeries(scatterSeries);
-    chart->createDefaultAxes();
-
-    auto* xAxis = qobject_cast<QValueAxis*>(chart->axes(Qt::Horizontal).first());
-    auto* yAxis = qobject_cast<QValueAxis*>(chart->axes(Qt::Vertical).first());
-    auto [ xMin, xMax ] = GetAxisRange(xAxis);
-    auto [ yMin, yMax ] = GetAxisRange(yAxis);
-    xAxis->setRange(xMin, xMax);
-    yAxis->setRange(yMin, yMax);
-    xAxis->setTickType(QValueAxis::TickType::TicksDynamic);
-    yAxis->setTickType(QValueAxis::TickType::TicksDynamic);
-    xAxis->setTickInterval(GetAxisTickInterval(xAxis));
-    yAxis->setTickInterval(GetAxisTickInterval(yAxis));
-
-    QChart* oldChart = ChartView->chart();
-    ChartView->setChart(chart);
-
-    if (oldChart) {
-        delete oldChart;
-        oldChart = nullptr;
-    }
-}
-
-auto TsneChartWidget::GetAxisRange(QValueAxis* axis) -> std::pair<int, int> {
-    if (!axis)
-        throw std::runtime_error("axis must not be nullptr");
-
-    double const min = axis->min();
-    double const max = axis->max();
-
-    double const range = max - min;
-    double const padding = range * 0.05;
-
-    double const axisMin = min - padding;
-    double const axisMax = max + padding;
-
-    return { axisMin, axisMax };
-}
-
-auto TsneChartWidget::GetAxisTickInterval(QValueAxis* axis) -> double {
-    if (!axis)
-        throw std::runtime_error("axis must not be nullptr");
-
-    double const range = axis->max() - axis->min();
-    double const interval = range / 10.0;
-
-    double const roundingDigitPlace = std::floor(std::log10(interval));
-    double const roundingFactor = std::pow(10, roundingDigitPlace);
-
-    double roundedInterval = std::ceil(interval / roundingFactor) * roundingFactor;
-    if (interval / roundedInterval < 0.75)
-        roundedInterval -= roundingFactor / 2;
-
-    return roundedInterval;
 }
 
 ParameterSpaceStateRenderWidget::ParameterSpaceStateRenderWidget(CtDataSource& dataSource) :

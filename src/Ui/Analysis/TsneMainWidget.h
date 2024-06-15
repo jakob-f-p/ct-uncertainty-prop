@@ -5,13 +5,13 @@
 #include "../../Utils/Types.h"
 
 #include <QDockWidget>
+#include <QGraphicsView>
 #include <QMainWindow>
 
 #include <memory>
 #include <optional>
 
-class QChart;
-class QChartView;
+class QButtonGroup;
 class QPushButton;
 class QValueAxis;
 
@@ -40,28 +40,6 @@ private:
     OptionalWidget<TsneDataWidget>* DataWidget;
 };
 
-class TsneChartWidget : public QWidget {
-    Q_OBJECT
-
-public:
-    explicit TsneChartWidget();
-
-    auto
-    UpdateData(PipelineBatchListData const* batchListData) -> void;
-
-Q_SIGNALS:
-    void SamplePointChanged(std::optional<SampleId> sampleId);
-
-private:
-    [[nodiscard]] static auto
-    GetAxisRange(QValueAxis* axis) -> std::pair<int, int>;
-
-    [[nodiscard]] static auto
-    GetAxisTickInterval(QValueAxis* axis) -> double;
-
-    PipelineBatchListData const* BatchListData;
-    QChartView* ChartView;
-};
 
 class ParameterSpaceStateRenderWidget : public RenderWidget {
     Q_OBJECT
@@ -80,6 +58,7 @@ private:
     PipelineBatchListData const* BatchListData;
     CtDataSource& DataSource;
 };
+
 
 class TsneDataWidget : public QWidget {
     Q_OBJECT
