@@ -7,7 +7,7 @@
 template<typename WidgetType>
 class OptionalWidget : public QStackedWidget {
 public:
-    explicit OptionalWidget(QString placeholderText, QWidget* parent = nullptr) :
+    explicit OptionalWidget(QString placeholderText, WidgetType* widget = nullptr, QWidget* parent = nullptr) :
             QStackedWidget(parent),
             PlaceholderWidget([&placeholderText]() {
                 auto* widget = new QWidget();
@@ -16,9 +16,12 @@ public:
                 vLayout->addWidget(textLabel);
                 return widget;
             }()),
-            MainWidget(nullptr) {
+            MainWidget(widget) {
 
         addWidget(PlaceholderWidget);
+        if (MainWidget)
+            addWidget(MainWidget);
+
         setCurrentWidget(PlaceholderWidget);
     }
 
@@ -36,14 +39,10 @@ public Q_SLOTS:
     }
 
     auto
-    ShowWidget() noexcept -> void {
-        setCurrentWidget(MainWidget);
-    }
+    ShowWidget() noexcept -> void { setCurrentWidget(MainWidget); }
 
     auto
-    HideWidget() noexcept -> void {
-        setCurrentWidget(PlaceholderWidget);
-    }
+    HideWidget() noexcept -> void { setCurrentWidget(PlaceholderWidget); }
 
     [[nodiscard]] auto
     Widget() -> WidgetType& {

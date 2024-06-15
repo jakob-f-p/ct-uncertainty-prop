@@ -1,7 +1,8 @@
 #pragma once
 
-#include "../Artifacts/Pipeline.h"
 #include "ArtifactVariantPointer.h"
+#include "../Artifacts/Pipeline.h"
+#include "../Utils/Types.h"
 
 #include <string>
 #include <vector>
@@ -10,6 +11,8 @@ class PipelineBatch;
 class PipelineParameterSpace;
 class PipelineParameterSpan;
 class PipelineParameterSpaceState;
+
+struct PipelineImageData;
 
 
 class PipelineGroup {
@@ -38,6 +41,30 @@ public:
 
     auto
     ExtractFeatures(ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
+    DoPCA(uint8_t numberOfDimensions) -> void;
+
+    [[nodiscard]] auto
+    GetImageData() -> std::vector<PipelineImageData*>;
+
+    [[nodiscard]] auto
+    GetFeatureData() const -> FeatureData const&;
+
+    [[nodiscard]] auto
+    GetPcaData() const -> SampleCoordinateData const&;
+
+    [[nodiscard]] auto
+    GetTsneData() const -> SampleCoordinateData const&;
+
+    auto
+    SetTsneData(SampleCoordinateData&& tsneData) -> void;
+
+    [[nodiscard]] auto
+    DataHasBeenGenerated() const noexcept -> bool;
+
+    [[nodiscard]] auto
+    GetDataMTime() const noexcept -> vtkMTimeType;
 
     auto
     AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,

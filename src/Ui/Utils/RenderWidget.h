@@ -5,6 +5,7 @@
 class QVTKInteractor;
 class vtkCamera;
 class vtkImageAlgorithm;
+class vtkImageData;
 class vtkOpenGLGPUVolumeRayCastMapper;
 class vtkOpenGLRenderer;
 class vtkOrientationMarkerWidget;
@@ -28,6 +29,9 @@ public Q_SLOTS:
 
     auto
     UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> void;
+
+    auto
+    UpdateImageAlgorithm(vtkImageData& imageData) -> void;
 
 private:
     vtkImageAlgorithm* ImageAlgorithm;

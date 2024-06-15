@@ -14,6 +14,7 @@ set(QT_COMPONENTS
         Core
         Gui
         Widgets
+        Charts
 )
 find_package(Qt6 REQUIRED COMPONENTS ${QT_COMPONENTS})
 

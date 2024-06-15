@@ -1,5 +1,6 @@
 #include "MainWindow.h"
 
+#include "Analysis/AnalysisWidget.h"
 #include "Artifacts/ArtifactsWidget.h"
 #include "Modeling/ModelingWidget.h"
 #include "PipelineGroups/PipelineGroupsWidget.h"
@@ -19,14 +20,16 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree,
     tabWidget->setTabPosition(QTabWidget::TabPosition::West);
 
     auto* modelingWidget = new ModelingWidget(ctStructureTree, DataSource);
-    auto* artifactsWidget = new ArtifactsWidget(pipelineList, DataSource);
+    auto* artifactsWidget = new ArtifactsWidget(pipelineList);
     auto* segmentationWidget = new SegmentationWidget(DataSource, thresholdFilter);
     auto* pipelineGroupsWidget = new PipelineGroupsWidget(pipelineGroups);
+    auto* analysisWidget = new AnalysisWidget(pipelineGroups, DataSource);
 
     tabWidget->addTab(modelingWidget, "Modeling");
     tabWidget->addTab(artifactsWidget, "Artifacts");
     tabWidget->addTab(segmentationWidget, "Segmentation");
     tabWidget->addTab(pipelineGroupsWidget, "Pipeline Groups");
+    tabWidget->addTab(analysisWidget, "Analysis");
 
     setCentralWidget(tabWidget);
 
@@ -41,4 +44,10 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree,
             pipelineGroupsWidget->UpdatePipelineList();
     };
     connect(tabWidget, &QTabWidget::currentChanged, this, updatePipelineGroupsPipelines);
+
+    auto updateAnalysisWidgetData = [=](int idx) {
+        if (idx == tabWidget->indexOf(analysisWidget))
+            analysisWidget->UpdateData();
+    };
+    connect(tabWidget, &QTabWidget::currentChanged, this, updateAnalysisWidgetData);
 }

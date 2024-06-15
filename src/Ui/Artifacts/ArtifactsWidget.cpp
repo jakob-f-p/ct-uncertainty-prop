@@ -9,13 +9,12 @@
 #include <QPushButton>
 #include <QVBoxLayout>
 
-ArtifactsWidget::ArtifactsWidget(PipelineList& pipelines, CtDataSource& dataSource) :
+ArtifactsWidget::ArtifactsWidget(PipelineList& pipelines) :
         ResetCameraButton(new QPushButton("Reset Camera")),
         RenderButton(new QPushButton("Render")),
         PipelineWidget(new PipelinesWidget(pipelines)),
         RenderWidget(new ArtifactRenderWidget(pipelines,
-                                              PipelineWidget->GetCurrentPipeline(),
-                                              dataSource)) {
+                                              PipelineWidget->GetCurrentPipeline())) {
 
     setCentralWidget(RenderWidget);
 
@@ -62,13 +61,8 @@ auto ArtifactsWidget::GetCurrentFilter() -> vtkImageAlgorithm& {
 
 ArtifactRenderWidget::ArtifactRenderWidget(PipelineList& pipelines,
                                            Pipeline& pipeline,
-                                           CtDataSource& dataSource,
                                            QWidget* parent) :
-        RenderWidget([&]() -> vtkImageAlgorithm& {
-            DataSource = &dataSource;
-
-            return pipeline.GetImageAlgorithm();
-        }(), parent) {
+        RenderWidget(pipeline.GetImageAlgorithm()) {
 
     pipelines.AddTreeEventCallback([&]() { Render(); });
 }

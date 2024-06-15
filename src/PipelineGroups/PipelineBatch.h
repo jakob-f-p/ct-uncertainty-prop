@@ -1,5 +1,8 @@
 #pragma once
 
+#include "../Utils/TimeStampedData.h"
+#include "../Utils/Types.h"
+
 #include <vtkSmartPointer.h>
 
 #include <filesystem>
@@ -13,6 +16,11 @@ class PipelineParameterSpaceState;
 
 class vtkImageData;
 
+
+struct PipelineImageData {
+    PipelineParameterSpaceState const& State;
+    vtkSmartPointer<vtkImageData> ImageData;
+};
 
 class PipelineBatch {
     using ParameterSpaceState = std::unique_ptr<PipelineParameterSpaceState>;
@@ -30,37 +38,55 @@ public:
         static std::filesystem::path const FeatureDirectory;
     };
 
-    struct Image {
-        PipelineParameterSpaceState const& State;
-        vtkSmartPointer<vtkImageData> ImageData;
-        std::optional<ExportPathPair> Paths;
-    };
+    auto
+    UpdateParameterSpaceStates() noexcept -> void;
+
+    using BatchImages = std::vector<PipelineImageData>;
 
     using ProgressEventCallback = std::function<void(double)>;
 
     auto
     GenerateImages(ProgressEventCallback const& callback = [](double) {}) -> void;
 
+    using ExportPathVector = std::vector<ExportPathPair>;
+
     auto
     ExportImages(ProgressEventCallback const& callback = [](double) {}) -> void;
 
-    using ExportPathVector = std::vector<ExportPathPair>;
-
-    using FeatureMap = std::map<std::string, double>;
-    using FeatureMaps = std::vector<FeatureMap>;
-
     auto
     ExtractFeatures(ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
+    DoPCA(uint8_t numberOfDimensions) -> void;
+
+    [[nodiscard]] auto
+    GetImageData() -> std::vector<PipelineImageData*>;
+
+    [[nodiscard]] auto
+    GetFeatureData() const -> FeatureData const&;
+
+    [[nodiscard]] auto
+    GetPcaData() const -> SampleCoordinateData const&;
+
+    [[nodiscard]] auto
+    GetTsneData() const -> SampleCoordinateData const&;
+
+    auto
+    SetTsneData(SampleCoordinateData&& tsneData) -> void;
+
+    [[nodiscard]] auto
+    DataHasBeenGenerated() const noexcept -> bool;
+
+    [[nodiscard]] auto
+    GetDataMTime() const noexcept -> vtkMTimeType;
 
 private:
     [[nodiscard]] auto
     GetIdx(PipelineParameterSpaceState const& state) const -> uint32_t;
 
-    using PipelineImages = std::vector<std::optional<Image>>;
-
     struct DoExport {
         auto
-        operator()(std::optional<Image>& optionalImage) const -> void;
+        operator()(PipelineImageData& image) const -> void;
 
         PipelineBatch& Batch;
         uint32_t GroupIdx;
@@ -73,6 +99,9 @@ private:
     PipelineGroup const& Group;
     ParameterSpaceState InitialState;
     PipelineStates States;
-    PipelineImages Images;
-    std::optional<FeatureMaps> Features;
+    TimeStampedData<BatchImages> Images;
+    TimeStampedData<ExportPathVector> ExportedImages;
+    TimeStampedData<FeatureData> Features;
+    TimeStampedData<SampleCoordinateData> PcaData;
+    TimeStampedData<SampleCoordinateData> TsneData;
 };

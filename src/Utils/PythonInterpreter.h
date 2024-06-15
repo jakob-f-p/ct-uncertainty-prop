@@ -33,6 +33,8 @@ public:
         pybind11::exec(setMultiprocessingPath);
 
         AddImportedModule("extract_features");
+        AddImportedModule("pca");
+        AddImportedModule("tsne");
     }
 
     template<typename ...T>

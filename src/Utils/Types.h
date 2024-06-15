@@ -6,6 +6,7 @@
 #include <stdexcept>
 #include <string>
 #include <variant>
+#include <vector>
 
 using vtkMTimeType = uint64_t;
 
@@ -14,6 +15,22 @@ using FloatVector = std::array<float, 3>;
 
 using DoublePoint = DoubleVector;
 using FloatPoint = FloatVector;
+
+using SampleCoordinateData = std::vector<std::vector<double>>;
+using GroupCoordinateData = std::vector<SampleCoordinateData>;
+
+struct FeatureData {
+    using StringVector = std::vector<std::string>;
+    using Vector2DDouble = std::vector<std::vector<double>>;
+
+    StringVector Names;
+    Vector2DDouble Values;
+};
+
+struct SampleId {
+    uint16_t GroupIdx;
+    uint16_t StateIdx;
+};
 
 [[nodiscard]] auto static
 DoubleToFloatPoint(DoublePoint point) -> FloatPoint { return { static_cast<float>(point[0]),

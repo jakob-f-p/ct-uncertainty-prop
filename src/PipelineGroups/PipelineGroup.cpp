@@ -1,13 +1,13 @@
 #include "PipelineGroup.h"
 
-#include <memory>
-
 #include "PipelineBatch.h"
 #include "PipelineParameterSpace.h"
 #include "PipelineParameterSpaceState.h"
 
 #include "../Modeling/CtDataSource.h"
 #include "../Modeling/CtStructureTree.h"
+
+#include <memory>
 
 
 PipelineGroup::PipelineGroup(Pipeline const& basePipeline, std::string name) :
@@ -38,23 +38,76 @@ auto PipelineGroup::GetParameterSpace() const noexcept -> PipelineParameterSpace
 }
 
 auto PipelineGroup::GenerateImages(ProgressEventCallback const& callback) -> void {
-    Batch = std::make_unique<PipelineBatch>(*this);
+    if (!Batch)
+        throw std::runtime_error("Cannot generate images. Batch has not been created");
+
+    Batch->UpdateParameterSpaceStates();
 
     Batch->GenerateImages(callback);
 }
 
 auto PipelineGroup::ExportImages(PipelineGroup::ProgressEventCallback const& callback) -> void {
     if (!Batch)
-        throw std::runtime_error("Cannot export. Batch has not been generated");
+        throw std::runtime_error("Cannot export. Batch has not been created");
 
     Batch->ExportImages(callback);
 }
 
 auto PipelineGroup::ExtractFeatures(PipelineGroup::ProgressEventCallback const& callback) -> void {
     if (!Batch)
-        throw std::runtime_error("Cannot extract features. Batch has not been generated");
+        throw std::runtime_error("Cannot extract features. Batch has not been created");
 
     Batch->ExtractFeatures(callback);
+}
+
+auto PipelineGroup::DoPCA(uint8_t numberOfDimensions) -> void {
+    if (!Batch)
+        throw std::runtime_error("Cannot do PCA. Batch has not been created");
+
+    Batch->DoPCA(numberOfDimensions);
+}
+
+auto PipelineGroup::GetImageData() -> std::vector<PipelineImageData*> {
+    if (!Batch)
+        throw std::runtime_error("Cannot get image data. Batch has not been created");
+
+    return Batch->GetImageData();
+}
+
+auto PipelineGroup::GetFeatureData() const -> FeatureData const& {
+    if (!Batch)
+        throw std::runtime_error("Cannot get feature data. Batch has not been created");
+
+    return Batch->GetFeatureData();
+}
+
+auto PipelineGroup::GetPcaData() const -> SampleCoordinateData const& {
+    if (!Batch)
+        throw std::runtime_error("Cannot get PCA data. Batch has not been created");
+
+    return Batch->GetPcaData();
+}
+
+auto PipelineGroup::GetTsneData() const -> SampleCoordinateData const& {
+    if (!Batch)
+        throw std::runtime_error("Cannot get t-SNE data. Batch has not been created");
+
+    return Batch->GetTsneData();
+}
+
+auto PipelineGroup::SetTsneData(SampleCoordinateData&& tsneData) -> void {
+    if (!Batch)
+        throw std::runtime_error("Cannot set t-SNE data. Batch has not been created");
+
+    Batch->SetTsneData(std::move(tsneData));
+}
+
+auto PipelineGroup::DataHasBeenGenerated() const noexcept -> bool {
+    return Batch && Batch->DataHasBeenGenerated();
+}
+
+auto PipelineGroup::GetDataMTime() const noexcept -> vtkMTimeType {
+    return Batch ? Batch->GetDataMTime() : 0;
 }
 
 auto PipelineGroup::AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,

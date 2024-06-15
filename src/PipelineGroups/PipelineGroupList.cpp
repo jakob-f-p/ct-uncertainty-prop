@@ -1,12 +1,18 @@
 #include "PipelineGroupList.h"
 
+#include "PipelineBatch.h"
 #include "PipelineGroup.h"
 #include "PipelineParameterSpace.h"
 #include "../Artifacts/PipelineList.h"
 #include "../Modeling/CtStructureTree.h"
+#include "../Utils/PythonInterpreter.h"
+#include "../App.h"
+
+#include <pybind11/embed.h>
+#include <pybind11/stl.h>
 
 #include <ranges>
-#include <unordered_map>
+
 
 PipelineGroupList::PipelineGroupList(const PipelineList& pipelines) :
         Pipelines(pipelines) {}
@@ -64,17 +70,8 @@ auto PipelineGroupList::GenerateImages(ProgressEventCallback const& callback) ->
     std::vector<double> progressList (PipelineGroups.size(), 0.0);
     callback(0.0);
 
-    for (int i = 0; i < PipelineGroups.size(); i++) {
-        auto progressCallback = [&progressList, i, callback](double current) {
-            progressList[i] = current;
-
-            double const totalProgress = std::reduce(progressList.cbegin(), progressList.cend())
-                                                 / static_cast<double>(progressList.size());
-            callback(totalProgress);
-        };
-
-        PipelineGroups[i]->GenerateImages(progressCallback);
-    }
+    for (int i = 0; i < PipelineGroups.size(); i++)
+        PipelineGroups[i]->GenerateImages(ProgressUpdater { i, progressList, callback });
 }
 
 auto
@@ -82,17 +79,8 @@ PipelineGroupList::ExportImages(PipelineGroupList::ProgressEventCallback const& 
     std::vector<double> progressList (PipelineGroups.size(), 0.0);
     callback(0.0);
 
-    for (int i = 0; i < PipelineGroups.size(); i++) {
-        auto progressCallback = [&progressList, i, callback](double current) {
-            progressList[i] = current;
-
-            double const totalProgress = std::reduce(progressList.cbegin(), progressList.cend())
-                                         / static_cast<double>(progressList.size());
-            callback(totalProgress);
-        };
-
-        PipelineGroups[i]->ExportImages(progressCallback);
-    }
+    for (int i = 0; i < PipelineGroups.size(); i++)
+        PipelineGroups[i]->ExportImages(ProgressUpdater { i, progressList, callback });
 }
 
 auto PipelineGroupList::ExtractFeatures(PipelineGroupList::ProgressEventCallback const& callback) -> void {
@@ -107,16 +95,105 @@ auto PipelineGroupList::ExtractFeatures(PipelineGroupList::ProgressEventCallback
 
     callback(0.0);
 
+    for (int i = 0; i < PipelineGroups.size(); i++)
+        PipelineGroups[i]->ExtractFeatures(WeightedProgressUpdater { i, progressList,
+                                                                     groupSizeWeightVector, callback });
+}
+
+auto PipelineGroupList::DoPCAs(uint8_t numberOfDimensions, ProgressEventCallback const& callback) -> void {
     for (int i = 0; i < PipelineGroups.size(); i++) {
-        auto progressCallback = [&progressList, &groupSizeWeightVector, i, callback](double current) {
-            progressList[i] = current;
+        double const progress = static_cast<double>(PipelineGroups.size()) / static_cast<double>(i);
+        callback(progress);
 
-            double const totalProgress = std::transform_reduce(progressList.cbegin(), progressList.cend(),
-                                                               groupSizeWeightVector.cbegin(),
-                                                               0.0, std::plus{}, std::multiplies{});
-            callback(totalProgress);
-        };
-
-        PipelineGroups[i]->ExtractFeatures(progressCallback);
+        PipelineGroups[i]->DoPCA(numberOfDimensions);
     }
+
+    callback(1.0);
+}
+
+auto PipelineGroupList::DoTsne(uint8_t numberOfDimensions, ProgressEventCallback const& callback) -> void {
+    callback(0.0);
+
+    std::vector<FeatureData const*> featureDataVector;
+    for (auto& group: PipelineGroups)
+        featureDataVector.emplace_back(&group->GetFeatureData());
+
+    auto& interpreter = App::GetInstance()->GetPythonInterpreter();
+
+    pybind11::object const tsneGroupCoordinateObject = interpreter.ExecuteFunction("tsne", "calculate",
+                                                                                   featureDataVector,
+                                                                                   numberOfDimensions);
+
+    auto tsneGroupCoordinateData = tsneGroupCoordinateObject.cast<GroupCoordinateData>();
+
+    assert(PipelineGroups.size() == tsneGroupCoordinateData.size());
+
+    for (int i = 0; i < PipelineGroups.size(); i++) {
+        auto& group = PipelineGroups[i];
+        group->SetTsneData(std::move(tsneGroupCoordinateData[i]));
+    }
+
+    callback(1.0);
+}
+
+auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineBatchListData> {
+    bool const dataHasBeenGenerated = std::all_of(PipelineGroups.cbegin(), PipelineGroups.cend(),
+                                            [](auto const& group) { return group->DataHasBeenGenerated(); });
+    if (PipelineGroups.empty() || !dataHasBeenGenerated)
+        return std::nullopt;
+
+    std::vector<std::vector<PipelineImageData*>> imageDataVectors;
+    std::vector<FeatureData const*> featureDataVector;
+    std::vector<SampleCoordinateData const*> pcaDataVector;
+    std::vector<SampleCoordinateData const*> tsneDataVector;
+    std::vector<vtkMTimeType> mTimes;
+
+    for (auto const& group: PipelineGroups) {
+        imageDataVectors.emplace_back(group->GetImageData());
+        featureDataVector.emplace_back(&group->GetFeatureData());
+        pcaDataVector.emplace_back(&group->GetPcaData());
+        tsneDataVector.emplace_back(&group->GetTsneData());
+        mTimes.emplace_back(group->GetDataMTime());
+    }
+
+    std::vector<std::string> const& featureNames = featureDataVector[0]->Names;
+
+    PipelineBatchListData::StateDataLists stateDataLists;
+    stateDataLists.reserve(PipelineGroups.size());
+
+    for (int i = 0; i < imageDataVectors.size(); i++) {
+        std::vector<PipelineImageData*>& imageDataVector = imageDataVectors[i];
+        FeatureData const& featureData = *featureDataVector[i];
+        SampleCoordinateData const& pcaData = *pcaDataVector[i];
+        SampleCoordinateData const& tsneData = *tsneDataVector[i];
+
+        std::vector<ParameterSpaceStateData> stateDataList;
+        stateDataList.reserve(imageDataVectors[0].size());
+        for (int j = 0; j < imageDataVectors[0].size(); j++)
+            stateDataList.emplace_back(imageDataVector[j]->State, imageDataVector[j]->ImageData,
+                                       featureData.Values[j], pcaData[j], tsneData[j]);
+
+        stateDataLists.emplace_back(*PipelineGroups[i], std::move(stateDataList));
+    }
+
+    vtkMTimeType const mTime = *std::min_element(mTimes.cbegin(), mTimes.cend());
+
+    return PipelineBatchListData { featureNames, stateDataLists, mTime };
+}
+
+auto PipelineGroupList::ProgressUpdater::operator()(double current) noexcept -> void {
+    ProgressList[Idx] = current;
+
+    double const totalProgress = std::reduce(ProgressList.cbegin(), ProgressList.cend())
+                                        / static_cast<double>(ProgressList.size());
+    Callback(totalProgress);
+}
+
+auto PipelineGroupList::WeightedProgressUpdater::operator()(double current) noexcept -> void {
+    ProgressList[Idx] = current;
+
+    double const totalProgress = std::transform_reduce(ProgressList.cbegin(), ProgressList.cend(),
+                                                       GroupSizeWeightVector.cbegin(),
+                                                       0.0, std::plus{}, std::multiplies{});
+    Callback(totalProgress);
 }

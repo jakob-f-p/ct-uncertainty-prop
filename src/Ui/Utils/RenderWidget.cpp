@@ -16,6 +16,8 @@ RenderWidget::RenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent) :
         QVTKOpenGLNativeWidget(parent),
         ImageAlgorithm(&imageAlgorithm) {
 
+    UpdateImageAlgorithm(imageAlgorithm);
+
     vtkNew<vtkPiecewiseFunction> opacityMappingFunction;
     opacityMappingFunction->AddPoint(-1000.0, 0.005);
     opacityMappingFunction->AddPoint(2000.0, 0.05);
@@ -30,8 +32,6 @@ RenderWidget::RenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent) :
     volumeProperty->ShadeOn();
     volumeProperty->SetInterpolationTypeToLinear();
     volumeProperty->SetAmbient(0.3);
-
-    UpdateImageAlgorithm(imageAlgorithm);
 
     vtkNew<vtkVolume> volume;
     volume->SetMapper(VolumeMapper);
@@ -77,6 +77,10 @@ auto RenderWidget::Render() const -> void {
 auto RenderWidget::UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> void {
     ImageAlgorithm = &imageAlgorithm;
     VolumeMapper->SetInputConnection(ImageAlgorithm->GetOutputPort());
+}
+
+auto RenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) -> void {
+    VolumeMapper->SetInputData(&imageData);
 }
 
 auto RenderWidget::GetCurrentFilter() -> vtkImageAlgorithm& {

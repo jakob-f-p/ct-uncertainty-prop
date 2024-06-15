@@ -56,14 +56,20 @@ PipelineGroupsWidget::PipelineGroupsWidget(PipelineGroupList& pipelineGroups) :
             CalculateImagesProgressBar->setValue(static_cast<int>(progress * 1000.0));
         };
 
-        CalculateImagesProgressBar->setFormat("Generating Image Data (Task 1/3)... %p%");
+        CalculateImagesProgressBar->setFormat("Generating Image Data (Task 1/5)... %p%");
         pipelineGroups.GenerateImages(progressCallback);
 
-        CalculateImagesProgressBar->setFormat("Exporting Images... (Task 2/3) %p%");
+        CalculateImagesProgressBar->setFormat("Exporting Images... (Task 2/5) %p%");
         pipelineGroups.ExportImages(progressCallback);
 
-        CalculateImagesProgressBar->setFormat("Extracting Features... (Task 3/3) %p%");
+        CalculateImagesProgressBar->setFormat("Extracting Features... (Task 3/5) %p%");
         pipelineGroups.ExtractFeatures(progressCallback);
+
+        CalculateImagesProgressBar->setFormat("Doing PCA... (Task 4/5) %p%");
+        pipelineGroups.DoPCAs(2, progressCallback);
+
+        CalculateImagesProgressBar->setFormat("Doing t-SNE... (Task 5/5) %p%");
+        pipelineGroups.DoTsne(2, progressCallback);
 
         CalculateImagesProgressBar->reset();
         CalculateImagesButton->setEnabled(true);

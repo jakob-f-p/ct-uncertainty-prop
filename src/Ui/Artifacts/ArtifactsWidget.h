@@ -7,7 +7,6 @@
 class QPushButton;
 
 class ArtifactRenderWidget;
-class CtDataSource;
 class ImageArtifactConcatenation;
 class Pipeline;
 class PipelineList;
@@ -15,7 +14,7 @@ class PipelinesWidget;
 
 class ArtifactsWidget : public QMainWindow {
 public:
-    explicit ArtifactsWidget(PipelineList& pipelines, CtDataSource& dataSource);
+    explicit ArtifactsWidget(PipelineList& pipelines);
 
     [[nodiscard]] auto
     GetCurrentFilter() -> vtkImageAlgorithm&;
@@ -35,14 +34,10 @@ class ArtifactRenderWidget : public RenderWidget {
 public:
     explicit ArtifactRenderWidget(PipelineList& pipelines,
                                   Pipeline& pipeline,
-                                  CtDataSource& dataSource,
                                   QWidget* parent = nullptr);
     ~ArtifactRenderWidget() override;
 
 public Q_SLOTS:
     auto
     UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) -> void;
-
-private:
-    CtDataSource* DataSource;
 };
