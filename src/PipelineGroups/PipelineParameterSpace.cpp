@@ -7,7 +7,7 @@
 
 
 PipelineParameterSpanSet::PipelineParameterSpanSet(ArtifactVariantPointer artifactVariantPointer) :
-        ArtifactPointer(std::move(artifactVariantPointer)) {}
+        ArtifactPointer(artifactVariantPointer) {}
 
 auto PipelineParameterSpanSet::AddParameterSpan(PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan& {
     return ParameterSpans.emplace_back(std::move(parameterSpan));
@@ -38,6 +38,10 @@ auto PipelineParameterSpanSet::Get(uint16_t idx) -> PipelineParameterSpan& {
     return ParameterSpans.at(idx);
 }
 
+auto PipelineParameterSpanSet::Get(uint16_t idx) const -> PipelineParameterSpan const& {
+    return ParameterSpans.at(idx);
+}
+
 auto PipelineParameterSpanSet::GetIdx(PipelineParameterSpan const& parameterSpan) const -> uint16_t {
     auto it = std::find(ParameterSpans.cbegin(), ParameterSpans.cend(), parameterSpan);
 
@@ -52,52 +56,10 @@ auto PipelineParameterSpanSet::GetNumberOfPipelines() const noexcept -> uint16_t
                                  [](auto const& span) { return span.GetNumberOfPipelines(); });
 }
 
-auto PipelineParameterSpanSet::SpanStatesProduct() -> std::vector<ParameterSpanSetState> {
-    std::vector<ParameterSpanSetState> spanSetStates;
-    spanSetStates.reserve(GetNumberOfPipelines());
-
-    if (ParameterSpans.empty())
-        return spanSetStates;
-
-    std::vector<size_t> indices (ParameterSpans.size(), 0);
-
-    // TODO: remove
-    return spanSetStates;
-//    while (true) {
-//        std::string current;
-//        for (size_t i = 0; i < ParameterSpans.size(); ++i) {
-//            current += ParameterSpans[i][indices[i]];
-//        }
-//        result.push_back(current);
-//
-//        // Increment the indices from the last set to the first
-//        size_t setIndex = sets.size();
-//        while (setIndex > 0) {
-//            --setIndex;
-//            if (indices[setIndex] + 1 < sets[setIndex].size()) {
-//                // Move to the next element in the current set
-//                ++indices[setIndex];
-//                break;
-//            } else {
-//                // Reset the current set and move to the next one
-//                indices[setIndex] = 0;
-//            }
-//        }
-//
-//        // If we've reset the first set, we're done
-//        if (setIndex == 0 && indices[0] == 0) {
-//            break;
-//        }
-//    }
-//
-//    return result;
-//    for (auto& span : ParameterSpans) {
-//    }
-}
-
 auto PipelineParameterSpanSet::operator==(const PipelineParameterSpanSet& other) const noexcept -> bool {
     return this == &other;
 }
+
 
 
 auto PipelineParameterSpace::AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
@@ -153,10 +115,15 @@ auto PipelineParameterSpace::GetNumberOfPipelines() const noexcept -> uint16_t {
 }
 
 auto PipelineParameterSpace::GetSpanSet(uint16_t idx) -> PipelineParameterSpanSet& {
+    return const_cast<PipelineParameterSpanSet&>(
+            static_cast<PipelineParameterSpace const&>(*this).GetSpanSet(idx));
+}
+
+auto PipelineParameterSpace::GetSpanSet(uint16_t idx) const -> PipelineParameterSpanSet const& {
     if (idx >= ParameterSpanSets.size())
         throw std::runtime_error("Span set index out of range");
 
-    for (auto& spanSet : ParameterSpanSets) {
+    for (auto const& spanSet : ParameterSpanSets) {
         if (idx == 0)
             return spanSet;
 

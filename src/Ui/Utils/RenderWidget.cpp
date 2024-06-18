@@ -1,5 +1,10 @@
 #include "RenderWidget.h"
 
+#include <QFileDialog>
+#include <QPushButton>
+#include <QStandardPaths>
+#include <QVBoxLayout>
+
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
 #include <vtkColorTransferFunction.h>
@@ -12,7 +17,47 @@
 #include <vtkPiecewiseFunction.h>
 #include <vtkVolumeProperty.h>
 
-RenderWidget::RenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent) :
+
+RenderWidget::RenderWidget(vtkImageAlgorithm& imageAlgorithm, Controls controls, QWidget* parent) :
+        VtkRenderWidget(new CtRenderWidget(imageAlgorithm, parent)) {
+
+    auto* vLayout = new QVBoxLayout(this);
+
+    vLayout->addWidget(VtkRenderWidget);
+
+
+    if (!controls)
+        return;
+
+    auto* controlBarWidget = new QWidget();
+    auto* controlBarHLayout = new QHBoxLayout(controlBarWidget);
+
+    if (controls.Render) {
+        RenderButton = new QPushButton("Render");
+        controlBarHLayout->addWidget(RenderButton);
+        connect(RenderButton, &QPushButton::clicked, VtkRenderWidget, &CtRenderWidget::Render);
+    }
+
+    if (controls.Render) {
+        ResetCameraButton = new QPushButton("Reset Camera");
+        controlBarHLayout->addWidget(ResetCameraButton);
+        connect(ResetCameraButton, &QPushButton::clicked, VtkRenderWidget, &CtRenderWidget::ResetCamera);
+    }
+
+    controlBarHLayout->addStretch();
+
+    if (controls.Render) {
+        ExportButton = new QPushButton("Export");
+        controlBarHLayout->addWidget(ExportButton);
+        connect(ExportButton, &QPushButton::clicked, VtkRenderWidget, &CtRenderWidget::Export);
+    }
+
+    vLayout->addWidget(controlBarWidget);
+}
+
+
+
+CtRenderWidget::CtRenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent) :
         QVTKOpenGLNativeWidget(parent),
         ImageAlgorithm(&imageAlgorithm) {
 
@@ -63,27 +108,38 @@ RenderWidget::RenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent) :
     OrientationMarkerWidget->InteractiveOff();
 }
 
-RenderWidget::~RenderWidget() = default;
+CtRenderWidget::~CtRenderWidget() = default;
 
-auto RenderWidget::ResetCamera() const -> void {
+auto CtRenderWidget::ResetCamera() const -> void {
     Renderer->GetActiveCamera()->DeepCopy(InitialCamera);
     RenderWindowInteractor->Render();
 }
 
-auto RenderWidget::Render() const -> void {
+auto CtRenderWidget::Render() const -> void {
     RenderWindowInteractor->Render();
 }
 
-auto RenderWidget::UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> void {
+auto CtRenderWidget::Export() -> void {
+    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
+    if (homeLocations.empty() || homeLocations.at(0).isEmpty())
+        throw std::runtime_error("home path must not be empty");
+    QString const& homePath = homeLocations.at(0);
+
+    QString const fileFilter = "Images (*.png)";
+    QString const fileName = QFileDialog::getSaveFileName(this, "Save image", homePath, fileFilter);
+    grab().save(fileName);
+}
+
+auto CtRenderWidget::UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> void {
     ImageAlgorithm = &imageAlgorithm;
     VolumeMapper->SetInputConnection(ImageAlgorithm->GetOutputPort());
 }
 
-auto RenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) -> void {
+auto CtRenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) -> void {
     VolumeMapper->SetInputData(&imageData);
 }
 
-auto RenderWidget::GetCurrentFilter() -> vtkImageAlgorithm& {
+auto CtRenderWidget::GetCurrentFilter() -> vtkImageAlgorithm& {
     if (!ImageAlgorithm)
         throw std::runtime_error("Filter must not be null");
 

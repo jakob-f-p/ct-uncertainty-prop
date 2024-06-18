@@ -2,7 +2,13 @@
 
 #include <QVTKOpenGLNativeWidget.h>
 
+#include <QWidget>
+
+class QPushButton;
 class QVTKInteractor;
+
+class CtRenderWidget;
+
 class vtkCamera;
 class vtkImageAlgorithm;
 class vtkImageData;
@@ -10,12 +16,39 @@ class vtkOpenGLGPUVolumeRayCastMapper;
 class vtkOpenGLRenderer;
 class vtkOrientationMarkerWidget;
 
-class RenderWidget : public QVTKOpenGLNativeWidget {
+
+class RenderWidget : public QWidget {
     Q_OBJECT
 
 public:
-    explicit RenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent = nullptr);
-    ~RenderWidget() override;
+    struct Controls {
+        bool Render;
+        bool ResetCamera;
+        bool Export;
+
+        explicit operator bool() const noexcept { return Render || ResetCamera || Export; }
+    };
+
+    explicit RenderWidget(vtkImageAlgorithm& imageAlgorithm,
+                           Controls controls = { true, true, true },
+                           QWidget* parent = nullptr);
+
+private:
+    CtRenderWidget* VtkRenderWidget;
+
+    QPushButton* RenderButton = nullptr;
+    QPushButton* ResetCameraButton = nullptr;
+    QPushButton* ExportButton = nullptr;
+};
+
+
+
+class CtRenderWidget : public QVTKOpenGLNativeWidget {
+    Q_OBJECT
+
+public:
+    explicit CtRenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent = nullptr);
+    ~CtRenderWidget() override;
 
     [[nodiscard]] auto
     GetCurrentFilter() -> vtkImageAlgorithm&;
@@ -26,6 +59,9 @@ public Q_SLOTS:
 
     auto
     Render() const -> void;
+
+    auto
+    Export() -> void;
 
     auto
     UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> void;

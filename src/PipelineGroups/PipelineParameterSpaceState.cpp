@@ -31,6 +31,16 @@ auto SpanState<T>::Apply() const -> void {
     Span.Property.Set(Value);
 }
 
+template<typename T>
+auto SpanState<T>::RefersTo(PipelineParameterSpan const& parameterSpan) const noexcept -> bool {
+    return parameterSpan == Span;
+}
+
+template<typename T>
+auto SpanState<T>::GetValue() const noexcept -> T {
+    return Value;
+}
+
 template class SpanState<float>;
 template class SpanState<FloatPoint>;
 
@@ -112,6 +122,15 @@ auto ParameterSpanState::Apply() const noexcept -> void {
     std::visit([](auto const& spanState) { spanState.Apply(); }, State);
 }
 
+auto ParameterSpanState::RefersTo(PipelineParameterSpan const& parameterSpan) const noexcept -> bool {
+    return std::visit([&parameterSpan](auto const& spanState) { return spanState.RefersTo(parameterSpan); }, State);
+}
+
+auto ParameterSpanState::GetValue() const noexcept -> std::variant<float, FloatPoint> {
+    return std::visit([](auto const& spanState) -> std::variant<float, FloatPoint> { return spanState.GetValue(); },
+                      State);
+}
+
 
 ParameterSpanStateSourceIterator::ParameterSpanStateSourceIterator(PipelineParameterSpan& parameterSpan)  :
         IteratorVariant(std::visit(Overload {
@@ -155,6 +174,17 @@ auto ParameterSpanSetState::Apply() const noexcept -> void {
         state.Apply();
 }
 
+auto ParameterSpanSetState::FindSpanStateBySpan(PipelineParameterSpan const& parameterSpan) const noexcept
+        -> std::optional<std::reference_wrapper<ParameterSpanState const>> {
+
+    for (auto const& state : States) {
+        if (state.RefersTo(parameterSpan))
+            return state;
+    }
+
+    return std::nullopt;
+}
+
 
 PipelineParameterSpaceState::PipelineParameterSpaceState(PipelineParameterSpace& parameterSpace) :
         ParameterSpace(parameterSpace),
@@ -171,4 +201,17 @@ PipelineParameterSpaceState::PipelineParameterSpaceState(PipelineParameterSpace&
 auto PipelineParameterSpaceState::Apply() const noexcept -> void {
     for (auto const& state : States)
         state.Apply();
+}
+
+auto PipelineParameterSpaceState::FindSpanStateBySpan(PipelineParameterSpan const& parameterSpan) const
+        -> ParameterSpanState const& {
+
+    for (auto const& state : States) {
+        std::optional<std::reference_wrapper<ParameterSpanState const>> res = state.FindSpanStateBySpan(parameterSpan);
+
+        if (res)
+            return *res;
+    }
+
+    throw std::runtime_error("span not found");
 }

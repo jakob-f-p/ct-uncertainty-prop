@@ -102,7 +102,7 @@ class TsneChartTooltip : public QGraphicsItem {
 public:
     explicit TsneChartTooltip(QChart& parentChart,
                               QPointF anchorPoint,
-                              TsneChartView::PenBrushPair foregroundBackgroundColors);
+                              TsneChartView::PenBrushPair const& foregroundBackgroundColors);
 
     [[nodiscard]] auto
     boundingRect() const -> QRectF override;

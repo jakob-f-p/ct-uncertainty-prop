@@ -1,5 +1,7 @@
 #include "PipelineParameterSpan.h"
 
+#include "../Utils/Overload.h"
+
 #include <algorithm>
 #include <format>
 
@@ -101,4 +103,18 @@ auto PipelineParameterSpan::States() -> std::vector<ParameterSpanState> {
         states.emplace_back(*this);
 
     return states;
+}
+
+auto PipelineParameterSpan::GetRange() const noexcept -> Range {
+    return std::visit(Overload {
+        [](ParameterSpan<float> const& span) { return Range { span.GetNumbers().Min, span.GetNumbers().Max }; },
+        [](ParameterSpan<FloatPoint> const& span) {
+            auto numbers = span.GetNumbers();
+            auto const minRange = std::minmax_element(numbers.Min.cbegin(), numbers.Min.cend());
+            auto const maxRange = std::minmax_element(numbers.Max.cbegin(), numbers.Max.cend());
+
+            return Range { std::min({ *minRange.first, *maxRange.first }),
+                           std::max({ *minRange.second, *maxRange.second }) };
+        }
+    }, SpanVariant);
 }

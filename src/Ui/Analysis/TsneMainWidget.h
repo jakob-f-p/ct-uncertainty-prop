@@ -9,11 +9,15 @@
 #include <memory>
 #include <optional>
 
+class QDoubleSpinBox;
 class QPushButton;
+class QSpinBox;
 
 class CtDataSource;
+class NameLineEdit;
 class ParameterSpaceStateRenderWidget;
 class PipelineGroupList;
+class PipelineParameterSpaceStateView;
 class TsneChartWidget;
 class TsneDataWidget;
 
@@ -73,7 +77,16 @@ public Q_SLOTS:
     UpdateSample(std::optional<SampleId> sampleId) -> void;
 
 private:
+    PipelineBatchListData const* BatchListData;
+
     QPushButton* ResetCameraButton;
 
-    PipelineBatchListData const* BatchListData;
+    NameLineEdit* PipelineGroupNameEdit;
+    NameLineEdit* BasePipelineNameEdit;
+    QSpinBox* NumberOfGroupPipelinesSpinBox;
+
+    QDoubleSpinBox* PointXSpinBox;
+    QDoubleSpinBox* PointYSpinBox;
+
+    OptionalWidget<PipelineParameterSpaceStateView>* ParameterSpaceStateView;
 };

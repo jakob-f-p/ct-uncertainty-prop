@@ -35,13 +35,13 @@ public:
     Get(uint16_t idx) -> PipelineParameterSpan&;
 
     [[nodiscard]] auto
+    Get(uint16_t idx) const -> PipelineParameterSpan const&;
+
+    [[nodiscard]] auto
     GetIdx(PipelineParameterSpan const& parameterSpan) const -> uint16_t;
 
     [[nodiscard]] auto
     GetNumberOfPipelines() const noexcept -> uint16_t;
-
-    [[nodiscard]] auto
-    SpanStatesProduct() -> std::vector<ParameterSpanSetState>;
 
     [[nodiscard]] auto
     operator== (PipelineParameterSpanSet const& other) const noexcept -> bool;
@@ -86,6 +86,9 @@ public:
 
     [[nodiscard]] auto
     GetSpanSet(uint16_t idx) -> PipelineParameterSpanSet&;
+
+    [[nodiscard]] auto
+    GetSpanSet(uint16_t idx) const -> PipelineParameterSpanSet const&;
 
     [[nodiscard]] auto
     GetSpanSet(PipelineParameterSpan const& parameterSpan) -> PipelineParameterSpanSet&;

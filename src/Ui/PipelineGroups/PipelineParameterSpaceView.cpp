@@ -5,8 +5,8 @@
 #include <QVBoxLayout>
 
 
-PipelineParameterSpaceView::PipelineParameterSpaceView(PipelineParameterSpace& pipelineGroups) :
-        ParameterSpaceModel(new PipelineParameterSpaceModel(pipelineGroups)) {
+PipelineParameterSpaceView::PipelineParameterSpaceView(PipelineParameterSpace& parameterSpace) :
+        ParameterSpaceModel(new PipelineParameterSpaceModel(parameterSpace)) {
 
     setModel(ParameterSpaceModel);
 
@@ -100,11 +100,9 @@ auto PipelineParameterSpaceModel::AddParameterSpan(PipelineParameterSpan&& param
 
     uidx_t const insertionIdx = spanSet.GetSize();
 
-//    beginInsertRows(parentModelIndex, insertionIdx, insertionIdx);
     beginResetModel();
     auto const& span = ParameterSpace.AddParameterSpan(artifactPointer, std::move(parameterSpan));
     endResetModel();
-//    endInsertRows();
 
     return index(insertionIdx, 0, parentModelIndex);
 }

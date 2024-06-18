@@ -187,8 +187,9 @@ auto TsneChartView::UpdateTheme(Theme theme) -> void {
         default: throw std::runtime_error("invalid theme");
     }
 
+    static auto const titlePointSize = static_cast<int>(static_cast<double>(Chart->titleFont().pointSize()) * 1.5);
     auto titleFont = Chart->titleFont();
-    titleFont.setPointSize(static_cast<int>(static_cast<double>(titleFont.pointSize()) * 1.5));
+    titleFont.setPointSize(titlePointSize);
     Chart->setTitleFont(titleFont);
 }
 
@@ -309,13 +310,13 @@ auto TsneChartView::GetCurrentForegroundBackground() const -> TsneChartView::Pen
 
 TsneChartTooltip::TsneChartTooltip(QChart& parentChart,
                                    QPointF anchorPoint,
-                                   TsneChartView::PenBrushPair foregroundBackgroundColors) :
+                                   TsneChartView::PenBrushPair const& foregroundBackgroundColors) :
         QGraphicsItem(&parentChart),
         Chart(&parentChart),
         Anchor(anchorPoint),
         Text([this]() {
             uint16_t const numberOfNonDecimals = std::floor(
-                    std::max({ std::log10(std::abs(Anchor.x())), std::log10(std::abs(Anchor.y())) }) + 1);
+                    std::max({ std::log10(std::abs(Anchor.x())) + 1, std::log10(std::abs(Anchor.y())) }) + 1);
             uint16_t const numberOfDecimals = 2;
             uint16_t const formatWidth = numberOfNonDecimals + numberOfDecimals + 2;
             std::string const tooltipString = std::format("x: {:{}.{}f}\ny: {:{}.{}f}",

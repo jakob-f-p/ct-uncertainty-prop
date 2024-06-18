@@ -32,6 +32,12 @@ public:
     Apply() const -> void;
 
     [[nodiscard]] auto
+    RefersTo(PipelineParameterSpan const& parameterSpan) const noexcept -> bool;
+
+    [[nodiscard]] auto
+    GetValue() const noexcept -> T;
+
+    [[nodiscard]] auto
     operator== (SpanState const& other) const noexcept -> bool = default;
 
 private:
@@ -93,6 +99,12 @@ public:
     auto
     Apply() const noexcept -> void;
 
+    [[nodiscard]] auto
+    RefersTo(PipelineParameterSpan const& parameterSpan) const noexcept -> bool;
+
+    [[nodiscard]] auto
+    GetValue() const noexcept -> std::variant<float, FloatPoint>;
+
 private:
     friend struct ParameterSpanSetState;
 
@@ -144,6 +156,10 @@ public:
     auto
     Apply() const noexcept -> void;
 
+    [[nodiscard]] auto
+    FindSpanStateBySpan(PipelineParameterSpan const& parameterSpan) const noexcept
+            -> std::optional<std::reference_wrapper<ParameterSpanState const>>;
+
 private:
     PipelineParameterSpanSet& SpanSet;
     SpanStates States;
@@ -160,7 +176,12 @@ public:
     auto
     Apply() const noexcept -> void;
 
+    [[nodiscard]] auto
+    FindSpanStateBySpan(PipelineParameterSpan const& parameterSpan) const -> ParameterSpanState const&;
+
 private:
+    friend class PipelineParameterSpaceStateModel;
+
     PipelineParameterSpace& ParameterSpace;
     SpanSetStates States;
 };

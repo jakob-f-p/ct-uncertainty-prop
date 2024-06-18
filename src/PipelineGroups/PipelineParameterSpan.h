@@ -92,8 +92,23 @@ struct PipelineParameterSpan {
     [[nodiscard]] auto
     States() -> std::vector<ParameterSpanState>;
 
+    struct Range {
+        float Min;
+        float Max;
+    };
+
+    [[nodiscard]] auto
+    GetRange() const noexcept -> Range;
+
     [[nodiscard]] auto
     operator== (PipelineParameterSpan const& other) const noexcept -> bool;
+
+    template<typename Type>
+    [[nodiscard]] auto
+    operator== (Type const& other) const noexcept -> bool {
+        return std::holds_alternative<Type>(SpanVariant)
+                       && &std::get<Type>(SpanVariant) == &other;
+    };
 
 private:
     friend class ObjectPropertyGroup;

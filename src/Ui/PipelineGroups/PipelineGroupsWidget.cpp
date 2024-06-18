@@ -115,9 +115,7 @@ void PipelineGroupsWidget::OnRequestCreateParameterSpan(PipelineGroup* pipelineG
 
     connect(createWidget, &PipelineParameterSpanCreateWidget::Accept,
             this, [this, createWidget]() {
-
-                GroupWidget->Widget().AddParameterSpan(
-                        createWidget->GetPipelineParameterSpan());
+                GroupWidget->Widget().AddParameterSpan(createWidget->GetPipelineParameterSpan());
             });
 
     connect(createWidget, &PipelineParameterSpanCreateWidget::Reject,
