@@ -14,6 +14,7 @@ class TsneChartView;
 class QButtonGroup;
 class QChart;
 class QPushButton;
+class QScatterSeries;
 class QValueAxis;
 
 
@@ -44,7 +45,7 @@ class TsneChartView : public QGraphicsView {
 public:
     explicit TsneChartView();
 
-    ~TsneChartView();
+    ~TsneChartView() override;
 
     auto
     UpdateData(PipelineBatchListData const* batchListData) -> void;
@@ -52,6 +53,11 @@ public:
     enum struct Theme : uint8_t {
         LIGHT = 0,
         DARK
+    };
+
+    struct PenBrushPair {
+        QPen Pen;
+        QBrush Brush;
     };
 
     auto
@@ -78,25 +84,43 @@ private:
     [[nodiscard]] static auto
     GetAxisTickInterval(QValueAxis* axis) -> double;
 
+    [[nodiscard]] auto
+    CreateScatterSeries() noexcept -> std::vector<QScatterSeries*>;
+
+    [[nodiscard]] auto
+    GetCurrentForegroundBackground() const -> PenBrushPair;
+
     PipelineBatchListData const* BatchListData;
     QGraphicsScene* GraphicsScene;
     QChart* Chart;
     TsneChartTooltip* Tooltip;
+    Theme CurrentTheme;
 };
 
 
 class TsneChartTooltip : public QGraphicsItem {
 public:
-    explicit TsneChartTooltip(QChart& parentChart, QString const& text, QPointF anchorPoint);
+    explicit TsneChartTooltip(QChart& parentChart,
+                              QPointF anchorPoint,
+                              TsneChartView::PenBrushPair foregroundBackgroundColors);
 
-    auto boundingRect() const -> QRectF override;
+    [[nodiscard]] auto
+    boundingRect() const -> QRectF override;
 
-    void paint(QPainter *painter, const QStyleOptionGraphicsItem *option, QWidget *widget) override;
+    auto
+    paint(QPainter* painter, QStyleOptionGraphicsItem const* option, QWidget* widget) -> void override;
 
 protected:
-    void mousePressEvent(QGraphicsSceneMouseEvent *event) override;
+    auto
+    mousePressEvent(QGraphicsSceneMouseEvent* event) -> void override;
 
 private:
+    [[nodiscard]] auto
+    GetTooltipPath() const -> QPainterPath;
+
+    auto
+    AdjustPosition() noexcept -> void;
+
     QChart* Chart;
 
     QPointF Anchor;
@@ -105,4 +129,6 @@ private:
     QRectF TextRectangle;
     QRectF Rectangle;
     QFont Font;
+    QBrush BackgroundBrush;
+    QPen TextPen;
 };

@@ -4,16 +4,12 @@
 #include "../Utils/RenderWidget.h"
 #include "../../Utils/Types.h"
 
-#include <QDockWidget>
-#include <QGraphicsView>
 #include <QMainWindow>
 
 #include <memory>
 #include <optional>
 
-class QButtonGroup;
 class QPushButton;
-class QValueAxis;
 
 class CtDataSource;
 class ParameterSpaceStateRenderWidget;

@@ -87,7 +87,8 @@ TsneChartView::TsneChartView() :
         BatchListData(nullptr),
         GraphicsScene(scene()),
         Chart(nullptr),
-        Tooltip(nullptr) {
+        Tooltip(nullptr),
+        CurrentTheme(Theme::DARK) {
 
     setDragMode(QGraphicsView::NoDrag);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
@@ -99,8 +100,7 @@ TsneChartView::TsneChartView() :
 }
 
 TsneChartView::~TsneChartView() {
-    if (GraphicsScene)
-        delete GraphicsScene;
+    delete GraphicsScene;
 }
 
 auto TsneChartView::UpdateData(PipelineBatchListData const* batchListData) -> void {
@@ -109,39 +109,7 @@ auto TsneChartView::UpdateData(PipelineBatchListData const* batchListData) -> vo
     if (!BatchListData)
         return;
 
-    std::vector<QScatterSeries*> scatterSeriesVector;
-    scatterSeriesVector.reserve(BatchListData->Data.size());
-    for (int i = 0; i < BatchListData->Data.size(); i++) {
-        auto const& batchData = BatchListData->Data[i];
-
-        auto* scatterSeries = new QScatterSeries();
-        scatterSeries->setName(QString::fromStdString(batchData.Group.GetName()));
-        scatterSeries->setMarkerSize(scatterSeries->markerSize() * 0.75);
-
-        QList<QPointF> points;
-        std::transform(batchData.StateDataList.cbegin(), batchData.StateDataList.cend(),
-                       std::back_inserter(points),
-                       [](auto const psData) {
-                           return QPointF(psData.TsneCoordinates.at(0), psData.TsneCoordinates.at(1));
-                       });
-        scatterSeries->append(points);
-
-        scatterSeriesVector.push_back(scatterSeries);
-
-        connect(scatterSeries, &QScatterSeries::hovered, this, &TsneChartView::ToggleTooltip);
-
-        connect(scatterSeries, &QScatterSeries::clicked, [this, scatterSeries, i](QPointF const& point) {
-            auto points = scatterSeries->points();
-            auto it = std::find(points.cbegin(), points.cend(), point);
-            if (it == points.cend())
-                throw std::runtime_error("point not present in chart");
-
-            auto idx = std::distance(points.cbegin(), it);
-            std::cout << "abc" << std::endl;
-
-            Q_EMIT SamplePointChanged(SampleId { static_cast<uint16_t>(i), static_cast<uint16_t>(idx) });
-        });
-    }
+    auto const scatterSeriesVector = CreateScatterSeries();
 
     auto* chart = new QChart();
     chart->setTitle("t-SNE analysis");
@@ -166,8 +134,11 @@ auto TsneChartView::UpdateData(PipelineBatchListData const* batchListData) -> vo
         delete Chart;
     }
     Chart = chart;
+
     GraphicsScene->addItem(Chart);
     UpdateTheme(Theme::DARK);
+
+    Chart->resize(size());
 }
 
 auto TsneChartView::ExportChart() -> void {
@@ -188,16 +159,28 @@ auto TsneChartView::UpdateTheme(Theme theme) -> void {
     if (!Chart)
         throw std::runtime_error("chart must not be nullptr");
 
-    switch (theme) {
+    CurrentTheme = theme;
+    switch (CurrentTheme) {
         case Theme::LIGHT: {
             Chart->setTheme(QChart::ChartTheme::ChartThemeLight);
-            Chart->setBackgroundVisible(true);
+
+            auto seriesList = Chart->series();
+            for (auto* series : seriesList) {
+                auto* scatterSeries = qobject_cast<QScatterSeries*>(series);
+                scatterSeries->setSelectedColor(scatterSeries->color().darker());
+            }
             break;
         }
 
         case Theme::DARK: {
             Chart->setTheme(QChart::ChartTheme::ChartThemeDark);
-            Chart->setBackgroundVisible(false);
+            Chart->setBackgroundBrush(Qt::BrushStyle::NoBrush);
+
+            auto seriesList = Chart->series();
+            for (auto* series : seriesList) {
+                auto* scatterSeries = qobject_cast<QScatterSeries*>(series);
+                scatterSeries->setSelectedColor(scatterSeries->color().lighter());
+            }
             break;
         }
 
@@ -212,18 +195,6 @@ auto TsneChartView::UpdateTheme(Theme theme) -> void {
 auto TsneChartView::resizeEvent(QResizeEvent* event) -> void {
     GraphicsScene->setSceneRect(QRect(QPoint(0, 0), event->size()));
     Chart->resize(event->size());
-//    m_coordX->setPos(m_chart->size().width() / 2 - 70, m_chart->size().height() - 24);
-//    m_coordY->setPos(m_chart->size().width() / 2 + 30, m_chart->size().height() - 24);
-//    const auto callouts = m_callouts;
-//    for (Callout *callout : callouts)
-//        callout->updateGeometry();
-
-    resize(size());
-
-    auto sceneWidth  = GraphicsScene->width();
-    auto sceneHeight = GraphicsScene->height();
-    auto thisSize = size();
-    auto chartSize = Chart->size();
 }
 
 void TsneChartView::ToggleTooltip(QPointF const& point, bool entered) {
@@ -233,21 +204,10 @@ void TsneChartView::ToggleTooltip(QPointF const& point, bool entered) {
         GraphicsScene->removeItem(Tooltip);
         delete Tooltip;
         Tooltip = nullptr;
-
-        return;
+    } else if (!Tooltip) {  // after clicked during hover, hovered signal is emitted again
+        Tooltip = new TsneChartTooltip(*Chart, point, GetCurrentForegroundBackground());
+        Tooltip->show();
     }
-
-    assert(Tooltip == nullptr);
-
-    uint16_t const numberOfNonDecimals = std::floor(
-            std::max({ std::log10(std::abs(point.x())), std::log10(std::abs(point.y())) }) + 1);
-    uint16_t const numberOfDecimals = 2;
-    uint16_t const formatWidth = numberOfNonDecimals + numberOfDecimals + 2;
-    std::string const tooltipString = std::format("x: {:{}.{}f}\ny: {:{}.{}f}",
-                                                  point.x(), formatWidth, numberOfDecimals, point.y(),
-                                                  formatWidth, numberOfDecimals);
-    Tooltip = new TsneChartTooltip(*Chart, QString::fromStdString(tooltipString), point);
-    Tooltip->show();
 }
 
 auto TsneChartView::GetAxisRange(QValueAxis* axis) -> std::pair<int, int> {
@@ -283,24 +243,99 @@ auto TsneChartView::GetAxisTickInterval(QValueAxis* axis) -> double {
     return roundedInterval;
 }
 
+auto TsneChartView::CreateScatterSeries() noexcept -> std::vector<QScatterSeries*> {
+    std::vector<QScatterSeries*> scatterSeriesVector;
+    scatterSeriesVector.reserve(BatchListData->Data.size());
 
-TsneChartTooltip::TsneChartTooltip(QChart& parentChart, QString const& text, QPointF anchorPoint) :
+    for (auto const& batchData : BatchListData->Data) {
+        auto* scatterSeries = new QScatterSeries();
+        scatterSeries->setName(QString::fromStdString(batchData.Group.GetName()));
+        scatterSeries->setMarkerSize(scatterSeries->markerSize() * 0.75);
+
+        QList<QPointF> points;
+        std::transform(batchData.StateDataList.cbegin(), batchData.StateDataList.cend(),
+                       std::back_inserter(points),
+                       [](auto const& psData) {
+                           return QPointF(psData.TsneCoordinates.at(0), psData.TsneCoordinates.at(1));
+                       });
+        scatterSeries->append(points);
+
+        scatterSeriesVector.push_back(scatterSeries);
+    }
+
+    for (int i = 0; i < scatterSeriesVector.size(); i++) {
+        auto* scatterSeries = scatterSeriesVector[i];
+
+        connect(scatterSeries, &QScatterSeries::hovered, this, &TsneChartView::ToggleTooltip);
+
+        connect(scatterSeries, &QScatterSeries::clicked, this,
+                [this, scatterSeries, i, scatterSeriesVector](QPointF const& point) {
+
+                    auto points = scatterSeries->points();
+                    auto it = std::find(points.cbegin(), points.cend(), point);
+                    if (it == points.cend())
+                        throw std::runtime_error("point not present in chart");
+
+                    auto idx = static_cast<uint16_t>(std::distance(points.cbegin(), it));
+
+                    for (auto* series : scatterSeriesVector)
+                        series->deselectAllPoints();
+                    scatterSeries->selectPoint(idx);
+
+                    Q_EMIT SamplePointChanged(SampleId { static_cast<uint16_t>(i), idx });
+                });
+    }
+
+    return scatterSeriesVector;
+}
+
+auto TsneChartView::GetCurrentForegroundBackground() const -> TsneChartView::PenBrushPair {
+    if (!Chart)
+        throw std::runtime_error("Chart must not be null");
+
+    auto penColor = QPen(Chart->axes(Qt::Orientation::Horizontal).at(0)->labelsColor());
+    auto brushColor = [this]() {
+        switch (CurrentTheme) {
+            case Theme::LIGHT: return Chart->backgroundBrush();
+            case Theme::DARK:  return QBrush(palette().color(QPalette::ColorRole::Window));
+            default: throw std::runtime_error("Invalid theme");
+        }
+    }();
+
+    return { penColor, brushColor };
+}
+
+
+
+TsneChartTooltip::TsneChartTooltip(QChart& parentChart,
+                                   QPointF anchorPoint,
+                                   TsneChartView::PenBrushPair foregroundBackgroundColors) :
         QGraphicsItem(&parentChart),
         Chart(&parentChart),
         Anchor(anchorPoint),
-        Text(text),
-        Font(QFontDatabase::systemFont(QFontDatabase::FixedFont)) {
+        Text([this]() {
+            uint16_t const numberOfNonDecimals = std::floor(
+                    std::max({ std::log10(std::abs(Anchor.x())), std::log10(std::abs(Anchor.y())) }) + 1);
+            uint16_t const numberOfDecimals = 2;
+            uint16_t const formatWidth = numberOfNonDecimals + numberOfDecimals + 2;
+            std::string const tooltipString = std::format("x: {:{}.{}f}\ny: {:{}.{}f}",
+                                                          Anchor.x(), formatWidth, numberOfDecimals, Anchor.y(),
+                                                          formatWidth, numberOfDecimals);
+
+            return QString::fromStdString(tooltipString);
+        }()),
+        Font(QFontDatabase::systemFont(QFontDatabase::FixedFont)),
+        TextPen(foregroundBackgroundColors.Pen),
+        BackgroundBrush(foregroundBackgroundColors.Brush) {
 
     QFontMetrics const metrics { Font };
     TextRectangle = metrics.boundingRect(QRect(0, 0, 150, 150), Qt::AlignLeft, Text);
     TextRectangle.translate(5, 5);
-    prepareGeometryChange();
     Rectangle = TextRectangle.adjusted(-5, -5, 5, 5);
 
     setZValue(11);
 
-    prepareGeometryChange();
-    setPos(Chart->mapToPosition(Anchor) + QPoint(10, -50));
+    AdjustPosition();
 }
 
 auto TsneChartTooltip::boundingRect() const -> QRectF {
@@ -310,7 +345,23 @@ auto TsneChartTooltip::boundingRect() const -> QRectF {
                     QPointF { qMax(Rectangle.right(), anchor.x()), qMax(Rectangle.bottom(), anchor.y()) } };
 }
 
-void TsneChartTooltip::paint(QPainter* painter, QStyleOptionGraphicsItem const* option, QWidget* /*widget*/) {
+void TsneChartTooltip::paint(QPainter* painter, QStyleOptionGraphicsItem const* /*option*/, QWidget* /*widget*/) {
+    QPainterPath const tooltipPath = GetTooltipPath();
+
+    painter->setPen(TextPen);
+    painter->setFont(Font);
+
+    painter->setBrush(BackgroundBrush);
+    painter->drawPath(tooltipPath);
+
+    painter->drawText(TextRectangle, Text);
+}
+
+void TsneChartTooltip::mousePressEvent(QGraphicsSceneMouseEvent* event) {
+    event->ignore();
+}
+
+auto TsneChartTooltip::GetTooltipPath() const -> QPainterPath {
     QPainterPath path;
     path.addRoundedRect(Rectangle, 5, 5);
 
@@ -328,13 +379,17 @@ void TsneChartTooltip::paint(QPainter* painter, QStyleOptionGraphicsItem const* 
         bool const onRight = anchor.x() > Rectangle.right();
 
         // get the nearest Rectangle corner.
-        qreal const x = (onRight + rightOfCenter) * Rectangle.width();
-        qreal const y = (below + belowCenter) * Rectangle.height();
+        qreal const x = onRight || rightOfCenter
+                        ? Rectangle.width()
+                        : 0;
+        qreal const y = below || belowCenter
+                        ? Rectangle.height()
+                        : 0;
         bool const cornerCase = (above && onLeft) || (above && onRight) || (below && onLeft) || (below && onRight);
         bool const vertical = qAbs(anchor.x() - x) > qAbs(anchor.y() - y);
 
         qreal const x1 = x + leftOfCenter * 10 - rightOfCenter * 20 + cornerCase * !vertical * (onLeft * 10 - onRight * 20);
-        qreal const y1 = y + aboveCenter * 10 - belowCenter * 20 + cornerCase * vertical * (above * 10 - below * 20);;
+        qreal const y1 = y + aboveCenter * 10 - belowCenter * 20 + cornerCase * vertical * (above * 10 - below * 20);
         QPointF const point1 { x1, y1 };
 
         qreal const x2 = x + leftOfCenter * 20 - rightOfCenter * 10 + cornerCase * !vertical * (onLeft * 20 - onRight * 10);
@@ -347,16 +402,31 @@ void TsneChartTooltip::paint(QPainter* painter, QStyleOptionGraphicsItem const* 
         path = path.simplified();
     }
 
-    painter->setPen(option->palette.color(QPalette::ColorRole::ToolTipText));
-    painter->setFont(Font);
-
-    painter->setBrush(option->palette.color(QPalette::ColorRole::ToolTipBase));
-    painter->drawPath(path);
-
-    painter->setBrush(option->palette.color(QPalette::ColorRole::ToolTipText));
-    painter->drawText(TextRectangle, Text);
+    return path;
 }
 
-void TsneChartTooltip::mousePressEvent(QGraphicsSceneMouseEvent* event) {
-    event->setAccepted(true);
+auto TsneChartTooltip::AdjustPosition() noexcept -> void {
+    prepareGeometryChange();
+    setPos(Chart->mapToPosition(Anchor) + QPoint(10, -50));
+
+    auto rect = mapRectToParent(boundingRect());
+    auto parentRect = parentItem()->boundingRect();
+
+    if (!parentRect.contains(rect)) {
+        if (parentRect.top() > rect.top())
+            moveBy(0, rect.top() - parentRect.top());
+
+        if (parentRect.bottom() < rect.bottom())
+            moveBy(0, parentRect.bottom() - rect.bottom());
+
+        if (parentRect.left() > rect.left())
+            moveBy(rect.left() - parentRect.left(), 0);
+
+        if (parentRect.right() < rect.right())
+            moveBy(parentRect.right() - rect.right(), 0);
+    }
+
+    auto newRect = mapRectToParent(boundingRect());
+    if (!parentRect.contains(rect))
+        qWarning("Tooltip to large for chart");
 }

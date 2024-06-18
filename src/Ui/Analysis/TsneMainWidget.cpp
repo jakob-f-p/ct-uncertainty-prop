@@ -4,8 +4,9 @@
 #include "../../Modeling/CtDataSource.h"
 #include "../../PipelineGroups/PipelineGroupList.h"
 
-#include <QSplitter>
+#include <QDockWidget>
 #include <QPushButton>
+#include <QSplitter>
 
 #include <vtkImageData.h>
 
