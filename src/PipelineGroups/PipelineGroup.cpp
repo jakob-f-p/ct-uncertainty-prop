@@ -25,6 +25,10 @@ auto PipelineGroup::GetName() const noexcept -> std::string {
     return Name;
 }
 
+auto PipelineGroup::GetMTime() const noexcept -> vtkMTimeType {
+    return ParameterSpace->GetMTime();
+}
+
 auto PipelineGroup::GetBasePipeline() const noexcept -> Pipeline const& {
     return BasePipeline;
 }
@@ -67,28 +71,28 @@ auto PipelineGroup::DoPCA(uint8_t numberOfDimensions) -> void {
     Batch->DoPCA(numberOfDimensions);
 }
 
-auto PipelineGroup::GetImageData() -> std::vector<PipelineImageData*> {
+auto PipelineGroup::GetImageData() -> TimeStampedData<std::vector<PipelineImageData*>> {
     if (!Batch)
         throw std::runtime_error("Cannot get image data. Batch has not been created");
 
     return Batch->GetImageData();
 }
 
-auto PipelineGroup::GetFeatureData() const -> FeatureData const& {
+auto PipelineGroup::GetFeatureData() const -> TimeStampedDataRef<FeatureData> {
     if (!Batch)
         throw std::runtime_error("Cannot get feature data. Batch has not been created");
 
     return Batch->GetFeatureData();
 }
 
-auto PipelineGroup::GetPcaData() const -> SampleCoordinateData const& {
+auto PipelineGroup::GetPcaData() const -> TimeStampedDataRef<SampleCoordinateData> {
     if (!Batch)
         throw std::runtime_error("Cannot get PCA data. Batch has not been created");
 
     return Batch->GetPcaData();
 }
 
-auto PipelineGroup::GetTsneData() const -> SampleCoordinateData const& {
+auto PipelineGroup::GetTsneData() const -> TimeStampedDataRef<SampleCoordinateData> {
     if (!Batch)
         throw std::runtime_error("Cannot get t-SNE data. Batch has not been created");
 
@@ -102,12 +106,10 @@ auto PipelineGroup::SetTsneData(SampleCoordinateData&& tsneData) -> void {
     Batch->SetTsneData(std::move(tsneData));
 }
 
-auto PipelineGroup::DataHasBeenGenerated() const noexcept -> bool {
-    return Batch && Batch->DataHasBeenGenerated();
-}
-
-auto PipelineGroup::GetDataMTime() const noexcept -> vtkMTimeType {
-    return Batch ? Batch->GetDataMTime() : 0;
+auto PipelineGroup::GetDataStatus() const noexcept -> DataStatus {
+    return Batch
+            ? Batch->GetDataStatus()
+            : DataStatus {};
 }
 
 auto PipelineGroup::AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,

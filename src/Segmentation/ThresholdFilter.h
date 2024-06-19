@@ -48,6 +48,9 @@ public:
     auto
     SetFilterData(ThresholdFilter& thresholdFilter) -> void;
 
+Q_SIGNALS:
+    void DataChanged();
+
 private Q_SLOTS:
     void UpdateSpinBoxVisibility(int idx);
 

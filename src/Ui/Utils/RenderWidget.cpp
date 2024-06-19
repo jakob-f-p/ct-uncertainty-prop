@@ -5,6 +5,9 @@
 #include <QStandardPaths>
 #include <QVBoxLayout>
 
+#include <QCoreApplication>
+#include <QResizeEvent>
+
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
 #include <vtkColorTransferFunction.h>
@@ -21,10 +24,12 @@
 RenderWidget::RenderWidget(vtkImageAlgorithm& imageAlgorithm, Controls controls, QWidget* parent) :
         VtkRenderWidget(new CtRenderWidget(imageAlgorithm, parent)) {
 
+    setFrameShape(QFrame::Shape::StyledPanel);
+    setFrameShadow(QFrame::Shadow::Sunken);
+
     auto* vLayout = new QVBoxLayout(this);
 
     vLayout->addWidget(VtkRenderWidget);
-
 
     if (!controls)
         return;
@@ -55,11 +60,28 @@ RenderWidget::RenderWidget(vtkImageAlgorithm& imageAlgorithm, Controls controls,
     vLayout->addWidget(controlBarWidget);
 }
 
+auto RenderWidget::Render() const -> void {
+    VtkRenderWidget->Render();
+}
+
+auto RenderWidget::UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> void {
+    VtkRenderWidget->UpdateImageAlgorithm(imageAlgorithm);
+
+    VtkRenderWidget->Render();
+}
+
+auto RenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) -> void {
+    VtkRenderWidget->UpdateImageAlgorithm(imageData);
+
+    VtkRenderWidget->Render();
+}
 
 
 CtRenderWidget::CtRenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent) :
         QVTKOpenGLNativeWidget(parent),
         ImageAlgorithm(&imageAlgorithm) {
+
+    setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 
     UpdateImageAlgorithm(imageAlgorithm);
 
@@ -127,6 +149,7 @@ auto CtRenderWidget::Export() -> void {
 
     QString const fileFilter = "Images (*.png)";
     QString const fileName = QFileDialog::getSaveFileName(this, "Save image", homePath, fileFilter);
+    grabFramebuffer();
     grab().save(fileName);
 }
 

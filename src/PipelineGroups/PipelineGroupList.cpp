@@ -21,6 +21,23 @@ auto PipelineGroupList::GetName() const noexcept -> std::string {
     return Name;
 }
 
+auto PipelineGroupList::GetMTime() const noexcept -> vtkMTimeType {
+    auto basePipelines = GetBasePipelines();
+    std::vector<vtkMTimeType> basePipelineMTimes;
+    basePipelineMTimes.reserve(basePipelines.size());
+    std::transform(basePipelines.cbegin(), basePipelines.cend(), std::back_inserter(basePipelineMTimes),
+                   [](auto const* pipeline) { return pipeline->GetMTime(); });
+    vtkMTimeType const basePipelineTime = *std::max_element(basePipelineMTimes.cbegin(), basePipelineMTimes.cend());
+
+    std::vector<vtkMTimeType> pipelineGroupMTimes;
+    pipelineGroupMTimes.reserve(PipelineGroups.size());
+    for (auto const& group : PipelineGroups)
+        pipelineGroupMTimes.emplace_back(group->GetMTime());
+    vtkMTimeType const groupMTime = *std::max_element(pipelineGroupMTimes.cbegin(), pipelineGroupMTimes.cend());
+
+    return std::max({ TimeStamp.GetMTime(), basePipelineTime, groupMTime });
+}
+
 auto PipelineGroupList::GetSize() const noexcept -> uint8_t {
     return PipelineGroups.size();
 }
@@ -44,6 +61,8 @@ auto PipelineGroupList::GetNumberOfPipelines() const noexcept -> uint16_t {
 }
 
 auto PipelineGroupList::AddPipelineGroup(Pipeline const& pipeline, std::string const& name) -> PipelineGroup& {
+    TimeStamp.Modified();
+
     return *PipelineGroups.emplace_back(std::make_unique<PipelineGroup>(pipeline, name));
 }
 
@@ -52,6 +71,8 @@ void PipelineGroupList::RemovePipelineGroup(PipelineGroup const& pipeline) {
                                  [&](auto& p) { return p.get() == &pipeline; });
     if (removeIt == PipelineGroups.end())
         throw std::runtime_error("Given pipeline group could not be removed because it was not present");
+
+    TimeStamp.Modified();
 
     PipelineGroups.erase(removeIt);
 }
@@ -71,16 +92,10 @@ auto PipelineGroupList::GenerateImages(ProgressEventCallback const& callback) ->
     callback(0.0);
 
     for (int i = 0; i < PipelineGroups.size(); i++)
-        PipelineGroups[i]->GenerateImages(ProgressUpdater { i, progressList, callback });
-}
-
-auto
-PipelineGroupList::ExportImages(PipelineGroupList::ProgressEventCallback const& callback) -> void {
-    std::vector<double> progressList (PipelineGroups.size(), 0.0);
-    callback(0.0);
+        PipelineGroups[i]->GenerateImages(MultiTaskProgressUpdater { 0, 2, i, progressList, callback });
 
     for (int i = 0; i < PipelineGroups.size(); i++)
-        PipelineGroups[i]->ExportImages(ProgressUpdater { i, progressList, callback });
+        PipelineGroups[i]->ExportImages(MultiTaskProgressUpdater { 1, 2, i, progressList, callback });
 }
 
 auto PipelineGroupList::ExtractFeatures(PipelineGroupList::ProgressEventCallback const& callback) -> void {
@@ -116,7 +131,7 @@ auto PipelineGroupList::DoTsne(uint8_t numberOfDimensions, ProgressEventCallback
 
     std::vector<FeatureData const*> featureDataVector;
     for (auto& group: PipelineGroups)
-        featureDataVector.emplace_back(&group->GetFeatureData());
+        featureDataVector.emplace_back(&*group->GetFeatureData());
 
     auto& interpreter = App::GetInstance()->GetPythonInterpreter();
 
@@ -136,9 +151,18 @@ auto PipelineGroupList::DoTsne(uint8_t numberOfDimensions, ProgressEventCallback
     callback(1.0);
 }
 
+auto PipelineGroupList::GetDataStatus() const noexcept -> DataStatus {
+    DataStatus status {};
+
+    for (auto const& group: PipelineGroups)
+        status.Update(group->GetDataStatus());
+
+    return status;
+}
+
 auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineBatchListData> {
     bool const dataHasBeenGenerated = std::all_of(PipelineGroups.cbegin(), PipelineGroups.cend(),
-                                            [](auto const& group) { return group->DataHasBeenGenerated(); });
+                                            [](auto const& group) { return group->GetDataStatus().IsComplete(); });
     if (PipelineGroups.empty() || !dataHasBeenGenerated)
         return std::nullopt;
 
@@ -146,14 +170,27 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
     std::vector<FeatureData const*> featureDataVector;
     std::vector<SampleCoordinateData const*> pcaDataVector;
     std::vector<SampleCoordinateData const*> tsneDataVector;
-    std::vector<vtkMTimeType> mTimes;
+
+    std::vector<vtkMTimeType> imageMTimes;
+    std::vector<vtkMTimeType> featureMTimes;
+    std::vector<vtkMTimeType> pcaMTimes;
+    std::vector<vtkMTimeType> tsneMTimes;
 
     for (auto const& group: PipelineGroups) {
-        imageDataVectors.emplace_back(group->GetImageData());
-        featureDataVector.emplace_back(&group->GetFeatureData());
-        pcaDataVector.emplace_back(&group->GetPcaData());
-        tsneDataVector.emplace_back(&group->GetTsneData());
-        mTimes.emplace_back(group->GetDataMTime());
+        auto const imageData = group->GetImageData();
+        auto const featureData = group->GetFeatureData();
+        auto const pcaData = group->GetPcaData();
+        auto const tsneData = group->GetTsneData();
+
+        imageDataVectors.emplace_back(*imageData);
+        featureDataVector.emplace_back(&*featureData);
+        pcaDataVector.emplace_back(&*pcaData);
+        tsneDataVector.emplace_back(&*tsneData);
+
+        imageMTimes.emplace_back(imageData.GetTime());
+        featureMTimes.emplace_back(featureData.GetTime());
+        pcaMTimes.emplace_back(pcaData.GetTime());
+        tsneMTimes.emplace_back(tsneData.GetTime());
     }
 
     std::vector<std::string> const& featureNames = featureDataVector[0]->Names;
@@ -169,16 +206,22 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
 
         std::vector<ParameterSpaceStateData> stateDataList;
         stateDataList.reserve(imageDataVectors[0].size());
-        for (int j = 0; j < imageDataVectors[0].size(); j++)
+        for (int j = 0; j < imageDataVectors[i].size(); j++)
             stateDataList.emplace_back(imageDataVector[j]->State, imageDataVector[j]->ImageData,
                                        featureData.Values[j], pcaData[j], tsneData[j]);
 
         stateDataLists.emplace_back(*PipelineGroups[i], std::move(stateDataList));
     }
 
-    vtkMTimeType const mTime = *std::min_element(mTimes.cbegin(), mTimes.cend());
+    vtkMTimeType const imageMTime   = *std::max_element(imageMTimes.cbegin(), imageMTimes.cend());  // max
+    vtkMTimeType const featureMTime = *std::min_element(featureMTimes.cbegin(), featureMTimes.cend());
+    vtkMTimeType const pcaMTime     = *std::min_element(pcaMTimes.cbegin(), pcaMTimes.cend());
+    vtkMTimeType const tsneMTime    = *std::min_element(tsneMTimes.cbegin(), tsneMTimes.cend());
+    vtkMTimeType const totalMTime   = std::min({ imageMTime, featureMTime, pcaMTime, tsneMTime });
 
-    return PipelineBatchListData { featureNames, stateDataLists, mTime };
+    return PipelineBatchListData { featureNames,
+                                   stateDataLists,
+                                   { imageMTime, featureMTime, pcaMTime, tsneMTime, totalMTime }};
 }
 
 auto PipelineGroupList::ProgressUpdater::operator()(double current) noexcept -> void {
@@ -195,5 +238,18 @@ auto PipelineGroupList::WeightedProgressUpdater::operator()(double current) noex
     double const totalProgress = std::transform_reduce(ProgressList.cbegin(), ProgressList.cend(),
                                                        GroupSizeWeightVector.cbegin(),
                                                        0.0, std::plus{}, std::multiplies{});
+    Callback(totalProgress);
+}
+
+auto PipelineGroupList::MultiTaskProgressUpdater::operator()(double current) noexcept -> void {
+    ProgressList[Idx] = current;
+
+    double const taskFactor = 1.0 / static_cast<double>(NumberOfTasks);
+    double const taskOffset = static_cast<double>(CurrentTask) * taskFactor;
+
+    double const taskProgress = (std::reduce(ProgressList.cbegin(), ProgressList.cend())
+                                 / static_cast<double>(ProgressList.size()));
+    double const totalProgress = taskProgress * taskFactor + taskOffset;
+
     Callback(totalProgress);
 }

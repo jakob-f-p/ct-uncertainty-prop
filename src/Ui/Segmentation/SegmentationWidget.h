@@ -7,21 +7,20 @@
 class QPushButton;
 
 class CtDataSource;
+class Pipeline;
 class SegmentationFilterWidget;
 class SegmentationRenderWidget;
 class ThresholdFilter;
+
 
 class SegmentationWidget : public QMainWindow {
 public:
     explicit SegmentationWidget(CtDataSource& dataSource, ThresholdFilter& thresholdFilter);
 
     auto
-    UpdateDataSource(vtkImageAlgorithm& dataSource) -> void;
+    UpdateDataSource(Pipeline& pipeline) -> void;
 
 private:
-    QPushButton* ResetCameraButton;
-    QPushButton* RenderButton;
-
     SegmentationFilterWidget* FilterWidget;
     SegmentationRenderWidget* RenderWidget;
 };
@@ -32,8 +31,7 @@ class SegmentationRenderWidget : public RenderWidget {
 
 public:
     explicit SegmentationRenderWidget(CtDataSource& ctDataSource,
-                                      vtkImageAlgorithm& segmentationFilter,
-                                      QWidget* parent = nullptr);
+                                      vtkImageAlgorithm& segmentationFilter);
     ~SegmentationRenderWidget() override;
 
 public Q_SLOTS:

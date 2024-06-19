@@ -25,8 +25,8 @@ auto SpanState<T>::operator=(SpanState const& other) -> SpanState& {
 
 template<typename T>
 auto SpanState<T>::Apply() const -> void {
-    if (Value < Span.Numbers.Min || Value > Span.Numbers.Max)
-        throw std::runtime_error("Value out of span range");
+//    if (Value < Span.Numbers.Min || Value > Span.Numbers.Max)
+//        throw std::runtime_error("Value out of span range");
 
     Span.Property.Set(Value);
 }
@@ -56,6 +56,7 @@ SpanStateSourceIterator<T>::SpanStateSourceIterator(ParameterSpan<T>& parameterS
 template<typename T>
 SpanStateSourceIterator<T>::~SpanStateSourceIterator() {
     InitialState.Apply();
+//    InitialState.Span.Property.Set(InitialState.Value);
 }
 
 template<typename T>

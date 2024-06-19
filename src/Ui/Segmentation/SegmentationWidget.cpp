@@ -10,13 +10,8 @@
 #include <QVBoxLayout>
 
 SegmentationWidget::SegmentationWidget(CtDataSource& dataSource, ThresholdFilter& thresholdFilter) :
-        ResetCameraButton(new QPushButton("Reset Camera")),
-        RenderButton(new QPushButton("Render")),
         FilterWidget(new SegmentationFilterWidget(thresholdFilter)),
         RenderWidget(new SegmentationRenderWidget(dataSource, FilterWidget->GetFilter())) {
-
-    connect(FilterWidget, &SegmentationFilterWidget::FilterModified,
-            RenderWidget, &SegmentationRenderWidget::UpdateSegmentationFilter);
 
     setCentralWidget(RenderWidget);
 
@@ -28,26 +23,9 @@ SegmentationWidget::SegmentationWidget(CtDataSource& dataSource, ThresholdFilter
     dockWidget->setMinimumWidth(250);
 
     auto* dockWidgetContent = new QWidget();
-    auto* verticalLayout = new QVBoxLayout(dockWidgetContent);
+    auto* vLayout = new QVBoxLayout(dockWidgetContent);
 
-    auto* renderingButtonBarWidget = new QWidget();
-    auto* renderingHorizontalLayout = new QHBoxLayout(renderingButtonBarWidget);
-    renderingHorizontalLayout->setContentsMargins(0, 11, 0, 11);
-    renderingHorizontalLayout->addWidget(ResetCameraButton);
-    renderingHorizontalLayout->addWidget(RenderButton);
-    renderingHorizontalLayout->addStretch();
-    verticalLayout->addWidget(renderingButtonBarWidget);
-
-    connect(ResetCameraButton, &QPushButton::clicked, [&]() { RenderWidget->ResetCamera(); });
-    connect(RenderButton, &QPushButton::clicked, [&]() { RenderWidget->Render(); });
-    connect(RenderButton, &QPushButton::clicked, [&]() { FilterWidget->UpdateFilter(); });
-
-    auto* line = new QFrame();
-    line->setFrameShape(QFrame::HLine);
-    line->setFrameShadow(QFrame::Sunken);
-    verticalLayout->addWidget(line);
-
-    verticalLayout->addWidget(FilterWidget);
+    vLayout->addWidget(FilterWidget);
     FilterWidget->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 
     dockWidget->setWidget(dockWidgetContent);
@@ -55,14 +33,13 @@ SegmentationWidget::SegmentationWidget(CtDataSource& dataSource, ThresholdFilter
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dockWidget);
 }
 
-auto SegmentationWidget::UpdateDataSource(vtkImageAlgorithm& dataSource) -> void {
-    RenderWidget->UpdateDataSource(dataSource);
+auto SegmentationWidget::UpdateDataSource(Pipeline& pipeline) -> void {
+    RenderWidget->UpdateDataSource(pipeline.GetImageAlgorithm());
 }
 
 
 SegmentationRenderWidget::SegmentationRenderWidget(CtDataSource& ctDataSource,
-                                                   vtkImageAlgorithm& segmentationFilter,
-                                                   QWidget* parent) :
+                                                   vtkImageAlgorithm& segmentationFilter) :
         RenderWidget([&]() -> vtkImageAlgorithm& {
             DataSource = &ctDataSource;
             SegmentationFilter = &segmentationFilter;
@@ -70,7 +47,7 @@ SegmentationRenderWidget::SegmentationRenderWidget(CtDataSource& ctDataSource,
             SegmentationFilter->SetInputConnection(DataSource->GetOutputPort());
 
             return *SegmentationFilter;
-        }(), parent) {}
+        }()) {}
 
 SegmentationRenderWidget::~SegmentationRenderWidget() = default;
 

@@ -10,6 +10,7 @@
 
 #include <QDockWidget>
 #include <QItemSelectionModel>
+#include <QLabel>
 #include <QMainWindow>
 #include <QPushButton>
 #include <QTreeView>
@@ -19,7 +20,6 @@
 ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& dataSource, QWidget* parent) :
         QMainWindow(parent),
         RenderingWidget(new RenderWidget(dataSource)),
-        ResetCameraButton(new QPushButton("Reset Camera")),
         AddStructureButton(new QPushButton("Add Structure")),
         CombineWithStructureButton(new QPushButton("Combine With Structure")),
         RefineWithStructureButton(new QPushButton("Refine With Structure")),
@@ -33,7 +33,7 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& d
         SelectionModel(TreeView->selectionModel()),
         CtStructureCreateDialog(nullptr) {
 
-    ctStructureTree.AddTreeEventCallback([&](const CtStructureTreeEvent&) { RenderingWidget->Render(); });
+    ctStructureTree.AddTreeEventCallback([&](CtStructureTreeEvent const&) { RenderingWidget->Render(); });
 
     setCentralWidget(RenderingWidget);
 
@@ -47,17 +47,9 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& d
     auto* dockWidgetContent = new QWidget();
     auto* verticalLayout = new QVBoxLayout(dockWidgetContent);
 
-    auto* renderingButtonBarWidget = new QWidget();
-    auto* renderingButtonBarHorizontalLayout = new QHBoxLayout(renderingButtonBarWidget);
-    renderingButtonBarHorizontalLayout->setContentsMargins(0, 11, 0, 11);
-    renderingButtonBarHorizontalLayout->addWidget(ResetCameraButton);
-    renderingButtonBarHorizontalLayout->addStretch();
-    verticalLayout->addWidget(renderingButtonBarWidget);
-
-    auto* line = new QFrame();
-    line->setFrameShape(QFrame::HLine);
-    line->setFrameShadow(QFrame::Sunken);
-    verticalLayout->addWidget(line);
+    auto* titleLabel = new QLabel("CT Structures");
+    titleLabel->setStyleSheet(GetHeader1StyleSheet());
+    verticalLayout->addWidget(titleLabel);
 
     auto* treeButtonBarWidget = new QWidget();
     auto* treeButtonBarHorizontalLayout = new QHBoxLayout(treeButtonBarWidget);
@@ -67,8 +59,8 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& d
     treeButtonBarHorizontalLayout->addWidget(RefineWithStructureButton);
     treeButtonBarHorizontalLayout->addStretch();
     treeButtonBarHorizontalLayout->addWidget(RemoveStructureButton);
-    DisableButtons();
     verticalLayout->addWidget(treeButtonBarWidget);
+    DisableButtons();
 
     verticalLayout->addWidget(TreeView);
 
@@ -80,8 +72,6 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& d
 }
 
 void ModelingWidget::ConnectButtons() {
-    connect(ResetCameraButton, &QPushButton::clicked, RenderingWidget, &RenderWidget::ResetCamera);
-
     connect(AddStructureButton, &QPushButton::clicked, [&]() {
         CtStructureCreateDialog = new BasicStructureDialog(CtStructureDialog::DialogMode::CREATE, this);
         CtStructureCreateDialog->show();

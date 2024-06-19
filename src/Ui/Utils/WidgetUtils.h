@@ -90,10 +90,14 @@ GenerateIcon(const std::string &fileNamePrefix) noexcept -> QIcon {
 
 [[nodiscard]] auto static
 GenerateSimpleIcon(const std::string &fileName) noexcept -> QIcon {
-    return QIcon(QPixmap(":/" + QString::fromStdString(fileName) + ".png"));
+    return { QPixmap(":/" + QString::fromStdString(fileName) + ".png") };
 }
 
 [[nodiscard]] auto static
-GetHeaderStyleSheet() noexcept -> QString {
-    return "font-size: 14px; font-weight: bold";
-}
+GetHeader1StyleSheet() noexcept -> QString { return "font-size: 16px; font-weight: bold"; }
+
+[[nodiscard]] auto static
+GetHeader2StyleSheet() noexcept -> QString { return "font-size: 14px; font-weight: bold"; }
+
+[[nodiscard]] auto static
+GetHeader3StyleSheet() noexcept -> QString { return "font-size: 12px; font-weight: bold"; }

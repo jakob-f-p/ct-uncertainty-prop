@@ -11,21 +11,16 @@ class QVBoxLayout;
 
 class vtkImageAlgorithm;
 
+
 class SegmentationFilterWidget : public QWidget {
     Q_OBJECT
 
 public:
-    SegmentationFilterWidget(ThresholdFilter& thresholdFilter);
+    explicit SegmentationFilterWidget(ThresholdFilter& thresholdFilter);
     ~SegmentationFilterWidget() override;
 
     [[nodiscard]] auto
     GetFilter() const -> vtkImageAlgorithm&;
-
-public Q_SLOTS:
-    void UpdateFilter();
-
-Q_SIGNALS:
-    void FilterModified(vtkImageAlgorithm& segmentationFilter);
 
 private:
     QVBoxLayout* VLayout;

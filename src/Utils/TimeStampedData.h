@@ -7,19 +7,24 @@
 
 
 template<typename DataT>
+requires std::is_same_v<std::decay_t<DataT>, DataT> && (!std::is_pointer_v<std::decay_t<DataT>>)
 struct TimeStampedData {
-    explicit TimeStampedData() = default;
+    TimeStampedData() = default;
+    explicit TimeStampedData(DataT&& data, vtkMTimeType time) :
+            OptionalData(std::move(data)), Time(time) {}
 
     [[nodiscard]] auto
-    GetTime() const noexcept -> vtkMTimeType { return TimeStamp.GetMTime(); }
+    GetTime() const noexcept -> vtkMTimeType { return Time; }
 
     [[nodiscard]] auto
-    IsUpToDateWith(vtkTimeStamp other) const noexcept -> bool { return other <= TimeStamp; }
+    IsUpToDateWith(vtkTimeStamp other) const noexcept -> bool { return other <= Time; }
 
     template<typename... Args>
-    auto constexpr
+    auto
     Emplace(Args&&... args) noexcept -> DataT& {
-        TimeStamp.Modified();
+        vtkTimeStamp timeStamp;
+        timeStamp.Modified();
+        Time = timeStamp;
         return OptionalData.emplace(std::forward<Args>(args)...);
     }
 
@@ -58,6 +63,31 @@ struct TimeStampedData {
     }
 
 private:
-    vtkTimeStamp TimeStamp;
+    vtkMTimeType Time = 0;
     std::optional<DataT> OptionalData;
+};
+
+
+template<typename DataT>
+requires std::is_same_v<std::decay_t<DataT>, DataT> && (!std::is_pointer_v<std::decay_t<DataT>>)
+struct TimeStampedDataRef {
+    explicit TimeStampedDataRef(TimeStampedData<DataT> const& data) :
+            DataRef(*data),
+            Time(data.GetTime()) {};
+
+    [[nodiscard]] auto
+    GetTime() const noexcept -> vtkMTimeType { return Time; }
+
+    [[nodiscard]] auto
+    IsUpToDateWith(vtkTimeStamp other) const noexcept -> bool { return other <= Time; }
+
+    constexpr auto
+    operator*() const& -> DataT const& { return DataRef; }
+
+    constexpr auto
+    operator->() const -> DataT const* { return std::addressof(DataRef); }
+
+private:
+    DataT const& DataRef;
+    vtkMTimeType Time;
 };

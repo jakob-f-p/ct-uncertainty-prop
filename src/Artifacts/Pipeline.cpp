@@ -26,7 +26,9 @@ auto Pipeline::GetName() const noexcept -> std::string {
 
 auto Pipeline::GetMTime() const noexcept -> vtkMTimeType {
     ImageArtifactConcat->UpdateArtifactFilter();
-    return std::max({ TreeStructureArtifacts->GetMTime(), ImageArtifactConcat->GetFilterMTime() });
+    return std::max({ DataSource.GetMTime(),
+                      TreeStructureArtifacts->GetMTime(),
+                      ImageArtifactConcat->GetFilterMTime() });
 }
 
 auto Pipeline::GetCtStructureTree() const noexcept -> CtStructureTree& {

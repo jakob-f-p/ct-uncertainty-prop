@@ -1,8 +1,9 @@
 #pragma once
 
 #include "ArtifactVariantPointer.h"
+#include "Types.h"
 #include "../Artifacts/Pipeline.h"
-#include "../Utils/Types.h"
+#include "../Utils/TimeStampedData.h"
 
 #include <string>
 #include <vector>
@@ -22,6 +23,9 @@ public:
 
     [[nodiscard]] auto
     GetName() const noexcept -> std::string;
+
+    [[nodiscard]] auto
+    GetMTime() const noexcept -> vtkMTimeType;
 
     [[nodiscard]] auto
     GetBasePipeline() const noexcept -> Pipeline const&;
@@ -46,25 +50,22 @@ public:
     DoPCA(uint8_t numberOfDimensions) -> void;
 
     [[nodiscard]] auto
-    GetImageData() -> std::vector<PipelineImageData*>;
+    GetImageData() -> TimeStampedData<std::vector<PipelineImageData*>>;
 
     [[nodiscard]] auto
-    GetFeatureData() const -> FeatureData const&;
+    GetFeatureData() const -> TimeStampedDataRef<FeatureData>;
 
     [[nodiscard]] auto
-    GetPcaData() const -> SampleCoordinateData const&;
+    GetPcaData() const -> TimeStampedDataRef<SampleCoordinateData>;
 
     [[nodiscard]] auto
-    GetTsneData() const -> SampleCoordinateData const&;
+    GetTsneData() const -> TimeStampedDataRef<SampleCoordinateData>;
 
     auto
     SetTsneData(SampleCoordinateData&& tsneData) -> void;
 
     [[nodiscard]] auto
-    DataHasBeenGenerated() const noexcept -> bool;
-
-    [[nodiscard]] auto
-    GetDataMTime() const noexcept -> vtkMTimeType;
+    GetDataStatus() const noexcept -> DataStatus;
 
     auto
     AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
@@ -77,6 +78,7 @@ public:
 private:
     friend class PipelineBatch;
 
+    vtkTimeStamp TimeStamp;
     std::string Name;
     uint16_t const GroupId;
     Pipeline const& BasePipeline;

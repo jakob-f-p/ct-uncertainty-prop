@@ -1,7 +1,7 @@
-#include "TsneMainWidget.h"
+#include "AnalysisMainWidget.h"
 
 #include "PipelineParameterSpaceStateView.h"
-#include "TsneChartWidget.h"
+#include "ChartWidget.h"
 #include "../Utils/NameLineEdit.h"
 #include "../Utils/WidgetUtils.h"
 #include "../../Modeling/CtDataSource.h"
@@ -16,12 +16,13 @@
 #include <vtkImageData.h>
 
 
-TsneMainWidget::TsneMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource) :
+AnalysisMainWidget::AnalysisMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource,
+                                       ChartWidget* chartWidget, AnalysisDataWidget* dataWidget) :
         GroupList(pipelineGroups),
         BatchData(std::make_unique<std::optional<PipelineBatchListData>>(pipelineGroups.GetBatchData())),
-        ChartWidget(new OptionalWidget<TsneChartWidget>("Please generate the data first", new TsneChartWidget())),
+        ChartWidget_(new OptionalWidget<ChartWidget>("Please generate the data first", chartWidget)),
         RenderWidget(new ParameterSpaceStateRenderWidget(dataSource)),
-        DataWidget(new OptionalWidget<TsneDataWidget>("Please select a sample point", new TsneDataWidget())) {
+        DataWidget(new OptionalWidget<AnalysisDataWidget>("Please select a sample point", dataWidget)) {
 
     auto* dockWidget = new QDockWidget();
     dockWidget->setFeatures(
@@ -32,15 +33,15 @@ TsneMainWidget::TsneMainWidget(PipelineGroupList const& pipelineGroups, CtDataSo
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dockWidget);
 
     auto* splitter = new QSplitter();
-    splitter->addWidget(ChartWidget);
+    splitter->addWidget(ChartWidget_);
     splitter->addWidget(RenderWidget);
     splitter->setSizes({ std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
     setCentralWidget(splitter);
 
-    connect(&ChartWidget->Widget(), &TsneChartWidget::SamplePointChanged,
+    connect(&ChartWidget_->Widget(), &ChartWidget::SamplePointChanged,
             RenderWidget, &ParameterSpaceStateRenderWidget::UpdateSample);
 
-    connect(&ChartWidget->Widget(), &TsneChartWidget::SamplePointChanged,
+    connect(&ChartWidget_->Widget(), &ChartWidget::SamplePointChanged,
             &DataWidget->Widget(), [this](std::optional<SampleId> sampleId) {
                 DataWidget->Widget().UpdateSample(sampleId);
 
@@ -50,28 +51,31 @@ TsneMainWidget::TsneMainWidget(PipelineGroupList const& pipelineGroups, CtDataSo
                     DataWidget->HideWidget();
             });
 
-    connect(&DataWidget->Widget(), &TsneDataWidget::RequestResetCamera,
-            RenderWidget, &ParameterSpaceStateRenderWidget::ResetCamera);
-
     UpdateData();
 }
 
-auto TsneMainWidget::UpdateData() -> void {
+PcaMainWidget::PcaMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource) :
+        AnalysisMainWidget(pipelineGroups, dataSource, new PcaChartWidget(), new PcaDataWidget()) {}
+
+TsneMainWidget::TsneMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource) :
+        AnalysisMainWidget(pipelineGroups, dataSource, new TsneChartWidget(), new TsneDataWidget()) {}
+
+auto AnalysisMainWidget::UpdateData() -> void {
     BatchData = std::make_unique<std::optional<PipelineBatchListData>>(GroupList.GetBatchData());
 
     PipelineBatchListData const* data = *BatchData
             ? &**BatchData
             : nullptr;
     RenderWidget->UpdateData(data);
-    ChartWidget->Widget().UpdateData(data);
+    ChartWidget_->Widget().UpdateData(data);
     DataWidget->Widget().UpdateData(data);
 
     if (data)
-        ChartWidget->ShowWidget();
+        ChartWidget_->ShowWidget();
     else
-        ChartWidget->HideWidget();
+        ChartWidget_->HideWidget();
 
-    Q_EMIT ChartWidget->Widget().SamplePointChanged(std::nullopt);
+    Q_EMIT ChartWidget_->Widget().SamplePointChanged(std::nullopt);
 }
 
 ParameterSpaceStateRenderWidget::ParameterSpaceStateRenderWidget(CtDataSource& dataSource) :
@@ -97,9 +101,9 @@ auto ParameterSpaceStateRenderWidget::UpdateSample(std::optional<SampleId> sampl
     Render();
 }
 
-TsneDataWidget::TsneDataWidget() :
+AnalysisDataWidget::AnalysisDataWidget(QString const& analysisName) :
+        AnalysisName(analysisName),
         BatchListData(nullptr),
-        ResetCameraButton(new QPushButton("Reset Camera")),
         PipelineGroupNameEdit([]() {
             auto* lineEdit = new NameLineEdit();
             lineEdit->setEnabled(false);
@@ -130,22 +134,8 @@ TsneDataWidget::TsneDataWidget() :
 
     auto* fLayout = new QFormLayout(this);
 
-    auto* renderingButtonBarWidget = new QWidget();
-    auto* renderingHorizontalLayout = new QHBoxLayout(renderingButtonBarWidget);
-    renderingHorizontalLayout->setContentsMargins(0, 11, 0, 11);
-    renderingHorizontalLayout->addWidget(ResetCameraButton);
-    renderingHorizontalLayout->addStretch();
-    fLayout->addRow(renderingButtonBarWidget);
-
-    connect(ResetCameraButton, &QPushButton::clicked, this, &TsneDataWidget::RequestResetCamera);
-
-    auto* line = new QFrame();
-    line->setFrameShape(QFrame::HLine);
-    line->setFrameShadow(QFrame::Sunken);
-    fLayout->addRow(line);
-
     auto* title = new QLabel("Selected Pipeline");
-    title->setStyleSheet(GetHeaderStyleSheet());
+    title->setStyleSheet(GetHeader1StyleSheet());
     fLayout->addRow(title);
 
     fLayout->addRow("Group", PipelineGroupNameEdit);
@@ -167,7 +157,7 @@ TsneDataWidget::TsneDataWidget() :
             new QSpacerItem(10, 1, QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Preferred), 0, 3);
     pointWidgetGridLayout->addWidget(pointWidgetYLabel, 0, 4);
     pointWidgetGridLayout->addWidget(PointYSpinBox, 0, 5);
-    auto* selectedPointLabel = new QLabel("t-SNE values");
+    auto* selectedPointLabel = new QLabel(QString("%1 values").arg(AnalysisName));
     selectedPointLabel->setAlignment(Qt::AlignVCenter | Qt::AlignRight);
     fLayout->addRow(selectedPointLabel, pointWidget);
 
@@ -176,13 +166,13 @@ TsneDataWidget::TsneDataWidget() :
     fLayout->addItem(new QSpacerItem(1, 1, QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Expanding));
 }
 
-auto TsneDataWidget::UpdateData(PipelineBatchListData const* batchData) -> void {
+auto AnalysisDataWidget::UpdateData(PipelineBatchListData const* batchData) -> void {
     BatchListData = batchData;
 
     UpdateSample(std::nullopt);
 }
 
-auto TsneDataWidget::UpdateSample(std::optional<SampleId> sampleId) -> void {
+auto AnalysisDataWidget::UpdateSample(std::optional<SampleId> sampleId) -> void {
     if (!sampleId)
         return;
 
@@ -193,8 +183,7 @@ auto TsneDataWidget::UpdateSample(std::optional<SampleId> sampleId) -> void {
     auto const& group = batchData.Group;
     auto const& spaceStateData = BatchListData->GetSpaceStateData(*sampleId);
 
-    auto const xValue = spaceStateData.TsneCoordinates.at(0);
-    auto const yValue = spaceStateData.TsneCoordinates.at(1);
+    auto const [ xValue, yValue ] = GetXYData(spaceStateData);
     if (PointXSpinBox->minimum() > xValue)
         PointXSpinBox->setMinimum(xValue);
     if (PointXSpinBox->maximum() < xValue)
@@ -214,4 +203,19 @@ auto TsneDataWidget::UpdateSample(std::optional<SampleId> sampleId) -> void {
     BasePipelineNameEdit->SetText(QString::fromStdString(group.GetBasePipeline().GetName()));
 
     ParameterSpaceStateView->UpdateWidget(new PipelineParameterSpaceStateView(spaceStateData.State));
+}
+
+PcaDataWidget::PcaDataWidget() :
+        AnalysisDataWidget("PCA") {}
+
+auto
+PcaDataWidget::GetXYData(ParameterSpaceStateData const& spaceStateData) const noexcept -> XYCoords {
+    return { spaceStateData.PcaCoordinates.at(0), spaceStateData.PcaCoordinates.at(1) };
+}
+
+TsneDataWidget::TsneDataWidget() :
+        AnalysisDataWidget("t-SNE") {}
+auto
+TsneDataWidget::GetXYData(ParameterSpaceStateData const& spaceStateData) const noexcept -> XYCoords {
+    return { spaceStateData.TsneCoordinates.at(0), spaceStateData.TsneCoordinates.at(1) };
 }

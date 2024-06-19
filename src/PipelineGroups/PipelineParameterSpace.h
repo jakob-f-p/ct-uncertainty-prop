@@ -59,6 +59,9 @@ private:
 
 class PipelineParameterSpace {
 public:
+    [[nodiscard]] auto
+    GetMTime() const noexcept -> vtkMTimeType;
+
     auto
     AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
                      PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan&;

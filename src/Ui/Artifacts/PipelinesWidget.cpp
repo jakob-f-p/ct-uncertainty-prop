@@ -24,26 +24,27 @@ PipelinesWidget::PipelinesWidget(PipelineList& pipelines, QWidget* parent) :
         ImageArtifactModelingWidget(new ImageArtifactsWidget()) {
 
     auto* vLayout = new QVBoxLayout(this);
+    vLayout->setSpacing(10);
 
     auto* pipelineTitleBarWidget = new QWidget();
     auto* pipelineTitleBarHLayout = new QHBoxLayout(pipelineTitleBarWidget);
     pipelineTitleBarHLayout->setContentsMargins(0, 11, 0, 0);
-    PipelineTitle->setStyleSheet(GetHeaderStyleSheet());
+    PipelineTitle->setStyleSheet(GetHeader1StyleSheet());
     pipelineTitleBarHLayout->addWidget(PipelineTitle);
     pipelineTitleBarHLayout->addStretch();
     PreviousPipelineButton->setIcon(GenerateIcon("ArrowLeft"));
     NextPipelineButton->setIcon(GenerateIcon("ArrowRight"));
     AddPipelineButton->setIcon(GenerateIcon("Plus"));
     RemovePipelineButton->setIcon(GenerateIcon("Minus"));
+    connect(AddPipelineButton, &QPushButton::clicked, this, &PipelinesWidget::AddPipeline);
+    connect(RemovePipelineButton, &QPushButton::clicked, this, &PipelinesWidget::RemovePipeline);
+    connect(PreviousPipelineButton, &QPushButton::clicked, this, &PipelinesWidget::PreviousPipeline);
+    connect(NextPipelineButton, &QPushButton::clicked, this, &PipelinesWidget::NextPipeline);
     pipelineTitleBarHLayout->addWidget(PreviousPipelineButton);
     pipelineTitleBarHLayout->addWidget(NextPipelineButton);
     pipelineTitleBarHLayout->addWidget(AddPipelineButton);
     pipelineTitleBarHLayout->addWidget(RemovePipelineButton);
     vLayout->addWidget(pipelineTitleBarWidget);
-    connect(AddPipelineButton, &QPushButton::clicked, this, &PipelinesWidget::AddPipeline);
-    connect(RemovePipelineButton, &QPushButton::clicked, this, &PipelinesWidget::RemovePipeline);
-    connect(PreviousPipelineButton, &QPushButton::clicked, this, &PipelinesWidget::PreviousPipeline);
-    connect(NextPipelineButton, &QPushButton::clicked, this, &PipelinesWidget::NextPipeline);
 
     vLayout->addWidget(StructureArtifactModelingWidget);
 
@@ -51,6 +52,8 @@ PipelinesWidget::PipelinesWidget(PipelineList& pipelines, QWidget* parent) :
             [widget = StructureArtifactModelingWidget]() { widget->ResetModel(); });
 
     vLayout->addWidget(ImageArtifactModelingWidget);
+
+    vLayout->addStretch();
 
     InitializeViews();
     UpdatePipelineView();

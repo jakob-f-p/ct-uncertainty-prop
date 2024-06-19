@@ -37,7 +37,7 @@ StructureArtifactsWidgetDialog::StructureArtifactsWidgetDialog(StructureArtifact
 
     auto* titleBarHLayout = new QHBoxLayout();
     auto* titleLabel = new QLabel(QString::fromStdString(title));
-    titleLabel->setStyleSheet(GetHeaderStyleSheet());
+    titleLabel->setStyleSheet(GetHeader1StyleSheet());
     titleBarHLayout->addWidget(titleLabel);
 
     titleBarHLayout->addStretch();

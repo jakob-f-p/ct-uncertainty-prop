@@ -7,7 +7,6 @@
 class QPushButton;
 
 class ArtifactRenderWidget;
-class ImageArtifactConcatenation;
 class Pipeline;
 class PipelineList;
 class PipelinesWidget;
@@ -17,12 +16,9 @@ public:
     explicit ArtifactsWidget(PipelineList& pipelines);
 
     [[nodiscard]] auto
-    GetCurrentFilter() -> vtkImageAlgorithm&;
+    GetCurrentPipeline() -> Pipeline&;
 
 private:
-    QPushButton* ResetCameraButton;
-    QPushButton* RenderButton;
-
     PipelinesWidget* PipelineWidget;
     ArtifactRenderWidget* RenderWidget;
 };

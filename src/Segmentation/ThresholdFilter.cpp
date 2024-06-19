@@ -130,6 +130,9 @@ ThresholdFilterWidget::ThresholdFilterWidget() :
         LowerThresholdSpinBox(new QDoubleSpinBox()),
         UpperThresholdSpinBox(new QDoubleSpinBox()) {
 
+    FLayout->setHorizontalSpacing(20);
+    FLayout->setContentsMargins({});
+
     for (uint8_t i = 0; i < NumberOfFilterModes(); i++) {
         auto const mode = static_cast<FilterMode>(i);
         ModeComboBox->addItem(QString::fromStdString(FilterModeToString(mode)),
@@ -149,10 +152,15 @@ ThresholdFilterWidget::ThresholdFilterWidget() :
     FLayout->addRow("Upper Threshold", UpperThresholdSpinBox);
 
     connect(ModeComboBox, &QComboBox::currentIndexChanged, this, &ThresholdFilterWidget::UpdateSpinBoxVisibility);
+
+    connect(LowerThresholdSpinBox, &QDoubleSpinBox::valueChanged, this, &ThresholdFilterWidget::DataChanged);
+    connect(UpperThresholdSpinBox, &QDoubleSpinBox::valueChanged, this, &ThresholdFilterWidget::DataChanged);
+    connect(ModeComboBox, &QComboBox::currentIndexChanged, this, &ThresholdFilterWidget::DataChanged);
+
     UpdateSpinBoxVisibility(0);
 }
 
-void ThresholdFilterWidget::UpdateSpinBoxVisibility(int idx) {
+void ThresholdFilterWidget::UpdateSpinBoxVisibility(int /*idx*/) {
     auto const mode = ModeComboBox->currentData().value<FilterMode>();
 
     bool const upperVisible = mode != FilterMode::LOWER;
@@ -163,8 +171,8 @@ void ThresholdFilterWidget::UpdateSpinBoxVisibility(int idx) {
 }
 
 auto ThresholdFilterWidget::Populate(ThresholdFilter& thresholdFilter) -> void {
-    float const lower = static_cast<float>(thresholdFilter.GetLowerThreshold());
-    float const upper = static_cast<float>(thresholdFilter.GetUpperThreshold());
+    auto const lower = static_cast<float>(thresholdFilter.GetLowerThreshold());
+    auto const upper = static_cast<float>(thresholdFilter.GetUpperThreshold());
 
     bool const hasLower = lower > VTK_FLOAT_MIN;
     bool const hasUpper = upper < VTK_FLOAT_MAX;
@@ -189,8 +197,8 @@ auto ThresholdFilterWidget::Populate(ThresholdFilter& thresholdFilter) -> void {
 }
 
 auto ThresholdFilterWidget::SetFilterData(ThresholdFilter& thresholdFilter) -> void {
-    float const lower = static_cast<float>(LowerThresholdSpinBox->value());
-    float const upper = static_cast<float>(UpperThresholdSpinBox->value());
+    auto const lower = static_cast<float>(LowerThresholdSpinBox->value());
+    auto const upper = static_cast<float>(UpperThresholdSpinBox->value());
 
     auto const mode = ModeComboBox->currentData().value<FilterMode>();
 

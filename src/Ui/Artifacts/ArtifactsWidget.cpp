@@ -10,8 +10,6 @@
 #include <QVBoxLayout>
 
 ArtifactsWidget::ArtifactsWidget(PipelineList& pipelines) :
-        ResetCameraButton(new QPushButton("Reset Camera")),
-        RenderButton(new QPushButton("Render")),
         PipelineWidget(new PipelinesWidget(pipelines)),
         RenderWidget(new ArtifactRenderWidget(pipelines,
                                               PipelineWidget->GetCurrentPipeline())) {
@@ -26,26 +24,11 @@ ArtifactsWidget::ArtifactsWidget(PipelineList& pipelines) :
     dockWidget->setMinimumWidth(250);
 
     auto* dockWidgetContent = new QWidget();
+
     auto* verticalLayout = new QVBoxLayout(dockWidgetContent);
 
-    auto* renderingButtonBarWidget = new QWidget();
-    auto* renderingHorizontalLayout = new QHBoxLayout(renderingButtonBarWidget);
-    renderingHorizontalLayout->setContentsMargins(0, 11, 0, 11);
-    renderingHorizontalLayout->addWidget(ResetCameraButton);
-    renderingHorizontalLayout->addWidget(RenderButton);
-    renderingHorizontalLayout->addStretch();
-    verticalLayout->addWidget(renderingButtonBarWidget);
-
-    connect(ResetCameraButton, &QPushButton::clicked, [&]() { RenderWidget->ResetCamera(); });
-    connect(RenderButton, &QPushButton::clicked, [&]() {
-        RenderWidget->UpdateImageArtifactFiltersOnPipelineChange(PipelineWidget->GetCurrentPipeline()); });
     connect(PipelineWidget, &PipelinesWidget::PipelineViewUpdated,
             RenderWidget, &ArtifactRenderWidget::UpdateImageArtifactFiltersOnPipelineChange);
-
-    auto* line = new QFrame();
-    line->setFrameShape(QFrame::HLine);
-    line->setFrameShadow(QFrame::Sunken);
-    verticalLayout->addWidget(line);
 
     verticalLayout->addWidget(PipelineWidget);
 
@@ -54,8 +37,8 @@ ArtifactsWidget::ArtifactsWidget(PipelineList& pipelines) :
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dockWidget);
 }
 
-auto ArtifactsWidget::GetCurrentFilter() -> vtkImageAlgorithm& {
-    return RenderWidget->GetCurrentFilter();
+auto ArtifactsWidget::GetCurrentPipeline() -> Pipeline& {
+    return PipelineWidget->GetCurrentPipeline();
 }
 
 
@@ -71,6 +54,4 @@ ArtifactRenderWidget::~ArtifactRenderWidget() = default;
 
 auto ArtifactRenderWidget::UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) -> void {
     UpdateImageAlgorithm(newPipeline.GetImageAlgorithm());
-
-    Render();
 }

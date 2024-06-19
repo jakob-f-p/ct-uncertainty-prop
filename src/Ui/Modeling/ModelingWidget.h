@@ -35,7 +35,6 @@ private:
 
     RenderWidget* const RenderingWidget;
 
-    QPushButton* const ResetCameraButton;
     QPushButton* const AddStructureButton;
     QPushButton* const CombineWithStructureButton;
     QPushButton* const RefineWithStructureButton;

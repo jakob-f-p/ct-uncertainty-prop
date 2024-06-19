@@ -2,7 +2,7 @@
 
 #include <QVTKOpenGLNativeWidget.h>
 
-#include <QWidget>
+#include <QFrame>
 
 class QPushButton;
 class QVTKInteractor;
@@ -17,7 +17,7 @@ class vtkOpenGLRenderer;
 class vtkOrientationMarkerWidget;
 
 
-class RenderWidget : public QWidget {
+class RenderWidget : public QFrame {
     Q_OBJECT
 
 public:
@@ -30,8 +30,18 @@ public:
     };
 
     explicit RenderWidget(vtkImageAlgorithm& imageAlgorithm,
-                           Controls controls = { true, true, true },
-                           QWidget* parent = nullptr);
+                          Controls controls = { true, true, true },
+                          QWidget* parent = nullptr);
+
+public Q_SLOTS:
+    auto
+    Render() const -> void;
+
+    auto
+    UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> void;
+
+    auto
+    UpdateImageAlgorithm(vtkImageData& imageData) -> void;
 
 private:
     CtRenderWidget* VtkRenderWidget;

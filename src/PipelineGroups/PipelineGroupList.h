@@ -30,14 +30,10 @@ struct PipelineBatchListData {
     using StateDataLists = std::vector<PipelineBatchData>;
 
     [[nodiscard]] auto
-    GetBatchData(uint16_t groupId) -> PipelineBatchData& {
-        return Data.at(groupId);
-    };
+    GetBatchData(uint16_t groupId) -> PipelineBatchData& { return Data.at(groupId); };
 
     [[nodiscard]] auto
-    GetBatchData(uint16_t groupId) const -> PipelineBatchData const& {
-        return Data.at(groupId);
-    };
+    GetBatchData(uint16_t groupId) const -> PipelineBatchData const& { return Data.at(groupId); };
 
     [[nodiscard]] auto
     GetSpaceStateData(SampleId const& sampleId) -> ParameterSpaceStateData& {
@@ -51,7 +47,10 @@ struct PipelineBatchListData {
 
     std::vector<std::string> const& FeatureNames;
     StateDataLists Data;
-    vtkMTimeType MTime;
+    struct MTimes {
+        vtkMTimeType Image, Feature, Pca, Tsne;
+        vtkMTimeType Total;
+    } Time;
 };
 
 
@@ -61,6 +60,9 @@ public:
 
     [[nodiscard]] auto
     GetName() const noexcept -> std::string;
+
+    [[nodiscard]] auto
+    GetMTime() const noexcept -> vtkMTimeType;
 
     [[nodiscard]] auto
     GetBasePipelines() const noexcept -> std::vector<Pipeline const*>;
@@ -79,9 +81,6 @@ public:
     GenerateImages(ProgressEventCallback const& callback = [](double){}) -> void;
 
     auto
-    ExportImages(ProgressEventCallback const& callback = [](double) {}) -> void;
-
-    auto
     ExtractFeatures(ProgressEventCallback const& callback = [](double) {}) -> void;
 
     auto
@@ -89,6 +88,9 @@ public:
 
     auto
     DoTsne(uint8_t numberOfDimensions, ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    [[nodiscard]] auto
+    GetDataStatus() const noexcept -> DataStatus;
 
     [[nodiscard]] auto
     GetBatchData() const noexcept -> std::optional<PipelineBatchListData>;
@@ -122,6 +124,18 @@ private:
         ProgressEventCallback const& Callback;
     };
 
+    struct MultiTaskProgressUpdater {
+        auto
+        operator()(double current) noexcept -> void;
+
+        int const CurrentTask;
+        int const NumberOfTasks;
+        int const Idx;
+        std::vector<double>& ProgressList;
+        ProgressEventCallback const& Callback;
+    };
+
+    vtkTimeStamp TimeStamp;
     std::string Name;
     std::vector<std::unique_ptr<PipelineGroup>> PipelineGroups;
     PipelineList const& Pipelines;

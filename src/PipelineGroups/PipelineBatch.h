@@ -1,7 +1,7 @@
 #pragma once
 
+#include "Types.h"
 #include "../Utils/TimeStampedData.h"
-#include "../Utils/Types.h"
 
 #include <vtkSmartPointer.h>
 
@@ -60,25 +60,22 @@ public:
     DoPCA(uint8_t numberOfDimensions) -> void;
 
     [[nodiscard]] auto
-    GetImageData() -> std::vector<PipelineImageData*>;
+    GetImageData() -> TimeStampedData<std::vector<PipelineImageData*>>;
 
     [[nodiscard]] auto
-    GetFeatureData() const -> FeatureData const&;
+    GetFeatureData() const -> TimeStampedDataRef<FeatureData>;
 
     [[nodiscard]] auto
-    GetPcaData() const -> SampleCoordinateData const&;
+    GetPcaData() const -> TimeStampedDataRef<SampleCoordinateData>;
 
     [[nodiscard]] auto
-    GetTsneData() const -> SampleCoordinateData const&;
+    GetTsneData() const -> TimeStampedDataRef<SampleCoordinateData>;
 
     auto
     SetTsneData(SampleCoordinateData&& tsneData) -> void;
 
     [[nodiscard]] auto
-    DataHasBeenGenerated() const noexcept -> bool;
-
-    [[nodiscard]] auto
-    GetDataMTime() const noexcept -> vtkMTimeType;
+    GetDataStatus() const noexcept -> DataStatus;
 
 private:
     [[nodiscard]] auto

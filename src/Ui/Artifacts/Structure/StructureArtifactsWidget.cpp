@@ -16,9 +16,10 @@ StructureArtifactsWidget::StructureArtifactsWidget(QWidget* parent) :
         Dialog(nullptr) {
 
     auto* vLayout = new QVBoxLayout(this);
+    vLayout->setContentsMargins({});
 
     auto* titleLabel = new QLabel("Structure Artifacts");
-    titleLabel->setStyleSheet(GetHeaderStyleSheet());
+    titleLabel->setStyleSheet(GetHeader2StyleSheet());
     vLayout->addWidget(titleLabel);
 
     vLayout->addLayout(Views);

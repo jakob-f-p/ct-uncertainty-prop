@@ -90,7 +90,7 @@ auto PipelineBatch::ExportImages(ProgressEventCallback const& callback) -> void 
     std::atomic<double> latestProgress = -1.0;
 
     auto const now = std::chrono::system_clock::now();
-    std::string const timeStampString = std::format("{0:%F}T{0:%R%z}", now);
+    std::string const timeStampString = std::format("{0:%F}ValueT{0:%R%z}", now);
 
     std::filesystem::create_directory(ExportPathPair::DataDirectory);
     std::filesystem::create_directory(ExportPathPair::InputDirectory);
@@ -174,41 +174,34 @@ auto PipelineBatch::DoPCA(uint8_t numberOfDimensions) -> void {
     PcaData.Emplace(pcaCoordinateData.cast<SampleCoordinateData>());
 }
 
-auto PipelineBatch::GetImageData() -> std::vector<PipelineImageData*> {
+auto PipelineBatch::GetImageData() -> TimeStampedData<std::vector<PipelineImageData*>> {
     std::vector<PipelineImageData*> imageDataVector;
     imageDataVector.reserve(Images->size());
 
     for (auto& imageData : *Images)
         imageDataVector.emplace_back(&imageData);
 
-    return imageDataVector;
+    return TimeStampedData<std::vector<PipelineImageData*>> { std::move(imageDataVector), Images.GetTime() };
 }
 
-auto PipelineBatch::GetFeatureData() const -> FeatureData const& {
-    return *Features;
+auto PipelineBatch::GetFeatureData() const -> TimeStampedDataRef<FeatureData> {
+    return TimeStampedDataRef<FeatureData> { Features };
 }
 
-auto PipelineBatch::GetPcaData() const -> SampleCoordinateData const& {
-    return *PcaData;
+auto PipelineBatch::GetPcaData() const -> TimeStampedDataRef<SampleCoordinateData> {
+    return TimeStampedDataRef<SampleCoordinateData> { PcaData };
 }
 
-auto PipelineBatch::GetTsneData() const -> SampleCoordinateData const& {
-    return *TsneData;
+auto PipelineBatch::GetTsneData() const -> TimeStampedDataRef<SampleCoordinateData> {
+    return TimeStampedDataRef<SampleCoordinateData> { TsneData };
 }
 
 auto PipelineBatch::SetTsneData(SampleCoordinateData&& tsneData) -> void {
     TsneData.Emplace(std::move(tsneData));
 }
 
-auto PipelineBatch::DataHasBeenGenerated() const noexcept -> bool {
-    return Images && ExportedImages && Features && PcaData && TsneData;
-}
-
-auto PipelineBatch::GetDataMTime() const noexcept -> vtkMTimeType {
-    if (!DataHasBeenGenerated())
-        return 0;
-
-    return std::min({ Images.GetTime(), Features.GetTime(), PcaData.GetTime(), TsneData.GetTime() });
+auto PipelineBatch::GetDataStatus() const noexcept -> DataStatus {
+    return { Images.GetTime(), Features.GetTime(), PcaData.GetTime(), TsneData.GetTime() };
 }
 
 auto PipelineBatch::DoExport::operator()(PipelineImageData& image) const -> void {

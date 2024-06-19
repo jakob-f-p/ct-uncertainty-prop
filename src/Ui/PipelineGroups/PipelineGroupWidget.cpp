@@ -29,7 +29,7 @@ PipelineGroupWidget::PipelineGroupWidget(PipelineGroup& pipelineGroup, QWidget* 
     auto* fLayout = new QFormLayout(this);
 
     auto* title = new QLabel(QString::fromStdString(Group.GetName()));
-    title->setStyleSheet(GetHeaderStyleSheet());
+    title->setStyleSheet(GetHeader1StyleSheet());
     fLayout->addRow(title);
 
     fLayout->addRow("Number of pipelines", NumberOfPipelinesSpinBox);

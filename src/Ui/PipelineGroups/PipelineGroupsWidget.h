@@ -31,7 +31,4 @@ private:
     PipelineGroupListWidget* GroupListWidget;
     OptionalWidget<PipelineGroupWidget>* GroupWidget;
     OptionalWidget<PipelineParameterSpanWidget>* ParameterSpanWidget;
-
-    QPushButton* CalculateImagesButton;
-    QProgressBar* CalculateImagesProgressBar;
 };

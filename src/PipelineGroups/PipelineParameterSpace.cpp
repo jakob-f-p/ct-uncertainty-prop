@@ -62,6 +62,10 @@ auto PipelineParameterSpanSet::operator==(const PipelineParameterSpanSet& other)
 
 
 
+auto PipelineParameterSpace::GetMTime() const noexcept -> vtkMTimeType {
+    return MTime;
+}
+
 auto PipelineParameterSpace::AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
                                               PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan& {
     if (artifactVariantPointer.IsNullptr())

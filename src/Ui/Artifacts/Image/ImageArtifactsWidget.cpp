@@ -28,9 +28,10 @@ ImageArtifactsWidget::ImageArtifactsWidget(QWidget* parent) :
                   MoveDownButton }) {
 
     auto* vLayout = new QVBoxLayout(this);
+    vLayout->setContentsMargins({});
 
     auto* titleLabel = new QLabel("Image Artifacts");
-    titleLabel->setStyleSheet(GetHeaderStyleSheet());
+    titleLabel->setStyleSheet(GetHeader2StyleSheet());
     vLayout->addWidget(titleLabel);
 
     auto* buttonBar = new QWidget();
@@ -74,7 +75,7 @@ void ImageArtifactsWidget::AddView(Pipeline& pipeline) {
     auto updateButtonStatesOnModelReset = [&, newModel, newView]() {
         DisableImageArtifactButtons();
 
-        bool viewIsEmpty = !newModel->hasChildren(newView->rootIndex());
+        bool const viewIsEmpty = !newModel->hasChildren(newView->rootIndex());
         if (viewIsEmpty) {
             AddChildButton->setEnabled(true);
         }
@@ -102,8 +103,8 @@ void ImageArtifactsWidget::AddChildArtifact() {
 
     connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
         auto data = ImageArtifactWidget::GetWidgetData(CreateDialog);
-        QModelIndex parentIndex = GetCurrentSelectionModel()->currentIndex();
-        QModelIndex newIndex = GetCurrentModel()->AddChildImageArtifact(data, parentIndex);
+        QModelIndex const parentIndex = GetCurrentSelectionModel()->currentIndex();
+        QModelIndex const newIndex = GetCurrentModel()->AddChildImageArtifact(data, parentIndex);
 
         GetCurrentSelectionModel()->clear();
         GetCurrentSelectionModel()->setCurrentIndex(newIndex, QItemSelectionModel::SelectionFlag::SelectCurrent);
@@ -126,8 +127,8 @@ void ImageArtifactsWidget::AddSiblingArtifact() {
 
     connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
         auto data = ImageArtifactWidget::GetWidgetData(CreateDialog);
-        QModelIndex siblingIndex = GetCurrentSelectionModel()->currentIndex();
-        QModelIndex newIndex = GetCurrentModel()->AddSiblingImageArtifact(data, siblingIndex);
+        QModelIndex const siblingIndex = GetCurrentSelectionModel()->currentIndex();
+        QModelIndex const newIndex = GetCurrentModel()->AddSiblingImageArtifact(data, siblingIndex);
 
         GetCurrentSelectionModel()->clear();
         GetCurrentSelectionModel()->setCurrentIndex(newIndex, QItemSelectionModel::SelectionFlag::SelectCurrent);
@@ -135,8 +136,8 @@ void ImageArtifactsWidget::AddSiblingArtifact() {
 }
 
 void ImageArtifactsWidget::RemoveArtifact() {
-    QModelIndex index = GetCurrentSelectionModel()->currentIndex();
-    QModelIndex parentIndex = index.parent();
+    QModelIndex const index = GetCurrentSelectionModel()->currentIndex();
+    QModelIndex const parentIndex = index.parent();
     GetCurrentModel()->RemoveImageArtifact(index);
     GetCurrentSelectionModel()->clear();
     GetCurrentSelectionModel()->setCurrentIndex(parentIndex, QItemSelectionModel::SelectionFlag::SelectCurrent);
@@ -145,28 +146,29 @@ void ImageArtifactsWidget::RemoveArtifact() {
 }
 
 void ImageArtifactsWidget::MoveUp() {
-    QModelIndex index = GetCurrentSelectionModel()->currentIndex();
-    QModelIndex newIndex = GetCurrentModel()->MoveUp(index);
+    QModelIndex const index = GetCurrentSelectionModel()->currentIndex();
+    QModelIndex const newIndex = GetCurrentModel()->MoveUp(index);
     GetCurrentSelectionModel()->clear();
     GetCurrentSelectionModel()->setCurrentIndex(newIndex, QItemSelectionModel::SelectionFlag::SelectCurrent);
 }
 
 void ImageArtifactsWidget::MoveDown() {
-    QModelIndex index = GetCurrentSelectionModel()->currentIndex();
-    QModelIndex newIndex = GetCurrentModel()->MoveDown(index);
+    QModelIndex const index = GetCurrentSelectionModel()->currentIndex();
+    QModelIndex const newIndex = GetCurrentModel()->MoveDown(index);
     GetCurrentSelectionModel()->clear();
     GetCurrentSelectionModel()->setCurrentIndex(newIndex, QItemSelectionModel::SelectionFlag::SelectCurrent);
 }
 
 void ImageArtifactsWidget::UpdateButtonStatesOnSelectionChange(const QModelIndex& currentIndex) {
-    bool indexIsValid = currentIndex.isValid();
-    bool viewIsEmpty = !GetCurrentModel()->hasChildren(GetCurrentView()->rootIndex());
+    bool const indexIsValid = currentIndex.isValid();
+    bool const viewIsEmpty = !GetCurrentModel()->hasChildren(GetCurrentView()->rootIndex());
 
-    bool isEmptyAndInvalid = !indexIsValid && viewIsEmpty;
-    bool isImageArtifactComposition = indexIsValid
-            && std::holds_alternative<CompositeImageArtifactData>(currentIndex.data(Qt::UserRole).value<ImageArtifactData>().Data);
-    bool hasSiblingsBefore = indexIsValid && currentIndex.siblingAtRow(currentIndex.row() - 1).isValid();
-    bool hasSiblingsAfter = indexIsValid && currentIndex.siblingAtRow(currentIndex.row() + 1).isValid();
+    bool const isEmptyAndInvalid = !indexIsValid && viewIsEmpty;
+    bool const isImageArtifactComposition = indexIsValid
+            && std::holds_alternative<CompositeImageArtifactData>(
+                    currentIndex.data(Qt::UserRole).value<ImageArtifactData>().Data);
+    bool const hasSiblingsBefore = indexIsValid && currentIndex.siblingAtRow(currentIndex.row() - 1).isValid();
+    bool const hasSiblingsAfter = indexIsValid && currentIndex.siblingAtRow(currentIndex.row() + 1).isValid();
 
     AddChildButton->setEnabled(isImageArtifactComposition || isEmptyAndInvalid);
     AddSiblingButton->setEnabled(indexIsValid);
