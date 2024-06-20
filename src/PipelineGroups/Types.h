@@ -13,8 +13,8 @@ struct FeatureData {
     using StringVector = std::vector<std::string>;
     using Vector2DDouble = std::vector<std::vector<double>>;
 
-    StringVector Names;
-    Vector2DDouble Values;
+    StringVector Names {};
+    Vector2DDouble Values {};
 };
 
 struct DataStatus {

@@ -77,6 +77,18 @@ public:
     [[nodiscard]] auto
     GetDataStatus() const noexcept -> DataStatus;
 
+    auto
+    ExportGeneratedImages(std::filesystem::path const& exportDir,
+                          ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
+    ImportImages(std::vector<std::filesystem::path> const& importFilePaths,
+                 ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
+    ImportFeatures(std::filesystem::path const& importFilePaths,
+                   ProgressEventCallback const& callback = [](double) {}) -> void;
+
 private:
     [[nodiscard]] auto
     GetIdx(PipelineParameterSpaceState const& state) const -> uint32_t;

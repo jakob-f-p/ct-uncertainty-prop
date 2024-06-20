@@ -4,15 +4,22 @@
 
 #include <mutex>
 
-class QGridLayout;
 class QLabel;
 class QProgressBar;
 class QPushButton;
+class QVBoxLayout;
 
 class DataGenerationStatusWidget;
+class DataGenerationTaskWidget;
 class PipelineGroupList;
 class ThresholdFilter;
 
+
+enum struct DataGenerationStatus : uint8_t {
+    NOT_GENERATED,
+    OUT_OF_DATE,
+    UP_TO_DATE
+};
 
 class DataGenerationWidget : public QWidget {
     Q_OBJECT
@@ -29,55 +36,9 @@ public Q_SLOTS:
     auto
     DisableButtons() const -> void;
 
-public:
-    struct ProgressCallback {
-        auto
-        operator()(double progress) -> void;
-
-        QProgressBar& ProgressBar;
-        std::mutex& Mutex;
-    };
-
-    struct DataGenerationWidgetRow : public QObject {
-        using DataGenerator = std::function<void(ProgressCallback)>;
-
-        explicit DataGenerationWidgetRow(DataGenerationWidget& parent,
-                                         DataGenerator&& generator,
-                                         QString const& name,
-                                         QString const& progressBarFormat);
-
-        auto
-        AddToLayout(QGridLayout& gLayout) const noexcept -> void;
-
-        auto
-        Generate() -> void;
-
-        auto
-        SetButtonEnabled(bool enabled) const -> void;
-
-        enum struct Status : uint8_t {
-            NOT_GENERATED,
-            OUT_OF_DATE,
-            UP_TO_DATE
-        };
-
-        auto
-        UpdateStatus(Status status) const -> void;
-
-
-        DataGenerationWidget& ParentWidget;
-        DataGenerator Generator;
-
-        QLabel* Name;
-        QProgressBar* ProgressBar;
-        std::mutex Mutex;
-        DataGenerationStatusWidget* StatusWidget;
-        QPushButton* GenerateButton;
-    };
-
 private:
     struct Statuses {
-        using Status = DataGenerationWidgetRow::Status;
+        using Status = DataGenerationStatus;
 
         Statuses(DataGenerationWidget& dataGenerationWidget);
 
@@ -89,9 +50,9 @@ private:
 
         [[nodiscard]] auto
         AllGenerated() const noexcept -> bool { return Image != Status::NOT_GENERATED
-                                                      && Feature != Status::NOT_GENERATED
-                                                      && Pca != Status::NOT_GENERATED
-                                                      && Tsne != Status::NOT_GENERATED; }
+                                                       && Feature != Status::NOT_GENERATED
+                                                       && Pca != Status::NOT_GENERATED
+                                                       && Tsne != Status::NOT_GENERATED; }
 
         Status Image   = Status::UP_TO_DATE;
         Status Feature = Status::UP_TO_DATE;
@@ -99,25 +60,69 @@ private:
         Status Tsne    = Status::UP_TO_DATE;
     };
 
+
     PipelineGroupList& PipelineGroups;
     ThresholdFilter& ThresholdFilterAlgorithm;
 
-    QGridLayout* GLayout;
     QPushButton* GenerateAllButton;
     bool GeneratingAll = false;
     DataGenerationStatusWidget* TotalStatusWidget;
 
-    DataGenerationWidgetRow* ImageRow;
-    DataGenerationWidgetRow* FeaturesRow;
-    DataGenerationWidgetRow* PcaRow;
-    DataGenerationWidgetRow* TsneRow;
-    std::vector<DataGenerationWidgetRow*> Rows;
+    DataGenerationTaskWidget* ImageTask;
+    DataGenerationTaskWidget* FeatureTask;
+    DataGenerationTaskWidget* PcaTask;
+    DataGenerationTaskWidget* TsneTask;
+    std::vector<DataGenerationTaskWidget*> TaskWidgets;
 };
+
+
+struct DataGenerationTaskWidget : public QWidget {
+    struct ProgressCallback {
+        auto
+        operator()(double progress) -> void;
+
+       QProgressBar& ProgressBar;
+        std::mutex& Mutex;
+    };
+
+    using Status = DataGenerationStatus;
+    using DataGenerator = std::function<void(ProgressCallback)>;
+
+    explicit DataGenerationTaskWidget(DataGenerationWidget& parent,
+                                      DataGenerator&& generator,
+                                      QString const& name,
+                                      QString const& progressBarFormat,
+                                      DataGenerator&& Importer = {}, DataGenerator&& Exporter = {});
+
+    auto
+    Generate() -> void;
+
+    auto
+    SetButtonEnabled(bool enabled) const -> void;
+
+    auto
+    UpdateStatus(Status status, Status previousStepStatus) const -> void;
+
+
+    DataGenerationWidget& ParentWidget;
+    DataGenerator Generator;
+    std::mutex Mutex;
+
+    QLabel* Name;
+    QProgressBar* ProgressBar;
+    QPushButton* ImportButton;
+    DataGenerator Importer;
+    QPushButton* ExportButton;
+    DataGenerator Exporter;
+    QPushButton* GenerateButton;
+    DataGenerationStatusWidget* StatusWidget;
+};
+
 
 
 class DataGenerationStatusWidget : public QWidget {
 public:
-    using Status = DataGenerationWidget::DataGenerationWidgetRow::Status;
+    using Status = DataGenerationStatus;
 
     explicit DataGenerationStatusWidget();
 

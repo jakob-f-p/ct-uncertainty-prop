@@ -112,6 +112,30 @@ auto PipelineGroup::GetDataStatus() const noexcept -> DataStatus {
             : DataStatus {};
 }
 
+auto PipelineGroup::ExportGeneratedImages(std::filesystem::path const& exportDir,
+                                          PipelineGroup::ProgressEventCallback const& callback) -> void {
+    if (!Batch)
+        throw std::runtime_error("Cannot export image data. Batch has not been created");
+
+    Batch->ExportGeneratedImages(exportDir, callback);
+}
+
+auto PipelineGroup::ImportImages(std::vector<std::filesystem::path> const& importFilePaths,
+                                 PipelineGroup::ProgressEventCallback const& callback) -> void {
+    if (!Batch)
+        throw std::runtime_error("Cannot import image data. Batch has not been created");
+
+    Batch->ImportImages(importFilePaths, callback);
+}
+
+auto PipelineGroup::ImportFeatures(std::filesystem::path const& importFilePath,
+                                   PipelineGroup::ProgressEventCallback const& callback) -> void {
+    if (!Batch)
+        throw std::runtime_error("Cannot import feature data. Batch has not been created");
+
+    Batch->ImportFeatures(importFilePath, callback);
+}
+
 auto PipelineGroup::AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
                                      PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan& {
     return ParameterSpace->AddParameterSpan(artifactVariantPointer, std::move(parameterSpan));

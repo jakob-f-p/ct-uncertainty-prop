@@ -68,6 +68,18 @@ public:
     GetDataStatus() const noexcept -> DataStatus;
 
     auto
+    ExportGeneratedImages(std::filesystem::path const& exportDir,
+                          ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
+    ImportImages(std::vector<std::filesystem::path> const& importFilePaths,
+                 ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
+    ImportFeatures(std::filesystem::path const& importFilePath,
+                   ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
     AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
                      PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan&;
 

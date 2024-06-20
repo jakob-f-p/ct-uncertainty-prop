@@ -96,6 +96,22 @@ public:
     GetBatchData() const noexcept -> std::optional<PipelineBatchListData>;
 
     auto
+    ExportGeneratedImages(std::filesystem::path const& exportDir,
+                          ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
+    ImportImages(std::vector<std::filesystem::path> const& importFilePaths,
+                 ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
+    ExportFeatures(std::filesystem::path const& exportDir,
+                   ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
+    ImportFeatures(std::vector<std::filesystem::path> const& importFilePaths,
+                   ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    auto
     AddPipelineGroup(Pipeline const& pipeline, const std::string& name = "") -> PipelineGroup&;
 
     auto

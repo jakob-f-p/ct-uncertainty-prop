@@ -4,10 +4,12 @@
 #include "../../PipelineGroups/PipelineGroupList.h"
 #include "../../Segmentation/ThresholdFilter.h"
 
-#include <QGridLayout>
+#include <QFileDialog>
 #include <QLabel>
+#include <QStandardPaths>
 #include <QProgressBar>
 #include <QPushButton>
+#include <QVBoxLayout>
 
 DataGenerationWidget::DataGenerationWidget(PipelineGroupList& pipelineGroups,
                                            ThresholdFilter& thresholdFilter,
@@ -15,68 +17,140 @@ DataGenerationWidget::DataGenerationWidget(PipelineGroupList& pipelineGroups,
         QWidget(parent),
         PipelineGroups(pipelineGroups),
         ThresholdFilterAlgorithm(thresholdFilter),
-        GLayout(new QGridLayout(this)),
         GenerateAllButton(new QPushButton("Generate all")),
         TotalStatusWidget(new DataGenerationStatusWidget()),
-        ImageRow(new DataGenerationWidgetRow(
+        ImageTask(new DataGenerationTaskWidget(
                 *this,
-                [this](ProgressCallback const& callback) { PipelineGroups.GenerateImages(callback); },
+                [this](DataGenerationTaskWidget::ProgressCallback const& callback) {
+                    PipelineGroups.GenerateImages(callback); },
                 "Images",
-                "Generating Image Data... %p%")),
-        FeaturesRow(new DataGenerationWidgetRow(
+                "Generating Image Data... %p%",
+                [this](DataGenerationTaskWidget::ProgressCallback const& callback){
+                    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
+                    if (homeLocations.empty() || homeLocations.at(0).isEmpty())
+                        throw std::runtime_error("home path must not be empty");
+                    QString const& homePath = homeLocations.at(0);
+
+                    QString const caption = "Import Images (select all)";
+                    QString const fileFilter = "Images (*.vtk)";
+                    QStringList const fileNames = QFileDialog::getOpenFileNames(this, caption, homePath, fileFilter);
+                    std::vector<std::filesystem::path> filePaths { static_cast<size_t>(fileNames.size()) };
+                    std::transform(fileNames.cbegin(), fileNames.cend(), filePaths.begin(),
+                                   [](QString const& str) { return std::filesystem::path(str.toStdString()); });
+
+                    if (filePaths.empty())
+                        return;
+
+                    PipelineGroups.ImportImages(filePaths, callback);
+                },
+                [this](DataGenerationTaskWidget::ProgressCallback const& callback){
+                    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
+                    if (homeLocations.empty() || homeLocations.at(0).isEmpty())
+                        throw std::runtime_error("home path must not be empty");
+                    QString const& homePath = homeLocations.at(0);
+
+                    QString const caption = "Export Images";
+                    QString const dirName = QFileDialog::getExistingDirectory(this, caption, homePath);
+                    std::filesystem::path const exportDirPath = dirName.toStdString();
+
+                    if (exportDirPath.empty())
+                        return;
+
+                    PipelineGroups.ExportGeneratedImages(exportDirPath, callback);})
+                ),
+        FeatureTask(new DataGenerationTaskWidget(
                 *this,
-                [this](ProgressCallback const& callback) { PipelineGroups.ExtractFeatures(callback); },
-                    "Features",
-                    "Extracting Features... %p%")),
-        PcaRow(new DataGenerationWidgetRow(
+                [this](DataGenerationTaskWidget::ProgressCallback const& callback) {
+                    PipelineGroups.ExtractFeatures(callback); },
+                "Features",
+                "Extracting Features... %p%",
+                [this](DataGenerationTaskWidget::ProgressCallback const& callback) {
+                    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
+                    if (homeLocations.empty() || homeLocations.at(0).isEmpty())
+                        throw std::runtime_error("home path must not be empty");
+                    QString const& homePath = homeLocations.at(0);
+
+                    QString const caption = "Import Features (select all)";
+                    QString const fileFilter = "Features (*.json)";
+                    QStringList const fileNames = QFileDialog::getOpenFileNames(this, caption, homePath, fileFilter);
+                    std::vector<std::filesystem::path> filePaths{ static_cast<size_t>(fileNames.size()) };
+                    std::transform(fileNames.cbegin(), fileNames.cend(), filePaths.begin(),
+                                   [](QString const& str) { return std::filesystem::path(str.toStdString()); });
+
+                    if (filePaths.empty())
+                        return;
+
+                    PipelineGroups.ImportFeatures(filePaths, callback);
+                },
+                [this](DataGenerationTaskWidget::ProgressCallback const& callback) {
+                    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
+                    if (homeLocations.empty() || homeLocations.at(0).isEmpty())
+                        throw std::runtime_error("home path must not be empty");
+                    QString const& homePath = homeLocations.at(0);
+
+                    QString const caption = "Export Features";
+                    QString const dirName = QFileDialog::getExistingDirectory(this, caption, homePath);
+                    std::filesystem::path const exportDirPath = dirName.toStdString();
+
+                    if (exportDirPath.empty())
+                        return;
+
+                    PipelineGroups.ExportFeatures(exportDirPath, callback); })
+                ),
+        PcaTask(new DataGenerationTaskWidget(
                 *this,
-                [this](ProgressCallback const& callback) { PipelineGroups.DoPCAs(2, callback); },
+                [this](DataGenerationTaskWidget::ProgressCallback const& callback) {
+                    PipelineGroups.DoPCAs(2, callback); },
                     "PCA",
                     "Doing PCA... %p%")),
-        TsneRow(new DataGenerationWidgetRow(
+        TsneTask(new DataGenerationTaskWidget(
                 *this,
-                [this](ProgressCallback const& callback) { PipelineGroups.DoTsne(2, callback); },
+                [this](DataGenerationTaskWidget::ProgressCallback const& callback) {
+                    PipelineGroups.DoTsne(2, callback); },
                 "t-SNE",
                 "Doing t-SNE... %p%")),
-        Rows({ ImageRow, FeaturesRow, PcaRow, TsneRow }) {
+        TaskWidgets({ ImageTask, FeatureTask, PcaTask, TsneTask }) {
 
-    GLayout->setHorizontalSpacing(10);
-    GLayout->setVerticalSpacing(10);
+    auto* vLayout = new QVBoxLayout(this);
+    vLayout->setSpacing(10);
 
+    auto* titleBarWidget = new QWidget();
+    auto* titleBarHLayout = new QHBoxLayout(titleBarWidget);
     auto* titleLabel = new QLabel("Generate Data");
     titleLabel->setStyleSheet(GetHeader1StyleSheet());
-    GLayout->addWidget(titleLabel, 0, 0, 1, 2);
-    GLayout->addWidget(GenerateAllButton, 0, 2);
-    GLayout->addWidget(TotalStatusWidget, 0, 3);
+    titleBarHLayout->addWidget(titleLabel);
+    titleBarHLayout->addStretch();
+    titleBarHLayout->addWidget(GenerateAllButton);
+    titleBarHLayout->addWidget(TotalStatusWidget);
+    vLayout->addWidget(titleBarWidget);
 
-    for (auto const* row : Rows)
-        row->AddToLayout(*GLayout);
+    for (auto* taskWidget : TaskWidgets)
+        vLayout->addWidget(taskWidget);
 
-    GLayout->addItem(new QSpacerItem(1, 1, QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding),
-                     GLayout->rowCount() + 1, 0, 1, GLayout->columnCount());
+    vLayout->addStretch();
 
     connect(GenerateAllButton, &QPushButton::clicked, this, [this]() {
         GenerateAllButton->setEnabled(false);
-        for (auto* row : Rows)
+        for (auto* row : TaskWidgets)
             row->SetButtonEnabled(false);
 
         GeneratingAll = true;
 
         Statuses const statuses { *this };
-        if (statuses.Image != DataGenerationWidgetRow::Status::UP_TO_DATE) {
-            ImageRow->Generate();
+        if (statuses.Image != DataGenerationStatus::UP_TO_DATE) {
+            ImageTask->Generate();
             DisableButtons();
         }
-        if (statuses.Feature != DataGenerationWidgetRow::Status::UP_TO_DATE) {
-            FeaturesRow->Generate();
+        if (statuses.Feature != DataGenerationStatus::UP_TO_DATE) {
+            FeatureTask->Generate();
             DisableButtons();
         }
-        if (statuses.Pca != DataGenerationWidgetRow::Status::UP_TO_DATE) {
-            PcaRow->Generate();
+        if (statuses.Pca != DataGenerationStatus::UP_TO_DATE) {
+            PcaTask->Generate();
             DisableButtons();
         }
-        if (statuses.Tsne != DataGenerationWidgetRow::Status::UP_TO_DATE) {
-            TsneRow->Generate();
+        if (statuses.Tsne != DataGenerationStatus::UP_TO_DATE) {
+            TsneTask->Generate();
             DisableButtons();
         }
 
@@ -91,59 +165,115 @@ auto DataGenerationWidget::UpdateRowStatuses() -> void {
 
     GenerateAllButton->setEnabled(!statuses.AllUpToDate());
     TotalStatusWidget->UpdateStatus(statuses.AllUpToDate()
-            ? DataGenerationWidgetRow::Status::UP_TO_DATE
+            ? DataGenerationStatus::UP_TO_DATE
             : (statuses.AllGenerated()
-                    ? DataGenerationWidgetRow::Status::OUT_OF_DATE
-                    : DataGenerationWidgetRow::Status::NOT_GENERATED));
+                    ? DataGenerationStatus::OUT_OF_DATE
+                    : DataGenerationStatus::NOT_GENERATED));
 
-    ImageRow->UpdateStatus(statuses.Image);
-    FeaturesRow->UpdateStatus(statuses.Feature);
-    PcaRow->UpdateStatus(statuses.Pca);
-    TsneRow->UpdateStatus(statuses.Tsne);
+    ImageTask->UpdateStatus(statuses.Image, DataGenerationStatus::UP_TO_DATE);
+    FeatureTask->UpdateStatus(statuses.Feature, statuses.Image);
+    PcaTask->UpdateStatus(statuses.Pca, statuses.Feature);
+    TsneTask->UpdateStatus(statuses.Tsne, statuses.Feature);
 }
 
 auto DataGenerationWidget::DisableButtons() const -> void {
     GenerateAllButton->setEnabled(false);
-    for (auto* row : Rows)
+    for (auto* row : TaskWidgets)
         row->SetButtonEnabled(false);
 }
 
-DataGenerationWidget::DataGenerationWidgetRow::DataGenerationWidgetRow(DataGenerationWidget& parent,
-                                                                       DataGenerator&& generator,
-                                                                       QString const& name,
-                                                                       QString const& progressBarFormat) :
+DataGenerationTaskWidget::DataGenerationTaskWidget(DataGenerationWidget& parent,
+                                                   DataGenerator&& generator, QString const& name,
+                                                   QString const& progressBarFormat,
+                                                   DataGenerator&& importer, DataGenerator&& exporter) :
         ParentWidget(parent),
         Generator(std::move(generator)),
-        Name(new QLabel(name)),
+        Name([&name]() {
+            auto* label = new QLabel(name);
+            label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
+            static int const minWidth = (new QLabel("Features"))->sizeHint().width() + 15;
+            label->setMinimumWidth(minWidth);
+            return label;
+        }()),
         ProgressBar([&progressBarFormat]() {
             auto* progressBar = new QProgressBar();
             progressBar->setRange(0, 1000);
             progressBar->setFormat(progressBarFormat);
             return progressBar;
         }()),
-        StatusWidget(new DataGenerationStatusWidget()),
-        GenerateButton(new QPushButton("Generate")) {
+        ImportButton([]() {
+            auto* button = new QPushButton("Import");
+            static int const minWidth = (new QLabel("Import"))->sizeHint().width() + 5;
+            button->setMinimumWidth(minWidth);
+            auto sizePolicy = button->sizePolicy();
+            sizePolicy.setRetainSizeWhenHidden(true);
+            button->setSizePolicy(sizePolicy);
+            return button;
+        }()),
+        Importer(importer ? std::move(importer) : nullptr),
+        ExportButton([]() {
+            auto* button = new QPushButton("Export");
+            static int const minWidth = (new QLabel("Import"))->sizeHint().width() + 5;
+            button->setMinimumWidth(minWidth);
+            auto sizePolicy = button->sizePolicy();
+            sizePolicy.setRetainSizeWhenHidden(true);
+            button->setSizePolicy(sizePolicy);
+            return button;
+        }()),
+        Exporter(exporter ? std::move(exporter) : nullptr),
+        GenerateButton(new QPushButton("Generate")),
+        StatusWidget(new DataGenerationStatusWidget()) {
+
+    auto* hLayout = new QHBoxLayout(this);
+    hLayout->addWidget(Name);
+    hLayout->addWidget(ProgressBar);
+    hLayout->addWidget(ImportButton);
+    hLayout->addWidget(ExportButton);
+    hLayout->addWidget(GenerateButton);
+    hLayout->addWidget(StatusWidget);
 
     connect(GenerateButton, &QPushButton::clicked, this, [this]() { Generate(); });
+
+    if (Importer)
+        connect(ImportButton, &QPushButton::clicked, this, [this]() {
+            ParentWidget.DisableButtons();
+
+            QString const oldFormat = ProgressBar->format();
+            ProgressBar->setFormat("Importing... %p%");
+            Importer(ProgressCallback { *ProgressBar, Mutex });
+
+            ProgressBar->reset();
+            ProgressBar->setFormat(oldFormat);
+
+            ParentWidget.UpdateRowStatuses();
+        });
+    else
+        ImportButton->hide();
+
+    if (Exporter)
+        connect(ExportButton, &QPushButton::clicked, this, [this]() {
+            ParentWidget.DisableButtons();
+
+            QString const oldFormat = ProgressBar->format();
+            ProgressBar->setFormat("Exporting... %p%");
+            Exporter(ProgressCallback { *ProgressBar, Mutex });
+
+            ProgressBar->reset();
+            ProgressBar->setFormat(oldFormat);
+
+            ParentWidget.UpdateRowStatuses();
+        });
+    else
+        ExportButton->hide();
 }
 
-auto DataGenerationWidget::ProgressCallback::operator()(double progress) -> void {
+auto DataGenerationTaskWidget::ProgressCallback::operator()(double progress) -> void {
     std::scoped_lock<std::mutex> const lock { Mutex };
 
     ProgressBar.setValue(static_cast<int>(progress * 1000.0));
 }
 
-auto DataGenerationWidget::DataGenerationWidgetRow::AddToLayout(QGridLayout& gLayout) const noexcept -> void {
-    int const currentRowCount = gLayout.rowCount();
-    int const row = currentRowCount + 1;
-
-    gLayout.addWidget(Name, row, 0);
-    gLayout.addWidget(ProgressBar, row, 1);
-    gLayout.addWidget(GenerateButton, row, 2);
-    gLayout.addWidget(StatusWidget, row, 3);
-}
-
-auto DataGenerationWidget::DataGenerationWidgetRow::Generate() -> void {
+auto DataGenerationTaskWidget::Generate() -> void {
     ParentWidget.DisableButtons();
 
     Generator(ProgressCallback { *ProgressBar, Mutex });
@@ -153,14 +283,17 @@ auto DataGenerationWidget::DataGenerationWidgetRow::Generate() -> void {
     ParentWidget.UpdateRowStatuses();
 }
 
-auto DataGenerationWidget::DataGenerationWidgetRow::SetButtonEnabled(bool enabled) const -> void {
+auto DataGenerationTaskWidget::SetButtonEnabled(bool enabled) const -> void {
     GenerateButton->setEnabled(enabled);
 }
 
-auto DataGenerationWidget::DataGenerationWidgetRow::UpdateStatus(Status status) const -> void {
-    GenerateButton->setEnabled(status != Status::UP_TO_DATE);
-
+auto DataGenerationTaskWidget::UpdateStatus(Status status, Status previousStepStatus) const -> void {
+    bool const previousIsGenerated = previousStepStatus != Status::NOT_GENERATED;
+    GenerateButton->setEnabled(status != Status::UP_TO_DATE && previousIsGenerated);
     GenerateButton->setText(status == Status::OUT_OF_DATE ? "Update" : "Generate");
+
+    ImportButton->setEnabled(status != Status::UP_TO_DATE && previousIsGenerated);
+    ExportButton->setEnabled(status != Status::NOT_GENERATED);
 
     StatusWidget->UpdateStatus(status);
 }
@@ -170,6 +303,8 @@ DataGenerationStatusWidget::DataGenerationStatusWidget() :
         TextLabel([]() {
             auto* label = new QLabel("");
             label->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
+            static int const minWidth = (new QLabel("Not generated"))->sizeHint().width() + 10;
+            label->setMinimumWidth(minWidth);
             return label;
         }()) {
 

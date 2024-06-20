@@ -12,6 +12,7 @@
 #include <pybind11/stl.h>
 
 #include <ranges>
+#include <regex>
 
 
 PipelineGroupList::PipelineGroupList(const PipelineList& pipelines) :
@@ -222,6 +223,84 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
     return PipelineBatchListData { featureNames,
                                    stateDataLists,
                                    { imageMTime, featureMTime, pcaMTime, tsneMTime, totalMTime }};
+}
+
+auto PipelineGroupList::ExportGeneratedImages(std::filesystem::path const& exportDir,
+                                              PipelineGroupList::ProgressEventCallback const& callback) -> void {
+    std::vector<double> progressList (PipelineGroups.size(), 0.0);
+    callback(0.0);
+
+    for (int i = 0; i < PipelineGroups.size(); i++)
+        PipelineGroups[i]->ExportGeneratedImages(exportDir, ProgressUpdater { i, progressList, callback });
+}
+
+auto PipelineGroupList::ImportImages(std::vector<std::filesystem::path> const& importFilePaths,
+                                     PipelineGroupList::ProgressEventCallback const& callback) -> void {
+    std::vector<double> progressList (PipelineGroups.size(), 0.0);
+    callback(0.0);
+
+    for (int i = 0; i < PipelineGroups.size(); i++) {
+        std::vector<std::filesystem::path> paths;
+        std::copy_if(importFilePaths.cbegin(), importFilePaths.cend(), std::back_inserter(paths),
+                     [i](std::filesystem::path const& path) {
+            std::regex const regex { std::format(".*(Volume|Mask)-{}-\\d+\\.vtk$", i) };
+
+            return std::regex_match(path.string(), regex);
+        });
+
+        PipelineGroups[i]->ImportImages(paths, ProgressUpdater { i, progressList, callback });
+    }
+}
+
+auto PipelineGroupList::ExportFeatures(std::filesystem::path const& exportDir,
+                                       PipelineGroupList::ProgressEventCallback const& callback) -> void {
+    if (!is_directory(exportDir))
+        throw std::runtime_error("Given export path is not a directory.");
+
+    if (GetDataStatus().Feature <= 0)
+        throw std::runtime_error("cannot export features. they have not been generated yet");
+
+    int const numberOfGroups = PipelineGroups.size();
+    int const groupIdx = 1;
+    callback(0.1);
+
+    for (auto const& dirEntry : std::filesystem::directory_iterator(PipelineBatch::ExportPathPair::FeatureDirectory)) {
+        if (!dirEntry.is_regular_file())
+            continue;
+
+        auto const& filePath = dirEntry.path();
+        auto const extension = filePath.extension().string();
+        if (extension != ".json" && extension != ".csv")
+            continue;
+
+        auto const filename = filePath.filename();
+        auto const exportPath = std::filesystem::path(exportDir) /= filename;
+
+        std::filesystem::copy(filePath, exportPath, std::filesystem::copy_options::overwrite_existing);
+
+        double const progress = static_cast<double>(groupIdx) / static_cast<double>(numberOfGroups);
+        callback(progress);
+    }
+}
+
+auto PipelineGroupList::ImportFeatures(std::vector<std::filesystem::path> const& importFilePaths,
+                                       PipelineGroupList::ProgressEventCallback const& callback) -> void {
+    std::vector<double> progressList (PipelineGroups.size(), 0.0);
+    callback(0.0);
+
+    for (int i = 0; i < PipelineGroups.size(); i++) {
+        auto it = std::find_if(importFilePaths.cbegin(), importFilePaths.cend(),
+                     [i](std::filesystem::path const& path) {
+                         std::regex const regex { std::format(".*results-{}\\.json$", i) };
+
+                         return std::regex_match(path.string(), regex);
+                     });
+
+        if (it == importFilePaths.cend())
+            throw std::runtime_error("feature path not found");
+
+        PipelineGroups[i]->ImportFeatures(*it, ProgressUpdater { i, progressList, callback });
+    }
 }
 
 auto PipelineGroupList::ProgressUpdater::operator()(double current) noexcept -> void {
