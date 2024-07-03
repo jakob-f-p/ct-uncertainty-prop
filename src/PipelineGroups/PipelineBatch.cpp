@@ -15,6 +15,7 @@
 
 #include <vtkImageAlgorithm.h>
 #include <vtkImageData.h>
+#include <vtkStructuredPoints.h>
 #include <vtkStructuredPointsReader.h>
 
 #include <nlohmann/json.hpp>
@@ -274,9 +275,11 @@ auto PipelineBatch::ImportImages(std::vector<std::filesystem::path> const& impor
     size_t const numberOfImages = States.size();
     std::atomic<double> latestProgress = -1.0;
 
-    std::thread imageImportThread ([&importPaths, &numberOfImportedImages, numberOfImages, &latestProgress] {
-        std::for_each(std::execution::par_unseq,
-                      importPaths.begin(), importPaths.end(),
+    std::vector<vtkSmartPointer<vtkImageData>> images { States.size(), nullptr };
+    std::thread imageImportThread ([&importPaths, &images, &numberOfImportedImages, numberOfImages, &latestProgress] {
+        std::transform(std::execution::par_unseq,
+                      importPaths.cbegin(), importPaths.cend(),
+                      images.begin(),
                       [&numberOfImportedImages, &latestProgress, numberOfImages](ExportPathPair const& pathPair) {
            auto const volumeImportPath = pathPair.Radiodensities;
            auto const volumeInMemoryPath
@@ -293,9 +296,12 @@ auto PipelineBatch::ImportImages(std::vector<std::filesystem::path> const& impor
 
            reader->SetFileName(volumeInMemoryPath.string().c_str());
            reader->Update();
-           reader->GetOutput();
+           vtkNew<vtkImageData> output;
+           output->DeepCopy(reader->GetOutput());
 
            latestProgress = static_cast<double>(numberOfImportedImages++ + 1) / static_cast<double>(numberOfImages);
+
+           return output;
       });
     });
 
@@ -308,6 +314,15 @@ auto PipelineBatch::ImportImages(std::vector<std::filesystem::path> const& impor
     }
 
     imageImportThread.join();
+
+    std::vector<PipelineImageData> imageData {};
+    imageData.reserve(States.size());
+    for (int i = 0; i < images.size(); i++) {
+        auto const& state = States.at(i);
+        auto& image = images.at(i);
+        imageData.emplace_back(*state, std::move(image));
+    }
+    Images.Emplace(std::move(imageData));
 }
 
 auto PipelineBatch::ImportFeatures(std::filesystem::path const& importFilePath,
