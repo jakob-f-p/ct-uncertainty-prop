@@ -26,7 +26,7 @@ class FeatureDataset:
     sample_ids: List[SampleId]
     dimensions: tuple[int, int]
 
-    def __init__(self, feature_data_list: List[FeatureData]):
+    def __init__(self, feature_data_list: List[FeatureData], scale: bool = True):
         if (len(feature_data_list) == 0 or len(feature_data_list[0].values) == 0
                 or len(feature_data_list[0].values[0]) == 0):
             raise ValueError("Feature data list is empty")
@@ -47,7 +47,7 @@ class FeatureDataset:
         self.dimensions = (len(self.sample_ids), len(self.feature_names))
         self.original_data = np.array(sample_values)
 
-        scaler = preprocessing.StandardScaler()
+        scaler = preprocessing.StandardScaler(with_std=scale)
         self.data = scaler.fit_transform(self.original_data)
 
     def __repr__(self) -> str:

@@ -36,8 +36,13 @@ public:
 
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties {
-        // TODO
-        return {};
+        PipelineParameterProperties properties;
+        properties.Add(FloatObjectProperty("z-Axis Sampling Rate",
+                                           [this] { return SamplingRate; },
+                                           [this](float samplingRate) { this->SetRelativeZAxisSamplingRate(samplingRate);
+                                               this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ 0.01, 1.0 }));
+        return properties;
     }
 
 private:

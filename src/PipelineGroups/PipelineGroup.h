@@ -13,6 +13,7 @@ class PipelineParameterSpace;
 class PipelineParameterSpan;
 class PipelineParameterSpaceState;
 
+struct ParameterSpaceStateData;
 struct PipelineImageData;
 
 

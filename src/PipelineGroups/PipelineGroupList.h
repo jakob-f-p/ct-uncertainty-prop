@@ -2,11 +2,15 @@
 
 #include "PipelineGroup.h"
 
+#include <QList>
+#include <QPointF>
+
 #include <vtkSmartPointer.h>
 
 #include <functional>
 #include <vector>
 
+class PipelineGroupList;
 class PipelineList;
 class PipelineParameterSpaceState;
 
@@ -16,9 +20,9 @@ class vtkImageData;
 struct ParameterSpaceStateData {
     PipelineParameterSpaceState const& State;
     vtkSmartPointer<vtkImageData> ImageData;
-    std::vector<double> const& FeatureValues;
-    std::vector<double> const& PcaCoordinates;
-    std::vector<double> const& TsneCoordinates;
+    std::vector<double> FeatureValues;
+    std::vector<double> PcaCoordinates;
+    std::vector<double> TsneCoordinates;
 };
 
 struct PipelineBatchData {
@@ -36,6 +40,51 @@ struct PipelineBatchListData {
     GetBatchData(uint16_t groupId) const -> PipelineBatchData const& { return Data.at(groupId); };
 
     [[nodiscard]] auto
+    TrimTo(uint16_t groupId) const -> PipelineBatchListData {
+        PipelineBatchListData batchListData { *this };
+
+        for (int i = 0; i < batchListData.Data.size(); i++) {
+            auto& batchData = batchListData.Data.at(i);
+
+            if (i != groupId)
+                batchData.StateDataList.clear();
+        }
+
+        return batchListData;
+    };
+
+    enum struct AnalysisType : uint8_t { PCA, TSNE };
+
+    [[nodiscard]] auto
+    TrimTo(QList<QPointF> const& pointsToKeep, AnalysisType analysisType) const -> PipelineBatchListData {
+        PipelineBatchListData batchListData { GroupList, FeatureNames, {}, Time };
+
+        for (auto const& batchData : Data) {
+            PipelineBatchData trimmedBatchData { batchData.Group, {} };
+
+            std::copy_if(batchData.StateDataList.begin(), batchData.StateDataList.end(),
+                         std::back_inserter(trimmedBatchData.StateDataList),
+                         [&pointsToKeep, analysisType](ParameterSpaceStateData const& spaceStateData) {
+                QPointF const point = [analysisType, &spaceStateData]() {
+                    switch (analysisType) {
+                        case AnalysisType::PCA:  return QPointF { spaceStateData.PcaCoordinates.at(0),
+                                                                  spaceStateData.PcaCoordinates.at(1) };
+                        case AnalysisType::TSNE: return QPointF { spaceStateData.TsneCoordinates.at(0),
+                                                                  spaceStateData.TsneCoordinates.at(1) };
+                        default: throw std::runtime_error("invalid analysis type");
+                    }
+                }();
+
+                return pointsToKeep.contains(point);
+            });
+
+            batchListData.Data.emplace_back(trimmedBatchData);
+        }
+
+        return batchListData;
+    };
+
+    [[nodiscard]] auto
     GetSpaceStateData(SampleId const& sampleId) -> ParameterSpaceStateData& {
         return Data.at(sampleId.GroupIdx).StateDataList.at(sampleId.StateIdx);
     };
@@ -45,12 +94,17 @@ struct PipelineBatchListData {
         return Data.at(sampleId.GroupIdx).StateDataList.at(sampleId.StateIdx);
     };
 
+    PipelineGroupList const& GroupList;
     std::vector<std::string> const& FeatureNames;
     StateDataLists Data;
     struct MTimes {
         vtkMTimeType Image, Feature, Pca, Tsne;
         vtkMTimeType Total;
-    } Time;
+
+        [[nodiscard]] auto
+        operator==(MTimes const& other) const noexcept -> bool = default;
+    };
+    MTimes Time;
 };
 
 
@@ -85,6 +139,10 @@ public:
 
     auto
     DoPCAs(uint8_t numberOfDimensions, ProgressEventCallback const& callback = [](double) {}) -> void;
+
+    [[nodiscard]] auto
+    DoPCAForSubset(PipelineBatchListData const& subsetData,
+                   ProgressEventCallback const& callback = [](double) {}) const -> PipelineBatchListData;
 
     auto
     DoTsne(uint8_t numberOfDimensions, ProgressEventCallback const& callback = [](double) {}) -> void;

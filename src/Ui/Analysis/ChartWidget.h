@@ -9,6 +9,7 @@
 
 struct PipelineBatchListData;
 
+class ChartLassoSelectionTool;
 class ChartTooltip;
 class ChartView;
 class PipelineBatchData;
@@ -50,13 +51,18 @@ class PcaChartWidget : public ChartWidget {
 
 public:
     explicit PcaChartWidget();
+    ~PcaChartWidget() override;
 
     auto
     UpdateData(PipelineBatchListData const* batchListData) -> void override;
 
+    auto
+    SelectPcaPoints(QString const& name, QList<QPointF> const& points) -> void;
+
 private:
     PipelineBatchListData const* BatchListData = nullptr;
-    QComboBox* SelectPipelineGroupBox;
+    QComboBox* SelectPointSetComboBox;
+    std::map<QString, std::unique_ptr<PipelineBatchListData>> PcaSelectionMap;
 };
 
 class TsneChartWidget : public ChartWidget {
@@ -64,6 +70,12 @@ class TsneChartWidget : public ChartWidget {
 
 public:
     explicit TsneChartWidget();
+
+Q_SIGNALS:
+    void PcaPointsSelected(QString const& name, QList<QPointF> const& points);
+
+private Q_SLOTS:
+    void OnPointsSelected(QList<QPointF> const& points);
 };
 
 
@@ -98,14 +110,23 @@ protected:
     resizeEvent(QResizeEvent *event) -> void override;
 
     [[nodiscard]] virtual auto
-    CreateScatterSeries() noexcept -> std::vector<QScatterSeries*> = 0;
+    CreateScatterSeries() noexcept -> std::map<uint16_t, QScatterSeries*> = 0;
+
+    [[nodiscard]] auto
+    GetCurrentForegroundBackground() const -> PenBrushPair;
+
+    virtual auto
+    RemoveItemsFromSceneOnUpdateData() -> void;
+
+    virtual auto
+    AddItemsFromSceneOnUpdateData() -> void;
 
 private Q_SLOTS:
     void ToggleTooltip(QPointF const& point, bool entered);
 
 private:
     auto
-    ConnectScatterSeries(std::vector<QScatterSeries*> const& scatterSeriesVector) noexcept -> void;
+    ConnectScatterSeries(std::map<uint16_t, QScatterSeries*> const& indexScatterSeriesMap) noexcept -> void;
 
     [[nodiscard]] static auto
     GetAxisRange(QValueAxis* axis) -> std::pair<double, double>;
@@ -113,17 +134,13 @@ private:
     [[nodiscard]] static auto
     GetAxisTickInterval(QValueAxis* axis) -> double;
 
-    [[nodiscard]] auto
-    GetCurrentForegroundBackground() const -> PenBrushPair;
-
-
 protected:
     PipelineBatchListData const* BatchListData;
+    QChart* Chart;
+    QGraphicsScene* GraphicsScene;
 
 private:
     QString ChartName;
-    QGraphicsScene* GraphicsScene;
-    QChart* Chart;
     ChartTooltip* Tooltip;
     Theme CurrentTheme;
 };
@@ -135,14 +152,14 @@ public:
     explicit PcaChartView();
 
     auto
-    SetBatchData(PipelineBatchData const* batchData) noexcept -> void;
+    SetBatchListData(PipelineBatchListData const& batchListData) noexcept -> void;
 
 protected:
     [[nodiscard]] auto
-    CreateScatterSeries() noexcept -> std::vector<QScatterSeries*> override;
+    CreateScatterSeries() noexcept -> std::map<uint16_t, QScatterSeries*> override;
 
 private:
-    PipelineBatchData const* BatchData = nullptr;
+    PipelineBatchListData const* PcaBatchListData;
 };
 
 
@@ -152,7 +169,20 @@ class TsneChartView : public ChartView {
 public:
     explicit TsneChartView();
 
+Q_SIGNALS:
+    void PointsSelected(QList<QPointF> const& points);
+
 protected:
     [[nodiscard]] auto
-    CreateScatterSeries() noexcept -> std::vector<QScatterSeries*> override;
+    CreateScatterSeries() noexcept -> std::map<uint16_t, QScatterSeries*> override;
+
+    auto
+    RemoveItemsFromSceneOnUpdateData() -> void override;
+
+    auto
+    AddItemsFromSceneOnUpdateData() -> void override;
+
+private:
+    ChartTooltip* Tooltip;
+    ChartLassoSelectionTool* LassoTool;
 };

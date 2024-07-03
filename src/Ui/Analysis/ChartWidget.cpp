@@ -1,6 +1,8 @@
 #include "ChartWidget.h"
 
+#include "ChartLassoSelectionTool.h"
 #include "ChartTooltip.h"
+#include "../Utils/NameLineEdit.h"
 #include "../Utils/WidgetUtils.h"
 #include "../../PipelineGroups/PipelineGroupList.h"
 
@@ -8,6 +10,7 @@
 #include <QButtonGroup>
 #include <QChart>
 #include <QComboBox>
+#include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QFileDialog>
 #include <QFontDatabase>
@@ -17,6 +20,8 @@
 #include <QScatterSeries>
 #include <QStandardPaths>
 #include <QValueAxis>
+
+#include <ranges>
 
 
 ChartWidget::ChartWidget(ChartView* chartView) :
@@ -84,52 +89,106 @@ auto ChartWidget::UpdateData(PipelineBatchListData const* batchListData) -> void
 
 PcaChartWidget::PcaChartWidget() :
         ChartWidget(new PcaChartView()),
-        SelectPipelineGroupBox(new QComboBox()) {
+        SelectPointSetComboBox(new QComboBox()) {
 
     auto* selectGroupWidget = new QWidget();
     auto* selectGroupFLayout = new QFormLayout(selectGroupWidget);
     selectGroupFLayout->setContentsMargins(5, 5, 5, 5);
-    selectGroupFLayout->addRow("Select group", SelectPipelineGroupBox);
+    selectGroupFLayout->addRow("Select set", SelectPointSetComboBox);
 
     VLayout->insertWidget(VLayout->count() - 1, selectGroupWidget);
 }
 
+PcaChartWidget::~PcaChartWidget() = default;
+
 auto PcaChartWidget::UpdateData(PipelineBatchListData const* batchListData) -> void {
     BatchListData = batchListData;
 
-    SelectPipelineGroupBox->clear();
+    SelectPointSetComboBox->clear();
+    SelectPointSetComboBox->disconnect();
+    PcaSelectionMap.clear();
 
     if (BatchListData) {
-        for (auto const& data : batchListData->Data)
-            SelectPipelineGroupBox->addItem(QString::fromStdString(data.Group.GetName()));
+        for (int i = 0; i < batchListData->Data.size(); i++) {
+            auto const& data = batchListData->Data[i];
 
-        connect(SelectPipelineGroupBox, &QComboBox::currentIndexChanged, this, [this, batchListData](int idx) {
-            if (idx == -1)
+            QString const groupName = QString::fromStdString(data.Group.GetName());
+
+            SelectPointSetComboBox->addItem(groupName);
+            PcaSelectionMap.emplace(groupName, std::make_unique<PipelineBatchListData>(batchListData->TrimTo(i)));
+        }
+
+        connect(SelectPointSetComboBox, &QComboBox::currentTextChanged,
+                this, [this](QString const& text) {
+            if (text.isEmpty())
                 return;
 
-            dynamic_cast<PcaChartView*>(View)->SetBatchData(&BatchListData->Data.at(idx));
-            ChartWidget::UpdateData(batchListData);
+            dynamic_cast<PcaChartView*>(View)->SetBatchListData(*PcaSelectionMap.at(text));
+            ChartWidget::UpdateData(BatchListData);
         });
 
-        SelectPipelineGroupBox->setCurrentIndex(-1);
-        SelectPipelineGroupBox->setCurrentIndex(0);
+        SelectPointSetComboBox->setCurrentIndex(-1);
+        SelectPointSetComboBox->setCurrentIndex(0);
     }
 
     ChartWidget::UpdateData(batchListData);
 }
 
+auto PcaChartWidget::SelectPcaPoints(QString const& name, QList<QPointF> const& points) -> void {
+    auto&& data = BatchListData->TrimTo(points, PipelineBatchListData::AnalysisType::TSNE);
+    PipelineGroupList const& groupList = data.GroupList;
+    auto&& trimmedData = groupList.DoPCAForSubset(data);
+
+    PcaSelectionMap.emplace(name, std::make_unique<PipelineBatchListData>(trimmedData));
+
+    if (SelectPointSetComboBox->findText(name) == -1)
+        SelectPointSetComboBox->addItem(name);
+
+    SelectPointSetComboBox->setCurrentText(name);
+}
+
 TsneChartWidget::TsneChartWidget() :
-        ChartWidget(new TsneChartView()){}
+        ChartWidget(new TsneChartView()) {
 
+    connect(dynamic_cast<TsneChartView*>(View), &TsneChartView::PointsSelected,
+            this, &TsneChartWidget::OnPointsSelected);
+}
 
+void TsneChartWidget::OnPointsSelected(QList<QPointF> const& points) {
+    auto* dialog = new QDialog();
+    dialog->setWindowTitle("Selection for PCA");
+    auto* fLayout = new QFormLayout(dialog);
+    fLayout->setAlignment(Qt::AlignTop);
+
+    auto* nameEdit = new NameLineEdit();
+    fLayout->addRow("Set name", nameEdit);
+
+    fLayout->addItem(new QSpacerItem(1, 1, QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Expanding));
+
+    auto* dialogButtonBar = new QDialogButtonBox();
+    dialogButtonBar->setOrientation(Qt::Horizontal);
+    dialogButtonBar->setStandardButtons(QDialogButtonBox::Cancel | QDialogButtonBox::Ok);
+    connect(dialogButtonBar, &QDialogButtonBox::accepted, dialog, &QDialog::accept);
+    connect(dialogButtonBar, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
+    fLayout->addRow(dialogButtonBar);
+
+    connect(dialog, &QDialog::accepted, this, [this, dialog, &points]() {
+        QString const name = dialog->findChild<NameLineEdit*>()->GetText();
+
+        if (!name.isEmpty())
+            Q_EMIT PcaPointsSelected(name, points);
+    });
+
+    dialog->exec();
+}
 
 
 ChartView::ChartView(QString const& chartName) :
         QGraphicsView(new QGraphicsScene()),
-        ChartName(chartName),
         BatchListData(nullptr),
-        GraphicsScene(scene()),
         Chart(nullptr),
+        GraphicsScene(scene()),
+        ChartName(chartName),
         Tooltip(nullptr),
         CurrentTheme(Theme::DARK) {
 
@@ -152,40 +211,47 @@ auto ChartView::UpdateData(PipelineBatchListData const* batchListData) -> void {
     if (!BatchListData)
         return;
 
-    auto const scatterSeriesVector = CreateScatterSeries();
-    ConnectScatterSeries(scatterSeriesVector);
+    auto const indexScatterSeriesMap = CreateScatterSeries();
+    ConnectScatterSeries(indexScatterSeriesMap);
 
     auto* chart = new QChart();
     chart->setTitle(ChartName);
-    for (auto* scatterSeries : scatterSeriesVector)
+    for (auto* scatterSeries : std::views::values(indexScatterSeriesMap))
         chart->addSeries(scatterSeries);
     chart->createDefaultAxes();
     chart->legend()->setAlignment(Qt::AlignBottom);
 
-    auto* xAxis = qobject_cast<QValueAxis*>(chart->axes(Qt::Horizontal).first());
-    auto* yAxis = qobject_cast<QValueAxis*>(chart->axes(Qt::Vertical).first());
-    xAxis->setTruncateLabels(false);
-    yAxis->setTruncateLabels(false);
-    auto [ xMin, xMax ] = GetAxisRange(xAxis);
-    auto [ yMin, yMax ] = GetAxisRange(yAxis);
-    xAxis->setRange(xMin, xMax);
-    yAxis->setRange(yMin, yMax);
-    xAxis->setTickType(QValueAxis::TickType::TicksDynamic);
-    yAxis->setTickType(QValueAxis::TickType::TicksDynamic);
-    xAxis->setTickInterval(GetAxisTickInterval(xAxis));
-    yAxis->setTickInterval(GetAxisTickInterval(yAxis));
+    if (!chart->series().isEmpty()) {
+        auto* xAxis = qobject_cast<QValueAxis*>(chart->axes(Qt::Horizontal).first());
+        auto* yAxis = qobject_cast<QValueAxis*>(chart->axes(Qt::Vertical).first());
+        xAxis->setTruncateLabels(false);
+        yAxis->setTruncateLabels(false);
+        auto [xMin, xMax] = GetAxisRange(xAxis);
+        auto [yMin, yMax] = GetAxisRange(yAxis);
+        xAxis->setRange(xMin, xMax);
+        yAxis->setRange(yMin, yMax);
+        xAxis->setTickType(QValueAxis::TickType::TicksDynamic);
+        yAxis->setTickType(QValueAxis::TickType::TicksDynamic);
+        xAxis->setTickInterval(GetAxisTickInterval(xAxis));
+        yAxis->setTickInterval(GetAxisTickInterval(yAxis));
+    }
 
     if (Chart) {
-        GraphicsScene->removeItem(Chart);
+        RemoveItemsFromSceneOnUpdateData();
         delete Chart;
     }
     Chart = chart;
 
     GraphicsScene->addItem(Chart);
     UpdateTheme(Theme::DARK);
+    AddItemsFromSceneOnUpdateData();
 
     Chart->resize(size());
 }
+
+auto ChartView::RemoveItemsFromSceneOnUpdateData() -> void {}
+
+auto ChartView::AddItemsFromSceneOnUpdateData() -> void {}
 
 auto ChartView::ExportChart() -> void {
     if (!Chart)
@@ -246,6 +312,22 @@ auto ChartView::resizeEvent(QResizeEvent* event) -> void {
         Chart->resize(event->size());
 }
 
+auto ChartView::GetCurrentForegroundBackground() const -> PenBrushPair {
+    if (!Chart)
+        throw std::runtime_error("Chart must not be null");
+
+    auto penColor = QPen(Chart->axes(Qt::Orientation::Horizontal).at(0)->labelsColor());
+    auto brushColor = [this]() {
+        switch (CurrentTheme) {
+            case Theme::LIGHT: return Chart->backgroundBrush();
+            case Theme::DARK:  return QBrush(palette().color(QPalette::ColorRole::Window));
+            default: throw std::runtime_error("Invalid theme");
+        }
+    }();
+
+    return { penColor, brushColor };
+}
+
 void ChartView::ToggleTooltip(QPointF const& point, bool entered) {
     if (!entered) {
         assert(Tooltip != nullptr);
@@ -292,30 +374,16 @@ auto ChartView::GetAxisTickInterval(QValueAxis* axis) -> double {
     return roundedInterval;
 }
 
-auto ChartView::GetCurrentForegroundBackground() const -> PenBrushPair {
-    if (!Chart)
-        throw std::runtime_error("Chart must not be null");
+auto ChartView::ConnectScatterSeries(std::map<uint16_t, QScatterSeries*> const& indexScatterSeriesMap) noexcept
+        -> void {
 
-    auto penColor = QPen(Chart->axes(Qt::Orientation::Horizontal).at(0)->labelsColor());
-    auto brushColor = [this]() {
-        switch (CurrentTheme) {
-            case Theme::LIGHT: return Chart->backgroundBrush();
-            case Theme::DARK:  return QBrush(palette().color(QPalette::ColorRole::Window));
-            default: throw std::runtime_error("Invalid theme");
-        }
-    }();
-
-    return { penColor, brushColor };
-}
-
-auto ChartView::ConnectScatterSeries(std::vector<QScatterSeries*> const& scatterSeriesVector) noexcept -> void {
-    for (int i = 0; i < scatterSeriesVector.size(); i++) {
-        auto* scatterSeries = scatterSeriesVector[i];
+    for (auto const& pair : indexScatterSeriesMap) {
+        auto* scatterSeries = pair.second;
 
         connect(scatterSeries, &QScatterSeries::hovered, this, &ChartView::ToggleTooltip);
 
         connect(scatterSeries, &QScatterSeries::clicked, this,
-                [this, scatterSeries, i, scatterSeriesVector](QPointF const& point) {
+                [this, scatterSeries, groupIdx = pair.first, indexScatterSeriesMap](QPointF const& point) {
 
             auto points = scatterSeries->points();
             auto it = std::find(points.cbegin(), points.cend(), point);
@@ -324,50 +392,66 @@ auto ChartView::ConnectScatterSeries(std::vector<QScatterSeries*> const& scatter
 
             auto idx = static_cast<uint16_t>(std::distance(points.cbegin(), it));
 
-            for (auto* series : scatterSeriesVector)
+            for (auto* series : std::views::values(indexScatterSeriesMap))
                 series->deselectAllPoints();
             scatterSeries->selectPoint(idx);
 
-            Q_EMIT SamplePointChanged(SampleId { static_cast<uint16_t>(i), idx });
+            Q_EMIT SamplePointChanged(SampleId { static_cast<uint16_t>(groupIdx), idx });
         });
     }
 }
 
 
-PcaChartView::PcaChartView()
-        : ChartView("PCA") {}
+PcaChartView::PcaChartView() :
+        ChartView("PCA"),
+        PcaBatchListData(nullptr) {}
 
-auto PcaChartView::SetBatchData(PipelineBatchData const* batchData) noexcept -> void {
-    BatchData = batchData;
+auto PcaChartView::SetBatchListData(PipelineBatchListData const& batchListData) noexcept -> void {
+    PcaBatchListData = &batchListData;
 }
 
-auto PcaChartView::CreateScatterSeries() noexcept -> std::vector<QScatterSeries*> {
-    auto* scatterSeries = new QScatterSeries();
-    scatterSeries->setName(QString::fromStdString(BatchData->Group.GetName()));
-    scatterSeries->setMarkerSize(scatterSeries->markerSize() * 0.5);
+auto PcaChartView::CreateScatterSeries() noexcept -> std::map<uint16_t, QScatterSeries*> {
+    std::map<uint16_t, QScatterSeries*> indexScatterSeriesMap;
 
-    QList<QPointF> points;
-    std::transform(BatchData->StateDataList.cbegin(), BatchData->StateDataList.cend(),
-                   std::back_inserter(points),
-                   [](auto const& psData) {
-                       return QPointF(psData.PcaCoordinates.at(0), psData.PcaCoordinates.at(1));
-                   });
-    scatterSeries->append(points);
+    for (int i = 0; i < PcaBatchListData->Data.size(); i++) {
+        auto const& batchData = PcaBatchListData->Data.at(i);
+        if (batchData.StateDataList.empty())
+            continue;
 
-    return { scatterSeries };
-}
-
-TsneChartView::TsneChartView()
-        : ChartView("t-SNE") {}
-
-auto TsneChartView::CreateScatterSeries() noexcept -> std::vector<QScatterSeries*> {
-    std::vector<QScatterSeries*> scatterSeriesVector;
-    scatterSeriesVector.reserve(BatchListData->Data.size());
-
-    for (auto const& batchData : BatchListData->Data) {
         auto* scatterSeries = new QScatterSeries();
         scatterSeries->setName(QString::fromStdString(batchData.Group.GetName()));
-        scatterSeries->setMarkerSize(scatterSeries->markerSize() * 0.75);
+        scatterSeries->setMarkerSize(scatterSeries->markerSize() * 0.5);
+
+        QList<QPointF> points;
+        std::transform(batchData.StateDataList.cbegin(), batchData.StateDataList.cend(),
+                       std::back_inserter(points),
+                       [](auto const& psData) {
+                           return QPointF(psData.PcaCoordinates.at(0), psData.PcaCoordinates.at(1));
+                       });
+        scatterSeries->append(points);
+
+        indexScatterSeriesMap.emplace(i, scatterSeries);
+    }
+
+    return indexScatterSeriesMap;
+}
+
+TsneChartView::TsneChartView() :
+        ChartView("t-SNE"),
+        Tooltip(nullptr),
+        LassoTool(nullptr) {}
+
+auto TsneChartView::CreateScatterSeries() noexcept -> std::map<uint16_t, QScatterSeries*> {
+    std::map<uint16_t, QScatterSeries*> indexScatterSeriesMap;
+
+    for (int i = 0; i < BatchListData->Data.size(); i++) {
+        auto const& batchData = BatchListData->Data.at(i);
+        if (batchData.StateDataList.empty())
+            continue;
+
+        auto* scatterSeries = new QScatterSeries();
+        scatterSeries->setName(QString::fromStdString(batchData.Group.GetName()));
+        scatterSeries->setMarkerSize(scatterSeries->markerSize() * 0.5);
 
         QList<QPointF> points;
         std::transform(batchData.StateDataList.cbegin(), batchData.StateDataList.cend(),
@@ -377,8 +461,20 @@ auto TsneChartView::CreateScatterSeries() noexcept -> std::vector<QScatterSeries
                        });
         scatterSeries->append(points);
 
-        scatterSeriesVector.push_back(scatterSeries);
+        indexScatterSeriesMap.emplace(i, scatterSeries);
     }
 
-    return scatterSeriesVector;
+    return indexScatterSeriesMap;
+}
+
+void TsneChartView::RemoveItemsFromSceneOnUpdateData() {
+    delete LassoTool;
+    LassoTool = nullptr;
+}
+
+void TsneChartView::AddItemsFromSceneOnUpdateData() {
+    LassoTool = new ChartLassoSelectionTool(*Chart, GetCurrentForegroundBackground());
+    GraphicsScene->addItem(LassoTool);
+
+    connect(LassoTool, &ChartLassoSelectionTool::PointsSelected, this, &TsneChartView::PointsSelected);
 }

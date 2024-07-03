@@ -18,10 +18,12 @@
 
 AnalysisMainWidget::AnalysisMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource,
                                        ChartWidget* chartWidget, AnalysisDataWidget* dataWidget) :
-        GroupList(pipelineGroups),
-        BatchData(std::make_unique<std::optional<PipelineBatchListData>>(pipelineGroups.GetBatchData())),
-        ChartWidget_(new OptionalWidget<ChartWidget>("Please generate the data first", chartWidget)),
         RenderWidget(new ParameterSpaceStateRenderWidget(dataSource)),
+        GroupList(pipelineGroups),
+        BatchData(pipelineGroups.GetBatchData()
+                      ? std::make_unique<PipelineBatchListData>(*pipelineGroups.GetBatchData())
+                      : nullptr),
+        ChartWidget_(new OptionalWidget<ChartWidget>("Please generate the data first", chartWidget)),
         DataWidget(new OptionalWidget<AnalysisDataWidget>("Please select a sample point", dataWidget)) {
 
     auto* dockWidget = new QDockWidget();
@@ -54,18 +56,32 @@ AnalysisMainWidget::AnalysisMainWidget(PipelineGroupList const& pipelineGroups, 
     UpdateData();
 }
 
+AnalysisMainWidget::~AnalysisMainWidget() = default;
+
 PcaMainWidget::PcaMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource) :
         AnalysisMainWidget(pipelineGroups, dataSource, new PcaChartWidget(), new PcaDataWidget()) {}
 
+PcaMainWidget::~PcaMainWidget() = default;
+
+void PcaMainWidget::SelectPcaPoints(QString const& pointSetName, QList<QPointF> const& points) {
+    dynamic_cast<PcaChartWidget&>(ChartWidget_->Widget()).SelectPcaPoints(pointSetName, points);
+}
+
 TsneMainWidget::TsneMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource) :
-        AnalysisMainWidget(pipelineGroups, dataSource, new TsneChartWidget(), new TsneDataWidget()) {}
+        AnalysisMainWidget(pipelineGroups, dataSource, new TsneChartWidget(), new TsneDataWidget()) {
+
+    connect(&dynamic_cast<TsneChartWidget&>(ChartWidget_->Widget()), &TsneChartWidget::PcaPointsSelected,
+            this, &TsneMainWidget::PcaPointsSelected);
+}
+
+TsneMainWidget::~TsneMainWidget() = default;
 
 auto AnalysisMainWidget::UpdateData() -> void {
-    BatchData = std::make_unique<std::optional<PipelineBatchListData>>(GroupList.GetBatchData());
+    BatchData = GroupList.GetBatchData()
+                      ? std::make_unique<PipelineBatchListData>(*GroupList.GetBatchData())
+                      : nullptr;
 
-    PipelineBatchListData const* data = *BatchData
-            ? &**BatchData
-            : nullptr;
+    PipelineBatchListData const* data = BatchData.get();
     RenderWidget->UpdateData(data);
     ChartWidget_->Widget().UpdateData(data);
     DataWidget->Widget().UpdateData(data);

@@ -127,5 +127,5 @@ auto ChartTooltip::AdjustPosition() noexcept -> void {
 
     auto newRect = mapRectToParent(boundingRect());
     if (!parentRect.contains(newRect))
-        qWarning("Tooltip to0 large for chart");
+        qWarning("Tooltip too large for chart");
 }

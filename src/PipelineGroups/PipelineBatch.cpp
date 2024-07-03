@@ -2,6 +2,7 @@
 
 #include "ImageScalarsWriter.h"
 #include "PipelineGroup.h"
+#include "PipelineGroupList.h"
 #include "PipelineParameterSpace.h"
 #include "PipelineParameterSpaceState.h"
 #include "../Utils/PythonInterpreter.h"
@@ -14,6 +15,7 @@
 
 #include <vtkImageAlgorithm.h>
 #include <vtkImageData.h>
+#include <vtkStructuredPointsReader.h>
 
 #include <nlohmann/json.hpp>
 
@@ -221,7 +223,8 @@ auto PipelineBatch::ExportGeneratedImages(std::filesystem::path const& exportDir
     std::thread imageExportThread ([this, &exportDir, &numberOfExportedImages, numberOfImages, &latestProgress] {
         std::for_each(std::execution::par_unseq,
                       ExportedImages->begin(), ExportedImages->end(),
-                      [&exportDir, &numberOfExportedImages, &latestProgress, numberOfImages](const ExportPathPair& pathPair) {
+                      [&exportDir, &numberOfExportedImages, &latestProgress, numberOfImages]
+                      (ExportPathPair const& pathPair) {
             auto const volumeInMemoryPath = pathPair.Radiodensities;
             auto const volumeExportPath = std::filesystem::path(exportDir) /= volumeInMemoryPath.filename();
 
@@ -274,7 +277,7 @@ auto PipelineBatch::ImportImages(std::vector<std::filesystem::path> const& impor
     std::thread imageImportThread ([&importPaths, &numberOfImportedImages, numberOfImages, &latestProgress] {
         std::for_each(std::execution::par_unseq,
                       importPaths.begin(), importPaths.end(),
-                      [&numberOfImportedImages, &latestProgress, numberOfImages](const ExportPathPair& pathPair) {
+                      [&numberOfImportedImages, &latestProgress, numberOfImages](ExportPathPair const& pathPair) {
            auto const volumeImportPath = pathPair.Radiodensities;
            auto const volumeInMemoryPath
                  = std::filesystem::path(ExportPathPair::InputDirectory) /= volumeImportPath.filename();
@@ -285,6 +288,12 @@ auto PipelineBatch::ImportImages(std::vector<std::filesystem::path> const& impor
 
            std::filesystem::copy(volumeImportPath, volumeInMemoryPath, std::filesystem::copy_options::overwrite_existing);
            std::filesystem::copy(maskImportPath, maskInMemoryPath, std::filesystem::copy_options::overwrite_existing);
+
+           vtkNew<vtkStructuredPointsReader> reader;
+
+           reader->SetFileName(volumeInMemoryPath.string().c_str());
+           reader->Update();
+           reader->GetOutput();
 
            latestProgress = static_cast<double>(numberOfImportedImages++ + 1) / static_cast<double>(numberOfImages);
       });

@@ -51,7 +51,8 @@ public:
         PipelineParameterProperties properties;
         properties.Add(FloatObjectProperty("Dark Intensity",
                                            [this] { return GetDarkIntensity(); },
-                                           [this](float intensity) { this->SetDarkIntensity(intensity); },
+                                           [this](float intensity) { this->SetDarkIntensity(intensity);
+                                                    this->UpdateFilterParameters(); },
                                            FloatObjectProperty::PropertyRange{ -1000.0, 0.0 }));
         properties.Add(FloatPointObjectProperty("Center",
                                                 [this] { return GetCenter(); },

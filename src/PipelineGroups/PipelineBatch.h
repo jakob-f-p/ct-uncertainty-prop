@@ -16,6 +16,8 @@ class PipelineParameterSpaceState;
 
 class vtkImageData;
 
+struct ParameterSpaceStateData;
+
 
 struct PipelineImageData {
     PipelineParameterSpaceState const& State;

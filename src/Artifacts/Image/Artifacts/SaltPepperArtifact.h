@@ -46,8 +46,28 @@ public:
 
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties {
-        // TODO
-        return {};
+        PipelineParameterProperties properties;
+        properties.Add(FloatObjectProperty("Salt Amount",
+                                           [this] { return SaltAmount; },
+                                           [this](float amount) { this->SetSaltAmount(amount);
+                                               this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ 0.0, 1.0 }));
+        properties.Add(FloatObjectProperty("Pepper Amount",
+                                           [this] { return PepperAmount; },
+                                           [this](float amount) { this->SetPepperAmount(amount);
+                                               this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ 0.0, 1.0 }));
+        properties.Add(FloatObjectProperty("Salt Intensity",
+                                           [this] { return SaltIntensityValue; },
+                                           [this](float intensity) { this->SetSaltIntensity(intensity);
+                                               this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ 0.0, 100.0 }));
+        properties.Add(FloatObjectProperty("Pepper Intensity",
+                                           [this] { return PepperIntensityValue; },
+                                           [this](float intensity) { this->SetPepperIntensity(intensity);
+                                               this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ 0.0, 100.0 }));
+        return properties;
     }
 
 private:

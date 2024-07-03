@@ -127,6 +127,48 @@ auto PipelineGroupList::DoPCAs(uint8_t numberOfDimensions, ProgressEventCallback
     callback(1.0);
 }
 
+auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
+                                       ProgressEventCallback const& callback) const -> PipelineBatchListData {
+    PipelineBatchListData batchListData { subsetData };
+
+    callback(0.1);
+
+    FeatureData featureData { subsetData.FeatureNames, {} };
+    for (auto const& batchData : batchListData.Data)
+        for (auto const& stateData : batchData.StateDataList)
+            featureData.Values.push_back(stateData.FeatureValues);
+
+    auto& interpreter = App::GetInstance()->GetPythonInterpreter();
+
+    auto it = std::find_if(subsetData.Data.cbegin(), subsetData.Data.cend(),
+                 [](PipelineBatchData const& batchData) {
+        auto it = std::find_if(batchData.StateDataList.cbegin(), batchData.StateDataList.cend(),
+                               [](auto const& stateData) { return stateData.PcaCoordinates.size() > 0; });
+        return it != batchData.StateDataList.cend();
+    });
+    if (it == subsetData.Data.cend())
+        throw std::runtime_error("illegal number of pca dimensions");
+    uint16_t const numberOfDimensions = it->StateDataList.at(0).PcaCoordinates.size();
+
+    pybind11::object const pcaCoordinateData = interpreter.ExecuteFunction("pca", "calculate",
+                                                                           featureData,
+                                                                           numberOfDimensions);
+
+    auto const pcaData = pcaCoordinateData.cast<SampleCoordinateData>();
+
+    for (int i = 0, k = 0; i < batchListData.Data.size(); i++) {
+        auto& batchData = batchListData.Data.at(i);
+
+        for (int j = 0; j < batchData.StateDataList.size(); j++, k++) {
+            auto& stateData = batchData.StateDataList.at(i);
+
+            stateData.PcaCoordinates = pcaData.at(k);
+        }
+    }
+
+    return batchListData;
+}
+
 auto PipelineGroupList::DoTsne(uint8_t numberOfDimensions, ProgressEventCallback const& callback) -> void {
     callback(0.0);
 
@@ -220,7 +262,8 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
     vtkMTimeType const tsneMTime    = *std::min_element(tsneMTimes.cbegin(), tsneMTimes.cend());
     vtkMTimeType const totalMTime   = std::min({ imageMTime, featureMTime, pcaMTime, tsneMTime });
 
-    return PipelineBatchListData { featureNames,
+    return PipelineBatchListData { *this,
+                                   featureNames,
                                    stateDataLists,
                                    { imageMTime, featureMTime, pcaMTime, tsneMTime, totalMTime }};
 }

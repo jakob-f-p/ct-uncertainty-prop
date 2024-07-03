@@ -28,10 +28,10 @@ public:
     ~WindMillArtifact();
 
     auto
-    SetBrightAngularWidth(float brightAngularWidthWidth) -> void { BrightAngularWidth = brightAngularWidthWidth; }
+    SetBrightAngularWidth(float brightAngularWidth) -> void { BrightAngularWidth = brightAngularWidth; }
 
     auto
-    SetDarkAngularWidth(float darkAngularWidthWidth) -> void { DarkAngularWidth = darkAngularWidthWidth; }
+    SetDarkAngularWidth(float darkAngularWidth) -> void { DarkAngularWidth = darkAngularWidth; }
 
     auto
     SetBrightIntensity(float brightIntensityValue) -> void { BrightIntensityValue = brightIntensityValue; }
@@ -50,8 +50,33 @@ public:
 
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties {
-        // TODO
-        return {};
+        PipelineParameterProperties properties;
+        properties.Add(FloatObjectProperty("Bright Angular Width",
+                                           [this] { return BrightAngularWidth; },
+                                           [this](float width) { this->SetBrightAngularWidth(width);
+                                               this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ 0.0, 360.0 }));
+        properties.Add(FloatObjectProperty("Dark Angular Width",
+                                           [this] { return DarkAngularWidth; },
+                                           [this](float width) { this->SetDarkAngularWidth(width);
+                                               this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ 0.0, 360.0 }));
+        properties.Add(FloatObjectProperty("Bright Intensity",
+                                           [this] { return BrightIntensityValue; },
+                                           [this](float intensity) { this->SetBrightIntensity(intensity);
+                                               this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ 0.0, 1000.0 }));
+        properties.Add(FloatObjectProperty("Dark Intensity",
+                                           [this] { return DarkIntensityValue; },
+                                           [this](float intensity) { this->SetDarkIntensity(intensity);
+                                               this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ -1000.0, 0.0 }));
+        properties.Add(FloatPointObjectProperty("Center",
+                                                [this] { return Center; },
+                                                [this](FloatPoint center) { this->SetCenter(center);
+                                                    this->UpdateFilterParameters(); },
+                                                {}));
+        return properties;
     }
 
 private:

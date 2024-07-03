@@ -50,9 +50,15 @@ protected:
     ~App();
 
 private:
-    auto InitializeWithTestData() -> void;
+    enum struct Config : uint8_t {
+        DEFAULT,
+        SPHERE
+    };
+
+    auto InitializeWithTestData(Config config) -> void;
 
     static App* Self;
+    static const Config InitialConfig;
 
     int Argc;
     char** Argv;

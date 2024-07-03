@@ -44,7 +44,6 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree,
             pipelineGroupsWidget->UpdatePipelineList();
 
         if (idx == tabWidget->indexOf(dataGenerationWidget)) {
-//            segmentationWidget->UpdateDataSource(artifactsWidget->GetCurrentPipeline());
             dataGenerationWidget->UpdateRowStatuses();
         }
 

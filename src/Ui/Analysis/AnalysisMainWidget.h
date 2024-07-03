@@ -7,7 +7,6 @@
 #include <QMainWindow>
 
 #include <memory>
-#include <optional>
 
 class QDoubleSpinBox;
 class QPushButton;
@@ -29,27 +28,42 @@ class AnalysisMainWidget : public QMainWindow {
 public:
     AnalysisMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource,
                        ChartWidget* chartWidget, AnalysisDataWidget* dataWidget);
+    ~AnalysisMainWidget() override;
 
     auto
     UpdateData() -> void;
 
+protected:
+    OptionalWidget<ChartWidget>* ChartWidget_;
+
 private:
     PipelineGroupList const& GroupList;
-    std::unique_ptr<std::optional<PipelineBatchListData>> BatchData;
+    std::unique_ptr<PipelineBatchListData> BatchData;
 
-    OptionalWidget<ChartWidget>* ChartWidget_;
     ParameterSpaceStateRenderWidget* RenderWidget;
     OptionalWidget<AnalysisDataWidget>* DataWidget;
 };
 
 class PcaMainWidget : public AnalysisMainWidget {
+    Q_OBJECT
+
 public:
     PcaMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource);
+    ~PcaMainWidget() override;
+
+public Q_SLOTS:
+    void SelectPcaPoints(QString const& pointSetName, QList<QPointF> const& points);
 };
 
 class TsneMainWidget : public AnalysisMainWidget {
+    Q_OBJECT
+
 public:
     TsneMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource);
+    ~TsneMainWidget() override;
+
+Q_SIGNALS:
+    void PcaPointsSelected(QString const& pointSetName, QList<QPointF> const& points);
 };
 
 

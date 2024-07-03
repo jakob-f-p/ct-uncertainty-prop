@@ -50,8 +50,33 @@ public:
 
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties {
-        // TODO
-        return {};
+        PipelineParameterProperties properties;
+        properties.Add(FloatObjectProperty("Bright Ring Width",
+                                           [this] { return BrightRingWidth; },
+                                           [this](float width) { this->SetBrightRingWidth(width);
+                                                                        this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ 0.0, 100.0 }));
+        properties.Add(FloatObjectProperty("Dark Ring Width",
+                                           [this] { return DarkRingWidth; },
+                                           [this](float width) { this->SetDarkRingWidth(width);
+                                               this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ 0.0, 100.0 }));
+        properties.Add(FloatObjectProperty("Bright Ring Intensity",
+                                           [this] { return BrightIntensityValue; },
+                                           [this](float intensity) { this->SetBrightIntensity(intensity);
+                                               this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ 0.0, 1000.0 }));
+        properties.Add(FloatObjectProperty("Dark Ring Intensity",
+                                           [this] { return DarkIntensityValue; },
+                                           [this](float intensity) { this->SetDarkIntensity(intensity);
+                                               this->UpdateFilterParameters(); },
+                                           FloatObjectProperty::PropertyRange{ -1000.0, 0.0 }));
+        properties.Add(FloatPointObjectProperty("Center",
+                                                [this] { return Center; },
+                                                [this](FloatPoint center) { this->SetCenter(center);
+                                                    this->UpdateFilterParameters(); },
+                                                {}));
+        return properties;
     }
 
 private:
