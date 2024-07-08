@@ -1,5 +1,6 @@
 #include "StructureArtifact.h"
 
+#include "../Types.h"
 #include "../../Ui/Utils/NameLineEdit.h"
 #include "../../Utils/Overload.h"
 

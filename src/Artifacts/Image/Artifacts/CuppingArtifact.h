@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../../Utils/Types.h"
+#include "../../../Utils/LinearAlgebraTypes.h"
 #include "../../../PipelineGroups/ObjectProperty.h"
 
 #include <QWidget>

@@ -4,11 +4,9 @@ project(uncertainty_propagation)
 
 set(CMAKE_CXX_STANDARD 20)
 
-#option(TRACY_ENABLE 0)
-#option(TRACY_ONLY_LOCALHOST 1)
-
 add_subdirectory(src)
-add_subdirectory(tests)
-add_subdirectory(tracy)
-add_subdirectory(pybind11)
-add_subdirectory(nlohmann_json)
+add_subdirectory(deps/tests)
+add_subdirectory(deps/tracy)
+add_subdirectory(deps/pybind11)
+add_subdirectory(deps/nlohmann_json)
+add_subdirectory(deps/HighFive)

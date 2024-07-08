@@ -2,7 +2,7 @@
 
 #include "../../../Artifacts/Image/ImageArtifact.h"
 #include "../../../Artifacts/Image/ImageArtifactConcatenation.h"
-#include "../../../Utils/Types.h"
+#include "../../../Utils/LinearAlgebraTypes.h"
 
 ImageArtifactsModel::ImageArtifactsModel(ImageArtifactConcatenation& imageArtifactConcatenation,
                                          QObject* parent) :

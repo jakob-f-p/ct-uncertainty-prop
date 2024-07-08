@@ -1,7 +1,9 @@
 import numpy.typing as npt
 
-from feature_dataset import Array2D, FeatureDataset, FeatureData
+from datapaths import FeatureData
+from feature_dataset import Array2D, FeatureDataset
 from sklearn import decomposition
+
 
 def calculate(feature_data: FeatureData, dimensions: int = 2) -> Array2D:
     dataset = FeatureDataset([feature_data])

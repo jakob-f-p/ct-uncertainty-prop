@@ -1,10 +1,11 @@
 #pragma once
 
-#include "Types.h"
+#include "LinearAlgebraTypes.h"
 
 #include <QWidget>
 
 #include <vtkNew.h>
+#include <vtkType.h>
 
 #include <array>
 

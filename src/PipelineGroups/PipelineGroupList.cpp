@@ -95,6 +95,7 @@ auto PipelineGroupList::GenerateImages(ProgressEventCallback const& callback) ->
     for (int i = 0; i < PipelineGroups.size(); i++)
         PipelineGroups[i]->GenerateImages(MultiTaskProgressUpdater { 0, 2, i, progressList, callback });
 
+    std::fill(progressList.begin(), progressList.end(), 0.0);
     for (int i = 0; i < PipelineGroups.size(); i++)
         PipelineGroups[i]->ExportImages(MultiTaskProgressUpdater { 1, 2, i, progressList, callback });
 }
@@ -128,7 +129,7 @@ auto PipelineGroupList::DoPCAs(uint8_t numberOfDimensions, ProgressEventCallback
 }
 
 auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
-                                       ProgressEventCallback const& callback) const -> PipelineBatchListData {
+                                       ProgressEventCallback const& callback) -> PipelineBatchListData {
     PipelineBatchListData batchListData { subsetData };
 
     callback(0.1);
@@ -160,7 +161,7 @@ auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
         auto& batchData = batchListData.Data.at(i);
 
         for (int j = 0; j < batchData.StateDataList.size(); j++, k++) {
-            auto& stateData = batchData.StateDataList.at(i);
+            auto& stateData = batchData.StateDataList.at(j);
 
             stateData.PcaCoordinates = pcaData.at(k);
         }

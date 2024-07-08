@@ -8,7 +8,7 @@
 #include "Artifacts/SaltPepperArtifact.h"
 #include "Artifacts/StairStepArtifact.h"
 #include "Artifacts/WindMillArtifact.h"
-#include "../../Utils/Types.h"
+#include "../Types.h"
 
 #include <QMetaObject>
 

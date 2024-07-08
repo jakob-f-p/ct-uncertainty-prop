@@ -2,6 +2,9 @@
 
 #include "CtStructure.h"
 
+#include "../Utils/Enum.h"
+#include "../Utils/IndexTypes.h"
+
 class QComboBox;
 
 class CombinedStructure;

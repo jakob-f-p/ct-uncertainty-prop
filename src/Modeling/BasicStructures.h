@@ -1,7 +1,7 @@
 #pragma once
 
 #include "CtStructure.h"
-#include "../Utils/Types.h"
+#include "../Artifacts/Types.h"
 
 #include <vtkBox.h>
 #include <vtkNew.h>
@@ -136,7 +136,7 @@ private:
 };
 
 class BoxWidget : public QWidget {
-Q_OBJECT
+    Q_OBJECT
 
 public:
     BoxWidget();

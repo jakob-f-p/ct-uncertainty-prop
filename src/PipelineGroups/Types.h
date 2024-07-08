@@ -13,8 +13,8 @@ struct FeatureData {
     using StringVector = std::vector<std::string>;
     using Vector2DDouble = std::vector<std::vector<double>>;
 
-    StringVector Names {};
-    Vector2DDouble Values {};
+    StringVector Names;
+    Vector2DDouble Values;
 };
 
 struct DataStatus {
@@ -45,5 +45,22 @@ struct DataStatus {
 struct SampleId {
     uint16_t GroupIdx;
     uint16_t StateIdx;
+
+    [[nodiscard]] auto
+    operator<=> (SampleId const& other) const noexcept -> auto = default;
+
+    auto
+    operator++ () noexcept -> SampleId& {
+        StateIdx++;
+        return *this;
+    }
+
+    auto
+    operator++ (int) noexcept -> SampleId {
+        auto const oldIdx = *this;
+        ++*this;
+        return oldIdx;
+    }
 };
 
+static_assert(std::totally_ordered<SampleId>);

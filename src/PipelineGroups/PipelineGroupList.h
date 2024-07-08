@@ -140,9 +140,9 @@ public:
     auto
     DoPCAs(uint8_t numberOfDimensions, ProgressEventCallback const& callback = [](double) {}) -> void;
 
-    [[nodiscard]] auto
+    [[nodiscard]] static auto
     DoPCAForSubset(PipelineBatchListData const& subsetData,
-                   ProgressEventCallback const& callback = [](double) {}) const -> PipelineBatchListData;
+                   ProgressEventCallback const& callback = [](double) {}) -> PipelineBatchListData;
 
     auto
     DoTsne(uint8_t numberOfDimensions, ProgressEventCallback const& callback = [](double) {}) -> void;

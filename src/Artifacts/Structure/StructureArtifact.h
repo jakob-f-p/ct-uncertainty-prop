@@ -2,7 +2,7 @@
 
 #include "MotionArtifact.h"
 #include "../../Utils/Enum.h"
-#include "../../Utils/Types.h"
+#include "../../Utils/LinearAlgebraTypes.h"
 
 #include <QWidget>
 

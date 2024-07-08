@@ -5,6 +5,7 @@ import logging.handlers
 import numpy as np
 import radiomics
 import threading
+import warnings
 
 from collections import OrderedDict
 from datapaths import DataPaths, extraction_params_file, FeatureData, feature_directory
@@ -16,9 +17,21 @@ from radiomics import featureextractor
 from radiomics.scripts import segment
 from typing import cast, Dict, Callable, List, Tuple
 
+warnings.filterwarnings(action="ignore", category=RuntimeWarning)
+
 logger = logging.getLogger(__file__)
 
 FeatureExtractionResult = List[OrderedDict[str, float]]
+
+
+def do_extraction(case, extractor, out_dir, logging_config) -> OrderedDict:
+    try:
+        return segment.extractSegment_parallel(case,
+                                               extractor=extractor,
+                                               out_dir=out_dir,
+                                               logging_config=logging_config)
+    except ValueError:
+        return OrderedDict()
 
 
 class FeatureExtraction:
@@ -47,10 +60,15 @@ class FeatureExtraction:
     def run(self) -> FeatureExtractionResult:
         results = []
         try:
+            print(1)
             logger.info("Starting PyRadiomics (version: %s)", radiomics.__version__)
+            print(2)
             cases = self.get_cases()
+            print(3)
             results = self.extract_features(cases)
+            print(4)
             self.write_outputs(results)
+            print(5)
             logger.info("Finished extraction successfully...")
         except (KeyboardInterrupt, SystemExit):
             logger.info("Cancelling Extraction")
@@ -80,7 +98,7 @@ class FeatureExtraction:
         queue_listener = None
 
         verbose_level = 30
-        logger_level = 20
+        logger_level = 50
 
         self.log_file.unlink(missing_ok=True)
 
@@ -165,6 +183,8 @@ class FeatureExtraction:
                                                                   extractor=extractor,
                                                                   out_dir=self.out_dir,
                                                                   logging_config=self.logging_config)))
+                    # async_results.append(pool.apply_async(partial(do_extraction, case, extractor,
+                    #                                               self.out_dir, self.logging_config)))
 
                 done: bool = False
                 last_successful = -1
@@ -179,23 +199,35 @@ class FeatureExtraction:
                         except ValueError:
                             running += 1
 
-                    if error > 0:
-                        raise ValueError
+                    # if error > 0:
+                    #     raise ValueError
 
-                    if successful > last_successful:
+                    if successful + error > last_successful:
                         self.progress_callback(successful / self.number_of_images)
-                        last_successful = successful
+                        last_successful = successful + error
 
-                    if successful == len(cases):
+                    if successful + error == len(cases):
                         done = True
 
-            results = [res.get() for res in async_results]
+            results = [res.get() if res.successful() else OrderedDict() for res in async_results]
         else:
-            for case in cases:
+            for (i, case) in enumerate(cases):
+                self.progress_callback(i / self.number_of_images)
                 results.append(segment.extractSegment(*case, extractor=extractor, out_dir=self.out_dir))
 
         for feature_filepath in self.out_dir.glob("features_*.csv"):
             feature_filepath.unlink()  # delete
+
+        # set feature values of empty results to 0
+        lengths = [len(result) for result in results]
+        max_length = max(lengths)
+        max_idx = lengths.index(max_length)
+        max_element = results[max_idx]
+        for result in results:
+            if len(result) < max_length:
+                for max_key in max_element:
+                    if max_key not in result:
+                        result[max_key] = max_element[max_key] if not max_key.startswith("original") else 0.0
 
         return results
 

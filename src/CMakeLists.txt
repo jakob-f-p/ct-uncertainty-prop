@@ -114,7 +114,7 @@ endif ()
 
 
 ### add Python ###
-#find_package(Python 3.9 REQUIRED COMPONENTS Interpreter Development)
+find_package(Python 3.9 REQUIRED COMPONENTS Interpreter Development)
 
 #get_cmake_property(_variableNames VARIABLES)
 #list (SORT _variableNames)
@@ -132,8 +132,8 @@ set(PYTHON_MODULES_DIRECTORY "${CMAKE_BINARY_DIR}/PyModules")
 file(MAKE_DIRECTORY ${PYTHON_MODULES_DIRECTORY})
 
 foreach (py_module ${UNCERTAINTY_PROPAGATION_PY_MODULES})
-    message(STATUS "Module=${py_module}")
-    message(STATUS "ModuleDir=${CMAKE_BINARY_DIR}/PyModules")
+#    message(STATUS "Module=${py_module}")
+#    message(STATUS "ModuleDir=${CMAKE_BINARY_DIR}/PyModules")
     configure_file(${py_module} "${CMAKE_BINARY_DIR}/PyModules" COPYONLY)
 endforeach ()
 

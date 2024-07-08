@@ -1,9 +1,11 @@
 #pragma once
 
-#include "../Utils/Types.h"
+#include "../Utils/LinearAlgebraTypes.h"
 
 #include <iterator>
+#include <optional>
 #include <string>
+#include <variant>
 #include <vector>
 
 

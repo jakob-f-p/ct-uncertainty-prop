@@ -1,7 +1,7 @@
 #pragma once
 
 #include "../Utils/WidgetUtils.h"
-#include "../../Utils/Types.h"
+#include "../../Utils/IndexTypes.h"
 
 #include <QTreeView>
 

@@ -3,6 +3,8 @@
 #include "BasicStructures.h"
 #include "CtStructure.h"
 
+#include "../Utils/Enum.h"
+
 class BasicStructure;
 
 class QComboBox;

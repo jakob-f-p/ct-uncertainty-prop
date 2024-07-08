@@ -37,8 +37,18 @@ void StructureArtifactList::AddStructureArtifact(StructureArtifact&& structureAr
 
     Artifacts.emplace(std::next(Artifacts.begin(), insertionIdx), std::move(structureArtifact));
 
+//    auto insertIt = Artifacts.emplace(std::next(Artifacts.begin(), insertionIdx), std::move(structureArtifact));
+//    auto const mTime = insertIt->GetMTime();
+
     std::sort(Artifacts.begin(), Artifacts.end(),
               [](auto const& a, auto const& b) { return a.GetSubType() < b.GetSubType(); });
+//
+//    auto findIt = std::find_if(Artifacts.begin(), Artifacts.end(),
+//                               [mTime](auto const& artifact) { return artifact.GetMTime() == mTime; });
+//    if (findIt == Artifacts.end())
+//        throw std::runtime_error("inserted artifact not found");
+//
+//    return *structureArtifact;
 }
 
 void StructureArtifactList::RemoveStructureArtifact(StructureArtifact const& structureArtifact) {

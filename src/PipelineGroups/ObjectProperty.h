@@ -1,6 +1,7 @@
 #pragma once
 
-#include "../Utils/Types.h"
+#include "../Utils/IndexTypes.h"
+#include "../Utils/LinearAlgebraTypes.h"
 
 #include <functional>
 #include <string>

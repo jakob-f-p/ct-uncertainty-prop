@@ -10,7 +10,7 @@
 #include "../../Artifacts/Pipeline.h"
 #include "../../Artifacts/Structure/StructureArtifactListCollection.h"
 #include "../../Modeling/CtStructureTree.h"
-#include "../../Utils/Types.h"
+#include "../../Utils/LinearAlgebraTypes.h"
 #include "../../Utils/Overload.h"
 
 #include <QComboBox>

@@ -1,7 +1,7 @@
 #include "BasicImageArtifact.h"
 
 #include "../../Utils/Overload.h"
-#include "../../Utils/Types.h"
+#include "../../Utils/LinearAlgebraTypes.h"
 
 #include <QComboBox>
 #include <QFormLayout>

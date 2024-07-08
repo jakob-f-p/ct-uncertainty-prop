@@ -1,22 +1,13 @@
 import numpy as np
 import numpy.typing as npt
 
-from datapaths import FeatureData
+from datapaths import FeatureData, SampleId
 from sklearn import preprocessing
 from typing import List
 
 
 Array2D = List[List[float]]
 Array2DList = List[Array2D]
-
-
-class SampleId:
-    def __init__(self, group_id: int, state_id: int):
-        self.groupId: int = group_id
-        self.stateId: int = state_id
-
-    def __repr__(self) -> str:
-        return "({}, {})".format(self.groupId, self.stateId)
 
 
 class FeatureDataset:
@@ -35,17 +26,18 @@ class FeatureDataset:
         self.feature_names: List[str] = feature_data_list[0].names
         self.sample_ids: List[SampleId] = []
 
-        for groupId, feature_data in enumerate(feature_data_list):
-            for stateId, feature_row in enumerate(feature_data.values):
+        for group_idx, feature_data in enumerate(feature_data_list):
+            for state_idx, feature_row in enumerate(feature_data.values):
                 sample_values.append(list(feature_row))
 
-                self.sample_ids.append(SampleId(groupId, stateId))
+                self.sample_ids.append(SampleId(group_idx, state_idx))
 
                 if feature_data.names != self.feature_names:
                     raise ValueError("Differing number of features, feature order, or feature names")
 
         self.dimensions = (len(self.sample_ids), len(self.feature_names))
         self.original_data = np.array(sample_values)
+        self.original_data = np.nan_to_num(self.original_data)
 
         scaler = preprocessing.StandardScaler(with_std=scale)
         self.data = scaler.fit_transform(self.original_data)

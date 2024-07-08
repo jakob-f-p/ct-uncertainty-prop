@@ -15,6 +15,7 @@ class QApplication;
 class MainWindow;
 class vtkImageAlgorithm;
 
+
 class App {
 public:
     App() = delete;
@@ -43,6 +44,9 @@ public:
     GetThresholdFilter() const -> vtkImageAlgorithm&;
 
     [[nodiscard]] auto
+    GetPipelineGroups() const -> PipelineGroupList&;
+
+    [[nodiscard]] auto
     GetPythonInterpreter() const -> PythonInterpreter&;
 
 protected:
@@ -50,15 +54,9 @@ protected:
     ~App();
 
 private:
-    enum struct Config : uint8_t {
-        DEFAULT,
-        SPHERE
-    };
-
-    auto InitializeWithTestData(Config config) -> void;
+    auto InitializeWithTestData() -> void;
 
     static App* Self;
-    static const Config InitialConfig;
 
     int Argc;
     char** Argv;

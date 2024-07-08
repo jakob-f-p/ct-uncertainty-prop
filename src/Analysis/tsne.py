@@ -15,8 +15,8 @@ def calculate(feature_data_list: List[FeatureData], dimensions: int = 2) -> Arra
     tsne_params = {
         "n_components": dimensions,
         "perplexity": min(30.0, dataset.dimensions[0] - 1),
-        "n_iter_without_progress": 250,
-        "max_iter": 750,
+        "n_iter_without_progress": 300,
+        "max_iter": 1250,
     }
     tsne = manifold.TSNE(**tsne_params)
 

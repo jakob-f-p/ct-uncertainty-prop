@@ -1,7 +1,7 @@
 #pragma once
 
 #include "StructureArtifact.h"
-#include "../../Utils/Types.h"
+#include "../../Utils/LinearAlgebraTypes.h"
 
 #include <vtkNew.h>
 

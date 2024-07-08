@@ -1,6 +1,6 @@
 #include "PipelineBatch.h"
 
-#include "ImageScalarsWriter.h"
+#include "IO/ImageScalarsWriter.h"
 #include "PipelineGroup.h"
 #include "PipelineGroupList.h"
 #include "PipelineParameterSpace.h"
@@ -156,6 +156,12 @@ PYBIND11_EMBEDDED_MODULE(datapaths, m) {
                 repr << "]\n";
                 return repr.str();
             });
+
+    py::class_<SampleId>(m, "SampleId")
+            .def(py::init<uint16_t, uint16_t>())
+            .def_readwrite("group_idx", &SampleId::GroupIdx)
+            .def_readwrite("state_idx", &SampleId::StateIdx)
+            .def("__repr__", [](SampleId const& id) { return std::format("({}, {})", id.GroupIdx, id.StateIdx); });
 
     m.attr("extraction_params_file") = std::filesystem::path { FEATURE_EXTRACTION_PARAMETERS_FILE }.make_preferred();
     m.attr("feature_directory") = PipelineBatch::ExportPathPair::FeatureDirectory;

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "../../Utils/Types.h"
+#include "../../Utils/LinearAlgebraTypes.h"
 #include "../../Utils/SimpleTransform.h"
 #include "../../PipelineGroups/ObjectProperty.h"
 
