@@ -1,6 +1,7 @@
 #pragma once
 
 #include "PipelineGroup.h"
+#include "IO/HdfImageReadHandle.h"
 
 #include <QList>
 #include <QPointF>
@@ -19,7 +20,7 @@ class vtkImageData;
 
 struct ParameterSpaceStateData {
     PipelineParameterSpaceState const& State;
-    vtkSmartPointer<vtkImageData> ImageData;
+    HdfImageReadHandle ImageHandle;
     std::vector<double> FeatureValues;
     std::vector<double> PcaCoordinates;
     std::vector<double> TsneCoordinates;
@@ -213,4 +214,11 @@ private:
     std::string Name;
     std::vector<std::unique_ptr<PipelineGroup>> PipelineGroups;
     PipelineList const& Pipelines;
+
+
+    static std::filesystem::path const DataDirectory;
+
+public:
+    static std::filesystem::path const FeatureDirectory;
+    static std::filesystem::path ImagesFile;
 };

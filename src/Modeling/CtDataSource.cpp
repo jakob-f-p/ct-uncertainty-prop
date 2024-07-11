@@ -40,23 +40,13 @@ void CtDataSource::SetDataTree(CtStructureTree* ctStructureTree) {
     DataTree = ctStructureTree;
 }
 
-void CtDataSource::SetVolumeDataPhysicalDimensions(float x, float y, float z) {
-    PhysicalDimensions = { x, y, z };
-}
-
-void CtDataSource::SetVolumeNumberOfVoxels(int x, int y, int z) {
-    NumberOfVoxels = { x, y, z };
-}
-
-CtDataSource::CtDataSource() :
-        PhysicalDimensions{},
-        NumberOfVoxels{} {
+CtDataSource::CtDataSource() {
 #ifdef BUILD_TYPE_DEBUG
-//    int const defaultResolution = 128;
-    int const defaultResolution = 64;
+//    int const defaultResolution = 8;
+    int const defaultResolution = 16;
 #else
 //    int const defaultResolution = 256;
-    int const defaultResolution = 64;
+    int const defaultResolution = 128;
 #endif
     std::fill(NumberOfVoxels.begin(), NumberOfVoxels.end(), defaultResolution);
 

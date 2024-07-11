@@ -61,7 +61,7 @@ public:
 
 private:
     QDoubleSpinBox* RadiusSpinBox;
-    CoordinateRowWidget* CenterCoordinateRow;
+    DoubleCoordinateRowWidget* CenterCoordinateRow;
 };
 
 
@@ -148,7 +148,7 @@ public:
     Populate(const BoxData& data) noexcept -> void;
 
 private:
-    CoordinateRowWidget* MinMaxPointWidget;
+    DoubleCoordinateRowWidget* MinMaxPointWidget;
 };
 
 static_assert(TBasicStructure<Box>);

@@ -25,7 +25,7 @@ auto Sphere::SetFunctionData(const Data& data) noexcept -> void {
 
 SphereWidget::SphereWidget() :
         RadiusSpinBox(new QDoubleSpinBox()),
-        CenterCoordinateRow(new CoordinateRowWidget({ -100.0, 100.0, 1.0, 0.0 })) {
+        CenterCoordinateRow(new DoubleCoordinateRowWidget({ -100.0, 100.0, 1.0, 0.0 })) {
 
     auto* fLayout = new QFormLayout(this);
 
@@ -48,7 +48,7 @@ auto SphereWidget::GetData() noexcept -> SphereData {
 
 auto SphereWidget::Populate(const SphereData& data) noexcept -> void {
     RadiusSpinBox->setValue(data.Radius);
-    CenterCoordinateRow->SetRowData(0, CoordinateRowWidget::RowData(data.Center));
+    CenterCoordinateRow->SetRowData(0, DoubleCoordinateRowWidget::RowData(data.Center));
 }
 
 
@@ -79,7 +79,7 @@ auto Box::SetFunctionData(const Data& data) noexcept -> void {
 }
 
 BoxWidget::BoxWidget() :
-        MinMaxPointWidget(new CoordinateRowWidget(true)) {
+        MinMaxPointWidget(new DoubleCoordinateRowWidget(true)) {
 
     MinMaxPointWidget->AppendCoordinatesRow({ -100.0, 100.0, 1.0, -10.0 }, "Min Point");
     MinMaxPointWidget->AppendCoordinatesRow({ -100.0, 100.0, 1.0,  10.0 }, "Max Point");
@@ -98,6 +98,6 @@ auto BoxWidget::GetData() noexcept -> BoxData {
 }
 
 auto BoxWidget::Populate(const BoxData& data) noexcept -> void {
-    MinMaxPointWidget->SetRowData(0, CoordinateRowWidget::RowData(data.MinPoint));
-    MinMaxPointWidget->SetRowData(1, CoordinateRowWidget::RowData(data.MaxPoint));
+    MinMaxPointWidget->SetRowData(0, DoubleCoordinateRowWidget::RowData(data.MinPoint));
+    MinMaxPointWidget->SetRowData(1, DoubleCoordinateRowWidget::RowData(data.MaxPoint));
 }

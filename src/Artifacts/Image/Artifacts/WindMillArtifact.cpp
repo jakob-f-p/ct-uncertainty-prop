@@ -61,7 +61,7 @@ WindMillArtifactWidget::WindMillArtifactWidget() :
         DarkAngularWidthSpinBox  (new QDoubleSpinBox()),
         BrightIntensityValueSpinBox(new QDoubleSpinBox()),
         DarkIntensityValueSpinBox (new QDoubleSpinBox()),
-        CenterPointWidget(new CoordinateRowWidget({ -100.0, 100.0, 1.0, 0.0 }, "Center")) {
+        CenterPointWidget(new DoubleCoordinateRowWidget({ -100.0, 100.0, 1.0, 0.0 }, "Center")) {
 
     auto* gLayout = new QGridLayout(this);
     gLayout->setHorizontalSpacing(15);
@@ -113,5 +113,5 @@ auto WindMillArtifactWidget::Populate(const WindMillArtifactData& data) noexcept
     BrightIntensityValueSpinBox->setValue(data.BrightIntensityValue);
     DarkIntensityValueSpinBox->setValue(data.DarkIntensityValue);
 
-    CenterPointWidget->SetRowData(0, CoordinateRowWidget::RowData(data.Center));
+    CenterPointWidget->SetRowData(0, DoubleCoordinateRowWidget::RowData(data.Center));
 }

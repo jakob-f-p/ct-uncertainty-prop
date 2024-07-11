@@ -54,7 +54,7 @@ auto SimpleTransform::SetData(const SimpleTransformData& transformData) noexcept
 
 
 SimpleTransformWidget::SimpleTransformWidget() :
-        TransformRows(new CoordinateRowWidget(true)){
+        TransformRows(new DoubleCoordinateRowWidget(true)){
 
     TransformRows->AppendCoordinatesRow({ -100.0, 100.0, 2.0, 0.0      }, "Translate");
     TransformRows->AppendCoordinatesRow({    0.0, 360.0, 1.0, 0.0, 1, "°" }, "Rotate");
@@ -77,5 +77,5 @@ auto SimpleTransformWidget::GetData() noexcept -> SimpleTransformData {
 
 auto SimpleTransformWidget::SetData(const SimpleTransformData& data) noexcept -> void {
     for (int i = 0; i < data.size(); i++)
-        TransformRows->SetRowData(i, CoordinateRowWidget::RowData(data[i]));
+        TransformRows->SetRowData(i, DoubleCoordinateRowWidget::RowData(data[i]));
 }

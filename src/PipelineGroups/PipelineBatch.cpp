@@ -5,6 +5,7 @@
 #include "PipelineGroupList.h"
 #include "PipelineParameterSpace.h"
 #include "PipelineParameterSpaceState.h"
+#include "../Artifacts/Pipeline.h"
 #include "../Utils/PythonInterpreter.h"
 #include "../App.h"
 
@@ -81,10 +82,10 @@ auto PipelineBatch::GenerateImages(ProgressEventCallback const& callback) -> voi
 }
 
 std::filesystem::path const PipelineBatch::ExportPathPair::DataDirectory = { "..\\data" };
-std::filesystem::path const PipelineBatch::ExportPathPair::InputDirectory
-        = std::filesystem::path(DataDirectory) /= { "input" };
 std::filesystem::path const PipelineBatch::ExportPathPair::FeatureDirectory
         = (std::filesystem::path(DataDirectory) /= { "features" });
+std::filesystem::path const PipelineBatch::ExportPathPair::InputDirectory
+        = (std::filesystem::path(DataDirectory) /= { "input" });
 
 auto PipelineBatch::ExportImages(ProgressEventCallback const& callback) -> void {
     if (!Images)
@@ -388,6 +389,39 @@ auto PipelineBatch::GetIdx(PipelineParameterSpaceState const& state) const -> ui
 }
 
 auto PipelineBatch::DoExport::operator()(PipelineImageData& image) const -> void {
+    using std::filesystem::path;
+
+    uint32_t const stateIdx = Batch.GetIdx(image.State);
+    path const imagePath
+            = path(ExportPathPair::InputDirectory) /= path(std::format("Volume-{}-{}.vtk", GroupIdx, stateIdx));
+    path const maskPath
+            = path(ExportPathPair::InputDirectory) /= path(std::format("Mask-{}-{}.vtk", GroupIdx, stateIdx));
+//    path const segmentationPath
+//            = path(ExportPathPair::InputDirectory) /= path(std::format("Segmentation-{}-{}.vtk", GroupIdx, stateIdx));
+
+    vtkNew<ImageScalarsWriter> imageExporter;
+    imageExporter->SetInputData(image.ImageData);
+    imageExporter->SetHeader(TimeStampString.c_str());
+    imageExporter->WriteExtentOff();
+
+    imageExporter->SetFileName(maskPath.string().c_str());
+    imageExporter->SetScalarsArrayName("Segmentation Mask");
+    imageExporter->Write();
+
+    imageExporter->SetFileName(imagePath.string().c_str());
+    imageExporter->SetScalarsArrayName("Radiodensities");
+    imageExporter->Write();
+
+//    imageExporter->SetFileName(segmentationPath.string().c_str());
+//    imageExporter->SetScalarsArrayName("Segmented Radiodensities");
+//    imageExporter->Write();
+
+    (*Batch.ExportedImages)[stateIdx] = { imagePath, maskPath };
+
+    Progress = static_cast<double>(NumberOfExportedImages++ + 1) / static_cast<double>(NumberOfImages);
+}
+
+auto PipelineBatch::DoExport1::operator()(PipelineImageData& image) const -> void {
     using std::filesystem::path;
 
     uint32_t const stateIdx = Batch.GetIdx(image.State);

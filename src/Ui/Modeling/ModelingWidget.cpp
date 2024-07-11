@@ -3,6 +3,7 @@
 
 #include "CtStructureDialog.h"
 #include "CtStructureView.h"
+#include "../Utils/CoordinateRowWidget.h"
 #include "../../Modeling/BasicStructure.h"
 #include "../../Modeling/CombinedStructure.h"
 #include "../../Modeling/CtDataSource.h"
@@ -20,6 +21,24 @@
 ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& dataSource, QWidget* parent) :
         QMainWindow(parent),
         RenderingWidget(new RenderWidget(dataSource)),
+        PhysicalDimensionsSpinBoxes([this, &dataSource]() {
+            auto* widget = new DoubleCoordinateRowWidget({ 1.0, 100.0, 1.0, 1.0  }, "Physical Dimensions");
+            widget->SetRowData(0, DoubleCoordinateRowWidget::RowData { dataSource.GetVolumeDataPhysicalDimensions() });
+            connect(widget, &IntegerCoordinateRowWidget::ValueChanged, this, [widget, &dataSource]() {
+                dataSource.SetVolumeDataPhysicalDimensions(widget->GetRowData(0).ToFloatArray());
+            });
+
+            return widget;
+        }()),
+        ResolutionSpinBoxes([this, &dataSource]() {
+            auto* widget = new IntegerCoordinateRowWidget({ 16, 512, 1, 16 }, "Resolution along Axes");
+            widget->SetRowData(0, IntegerCoordinateRowWidget::RowData { dataSource.GetVolumeNumberOfVoxels() });
+            connect(widget, &IntegerCoordinateRowWidget::ValueChanged, this, [widget, &dataSource]() {
+                dataSource.SetVolumeNumberOfVoxels(widget->GetRowData(0).ToArray());
+            });
+
+            return widget;
+        }()),
         AddStructureButton(new QPushButton("Add Structure")),
         CombineWithStructureButton(new QPushButton("Combine With Structure")),
         RefineWithStructureButton(new QPushButton("Refine With Structure")),
@@ -46,6 +65,19 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& d
 
     auto* dockWidgetContent = new QWidget();
     auto* verticalLayout = new QVBoxLayout(dockWidgetContent);
+
+    auto* volumeLabel = new QLabel("Volume settings");
+    volumeLabel->setStyleSheet(GetHeader1StyleSheet());
+    verticalLayout->addSpacing(10);
+    verticalLayout->addWidget(volumeLabel);
+    verticalLayout->addWidget(PhysicalDimensionsSpinBoxes);
+    verticalLayout->addWidget(ResolutionSpinBoxes);
+
+    auto* separator = new QFrame();
+    separator->setFrameShape(QFrame::Shape::HLine);
+    verticalLayout->addSpacing(15);
+    verticalLayout->addWidget(separator);
+    verticalLayout->addSpacing(25);
 
     auto* titleLabel = new QLabel("CT Structures");
     titleLabel->setStyleSheet(GetHeader1StyleSheet());

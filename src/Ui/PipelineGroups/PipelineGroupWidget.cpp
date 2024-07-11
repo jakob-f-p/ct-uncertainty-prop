@@ -2,6 +2,7 @@
 
 #include "PipelineParameterSpaceView.h"
 #include "../Utils/WidgetUtils.h"
+#include "../../Artifacts/Pipeline.h"
 #include "../../PipelineGroups/PipelineGroup.h"
 #include "../../PipelineGroups/PipelineParameterSpace.h"
 

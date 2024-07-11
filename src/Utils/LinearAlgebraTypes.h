@@ -13,4 +13,3 @@ using FloatPoint = FloatVector;
 DoubleToFloatPoint(DoublePoint point) -> FloatPoint { return { static_cast<float>(point[0]),
                                                                static_cast<float>(point[1]),
                                                                static_cast<float>(point[2]) }; }
-

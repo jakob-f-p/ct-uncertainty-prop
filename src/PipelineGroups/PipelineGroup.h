@@ -2,22 +2,23 @@
 
 #include "ArtifactVariantPointer.h"
 #include "Types.h"
-#include "../Artifacts/Pipeline.h"
+#include "IO/HdfImageReadHandle.h"
 #include "../Utils/TimeStampedData.h"
 
 #include <string>
 #include <vector>
 
-class PipelineBatch;
+class HdfImageReader;
+class HdfImageWriter;
+class Pipeline;
 class PipelineParameterSpace;
 class PipelineParameterSpan;
 class PipelineParameterSpaceState;
 
-struct ParameterSpaceStateData;
-struct PipelineImageData;
-
 
 class PipelineGroup {
+    using HdfImageReadHandles = std::vector<HdfImageReadHandle>;
+
 public:
     explicit PipelineGroup(Pipeline const& basePipeline, std::string name = "");
     ~PipelineGroup();
@@ -39,19 +40,19 @@ public:
 
     using ProgressEventCallback = std::function<void(double)>;
     auto
-    GenerateImages(ProgressEventCallback const& callback = [](double) {}) -> void;
+    GenerateImages(HdfImageWriter& imageWriter, ProgressEventCallback const& callback = [](double) {}) -> void;
 
     auto
-    ExportImages(ProgressEventCallback const& callback = [](double) {}) -> void;
-
-    auto
-    ExtractFeatures(ProgressEventCallback const& callback = [](double) {}) -> void;
+    ExtractFeatures(HdfImageReader& imageReader, ProgressEventCallback const& callback = [](double) {}) -> void;
 
     auto
     DoPCA(uint8_t numberOfDimensions) -> void;
 
     [[nodiscard]] auto
-    GetImageData() -> TimeStampedData<std::vector<PipelineImageData*>>;
+    GetParameterSpaceStates() -> std::vector<std::reference_wrapper<PipelineParameterSpaceState>>;
+
+    [[nodiscard]] auto
+    GetImageData() const -> TimeStampedDataRef<HdfImageReadHandles>;
 
     [[nodiscard]] auto
     GetFeatureData() const -> TimeStampedDataRef<FeatureData>;
@@ -69,14 +70,6 @@ public:
     GetDataStatus() const noexcept -> DataStatus;
 
     auto
-    ExportGeneratedImages(std::filesystem::path const& exportDir,
-                          ProgressEventCallback const& callback = [](double) {}) -> void;
-
-    auto
-    ImportImages(std::vector<std::filesystem::path> const& importFilePaths,
-                 ProgressEventCallback const& callback = [](double) {}) -> void;
-
-    auto
     ImportFeatures(std::filesystem::path const& importFilePath,
                    ProgressEventCallback const& callback = [](double) {}) -> void;
 
@@ -88,15 +81,38 @@ public:
     RemoveParameterSpan(ArtifactVariantPointer artifactVariantPointer,
                         PipelineParameterSpan const& parameterSpan) -> void;
 
+    struct ImageMaskRefPair {
+        std::reference_wrapper<vtkImageData> Image;
+        std::reference_wrapper<vtkImageData> Mask;
+    };
+
 private:
     friend class PipelineBatch;
 
-    vtkTimeStamp TimeStamp;
+    auto
+    UpdateParameterSpaceStates() noexcept -> void;
+
+    [[nodiscard]] static auto
+    GetMaxImageBatchSize() -> uint64_t;
+
+    using SpaceState = std::unique_ptr<PipelineParameterSpaceState>;
+    using SpaceStates = std::vector<SpaceState>;
+
     std::string Name;
     uint16_t const GroupId;
     Pipeline const& BasePipeline;
     std::unique_ptr<PipelineParameterSpace> ParameterSpace;
-    std::unique_ptr<PipelineBatch> Batch;
+
+    struct GroupData {
+        SpaceState InitialState;
+        SpaceStates States;
+
+        TimeStampedData<HdfImageReadHandles> Images;
+        TimeStampedData<FeatureData> Features;
+        TimeStampedData<SampleCoordinateData> PcaData;
+        TimeStampedData<SampleCoordinateData> TsneData;
+    };
+    GroupData Data;
 
     static uint16_t PipelineGroupId;
 };

@@ -1,6 +1,6 @@
 import numpy.typing as npt
 
-from datapaths import FeatureData
+from feature_extraction_cpp import FeatureData
 from feature_dataset import Array2D, FeatureDataset
 from sklearn import decomposition
 

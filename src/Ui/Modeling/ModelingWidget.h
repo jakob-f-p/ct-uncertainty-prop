@@ -11,6 +11,8 @@ class CtStructureTreeModel;
 class CtStructureDialog;
 class CtStructureTree;
 class CtStructureView;
+class DoubleCoordinateRowWidget;
+class IntegerCoordinateRowWidget;
 class RenderWidget;
 
 class QItemSelection;
@@ -34,6 +36,9 @@ private:
     void UpdateButtonStates(QItemSelection const& selected, QItemSelection const&);
 
     RenderWidget* const RenderingWidget;
+
+    DoubleCoordinateRowWidget* PhysicalDimensionsSpinBoxes;
+    IntegerCoordinateRowWidget* ResolutionSpinBoxes;
 
     QPushButton* const AddStructureButton;
     QPushButton* const CombineWithStructureButton;

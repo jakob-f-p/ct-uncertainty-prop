@@ -4,6 +4,7 @@
 #include "ChartWidget.h"
 #include "../Utils/NameLineEdit.h"
 #include "../Utils/WidgetUtils.h"
+#include "../../Artifacts/Pipeline.h"
 #include "../../Modeling/CtDataSource.h"
 #include "../../PipelineGroups/PipelineGroupList.h"
 
@@ -111,7 +112,9 @@ auto ParameterSpaceStateRenderWidget::UpdateSample(std::optional<SampleId> sampl
     else {
         auto const& parameterSpaceStateData = BatchListData->GetSpaceStateData(*sampleId);
 
-        UpdateImageAlgorithm(*parameterSpaceStateData.ImageData);
+        CurrentImage = parameterSpaceStateData.ImageHandle.Read();
+
+        UpdateImageAlgorithm(*CurrentImage);
     }
 
     Render();

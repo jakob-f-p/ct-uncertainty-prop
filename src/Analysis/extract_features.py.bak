@@ -10,10 +10,11 @@ import warnings
 
 from collections import OrderedDict
 from datetime import datetime
-from extract_features_parallel import do_parallel_feature_extraction
 from feature_extraction_cpp import (extraction_params_file, FeatureData, feature_directory,
                                     VtkImageMaskPair, VtkImageData, VtkType)
-from multiprocessing import Manager
+from functools import partial
+from multiprocessing import cpu_count, Manager, Pool
+from multiprocessing.pool import AsyncResult
 from pathlib import Path
 from radiomics import featureextractor
 from radiomics.scripts import segment
@@ -30,6 +31,15 @@ class SitkImageMaskPair:
     def __init__(self, image: sitk.Image, mask: sitk.Mask):
         self.Image = image
         self.Mask = mask
+
+
+def do_extraction(case, extractor, logging_config) -> OrderedDict:
+    try:
+        return segment.extractSegment_parallel(case,
+                                               extractor=extractor,
+                                               logging_config=logging_config)
+    except ValueError:
+        return OrderedDict()
 
 
 def vtk_to_sitk_image(vtk_image: VtkImageData) -> sitk.Image:
@@ -131,9 +141,8 @@ class FeatureExtraction:
     def get_logging_config(self) -> (Dict, logging.handlers.QueueListener):
         queue_listener = None
 
-        file_handler_level = 30
-        console_handler_level = 50
-        logger_level = min(file_handler_level, console_handler_level)
+        verbose_level = 30
+        logger_level = 50
 
         self.log_file.unlink(missing_ok=True)
 
@@ -149,7 +158,7 @@ class FeatureExtraction:
             "handlers": {
                 "console": {
                     "class": "logging.StreamHandler",
-                    "level": console_handler_level,
+                    "level": verbose_level,
                     "formatter": "default"
                 }
             },
@@ -172,7 +181,7 @@ class FeatureExtraction:
             logging_config["handlers"]["logfile"] = {
                 "class": "logging.handlers.QueueHandler",
                 "queue": q,
-                "level": file_handler_level,
+                "level": logger_level,
                 "formatter": "default"
             }
 
@@ -187,7 +196,7 @@ class FeatureExtraction:
                 "class": "logging.FileHandler",
                 "filename": self.log_file,
                 "mode": "a",
-                "level": file_handler_level,
+                "level": logger_level,
                 "formatter": "default"
             }
         logging_config["loggers"]["radiomics"]["handlers"].append("logfile")
@@ -207,25 +216,56 @@ class FeatureExtraction:
     def extract_features(self, cases) -> List[OrderedDict]:
         extractor = featureextractor.RadiomicsFeatureExtractor(str(self.params_file))
 
-        if self.is_multiprocessing:
-            results = do_parallel_feature_extraction(cases, extractor, self.logging_config, self.progress_callback)
+        results = []
+        number_of_workers = min(cpu_count() - 1, self.number_of_images)
+        if self.is_multiprocessing and number_of_workers > 1:
+            async_results: List[AsyncResult] = []
+            with Pool(number_of_workers) as pool:
+                for case in cases:
+                    async_results.append(pool.apply_async(partial(segment.extractSegment_parallel,
+                                                                  case,
+                                                                  extractor=extractor,
+                                                                  logging_config=self.logging_config)))
 
-            # set feature values of empty results to 0
-            lengths = [len(result) for result in results]
-            max_length = max(lengths)
-            max_idx = lengths.index(max_length)
-            max_element = results[max_idx]
-            for result in results:
-                if len(result) < max_length:
-                    for max_key in max_element:
-                        if max_key not in result:
-                            result[max_key] = max_element[max_key] if not max_key.startswith("original") else 0.0
+                done: bool = False
+                last_successful = -1
+                while not done:
+                    running, successful, error = 0, 0, 0
+                    for result in async_results:
+                        try:
+                            if result.successful():
+                                successful += 1
+                            else:
+                                error += 1
+                        except ValueError:
+                            running += 1
 
+                    # if error > 0:
+                    #     raise ValueError
+
+                    if successful + error > last_successful:
+                        self.progress_callback(successful / self.number_of_images)
+                        last_successful = successful + error
+
+                    if successful + error == len(cases):
+                        done = True
+
+            results = [res.get() if res.successful() else OrderedDict() for res in async_results]
         else:
-            results = []
             for (i, case) in enumerate(cases):
-                self.progress_callback(i)
+                self.progress_callback(i / self.number_of_images)
                 results.append(segment.extractSegment(*case, extractor=extractor))
+
+        # set feature values of empty results to 0
+        lengths = [len(result) for result in results]
+        max_length = max(lengths)
+        max_idx = lengths.index(max_length)
+        max_element = results[max_idx]
+        for result in results:
+            if len(result) < max_length:
+                for max_key in max_element:
+                    if max_key not in result:
+                        result[max_key] = max_element[max_key] if not max_key.startswith("original") else 0.0
 
         return results
 

@@ -3,6 +3,8 @@
 #include "PipelineBatch.h"
 #include "PipelineGroup.h"
 #include "PipelineParameterSpace.h"
+#include "IO/HdfImageWriter.h"
+#include "IO/HdfImageReader.h"
 #include "../Artifacts/PipelineList.h"
 #include "../Modeling/CtStructureTree.h"
 #include "../Utils/PythonInterpreter.h"
@@ -92,12 +94,18 @@ auto PipelineGroupList::GenerateImages(ProgressEventCallback const& callback) ->
     std::vector<double> progressList (PipelineGroups.size(), 0.0);
     callback(0.0);
 
-    for (int i = 0; i < PipelineGroups.size(); i++)
-        PipelineGroups[i]->GenerateImages(MultiTaskProgressUpdater { 0, 2, i, progressList, callback });
+    auto const now = round<std::chrono::seconds>(std::chrono::system_clock::now());
+    std::string const timeStampString = std::format("{0:%Y}-{0:%m}-{0:%d}_{0:%H}-{0:%M}-{0:2%S}", now);
 
-    std::fill(progressList.begin(), progressList.end(), 0.0);
+    ImagesFile = std::filesystem::path(DataDirectory) /= { std::format("images_{}.h5", timeStampString) };
+
+    vtkNew<HdfImageWriter> imageWriter;
+    imageWriter->SetFilename(ImagesFile);
+    imageWriter->SetArrayNames({ "Radiodensities", "Segmentation Mask" });
+    imageWriter->SetTotalNumberOfImages(GetNumberOfPipelines());
+
     for (int i = 0; i < PipelineGroups.size(); i++)
-        PipelineGroups[i]->ExportImages(MultiTaskProgressUpdater { 1, 2, i, progressList, callback });
+        PipelineGroups[i]->GenerateImages(*imageWriter, ProgressUpdater { i, progressList, callback });
 }
 
 auto PipelineGroupList::ExtractFeatures(PipelineGroupList::ProgressEventCallback const& callback) -> void {
@@ -112,9 +120,13 @@ auto PipelineGroupList::ExtractFeatures(PipelineGroupList::ProgressEventCallback
 
     callback(0.0);
 
+    vtkNew<HdfImageReader> imageReader;
+    imageReader->SetFilename(ImagesFile);
+    imageReader->SetArrayNames({ "Radiodensities", "Segmentation Mask" });
+
     for (int i = 0; i < PipelineGroups.size(); i++)
-        PipelineGroups[i]->ExtractFeatures(WeightedProgressUpdater { i, progressList,
-                                                                     groupSizeWeightVector, callback });
+        PipelineGroups[i]->ExtractFeatures(*imageReader, WeightedProgressUpdater { i, progressList,
+                                                                                  groupSizeWeightVector, callback });
 }
 
 auto PipelineGroupList::DoPCAs(uint8_t numberOfDimensions, ProgressEventCallback const& callback) -> void {
@@ -210,7 +222,8 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
     if (PipelineGroups.empty() || !dataHasBeenGenerated)
         return std::nullopt;
 
-    std::vector<std::vector<PipelineImageData*>> imageDataVectors;
+    std::vector<std::vector<std::reference_wrapper<PipelineParameterSpaceState>>> spaceStateVectors;
+    std::vector<std::vector<HdfImageReadHandle> const*> imageDataVectors;
     std::vector<FeatureData const*> featureDataVector;
     std::vector<SampleCoordinateData const*> pcaDataVector;
     std::vector<SampleCoordinateData const*> tsneDataVector;
@@ -226,7 +239,8 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
         auto const pcaData = group->GetPcaData();
         auto const tsneData = group->GetTsneData();
 
-        imageDataVectors.emplace_back(*imageData);
+        spaceStateVectors.emplace_back(group->GetParameterSpaceStates());
+        imageDataVectors.emplace_back(&*imageData);
         featureDataVector.emplace_back(&*featureData);
         pcaDataVector.emplace_back(&*pcaData);
         tsneDataVector.emplace_back(&*tsneData);
@@ -243,15 +257,16 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
     stateDataLists.reserve(PipelineGroups.size());
 
     for (int i = 0; i < imageDataVectors.size(); i++) {
-        std::vector<PipelineImageData*>& imageDataVector = imageDataVectors[i];
+        std::vector<std::reference_wrapper<PipelineParameterSpaceState>> const& spaceStateVector = spaceStateVectors[i];
+        std::vector<HdfImageReadHandle> const& imageDataVector = *imageDataVectors[i];
         FeatureData const& featureData = *featureDataVector[i];
         SampleCoordinateData const& pcaData = *pcaDataVector[i];
         SampleCoordinateData const& tsneData = *tsneDataVector[i];
 
         std::vector<ParameterSpaceStateData> stateDataList;
-        stateDataList.reserve(imageDataVectors[0].size());
-        for (int j = 0; j < imageDataVectors[i].size(); j++)
-            stateDataList.emplace_back(imageDataVector[j]->State, imageDataVector[j]->ImageData,
+        stateDataList.reserve(imageDataVectors[0]->size());
+        for (int j = 0; j < imageDataVectors[i]->size(); j++)
+            stateDataList.emplace_back(spaceStateVector[j], imageDataVector[j],
                                        featureData.Values[j], pcaData[j], tsneData[j]);
 
         stateDataLists.emplace_back(*PipelineGroups[i], std::move(stateDataList));
@@ -271,11 +286,18 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
 
 auto PipelineGroupList::ExportGeneratedImages(std::filesystem::path const& exportDir,
                                               PipelineGroupList::ProgressEventCallback const& callback) -> void {
-    std::vector<double> progressList (PipelineGroups.size(), 0.0);
     callback(0.0);
 
-    for (int i = 0; i < PipelineGroups.size(); i++)
-        PipelineGroups[i]->ExportGeneratedImages(exportDir, ProgressUpdater { i, progressList, callback });
+    if (GetDataStatus().Image == 0)
+        throw std::runtime_error("Image data has not been generated yet. Cannot export");
+
+    if (!is_directory(exportDir))
+        throw std::runtime_error("Given export path is not a directory.");
+
+    auto const exportPath = std::filesystem::path(exportDir) /= ImagesFile.filename();
+    std::filesystem::copy(ImagesFile, exportPath, std::filesystem::copy_options::overwrite_existing);
+
+    callback(1.0);
 }
 
 auto PipelineGroupList::ImportImages(std::vector<std::filesystem::path> const& importFilePaths,
@@ -292,7 +314,7 @@ auto PipelineGroupList::ImportImages(std::vector<std::filesystem::path> const& i
             return std::regex_match(path.string(), regex);
         });
 
-        PipelineGroups[i]->ImportImages(paths, ProgressUpdater { i, progressList, callback });
+//        PipelineGroups[i]->ImportImages(paths, ProgressUpdater { i, progressList, callback });
     }
 }
 
@@ -376,3 +398,9 @@ auto PipelineGroupList::MultiTaskProgressUpdater::operator()(double current) noe
 
     Callback(totalProgress);
 }
+
+
+std::filesystem::path const PipelineGroupList::DataDirectory = { "..\\data" };
+std::filesystem::path const PipelineGroupList::FeatureDirectory
+        = (std::filesystem::path(DataDirectory) /= { "features" });
+std::filesystem::path PipelineGroupList::ImagesFile {};

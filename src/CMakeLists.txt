@@ -1,7 +1,6 @@
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
-set(CMAKE_AUTOUIC ON)
-
+#set(CMAKE_AUTOUIC ON)
 
 ### add source files as executables ###
 file(GLOB_RECURSE UNCERTAINTY_PROPAGATION_SRC CONFIGURE_DEPENDS "*.h" "*.cpp" "*.ui")
@@ -108,35 +107,37 @@ vtk_module_autoinit(
         MODULES ${VTK_MODULES}
 )
 
-if (CMAKE_BUILD_TYPE STREQUAL Debug)
-    target_compile_definitions(uncertainty_propagation PUBLIC BUILD_TYPE_DEBUG=TRUE)
-endif ()
 
-
-### add Python ###
-find_package(Python 3.9 REQUIRED COMPONENTS Interpreter Development)
-
-#get_cmake_property(_variableNames VARIABLES)
-#list (SORT _variableNames)
-#foreach (_variableName ${_variableNames})
-#    if (_variableName MATCHES "PY" OR _variableName MATCHES "Py")
-#        message(STATUS "${_variableName}=${${_variableName}}")
-#    endif ()
-#endforeach()
-
-#target_link_libraries(uncertainty_propagation PRIVATE Python::Python Python::Module)
-
+### configure python files ###
 file(GLOB_RECURSE UNCERTAINTY_PROPAGATION_PY_MODULES CONFIGURE_DEPENDS "*.py" "*.yaml")
 
 set(PYTHON_MODULES_DIRECTORY "${CMAKE_BINARY_DIR}/PyModules")
 file(MAKE_DIRECTORY ${PYTHON_MODULES_DIRECTORY})
 
 foreach (py_module ${UNCERTAINTY_PROPAGATION_PY_MODULES})
-#    message(STATUS "Module=${py_module}")
-#    message(STATUS "ModuleDir=${CMAKE_BINARY_DIR}/PyModules")
     configure_file(${py_module} "${CMAKE_BINARY_DIR}/PyModules" COPYONLY)
 endforeach ()
 
-target_compile_definitions(uncertainty_propagation PUBLIC
+target_compile_definitions(uncertainty_propagation PRIVATE
         PYTHON_MODULES_DIRECTORY="${PYTHON_MODULES_DIRECTORY}"
         FEATURE_EXTRACTION_PARAMETERS_FILE="${PYTHON_MODULES_DIRECTORY}/params.yaml")
+
+
+### Detect OS ###
+if (WIN32)
+    target_compile_definitions(uncertainty_propagation PRIVATE UP_WINDOWS)
+elseif (UNIX)
+    target_compile_definitions(uncertainty_propagation PRIVATE UP_UNIX)
+else ()
+    message(FATAL_ERROR "Unsupported system")
+endif ()
+
+
+if (CMAKE_BUILD_TYPE STREQUAL Debug)
+    if (CMAKE_BUILD_TYPE STREQUAL Debug)
+        target_compile_definitions(uncertainty_propagation PRIVATE BUILD_TYPE_DEBUG=TRUE)
+    endif ()
+
+    get_target_property(COMPILE_DEFS uncertainty_propagation COMPILE_DEFINITIONS)
+    message(NOTICE "COMPILE_DEFINITIONS=${COMPILE_DEFS}")
+endif ()

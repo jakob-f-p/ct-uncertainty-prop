@@ -44,7 +44,7 @@ auto CuppingArtifactData::PopulateArtifact(CuppingArtifact& artifact) const noex
 
 CuppingArtifactWidget::CuppingArtifactWidget() :
         DarkIntensityValueSpinBox (new QDoubleSpinBox()),
-        CenterPointWidget(new CoordinateRowWidget({ -100.0, 100.0, 1.0, 0.0 }, "Center")) {
+        CenterPointWidget(new DoubleCoordinateRowWidget({ -100.0, 100.0, 1.0, 0.0 }, "Center")) {
 
     auto* fLayout = new QFormLayout(this);
     fLayout->setHorizontalSpacing(15);
@@ -65,5 +65,5 @@ auto CuppingArtifactWidget::GetData() noexcept -> CuppingArtifactData {
 auto CuppingArtifactWidget::Populate(const CuppingArtifactData& data) noexcept -> void {
     DarkIntensityValueSpinBox->setValue(data.DarkIntensityValue);
 
-    CenterPointWidget->SetRowData(0, CoordinateRowWidget::RowData(data.Center));
+    CenterPointWidget->SetRowData(0, DoubleCoordinateRowWidget::RowData(data.Center));
 }

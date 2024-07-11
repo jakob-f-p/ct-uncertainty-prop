@@ -1,13 +1,11 @@
-#include "CoordinateRowWidget.h"
+#include "CoordinateRowWidget.h.bak"
 
 #include <QDoubleSpinBox>
 #include <QGridLayout>
 #include <QLabel>
-#include <QSpinBox>
 
-template<typename ValueT, typename SpinBoxT>
-CoordinateRowWidget<ValueT, SpinBoxT>::CoordinateRowWidget(CoordinateRowWidget::NumericSettings numericSettings,
-                                           const QString& labelText) :
+CoordinateRowWidget::CoordinateRowWidget(CoordinateRowWidget::NumericSettings numericSettings,
+                                         const QString& labelText) :
         GLayout(new QGridLayout(this)),
         HasLabel(!labelText.isEmpty()) {
     GLayout->setContentsMargins(0, 0, 0, 0);
@@ -15,16 +13,14 @@ CoordinateRowWidget<ValueT, SpinBoxT>::CoordinateRowWidget(CoordinateRowWidget::
     AppendCoordinatesRow(numericSettings, labelText);
 }
 
-template<typename ValueT, typename SpinBoxT>
-CoordinateRowWidget<ValueT, SpinBoxT>::CoordinateRowWidget(bool hasLabel) :
+CoordinateRowWidget::CoordinateRowWidget(bool hasLabel) :
         GLayout(new QGridLayout(this)),
         HasLabel(hasLabel) {
 
     GLayout->setContentsMargins(0, 0, 0, 0);
 }
 
-template<typename ValueT, typename SpinBoxT>
-auto CoordinateRowWidget<ValueT, SpinBoxT>::AppendCoordinatesRow(const NumericSettings& numericSettings,
+auto CoordinateRowWidget::AppendCoordinatesRow(const NumericSettings& numericSettings,
                                                const QString& labelText) -> void {
 
     if (labelText.isEmpty() != !HasLabel)
@@ -44,7 +40,7 @@ auto CoordinateRowWidget<ValueT, SpinBoxT>::AppendCoordinatesRow(const NumericSe
         coordinateLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
         GLayout->addWidget(coordinateLabel, gridLayoutRow, gridLayoutColumn++);
 
-        auto* coordinateSpinBox = new SpinBoxT();
+        auto* coordinateSpinBox = new QDoubleSpinBox();
         coordinateSpinBox->setRange(numericSettings.Min, numericSettings.Max);
         coordinateSpinBox->setSingleStep(numericSettings.StepSize);
         coordinateSpinBox->setValue(numericSettings.DefaultValue);
@@ -55,12 +51,11 @@ auto CoordinateRowWidget<ValueT, SpinBoxT>::AppendCoordinatesRow(const NumericSe
     Rows.emplace_back(spinBoxRow);
 
     for (auto* spinBox : std::vector({ spinBoxRow.X, spinBoxRow.Y, spinBoxRow.Z }))
-        connect(spinBox, &SpinBoxT::valueChanged,
+        connect(spinBox, &QDoubleSpinBox::valueChanged,
                 this, [this]() { Q_EMIT ValueChanged(); });
 }
 
-template<typename ValueT, typename SpinBoxT>
-auto CoordinateRowWidget<ValueT, SpinBoxT>::GetRowData(uint8_t rowIdx) const -> CoordinateRowWidget::RowData {
+auto CoordinateRowWidget::GetRowData(uint8_t rowIdx) const -> CoordinateRowWidget::RowData {
     if (rowIdx >= Rows.size())
         throw std::runtime_error("Given row index too large");
 
@@ -69,8 +64,7 @@ auto CoordinateRowWidget<ValueT, SpinBoxT>::GetRowData(uint8_t rowIdx) const -> 
     return { row.X->value(), row.Y->value(), row.Z->value() };
 }
 
-template<typename ValueT, typename SpinBoxT>
-auto CoordinateRowWidget<ValueT, SpinBoxT>::GetRowData() const noexcept -> std::vector<RowData> {
+auto CoordinateRowWidget::GetRowData() const noexcept -> std::vector<RowData> {
     std::vector<RowData> rowData;
 
     std::transform(Rows.cbegin(), Rows.cend(), std::back_inserter(rowData),
@@ -79,8 +73,7 @@ auto CoordinateRowWidget<ValueT, SpinBoxT>::GetRowData() const noexcept -> std::
     return rowData;
 }
 
-template<typename ValueT, typename SpinBoxT>
-auto CoordinateRowWidget<ValueT, SpinBoxT>::SetRowData(uint8_t rowIdx, CoordinateRowWidget::RowData data) -> void {
+auto CoordinateRowWidget::SetRowData(uint8_t rowIdx, CoordinateRowWidget::RowData data) -> void {
     if (rowIdx >= Rows.size())
         throw std::runtime_error("Given row index too large");
 
@@ -89,6 +82,3 @@ auto CoordinateRowWidget<ValueT, SpinBoxT>::SetRowData(uint8_t rowIdx, Coordinat
     row.Y->setValue(data.Y);
     row.Z->setValue(data.Z);
 }
-
-template class CoordinateRowWidget<double, QDoubleSpinBox>;
-template class CoordinateRowWidget<int, QSpinBox>;

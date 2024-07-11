@@ -7,7 +7,7 @@
 #include <QWidget>
 #include <QGroupBox>
 
-class CoordinateRowWidget;
+class DoubleCoordinateRowWidget;
 class NameLineEdit;
 
 class QComboBox;
@@ -67,8 +67,8 @@ Q_SIGNALS:
 private:
     FloatPointObjectProperty const& Property;
 
-    CoordinateRowWidget* Current;
-    CoordinateRowWidget* MinMaxStep;
+    DoubleCoordinateRowWidget* Current;
+    DoubleCoordinateRowWidget* MinMaxStep;
 };
 
 

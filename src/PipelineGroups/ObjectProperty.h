@@ -57,27 +57,10 @@ public:
         if (this == &other)
             return true;
 
-        return Name == other.Name
-                && GetterAddress() == other.GetterAddress()
-                && SetterAddress() == other.SetterAddress()
-                && Range == other.Range;
+        return Name == other.Name && Range == other.Range;
     }
 
 private:
-    [[nodiscard]] auto
-    GetterAddress() const -> size_t {
-        using GetterFunctionType = T ();
-        GetterFunctionType* const* getterPointer = Getter.template target<GetterFunctionType*>();
-        return (size_t) *getterPointer;
-    }
-
-    [[nodiscard]] auto
-    SetterAddress() const -> size_t {
-        using SetterFunctionType = void (T);
-        SetterFunctionType* const* setterPointer = Setter.template target<SetterFunctionType*>();
-        return (size_t) *setterPointer;
-    }
-
     std::string Name;
     GetterFunction Getter;
     SetterFunction Setter;

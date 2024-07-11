@@ -30,6 +30,10 @@ auto DataInitializer::operator()(DataInitializer::Config config) -> void {
             DefaultSceneInitializer{ App_ }();
             break;
 
+        case Config::DEBUG:
+            DebugSceneInitializer{ App_ }();
+            break;
+
         case Config::SPHERE:
             InitializeSpherical();
             break;
@@ -45,7 +49,7 @@ auto DataInitializer::operator()(DataInitializer::Config config) -> void {
 auto DataInitializer::InitializeSpherical() noexcept -> void {
     BasicStructure sphere(Sphere{});
     sphere.SetTissueType(BasicStructureDetails::GetTissueTypeByName("Cancellous Bone"));
-    sphere.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    sphere.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F });
 
     CtDataTree.AddBasicStructure(std::move(sphere));
 
@@ -243,6 +247,50 @@ auto DefaultSceneInitializer::operator()() -> void {
 }
 
 
+DebugSceneInitializer::DebugSceneInitializer(App& app) :
+        SceneInitializer(app) {}
+
+auto DebugSceneInitializer::operator()() -> void {
+    auto cancellousBoneTissueType = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
+
+    auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
+    thresholdFilter.ThresholdBetween(cancellousBoneTissueType.CtNumber * 0.95,
+                                     cancellousBoneTissueType.CtNumber * 1.05);
+
+    BasicStructure sphere(Sphere{});
+    sphere.SetTissueType(cancellousBoneTissueType);
+    sphere.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 2.5F, 2.5F, 2.5F });
+
+    CtDataTree.AddBasicStructure(std::move(sphere));
+
+    static Range<float> const meanRange = { -25.0,  25.0, 5.0 };
+
+    auto& pipeline = Pipelines.AddPipeline();
+
+    ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
+
+    GaussianArtifact gaussianArtifact {};
+    gaussianArtifact.SetMean(meanRange.GetCenter());
+    gaussianArtifact.SetStandardDeviation(20.0);
+
+    BasicImageArtifact gaussianBasicArtifact { std::move(gaussianArtifact) };
+    gaussianBasicArtifact.SetName("gaussian");
+    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact));
+
+    PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Gaussian Pipelines");
+
+    auto gaussianProperties = gaussian.GetProperties();
+
+    auto& meanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
+    ParameterSpan<float> meanSpan {
+            ArtifactVariantPointer(&gaussian),
+            meanProperty,
+            { meanRange.Min, meanRange.Max, meanRange.Step },
+            "Mean Span"
+    };
+    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(meanSpan));
+}
+
 SimpleSceneInitializer::SimpleSceneInitializer(App& app) :
         SceneInitializer(app) {}
 
@@ -255,7 +303,7 @@ auto SimpleSceneInitializer::operator()() -> void {
 
     BasicStructure sphere(Sphere{});
     sphere.SetTissueType(cancellousBoneTissueType);
-    sphere.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    sphere.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F });
 
     CtDataTree.AddBasicStructure(std::move(sphere));
 
@@ -277,8 +325,8 @@ auto SimpleSceneInitializer::InitializeGaussian() noexcept -> void {
     ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 
     GaussianArtifact gaussianArtifact {};
-    gaussianArtifact.SetMean(meanRange.Min);
-    gaussianArtifact.SetStandardDeviation(sdRange.Min);
+    gaussianArtifact.SetMean(meanRange.GetCenter());
+    gaussianArtifact.SetStandardDeviation(sdRange.GetCenter());
 
     BasicImageArtifact gaussianBasicArtifact { std::move(gaussianArtifact) };
     gaussianBasicArtifact.SetName("gaussian");
@@ -292,7 +340,7 @@ auto SimpleSceneInitializer::InitializeGaussian() noexcept -> void {
     ParameterSpan<float> meanSpan {
             ArtifactVariantPointer(&gaussian),
             meanProperty,
-            { meanProperty.Get(), meanRange.Max, meanRange.Step },
+            { meanRange.Min, meanRange.Max, meanRange.Step },
             "Mean Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(meanSpan));
@@ -301,7 +349,7 @@ auto SimpleSceneInitializer::InitializeGaussian() noexcept -> void {
     ParameterSpan<float> sdSpan {
             ArtifactVariantPointer(&gaussian),
             sdProperty,
-            { sdProperty.Get(), sdRange.Max, sdRange.Step },
+            { sdRange.Min, sdRange.Max, sdRange.Step },
             "Standard Deviation Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(sdSpan));
@@ -318,8 +366,8 @@ auto SimpleSceneInitializer::InitializeCupping() noexcept -> void {
     ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 
     CuppingArtifact cuppingArtifact {};
-    cuppingArtifact.SetDarkIntensity(darkIntensityRange.Min);
-    cuppingArtifact.SetCenter(centerRange.Min);
+    cuppingArtifact.SetDarkIntensity(darkIntensityRange.GetCenter());
+    cuppingArtifact.SetCenter(centerRange.GetCenter());
 
     BasicImageArtifact cuppingBasicArtifact { std::move(cuppingArtifact) };
     cuppingBasicArtifact.SetName("cupping");
@@ -333,7 +381,7 @@ auto SimpleSceneInitializer::InitializeCupping() noexcept -> void {
     ParameterSpan<float> darkIntensitySpan {
             ArtifactVariantPointer(&cupping),
             darkIntensityProperty,
-            { darkIntensityProperty.Get(), darkIntensityRange.Max, darkIntensityRange.Step },
+            { darkIntensityRange.Min, darkIntensityRange.Max, darkIntensityRange.Step },
             "Dark Intensity Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&cupping), std::move(darkIntensitySpan));
@@ -342,7 +390,7 @@ auto SimpleSceneInitializer::InitializeCupping() noexcept -> void {
     ParameterSpan<FloatPoint> centerSpan {
             ArtifactVariantPointer(&cupping),
             centerProperty,
-            { centerProperty.Get(), centerRange.Max, centerRange.Step },
+            { centerRange.Min, centerRange.Max, centerRange.Step },
             "Center Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&cupping), std::move(centerSpan));
@@ -361,9 +409,9 @@ auto SimpleSceneInitializer::InitializeRing() noexcept -> void {
     RingArtifact ringArtifact {};
     ringArtifact.SetBrightRingWidth(5.0F);
     ringArtifact.SetDarkRingWidth(2.0F);
-    ringArtifact.SetDarkIntensity(darkRingIntensityRange.Min);
+    ringArtifact.SetDarkIntensity(darkRingIntensityRange.GetCenter());
     ringArtifact.SetBrightIntensity(0.0F);
-    ringArtifact.SetCenter(centerRange.Min);
+    ringArtifact.SetCenter(centerRange.GetCenter());
 
     BasicImageArtifact ringBasicArtifact { std::move(ringArtifact) };
     ringBasicArtifact.SetName("ring");
@@ -377,7 +425,7 @@ auto SimpleSceneInitializer::InitializeRing() noexcept -> void {
     ParameterSpan<float> darkIntensitySpan {
             ArtifactVariantPointer(&ring),
             darkRingIntensityProperty,
-            { darkRingIntensityProperty.Get(), darkRingIntensityRange.Max, darkRingIntensityRange.Step },
+            { darkRingIntensityRange.Min, darkRingIntensityRange.Max, darkRingIntensityRange.Step },
             "Dark Ring Intensity Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&ring), std::move(darkIntensitySpan));
@@ -386,7 +434,7 @@ auto SimpleSceneInitializer::InitializeRing() noexcept -> void {
     ParameterSpan<FloatPoint> centerSpan {
             ArtifactVariantPointer(&ring),
             centerProperty,
-            { centerProperty.Get(), centerRange.Max, centerRange.Step },
+            { centerRange.Min, centerRange.Max, centerRange.Step },
             "Center Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&ring), std::move(centerSpan));
@@ -403,8 +451,8 @@ auto SimpleSceneInitializer::InitializeSaltPepper() noexcept -> void {
     SaltPepperArtifact saltPepperArtifact {};
     saltPepperArtifact.SetSaltIntensity(1000.0F);
     saltPepperArtifact.SetPepperIntensity(-2000.0F);
-    saltPepperArtifact.SetSaltAmount(saltAmountRange.Min);
-    saltPepperArtifact.SetPepperAmount(pepperAmountRange.Min);
+    saltPepperArtifact.SetSaltAmount(saltAmountRange.GetCenter());
+    saltPepperArtifact.SetPepperAmount(pepperAmountRange.GetCenter());
 
     BasicImageArtifact saltPepperBasicArtifact { std::move(saltPepperArtifact) };
     saltPepperBasicArtifact.SetName("salt and pepper");
@@ -418,7 +466,7 @@ auto SimpleSceneInitializer::InitializeSaltPepper() noexcept -> void {
     ParameterSpan<float> saltAmountSpan {
             ArtifactVariantPointer(&saltPepper),
             saltAmountProperty,
-            { saltAmountProperty.Get(), saltAmountRange.Max, saltAmountRange.Step },
+            { saltAmountRange.Min, saltAmountRange.Max, saltAmountRange.Step },
             "Salt Amount Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(saltAmountSpan));
@@ -427,7 +475,7 @@ auto SimpleSceneInitializer::InitializeSaltPepper() noexcept -> void {
     ParameterSpan<float> pepperAmountSpan {
             ArtifactVariantPointer(&saltPepper),
             pepperAmountProperty,
-            { pepperAmountProperty.Get(), pepperAmountRange.Max, pepperAmountRange.Step },
+            { pepperAmountRange.Min, pepperAmountRange.Max, pepperAmountRange.Step },
             "Pepper Amount Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(pepperAmountSpan));
@@ -455,7 +503,7 @@ auto SimpleSceneInitializer::InitializeStairStep() noexcept -> void {
     ParameterSpan<float> zAxisSamplingRateSpan {
             ArtifactVariantPointer(&stairStep),
             zAxisSamplingRateProperty,
-            { zAxisSamplingRateProperty.Get(), zSamplingRate.Max, zSamplingRate.Step },
+            { zSamplingRate.Min, zSamplingRate.Max, zSamplingRate.Step },
             "z-Axis Sampling Rate Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&stairStep), std::move(zAxisSamplingRateSpan));
@@ -472,9 +520,9 @@ auto SimpleSceneInitializer::InitializeWindMill() noexcept -> void {
     WindMillArtifact windMillArtifact {};
     windMillArtifact.SetCenter({ 0, 0, 0 });
     windMillArtifact.SetDarkIntensity(0.0);
-    windMillArtifact.SetBrightIntensity(brightIntensityRange.Min);
-    windMillArtifact.SetDarkAngularWidth(angularWidth.Min);
-    windMillArtifact.SetBrightAngularWidth(angularWidth.Min);
+    windMillArtifact.SetBrightIntensity(brightIntensityRange.GetCenter());
+    windMillArtifact.SetDarkAngularWidth(angularWidth.GetCenter());
+    windMillArtifact.SetBrightAngularWidth(angularWidth.GetCenter());
 
     BasicImageArtifact windMillBasicArtifact { std::move(windMillArtifact) };
     windMillBasicArtifact.SetName("wind mill");
@@ -484,29 +532,29 @@ auto SimpleSceneInitializer::InitializeWindMill() noexcept -> void {
 
     auto windMillProperties = windMill.GetProperties();
 
-    auto& brightIntensityProperties = windMillProperties.GetPropertyByName<float>("Bright Intensity");
+    auto& brightIntensityProperty = windMillProperties.GetPropertyByName<float>("Bright Intensity");
     ParameterSpan<float> brightIntensitySpan {
             ArtifactVariantPointer(&windMill),
-            brightIntensityProperties,
-            { brightIntensityProperties.Get(), brightIntensityRange.Max, brightIntensityRange.Step },
+            brightIntensityProperty,
+            { brightIntensityRange.Min, brightIntensityRange.Max, brightIntensityRange.Step },
             "Bright Intensity Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&windMill), std::move(brightIntensitySpan));
 
-    auto& brightAngularWidth = windMillProperties.GetPropertyByName<float>("Bright Angular Width");
+    auto& brightAngularWidthProperty = windMillProperties.GetPropertyByName<float>("Bright Angular Width");
     ParameterSpan<float> brightAngularWidthSpan {
             ArtifactVariantPointer(&windMill),
-            brightAngularWidth,
-            { brightAngularWidth.Get(), angularWidth.Max, angularWidth.Step },
+            brightAngularWidthProperty,
+            { angularWidth.Min, angularWidth.Max, angularWidth.Step },
             "Bright Angular Width Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&windMill), std::move(brightAngularWidthSpan));
 
-    auto& darkAngularWidth = windMillProperties.GetPropertyByName<float>("Dark Angular Width");
+    auto& darkAngularWidthProperty = windMillProperties.GetPropertyByName<float>("Dark Angular Width");
     ParameterSpan<float> darkAngularWidthSpan {
             ArtifactVariantPointer(&windMill),
-            darkAngularWidth,
-            { darkAngularWidth.Get(), angularWidth.Max, angularWidth.Step },
+            darkAngularWidthProperty,
+            { angularWidth.Min, angularWidth.Max, angularWidth.Step },
             "Dark Angular Width Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&windMill), std::move(darkAngularWidthSpan));
@@ -520,7 +568,7 @@ auto SimpleSceneInitializer::InitializeMotion() noexcept -> void {
     auto& structureArtifacts = pipeline.GetStructureArtifactList(0);
 
     MotionArtifact motionArtifact {};
-    motionArtifact.SetCtNumberFactor(ctNumberFactorRange.Min);
+    motionArtifact.SetCtNumberFactor(ctNumberFactorRange.GetCenter());
     motionArtifact.SetTransform({ 3.0, -3.0, -3.0,
                                   0.0, 0.0, 0.0,
                                   1.1, 1.0, 1.0 });
@@ -537,7 +585,7 @@ auto SimpleSceneInitializer::InitializeMotion() noexcept -> void {
     ParameterSpan<float> ctNumberFactorSpan {
             ArtifactVariantPointer(&motion),
             ctNumberFactorProperty,
-            { ctNumberFactorProperty.Get(), ctNumberFactorRange.Max, ctNumberFactorRange.Step },
+            { ctNumberFactorRange.Min, ctNumberFactorRange.Max, ctNumberFactorRange.Step },
             "Ct Number Factor Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&motion), std::move(ctNumberFactorSpan));

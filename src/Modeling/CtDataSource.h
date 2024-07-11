@@ -1,5 +1,7 @@
 #pragma once
 
+#include "../Utils/LinearAlgebraTypes.h"
+
 #include <vtkImageAlgorithm.h>
 
 #include <array>
@@ -21,12 +23,30 @@ public:
     /**
      * Set physical dimensions of the scanned image in mm along each axis.
      */
-    void SetVolumeDataPhysicalDimensions(float x, float y, float z);
+    void SetVolumeDataPhysicalDimensions(FloatVector dimensions) {
+        if (PhysicalDimensions == dimensions)
+            return;
+
+        PhysicalDimensions = dimensions;
+
+        Modified();
+    }
+
+    FloatVector GetVolumeDataPhysicalDimensions() const noexcept { return PhysicalDimensions; }
 
     /**
      * Set number of voxels along each axis.
      */
-    void SetVolumeNumberOfVoxels(int x, int y, int z);
+    void SetVolumeNumberOfVoxels(std::array<int, 3> voxelCounts) {
+        if (NumberOfVoxels == voxelCounts)
+            return;
+
+        NumberOfVoxels = voxelCounts;
+
+        Modified();
+    }
+
+    std::array<int, 3> GetVolumeNumberOfVoxels() const noexcept { return NumberOfVoxels; }
 
     CtDataSource(const CtDataSource&) = delete;
     void operator=(const CtDataSource&) = delete;
@@ -73,7 +93,7 @@ protected:
         void operator()(vtkIdType pointId, vtkIdType endPointId) const;
     };
 
-    std::array<float, 3> PhysicalDimensions;
-    std::array<int, 3> NumberOfVoxels;
+    FloatVector PhysicalDimensions {};
+    std::array<int, 3> NumberOfVoxels {};
     CtStructureTree* DataTree = nullptr;
 };

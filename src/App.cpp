@@ -48,7 +48,7 @@ App::App(int argc, char* argv[]) :
 
             return pipelineGroupList;
         }()),
-        PyInterpreter(new PythonInterpreter()) {
+        PyInterpreter(nullptr) {
 
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 
@@ -85,6 +85,7 @@ auto App::Run() -> int {
 
     MainWin = std::make_unique<MainWindow>(*CtDataTree, *DataSource, *ThresholdFilterAlgorithm,
                                            *Pipelines, *PipelineGroups);
+
     MainWin->show();
 
     return QApplication::exec();
@@ -103,6 +104,10 @@ auto App::GetCtDataTree() const -> CtStructureTree& {
     return *CtDataTree;
 }
 
+auto App::GetCtDataSource() const -> CtDataSource& {
+    return *DataSource;
+}
+
 auto App::GetPipelines() const -> PipelineList& {
     return *Pipelines;
 }
@@ -115,7 +120,10 @@ auto App::GetPipelineGroups() const -> PipelineGroupList& {
     return *PipelineGroups;
 }
 
-auto App::GetPythonInterpreter() const -> PythonInterpreter& {
+auto App::GetPythonInterpreter() -> PythonInterpreter& {
+    if (!PyInterpreter)
+        PyInterpreter = std::make_unique<PythonInterpreter>();
+
     return *PyInterpreter;
 }
 

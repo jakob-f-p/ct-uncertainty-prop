@@ -6,7 +6,7 @@
 
 #include <vtkNew.h>
 
-class CoordinateRowWidget;
+class DoubleCoordinateRowWidget;
 class WindMillArtifactFilter;
 class WindMillArtifactData;
 
@@ -136,5 +136,5 @@ private:
     QDoubleSpinBox* BrightIntensityValueSpinBox;
     QDoubleSpinBox* DarkIntensityValueSpinBox;
 
-    CoordinateRowWidget* CenterPointWidget;
+    DoubleCoordinateRowWidget* CenterPointWidget;
 };

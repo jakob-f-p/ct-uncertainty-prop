@@ -1,7 +1,7 @@
 import numpy as np
 import numpy.typing as npt
 
-from datapaths import FeatureData, SampleId
+from feature_extraction_cpp import FeatureData, SampleId
 from sklearn import preprocessing
 from typing import List
 

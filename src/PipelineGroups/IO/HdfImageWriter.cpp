@@ -5,7 +5,7 @@
 #include <vtkInformation.h>
 #include <vtkObjectFactory.h>
 #include <vtkPointData.h>
-#include <vtkTypeUInt16Array.h>
+#include <vtkTypeInt16Array.h>
 
 #include <highfive/highfive.hpp>
 
@@ -43,7 +43,7 @@ void HdfImageWriter::WriteData() {
     for (int i = 0; i < numberOfInputConnections; i++)
         InputImages.emplace_back(*vtkImageData::SafeDownCast(GetInputDataObject(0, i)));
 
-    unsigned int const openFlags = TruncateFileBeforeWrite ? HighFive::File::Truncate : HighFive::File::Excl;
+    unsigned int const openFlags = TruncateFileBeforeWrite ? HighFive::File::Truncate : HighFive::File::ReadWrite;
     auto file = HighFive::File(Filename.string(), openFlags);
 
     if (InputImages.empty())
@@ -73,9 +73,9 @@ auto HdfImageWriter::InitializeFile(HighFive::File& file) -> void {
     auto& image = InputImages.at(0).get();
 
     std::vector<int> const imageDimensions { image.GetDimensions(), std::next(image.GetDimensions(), 3) };
-    std::vector<size_t> dataSpaceDimensions { imageDimensions.begin(), imageDimensions.end() };
-    dataSpaceDimensions.push_back(TotalNumberOfImages);
-    HighFive::DataSpace const dataSpace { dataSpaceDimensions };
+    size_t const numberOfElements = std::reduce(imageDimensions.cbegin(), imageDimensions.cend(), 1, std::multiplies{});
+    HighFive::DataSpace const dataSpace { TotalNumberOfImages, numberOfElements };
+
     for (auto const& arrayName : ArrayNames) {
         auto* pointData = image.GetPointData();
         if (!pointData)
@@ -86,18 +86,20 @@ auto HdfImageWriter::InitializeFile(HighFive::File& file) -> void {
             throw std::runtime_error("abstract array must not be null");
 
         int const vtkDataType = abstractArray->GetDataType();
-        using H5Type = std::variant<AtomicType<float>, AtomicType<unsigned short>>;
+        using H5Type = std::variant<AtomicType<float>, AtomicType<short>>;
 
         H5Type h5Type = [vtkDataType]() -> H5Type {
             switch (vtkDataType) {
-                case VTK_FLOAT:          return AtomicType<float> {};
-                case VTK_UNSIGNED_SHORT: return AtomicType<unsigned short> {};
+                case VTK_FLOAT: return AtomicType<float> {};
+                case VTK_SHORT: return AtomicType<short> {};
                 default: throw std::runtime_error("vtk data type not supported");
             }
         }();
 
-        std::visit([&file, &arrayName, &dataSpace](auto type) { file.createDataSet(arrayName, dataSpace, type); },
-                   h5Type);
+        std::visit([vtkDataType, &file, &arrayName, &dataSpace](auto type) {
+            auto dataSet = file.createDataSet(arrayName, dataSpace, type);
+            dataSet.createAttribute("vtkType", vtkDataType);
+        }, h5Type);
     }
 
     HighFive::DataSpace const sampleIdsAttributeDataSpace { TotalNumberOfImages };
@@ -116,24 +118,29 @@ auto HdfImageWriter::InitializeFile(HighFive::File& file) -> void {
 
 auto HdfImageWriter::WriteImageBatch(HighFive::File& file) -> void {
     auto sampleIdsAttribute = file.getAttribute("sample ids");
-    std::vector<SampleId> sampleIds { sampleIdsAttribute.getSpace().getElementCount() };
-    sampleIdsAttribute.read_raw<SampleId>(sampleIds.data(), GetSampleIdDataType());
+    std::vector<SampleId> sampleIdsBuffer { sampleIdsAttribute.getSpace().getElementCount() };
+    sampleIdsAttribute.read_raw<SampleId>(sampleIdsBuffer.data(), GetSampleIdDataType());
     auto batchSampleIds = std::views::transform(Batch, &BatchImage::Id);
-    std::copy(batchSampleIds.begin(), batchSampleIds.end(), std::next(sampleIds.begin(), NumberOfProcessedImages));
+    std::copy(batchSampleIds.begin(), batchSampleIds.end(),
+              std::next(sampleIdsBuffer.begin(), NumberOfProcessedImages));
+    std::span<SampleId> const sampleIds { sampleIdsBuffer.begin(),
+                                          std::next(sampleIdsBuffer.begin(),
+                                                    NumberOfProcessedImages + InputImages.size()) };
 
-    std::vector<SampleId> sortedSampleIds { sampleIds.cbegin(), sampleIds.cend() };
+    std::vector<SampleId> sortedSampleIds { sampleIds.begin(), sampleIds.end() };
     std::sort(sortedSampleIds.begin(), sortedSampleIds.end());
     auto adjacentIt = std::adjacent_find(sortedSampleIds.begin(), sortedSampleIds.end());
     if (adjacentIt != sortedSampleIds.end())
         throw std::runtime_error("duplicate sample ids");
 
-    sampleIdsAttribute.write_raw(sampleIds.data(), GetSampleIdDataType());
+    sampleIdsAttribute.write_raw(sampleIdsBuffer.data(), GetSampleIdDataType());
 
-    using ImageDataSpans = std::variant<std::vector<std::span<float>>, std::vector<std::span<unsigned short>>>;
-    using ImagesDataSpans = std::vector<ImageDataSpans>;
-    ImagesDataSpans imagesDataSpans { ArrayNames.size() };
-    std::transform(ArrayNames.cbegin(), ArrayNames.cend(), imagesDataSpans.begin(),
-                   [this](std::string const& arrayName) -> ImageDataSpans {
+    using ImageDataVectors = std::variant<std::vector<std::vector<float>>, std::vector<std::vector<short>>>;
+    using ImagesDataVectors = std::vector<ImageDataVectors>;
+    ImagesDataVectors imagesDataVectors { ArrayNames.size() };
+    std::transform(ArrayNames.cbegin(), ArrayNames.cend(),
+                   imagesDataVectors.begin(),
+                   [this](std::string const& arrayName) -> ImageDataVectors {
         auto* pointData = InputImages.at(0).get().GetPointData();
         if (!pointData)
             throw std::runtime_error("point data must not be null");
@@ -143,27 +150,27 @@ auto HdfImageWriter::WriteImageBatch(HighFive::File& file) -> void {
             throw std::runtime_error("abstract array must not be null");
 
         int const vtkDataType = abstractArray->GetDataType();
-        std::variant<vtkFloatArray*, vtkTypeUInt16Array*> arrayPointerVariant
-                = [vtkDataType, abstractArray]() -> std::variant<vtkFloatArray*, vtkTypeUInt16Array*> {
+        std::variant<vtkFloatArray*, vtkTypeInt16Array*> arrayPointerVariant
+        = [vtkDataType, abstractArray]() -> std::variant<vtkFloatArray*, vtkTypeInt16Array*> {
 
             switch (vtkDataType) {
-                case VTK_FLOAT:          return vtkFloatArray::SafeDownCast(abstractArray);
-                case VTK_UNSIGNED_SHORT: return vtkTypeUInt16Array::SafeDownCast(abstractArray);
+                case VTK_FLOAT: return vtkFloatArray::SafeDownCast(abstractArray);
+                case VTK_SHORT: return vtkTypeInt16Array::SafeDownCast(abstractArray);
                 default: throw std::runtime_error("vtk data type not supported");
             }
         }();
 
         size_t const numberOfTuples = std::visit([](auto* firstArray) { return firstArray->GetNumberOfTuples(); },
-                                              arrayPointerVariant);
+                                                 arrayPointerVariant);
 
-        return std::visit([this, numberOfTuples, &arrayName](auto* firstArray) -> ImageDataSpans {
+        return std::visit([this, numberOfTuples, &arrayName](auto* firstArray) -> ImageDataVectors {
             using ArrayType = std::remove_pointer_t<decltype(firstArray)>;
             using ValueType = ArrayType::ValueType;
 
-            std::vector<std::span<ValueType>> imageDataSpans { InputImages.size() };
+            std::vector<std::vector<ValueType>> imageDataVectors { InputImages.size() };
             std::ranges::transform(InputImages | std::views::transform(&std::reference_wrapper<vtkImageData>::get),
-                                   imageDataSpans.begin(),
-                                   [numberOfTuples, &arrayName](vtkImageData& image) -> std::span<ValueType> {
+                                   imageDataVectors.begin(),
+                                   [numberOfTuples, &arrayName](vtkImageData& image) -> std::vector<ValueType> {
 
                 auto* pointData = image.GetPointData();
                 if (!pointData)
@@ -177,65 +184,32 @@ auto HdfImageWriter::WriteImageBatch(HighFive::File& file) -> void {
 
                 auto* beginPointer = array->WritePointer(0, numberOfTuples);
 
-                return std::span<ValueType> { beginPointer, std::next(beginPointer, numberOfTuples) };
+                return std::vector<ValueType> { beginPointer, std::next(beginPointer, numberOfTuples) };
             });
-
-            return imageDataSpans;
+            return imageDataVectors;
         }, arrayPointerVariant);
     });
 
-    using VectorVariant = std::variant<std::vector<float>, std::vector<unsigned short>>;
-    std::vector<VectorVariant> imagesDataVector { ArrayNames.size() };
-    uint32_t const totalImageSize = InputImages.at(0).get().GetNumberOfPoints() * TotalNumberOfImages;
-    std::transform(imagesDataSpans.cbegin(), imagesDataSpans.cend(),
-                   imagesDataVector.begin(),
-                   [totalImageSize](ImageDataSpans const& imageDataSpans) -> VectorVariant {
-
-        return std::visit([totalImageSize](auto const& spans) -> VectorVariant {
-            using SpanVectorType = std::remove_reference_t<std::remove_cv_t<decltype(spans)>>;
-            using SpanType = SpanVectorType::value_type;
-            using ValueType = SpanType::value_type;
-
-            std::vector<ValueType> imagesData {};
-            imagesData.reserve(totalImageSize);
-            for (auto const& imageDataSpan : spans)
-                std::copy(imageDataSpan.begin(), imageDataSpan.end(), std::back_inserter(imagesData));
-
-            return imagesData;
-        }, imageDataSpans);
-    });
-
-    std::vector<HighFive::HyperSlab> hyperSlabs { ArrayNames.size() };
-    std::transform(ArrayNames.cbegin(), ArrayNames.cend(),
-                   hyperSlabs.begin(),
-                   [this, &file](std::string const& dataSetName) {
-        auto dataSet = file.getDataSet(dataSetName);
-        auto const dataSpaceDimensions = dataSet.getSpace().getDimensions();
-
-        auto const firstIdx = NumberOfProcessedImages;
-        auto const numberOfImages = TotalNumberOfImages - NumberOfProcessedImages;
-        std::vector<size_t> const startCoordinates { 0, 0, 0, firstIdx };
-        std::vector<size_t> const counts { 4, 1 };
-        std::vector<size_t> blockSize { dataSpaceDimensions.begin(), dataSpaceDimensions.end() };
-        blockSize.push_back(numberOfImages);
-
-        HighFive::RegularHyperSlab const regularSlab { startCoordinates, counts, {}, blockSize };
-
-        return HighFive::HyperSlab { regularSlab };
-    });
-
     for (size_t i = 0; i < ArrayNames.size(); i++) {
-        auto dataSet = file.getDataSet(ArrayNames.at(i));
-        auto& dataVector = imagesDataVector.at(i);
-        auto& hyperSlab = hyperSlabs.at(i);
+        auto& arrayName = ArrayNames.at(i);
+        auto& dataVector = imagesDataVectors.at(i);
 
-        std::visit([&dataSet, &hyperSlab](auto& data) {
-            auto selection = dataSet.select(hyperSlab);
-            selection.write_raw(data.data());
+        auto dataSet = file.getDataSet(ArrayNames.at(i));
+        auto const dataSpaceDimensions = dataSet.getSpace().getDimensions();
+        auto const firstIdx = NumberOfProcessedImages;
+        auto const numberOfImages = InputImages.size();
+        std::vector<size_t> const offset { firstIdx, 0 };
+        std::vector<size_t> const counts { numberOfImages, dataSpaceDimensions.at(1) };
+
+        std::visit([&dataSet, &offset, &counts](auto& data) {
+            auto selection = dataSet.select(offset, counts);
+            selection.write(data);
         }, dataVector);
     }
 
     NumberOfProcessedImages += InputImages.size();
+
+    TruncateFileBeforeWrite = false;
 }
 
 auto HdfImageWriter::GetSampleIdDataType() noexcept -> HighFive::DataType const& {

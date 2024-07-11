@@ -84,6 +84,7 @@ public Q_SLOTS:
 private:
     PipelineBatchListData const* BatchListData;
     CtDataSource& DataSource;
+    vtkSmartPointer<vtkImageData> CurrentImage;
 };
 
 

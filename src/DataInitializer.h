@@ -1,5 +1,7 @@
 #pragma once
 
+#include "Utils/LinearAlgebraTypes.h"
+
 #include <cstdint>
 
 class App;
@@ -14,6 +16,7 @@ public:
 
     enum struct Config : uint8_t {
         DEFAULT,
+        DEBUG,
         SPHERE,
         SIMPLE_SCENE
     };
@@ -41,6 +44,9 @@ public:
         T Min;
         T Max;
         T Step;
+
+        [[nodiscard]] auto
+        GetCenter() const noexcept -> T { return (Max + Min) / 2; }
     };
 
 protected:
@@ -50,10 +56,28 @@ protected:
     PipelineGroupList& PipelineGroups;
 };
 
+template<>
+auto inline SceneInitializer::Range<FloatPoint>::GetCenter() const noexcept -> FloatPoint {
+    FloatPoint result {};
+    for (int i = 0; i < 3; i++)
+        result[i] = (Max[i] + Min[i]) / 2;
+
+    return result;
+}
+
 
 class DefaultSceneInitializer : public SceneInitializer {
 public:
     explicit DefaultSceneInitializer(App& app);
+
+    auto
+    operator()() -> void;
+};
+
+
+class DebugSceneInitializer : public SceneInitializer {
+public:
+    explicit DebugSceneInitializer(App& app);
 
     auto
     operator()() -> void;

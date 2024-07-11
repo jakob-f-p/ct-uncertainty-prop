@@ -26,7 +26,7 @@ struct PipelineImageData {
 
 class PipelineBatch {
     using ParameterSpaceState = std::unique_ptr<PipelineParameterSpaceState>;
-    using PipelineStates = std::vector<ParameterSpaceState>;
+    using PipelineStates = std::vector<std::unique_ptr<PipelineParameterSpaceState>>;
 
 public:
     explicit PipelineBatch(PipelineGroup const& pipelineGroup);
@@ -96,6 +96,18 @@ private:
     GetIdx(PipelineParameterSpaceState const& state) const -> uint32_t;
 
     struct DoExport {
+        auto
+        operator()(PipelineImageData& image) const -> void;
+
+        PipelineBatch& Batch;
+        uint32_t GroupIdx;
+        std::string TimeStampString;
+        std::atomic<double>& Progress;
+        std::atomic_uint& NumberOfExportedImages;
+        size_t NumberOfImages;
+    };
+
+    struct DoExport1 {
         auto
         operator()(PipelineImageData& image) const -> void;
 

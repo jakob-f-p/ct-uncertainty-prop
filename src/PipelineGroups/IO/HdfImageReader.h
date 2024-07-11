@@ -4,6 +4,10 @@
 
 #include "HdfImageWriter.h"
 
+namespace HighFive {
+    class File;
+}
+
 
 class HdfImageReader : public vtkImageAlgorithm {
 public:
@@ -25,6 +29,16 @@ public:
         Modified();
     }
 
+    virtual auto
+    SetArrayNames(std::vector<std::string>&& arrayNames) noexcept -> void {
+        if (ArrayNames == arrayNames)
+            return;
+
+        ArrayNames = std::move(arrayNames);
+
+        Modified();
+    }
+
     using BatchImage = HdfImageWriter::BatchImage;
     using BatchImages = HdfImageWriter::BatchImages;
 
@@ -39,15 +53,6 @@ protected:
     auto FillOutputPortInformation(int port, vtkInformation *info) -> int override;
 
 private:
-    auto
-    ReadImageBatch1(HighFive::DataSet& dataSet) -> void;
-
     std::filesystem::path Filename;
-    SampleId MaxSampleId {};
-    BatchImages Batch {};
-    uint16_t TotalNumberOfImages = 0;
-    uint16_t ProcessedImages = 0;
-    bool TruncateFileBeforeWrite = true;
-
-    std::vector<std::reference_wrapper<vtkImageData>> InputImages;
+    std::vector<std::string> ArrayNames;
 };

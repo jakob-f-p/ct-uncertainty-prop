@@ -1,6 +1,7 @@
 .idea/
 
 cmake-build-debug-visual-studio/
+cmake-build-debug-visual-studio-event-trace/
 cmake-build-release-visual-studio/
 cmake-build-relwithdebinfo-visual-studio/
 qt-creator-build/

@@ -3,6 +3,7 @@
 #include "PipelineGroupListView.h"
 #include "../Utils/NameLineEdit.h"
 #include "../Utils/WidgetUtils.h"
+#include "../../Artifacts/Pipeline.h"
 #include "../../PipelineGroups/PipelineGroupList.h"
 
 #include <QComboBox>

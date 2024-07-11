@@ -7,7 +7,7 @@
 
 #include <vtkNew.h>
 
-class CoordinateRowWidget;
+class DoubleCoordinateRowWidget;
 class CuppingArtifactFilter;
 class CuppingArtifactData;
 
@@ -107,5 +107,5 @@ public:
 private:
     QDoubleSpinBox* DarkIntensityValueSpinBox;
 
-    CoordinateRowWidget* CenterPointWidget;
+    DoubleCoordinateRowWidget* CenterPointWidget;
 };

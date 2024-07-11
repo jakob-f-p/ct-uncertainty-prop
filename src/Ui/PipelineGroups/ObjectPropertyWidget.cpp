@@ -87,10 +87,10 @@ FloatPointParameterSpanWidget::FloatPointParameterSpanWidget(FloatPointObjectPro
                                                              QWidget* parent) :
         QWidget(parent),
         Property(property),
-        Current (new CoordinateRowWidget({ property.GetRange().Min, property.GetRange().Max, property.GetRange().Step,
+        Current (new DoubleCoordinateRowWidget({ property.GetRange().Min, property.GetRange().Max, property.GetRange().Step,
                                            0.0, property.GetRange().Decimals })),
         MinMaxStep([&]() {
-            auto* coordinateRowWidget = new CoordinateRowWidget(true);
+            auto* coordinateRowWidget = new DoubleCoordinateRowWidget(true);
             auto range = property.GetRange();
             coordinateRowWidget->AppendCoordinatesRow({ range.Min, range.Max, range.Step, 0.0, range.Decimals }, "Min");
             coordinateRowWidget->AppendCoordinatesRow({ range.Min, range.Max, range.Step, 0.0, range.Decimals }, "Max");
@@ -102,7 +102,7 @@ FloatPointParameterSpanWidget::FloatPointParameterSpanWidget(FloatPointObjectPro
     auto* fLayout = new QFormLayout(this);
 
     fLayout->addRow("Current", Current);
-    auto currentData = CoordinateRowWidget::RowData(property.Get());
+    auto currentData = DoubleCoordinateRowWidget::RowData(property.Get());
     Current->SetRowData(0, currentData);
     Current->setEnabled(false);
 
@@ -110,15 +110,15 @@ FloatPointParameterSpanWidget::FloatPointParameterSpanWidget(FloatPointObjectPro
     MinMaxStep->SetRowData(0, currentData);
     MinMaxStep->SetRowData(1, currentData);
 
-    connect(MinMaxStep, &CoordinateRowWidget::ValueChanged,
+    connect(MinMaxStep, &DoubleCoordinateRowWidget::ValueChanged,
             this, [this]() { Q_EMIT ValueChanged(); });
 }
 
 auto FloatPointParameterSpanWidget::SetParameterSpan(ParameterSpan<FloatPoint> const& parameterSpan) noexcept -> void {
     auto numbers = parameterSpan.GetNumbers();
-    MinMaxStep->SetRowData(0, CoordinateRowWidget::RowData(numbers.Min));
-    MinMaxStep->SetRowData(1, CoordinateRowWidget::RowData(numbers.Max));
-    MinMaxStep->SetRowData(2, CoordinateRowWidget::RowData(numbers.Step));
+    MinMaxStep->SetRowData(0, DoubleCoordinateRowWidget::RowData(numbers.Min));
+    MinMaxStep->SetRowData(1, DoubleCoordinateRowWidget::RowData(numbers.Max));
+    MinMaxStep->SetRowData(2, DoubleCoordinateRowWidget::RowData(numbers.Step));
 
     MinMaxStep->setEnabled(false);
 }

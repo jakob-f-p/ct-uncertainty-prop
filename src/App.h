@@ -38,6 +38,9 @@ public:
     GetCtDataTree() const -> CtStructureTree&;
 
     [[nodiscard]] auto
+    GetCtDataSource() const -> CtDataSource&;
+
+    [[nodiscard]] auto
     GetPipelines() const -> PipelineList&;
 
     [[nodiscard]] auto
@@ -47,7 +50,7 @@ public:
     GetPipelineGroups() const -> PipelineGroupList&;
 
     [[nodiscard]] auto
-    GetPythonInterpreter() const -> PythonInterpreter&;
+    GetPythonInterpreter() -> PythonInterpreter&;
 
 protected:
     App(int argc, char* argv[]);

@@ -1,11 +1,15 @@
 #include "HdfImageReader.h"
 
+#include <vtkFloatArray.h>
 #include <vtkImageData.h>
 #include <vtkObjectFactory.h>
+#include <vtkPointData.h>
+#include <vtkTypeInt16Array.h>
 
 #include <highfive/highfive.hpp>
 
 #include <ranges>
+#include <variant>
 
 
 vtkStandardNewMacro(HdfImageReader)
@@ -20,22 +24,25 @@ auto HdfImageReader::FillOutputPortInformation(int /*port*/, vtkInformation* /*i
 
 auto HdfImageReader::ReadImageBatch(BatchImages& batchImages) -> void {
     if (batchImages.empty())
-        return;
+        throw std::runtime_error("batch images must not be empty");
+
+    if (ArrayNames.empty())
+        throw std::runtime_error("array names must not be empty");
 
     if (Filename.empty() || !is_regular_file(Filename))
         throw std::runtime_error("invalid filename");
 
+
     auto file = HighFive::File(Filename.string(), HighFive::File::ReadOnly);
-    auto dataSet = file.getDataSet("images");
 
 
-    auto sampleIdsAttribute = dataSet.getAttribute("sample ids");
+    auto sampleIdsAttribute = file.getAttribute("sample ids");
     std::vector<SampleId> sampleIds { sampleIdsAttribute.getSpace().getElementCount() };
     sampleIdsAttribute.read_raw<SampleId>(sampleIds.data(), HdfImageWriter::GetSampleIdDataType());
 
-    auto imageExtentAttribute = dataSet.getAttribute("extent");
-    auto imageSpacingAttribute = dataSet.getAttribute("spacing");
-    auto imageOriginAttribute = dataSet.getAttribute("origin");
+    auto imageExtentAttribute = file.getAttribute("extent");
+    auto imageSpacingAttribute = file.getAttribute("spacing");
+    auto imageOriginAttribute = file.getAttribute("origin");
 
     std::array<int, 6> imageExtent {};
     std::array<double, 3> imageSpacing {};
@@ -60,7 +67,8 @@ auto HdfImageReader::ReadImageBatch(BatchImages& batchImages) -> void {
 
     std::vector<ReadPile> readPiles;
     ReadPile flatReadPile { batchImages.size() };
-    std::transform(batchImages.cbegin(), batchImages.cend(), flatReadPile.begin(),
+    std::transform(batchImages.cbegin(), batchImages.cend(),
+                   flatReadPile.begin(),
                    [&sampleIds](BatchImage const& batchImage) {
 
         SampleId const& sampleId = batchImage.Id;
@@ -74,49 +82,109 @@ auto HdfImageReader::ReadImageBatch(BatchImages& batchImages) -> void {
         return IdxSampleIdPair { idx, sampleId };
     });
 
-    std::sort(flatReadPile.begin(), flatReadPile.end(), [](auto const& a, auto const& b) { return a.Idx < b.Idx; });
-
     ReadPile currentPile;
-    for (int i = 0; i < flatReadPile.size() - 1; i++) {
+    for (int i = 0; i < flatReadPile.size(); i++) {
         IdxSampleIdPair const& pair = flatReadPile.at(i);
-        IdxSampleIdPair const& nextPair = flatReadPile.at(i + 1);
+
+        if (i != 0 && pair.Idx - flatReadPile.at(i - 1).Idx != 1) {  // not first and not adjacent
+            readPiles.push_back(currentPile);
+            currentPile.clear();
+        }
 
         currentPile.push_back(pair);
 
-        bool const adjacent = nextPair.Idx - pair.Idx == 1;
-        if ((!adjacent && i != 0) || i == flatReadPile.size() - 1) {
+        if (i == flatReadPile.size() - 1) {  // last
             readPiles.push_back(currentPile);
             currentPile.clear();
         }
     }
 
-    struct PileHyperSlabPair {
-        ReadPile Pile;
-        HighFive::HyperSlab Slab;
-    };
-    auto const dataSpaceDimensions = dataSet.getSpace().getDimensions();
-    std::vector<PileHyperSlabPair> pileHyperSlabPairs { readPiles.size() };
-    std::transform(readPiles.cbegin(), readPiles.cend(), pileHyperSlabPairs.begin(),
-                   [&dataSpaceDimensions, &dataSet](ReadPile const& pile) {
-        auto const firstIdx = pile.at(0).Idx;
-        auto const numberOfImages = pile.at(pile.size() - 1).Idx - firstIdx;
-        std::vector<size_t> const startCoordinates { 0, 0, 0, firstIdx };
-        std::vector<size_t> const counts { 4, 1 };
-        std::vector<size_t> blockSize { dataSpaceDimensions.begin(), dataSpaceDimensions.end() };
-        blockSize.push_back(numberOfImages);
+    std::array<uint64_t, 3> imageDimensions {};
+    for (int i = 0; i < imageDimensions.size(); i++)
+        imageDimensions.at(i) = imageExtent.at(2 * i + 1) - imageExtent.at(2 * i) + 1;
+    uint64_t const imageNumberOfPoints = std::reduce(imageDimensions.cbegin(), imageDimensions.cend(),
+                                                     1, std::multiplies{});
 
-        HighFive::RegularHyperSlab const regularSlab { startCoordinates, counts, {}, blockSize };
-        HighFive::HyperSlab const hyperSlab { regularSlab };
+    using PileDataVectorsVariant = std::variant<std::vector<std::vector<std::vector<float>>>,
+                                                std::vector<std::vector<std::vector<short>>>>;
+    std::vector<PileDataVectorsVariant> pileDataVectors { ArrayNames.size() };
+    std::transform(ArrayNames.cbegin(), ArrayNames.cend(),
+                   pileDataVectors.begin(),
+                   [&readPiles, &file, imageNumberOfPoints](std::string const& arrayName) -> PileDataVectorsVariant {
 
-        return PileHyperSlabPair { pile, hyperSlab };
+        auto const dataSet = file.getDataSet(arrayName);
+        auto const vtkTypeAttribute = dataSet.getAttribute("vtkType");
+        auto const vtkDataType = vtkTypeAttribute.read<int>();
+
+        std::variant<float, short> dataTypeHolderVariant = [vtkDataType]() -> std::variant<float, short> {
+            switch (vtkDataType) {
+                case VTK_FLOAT: return static_cast<float>(0);
+                case VTK_SHORT: return static_cast<short>(0);
+                default: throw std::runtime_error("vtk data type not supported");
+            }
+        }();
+
+        return std::visit([&readPiles, &dataSet, imageNumberOfPoints](auto dataTypeHolder) -> PileDataVectorsVariant {
+            using ValueType = decltype(dataTypeHolder);
+
+            std::vector<std::vector<std::vector<ValueType>>> pileDataVectors {};
+            pileDataVectors.reserve(readPiles.size());
+
+            for (auto const& pile : readPiles) {
+                std::vector<std::vector<ValueType>> dataVector {
+                    pile.size(),
+                    std::vector<ValueType> { imageNumberOfPoints,
+                                             std::allocator<std::vector<ValueType>> {} }
+                };
+                size_t const firstIdx = pile.at(0).Idx;
+                size_t const numberOfImages = pile.at(pile.size() - 1).Idx - firstIdx + 1;
+                std::vector<size_t> const offset { firstIdx, 0 };
+                std::vector<size_t> const counts { numberOfImages, imageNumberOfPoints };
+
+                auto selection = dataSet.select(offset, counts);
+                selection.read(dataVector);
+
+                pileDataVectors.emplace_back(std::move(dataVector));
+            }
+
+            return pileDataVectors;
+        }, dataTypeHolderVariant);
     });
 
-    for (auto const& pair : pileHyperSlabPairs) {
-        size_t const imagesDataSize = batchImages.at(0).ImageData.GetNumberOfPoints() * pair.Pile.size();
-        std::vector<float> imagesData {};
-        imagesData.resize(imagesDataSize);
+    for (int i = 0; i < ArrayNames.size(); i++) {
+        auto const& arrayName = ArrayNames.at(i);
 
-        auto selection = dataSet.select(pair.Slab);
-        selection.read_raw(imagesData.data());
+        std::visit([&batchImages, &arrayName, imageNumberOfPoints](auto& pileDataVector) {
+            using DataVectorType = std::remove_reference_t<std::remove_cv_t<decltype(pileDataVector)>>;
+            using ValueType = DataVectorType::value_type::value_type::value_type;
+            using VtkArrayType = std::conditional_t<std::is_same_v<ValueType, float>,
+                    vtkFloatArray,
+                    std::conditional_t<std::is_same_v<ValueType, short>,
+                            vtkTypeInt16Array,
+                            nullptr_t>>;
+
+            auto imageVectorsViewIt = std::ranges::views::join(pileDataVector).begin();
+            for (int j = 0; j < batchImages.size(); j++, imageVectorsViewIt++) {
+                std::vector<ValueType> const& imageVector = *imageVectorsViewIt;
+                auto& image = batchImages.at(j).ImageData;
+
+                auto* pointData = image.GetPointData();
+                if (!pointData)
+                    throw std::runtime_error("point data must not be null");
+
+                if (pointData->HasArray(arrayName.data()))
+                    pointData->RemoveArray(arrayName.data());
+
+                vtkNew<VtkArrayType> dataArray;
+                dataArray->SetNumberOfComponents(1);
+                dataArray->SetName(arrayName.data());
+                dataArray->SetNumberOfTuples(imageNumberOfPoints);
+                ValueType* writePointer = dataArray->WritePointer(0, imageNumberOfPoints);
+                std::copy(imageVector.cbegin(), imageVector.cend(), writePointer);
+                pointData->AddArray(dataArray);
+                pointData->SetActiveScalars(arrayName.data());
+            }
+        }, pileDataVectors.at(i));
     }
 }
+

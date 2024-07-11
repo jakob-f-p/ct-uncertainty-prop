@@ -7,7 +7,6 @@
 #include <filesystem>
 
 namespace HighFive {
-    class DataSet;
     class DataType;
     class File;
 }

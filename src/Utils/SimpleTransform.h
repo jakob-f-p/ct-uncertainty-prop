@@ -9,7 +9,7 @@
 
 #include <array>
 
-class CoordinateRowWidget;
+class DoubleCoordinateRowWidget;
 
 class QDoubleSpinBox;
 class QGridLayout;
@@ -89,5 +89,5 @@ public:
     SetData(const SimpleTransformData& data) noexcept -> void;
 
 private:
-    CoordinateRowWidget* TransformRows;
+    DoubleCoordinateRowWidget* TransformRows;
 };

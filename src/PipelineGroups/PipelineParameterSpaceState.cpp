@@ -49,14 +49,17 @@ template class SpanState<FloatPoint>;
 template<typename T>
 SpanStateSourceIterator<T>::SpanStateSourceIterator(ParameterSpan<T>& parameterSpan) :
         Span(&parameterSpan),
-        CurrentState(SpanState<T>(parameterSpan)),
-        InitialState(CurrentState),
+        CurrentState([&parameterSpan]() {
+            SpanState<T> state { parameterSpan };
+            state.Value = parameterSpan.Numbers.Min;
+            return state;
+        }()),
+        InitialState(SpanState<T> { parameterSpan }),
         TotalNumberOfStates(parameterSpan.GetNumberOfPipelines()) {};
 
 template<typename T>
 SpanStateSourceIterator<T>::~SpanStateSourceIterator() {
     InitialState.Apply();
-//    InitialState.Span.Property.Set(InitialState.Value);
 }
 
 template<typename T>
