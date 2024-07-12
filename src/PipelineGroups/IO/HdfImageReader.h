@@ -45,6 +45,15 @@ public:
     auto
     ReadImageBatch(BatchImages& images) -> void;
 
+    struct ValidationParameters {
+        uint64_t NumberOfImages;
+//        uint64_t ImageSize;
+        std::vector<std::string> ArrayNames;
+    };
+
+    static auto
+    Validate(std::filesystem::path const& file, ValidationParameters const& params) -> void;
+
 protected:
     HdfImageReader() = default;
     ~HdfImageReader() override = default;

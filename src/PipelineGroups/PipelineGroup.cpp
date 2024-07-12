@@ -4,6 +4,7 @@
 #include "PipelineParameterSpace.h"
 #include "PipelineParameterSpaceState.h"
 
+#include "IO/ImageScalarsWriter.h"
 #include "IO/HdfImageReader.h"
 #include "IO/HdfImageWriter.h"
 #include "../Artifacts/Pipeline.h"
@@ -307,6 +308,10 @@ auto PipelineGroup::GetTsneData() const -> TimeStampedDataRef<SampleCoordinateDa
     return TimeStampedDataRef<SampleCoordinateData> { Data.TsneData };
 }
 
+auto PipelineGroup::SetFeatureData(FeatureData&& featureData) -> void {
+    Data.Features.Emplace(std::move(featureData));
+}
+
 auto PipelineGroup::SetTsneData(SampleCoordinateData&& tsneData) -> void {
     Data.TsneData.Emplace(std::move(tsneData));
 }
@@ -315,44 +320,54 @@ auto PipelineGroup::GetDataStatus() const noexcept -> DataStatus {
     return { Data.Images.GetTime(), Data.Features.GetTime(), Data.PcaData.GetTime(), Data.TsneData.GetTime() };
 }
 
-auto PipelineGroup::ImportFeatures(std::filesystem::path const& importFilePath,
-                                   PipelineGroup::ProgressEventCallback const& callback) -> void {
-    if (!is_regular_file(importFilePath))
-        throw std::runtime_error("given path is not a file");
-
+auto PipelineGroup::ImportImages() -> void {
     UpdateParameterSpaceStates();
 
-    callback(0.0);
+    auto const numberOfStates = Data.States.size();
 
-    std::ifstream ifs { importFilePath };
-    nlohmann::json const data = nlohmann::json::parse(ifs);
+    HdfImageReadHandles imageReadHandles;
+    imageReadHandles.reserve(numberOfStates);
 
-    FeatureData featureData;
-    for (auto const& resultEntry : data.at(0).items())
-        if (resultEntry.key().starts_with("original_"))
-            featureData.Names.emplace_back(resultEntry.key());
+    for (int i = 0; i < numberOfStates; i++)
+        imageReadHandles.push_back({ PipelineGroupList::ImagesFile,
+                                     SampleId { GroupId, static_cast<uint16_t>(i) } });
 
-    int pipelineIdx = 0;
-    for (auto const& pipelineResult : data) {
-        std::vector<double> pipelineFeatures {};
-        pipelineFeatures.reserve(featureData.Names.size());
+    Data.Images.Emplace(std::move(imageReadHandles));
+}
 
-        for (auto const& featureName : featureData.Names) {
-            double const value = pipelineResult[featureName];
-            pipelineFeatures.emplace_back(value);
-        }
+auto PipelineGroup::ExportImagesVtk(std::filesystem::path const& exportDir,
+                                    PipelineGroup::ProgressEventCallback const& callback) -> void {
+    std::atomic_uint numberOfExportedImages = 0;
+    size_t const numberOfImages = Data.Images->size();
 
-        featureData.Values.emplace_back(std::move(pipelineFeatures));
+    auto const now = std::chrono::system_clock::now();
+    std::string const timeStampString = std::format("{0:%F}ValueT{0:%R%z}", now);
 
-        pipelineIdx++;
+    for (int i = 0; i < numberOfImages; i++) {
+        double const progress = static_cast<double>(i) / static_cast<double>(numberOfImages);
+        callback(progress);
+
+        auto& imageReadHandle = Data.Images->at(i);
+        auto image = imageReadHandle.Read();
+        using std::filesystem::path;
+
+        uint32_t const stateIdx = i;
+        path const imagePath = path(exportDir) /= path(std::format("Volume-{}-{}.vtk", GroupId, stateIdx));
+        path const maskPath =  path(exportDir) /= path(std::format("Mask-{}-{}.vtk",   GroupId, stateIdx));
+
+        vtkNew<ImageScalarsWriter> imageExporter;
+        imageExporter->SetInputData(image);
+        imageExporter->SetHeader(timeStampString.c_str());
+        imageExporter->WriteExtentOff();
+
+        imageExporter->SetFileName(imagePath.string().c_str());
+        imageExporter->SetScalarsArrayName("Radiodensities");
+        imageExporter->Write();
+
+        imageExporter->SetFileName(maskPath.string().c_str());
+        imageExporter->SetScalarsArrayName("Segmentation Mask");
+        imageExporter->Write();
     }
-
-    if (featureData.Values.size() != Data.States.size())
-        throw std::runtime_error("invalid number of pipelines in feature result file");
-
-    Data.Features.Emplace(featureData);
-
-    callback(1.0);
 }
 
 auto PipelineGroup::AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,

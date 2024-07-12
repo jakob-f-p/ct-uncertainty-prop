@@ -13,11 +13,13 @@
 #include <pybind11/embed.h>
 #include <pybind11/stl.h>
 
+#include "nlohmann/json.hpp"
+
 #include <ranges>
 #include <regex>
 
 
-PipelineGroupList::PipelineGroupList(const PipelineList& pipelines) :
+PipelineGroupList::PipelineGroupList(PipelineList const& pipelines) :
         Pipelines(pipelines) {}
 
 auto PipelineGroupList::GetName() const noexcept -> std::string {
@@ -284,88 +286,152 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
                                    { imageMTime, featureMTime, pcaMTime, tsneMTime, totalMTime }};
 }
 
-auto PipelineGroupList::ExportGeneratedImages(std::filesystem::path const& exportDir,
-                                              PipelineGroupList::ProgressEventCallback const& callback) -> void {
+auto PipelineGroupList::ExportImagesHdf5(std::filesystem::path const& exportPath,
+                                         PipelineGroupList::ProgressEventCallback const& callback) const -> void {
+    callback(0.0);
+
+    if (GetDataStatus().Image == 0)
+        throw std::runtime_error("Image data has not been generated yet. Cannot export");
+
+    if (!is_regular_file(exportPath) && exists(exportPath))
+        throw std::runtime_error("Invalid export path");
+
+    std::filesystem::copy(ImagesFile, exportPath, std::filesystem::copy_options::overwrite_existing);
+
+    callback(1.0);
+}
+
+auto PipelineGroupList::ExportImagesVtk(std::filesystem::path const& exportDir,
+                                        PipelineGroupList::ProgressEventCallback const& callback) -> void {
     callback(0.0);
 
     if (GetDataStatus().Image == 0)
         throw std::runtime_error("Image data has not been generated yet. Cannot export");
 
     if (!is_directory(exportDir))
-        throw std::runtime_error("Given export path is not a directory.");
+        throw std::runtime_error("Invalid export path");
 
-    auto const exportPath = std::filesystem::path(exportDir) /= ImagesFile.filename();
-    std::filesystem::copy(ImagesFile, exportPath, std::filesystem::copy_options::overwrite_existing);
+    std::vector<double> progressList (PipelineGroups.size(), 0.0);
+    std::vector<int> groupSizeVector {};
+    for (auto const& group : PipelineGroups)
+        groupSizeVector.emplace_back(group->GetParameterSpace().GetNumberOfPipelines());
+    std::vector<double> groupSizeWeightVector { PipelineGroups.size(), std::allocator<double>{} };
+    std::transform(groupSizeVector.cbegin(), groupSizeVector.cend(),
+                   groupSizeWeightVector.begin(),
+                   [totalSize = GetNumberOfPipelines()](int size) {
+        return static_cast<double>(size) / static_cast<double>(totalSize);
+    });
+
+    for (int i = 0; i < PipelineGroups.size(); i++)
+        PipelineGroups[i]->ExportImagesVtk(exportDir, WeightedProgressUpdater { i, progressList, groupSizeWeightVector, callback });
 
     callback(1.0);
 }
 
-auto PipelineGroupList::ImportImages(std::vector<std::filesystem::path> const& importFilePaths,
+auto PipelineGroupList::ImportImages(std::filesystem::path const& importFilePath,
                                      PipelineGroupList::ProgressEventCallback const& callback) -> void {
-    std::vector<double> progressList (PipelineGroups.size(), 0.0);
     callback(0.0);
 
-    for (int i = 0; i < PipelineGroups.size(); i++) {
-        std::vector<std::filesystem::path> paths;
-        std::copy_if(importFilePaths.cbegin(), importFilePaths.cend(), std::back_inserter(paths),
-                     [i](std::filesystem::path const& path) {
-            std::regex const regex { std::format(".*(Volume|Mask)-{}-\\d+\\.vtk$", i) };
+    auto const now = round<std::chrono::seconds>(std::chrono::system_clock::now());
+    std::string const timeStampString = std::format("{0:%Y}-{0:%m}-{0:%d}_{0:%H}-{0:%M}-{0:2%S}", now);
 
-            return std::regex_match(path.string(), regex);
-        });
 
-//        PipelineGroups[i]->ImportImages(paths, ProgressUpdater { i, progressList, callback });
-    }
+    for (auto& group : PipelineGroups)
+        group->UpdateParameterSpaceStates();
+
+    HdfImageReader::Validate(importFilePath,
+                             HdfImageReader::ValidationParameters { GetNumberOfPipelines(),
+                                                                    { "Radiodensities", "Segmentation Mask" } });
+
+    ImagesFile = std::filesystem::path(DataDirectory) /= { std::format("images_{}.h5", timeStampString) };
+
+    std::filesystem::copy_file(importFilePath, ImagesFile, std::filesystem::copy_options::overwrite_existing);
+
+    for (auto& group : PipelineGroups)
+        group->ImportImages();
+
+    callback(1.0);
 }
 
-auto PipelineGroupList::ExportFeatures(std::filesystem::path const& exportDir,
+auto PipelineGroupList::ExportFeatures(std::filesystem::path const& exportPath,
                                        PipelineGroupList::ProgressEventCallback const& callback) -> void {
-    if (!is_directory(exportDir))
-        throw std::runtime_error("Given export path is not a directory.");
+    if (exists(exportPath) && !is_regular_file(exportPath))
+        throw std::runtime_error("Given export path is invalid.");
 
     if (GetDataStatus().Feature <= 0)
-        throw std::runtime_error("cannot export features. they have not been generated yet");
+        throw std::runtime_error("Cannot export features. They have not been generated yet");
 
     int const numberOfGroups = PipelineGroups.size();
     int const groupIdx = 1;
-    callback(0.1);
 
-    for (auto const& dirEntry : std::filesystem::directory_iterator(PipelineBatch::ExportPathPair::FeatureDirectory)) {
-        if (!dirEntry.is_regular_file())
-            continue;
-
-        auto const& filePath = dirEntry.path();
-        auto const extension = filePath.extension().string();
-        if (extension != ".json" && extension != ".csv")
-            continue;
-
-        auto const filename = filePath.filename();
-        auto const exportPath = std::filesystem::path(exportDir) /= filename;
-
-        std::filesystem::copy(filePath, exportPath, std::filesystem::copy_options::overwrite_existing);
-
-        double const progress = static_cast<double>(groupIdx) / static_cast<double>(numberOfGroups);
-        callback(progress);
-    }
-}
-
-auto PipelineGroupList::ImportFeatures(std::vector<std::filesystem::path> const& importFilePaths,
-                                       PipelineGroupList::ProgressEventCallback const& callback) -> void {
-    std::vector<double> progressList (PipelineGroups.size(), 0.0);
     callback(0.0);
 
-    for (int i = 0; i < PipelineGroups.size(); i++) {
-        auto it = std::find_if(importFilePaths.cbegin(), importFilePaths.cend(),
-                     [i](std::filesystem::path const& path) {
-                         std::regex const regex { std::format(".*results-{}\\.json$", i) };
+    using json = nlohmann::json;
+    json jsonObject { json::array() };
 
-                         return std::regex_match(path.string(), regex);
-                     });
+    for (auto const& group : PipelineGroups) {
+        FeatureData features = *group->GetFeatureData();
 
-        if (it == importFilePaths.cend())
-            throw std::runtime_error("feature path not found");
+        json jsonFeatures {};
+        for (auto const& values : features.Values) {
 
-        PipelineGroups[i]->ImportFeatures(*it, ProgressUpdater { i, progressList, callback });
+            json jsonSampleValues {};
+
+            for (int i = 0; i < values.size(); i++) {
+                auto const& name = features.Names.at(i);
+                auto const& value = values.at(i);
+                jsonSampleValues[name] = value;
+            }
+
+            jsonFeatures.emplace_back(std::move(jsonSampleValues));
+        }
+
+        jsonObject.emplace_back(std::move(jsonFeatures));
+    }
+
+    std::ofstream outStream { exportPath, std::ios::trunc };
+    outStream << jsonObject;
+}
+
+auto PipelineGroupList::ImportFeatures(std::filesystem::path const& importFilePath,
+                                       PipelineGroupList::ProgressEventCallback const& callback) -> void {
+
+    if (!is_regular_file(importFilePath))
+        throw std::runtime_error("Given import path is invalid.");
+
+    callback(0.0);
+
+    using json = nlohmann::json;
+    json jsonObject {};
+
+    std::ifstream inStream { importFilePath };
+    inStream >> jsonObject;
+
+    int i = 0;
+    for (auto& jsonGroupFeatures : jsonObject) {
+        FeatureData featureData {};
+
+        for (auto& jsonSampleFeatures : jsonGroupFeatures.at(0)) {
+            for (auto const& jsonSampleFeature : jsonSampleFeatures.items()) {
+                std::string const& featureName = jsonSampleFeature.key();
+                featureData.Names.emplace_back(featureName);
+            }
+        }
+
+        for (auto& jsonSampleFeatures : jsonGroupFeatures) {
+            std::vector<double> featureValues;
+
+            for (auto& jsonSampleFeature : jsonSampleFeatures.items()) {
+                auto const featureValue = jsonSampleFeature.value().get<float>();
+                featureValues.emplace_back(featureValue);
+            }
+
+            featureData.Values.emplace_back(std::move(featureValues));
+        }
+
+        PipelineGroups.at(i)->SetFeatureData(std::move(featureData));
+
+        i++;
     }
 }
 

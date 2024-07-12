@@ -26,7 +26,7 @@ protected:
 
     void UpdateImageDataObjects();
 
-    void WriteData();
+    void WriteData() override;
 
     vtkSmartPointer<vtkImageData> FullImageData;
     vtkNew<vtkImageData> StrippedImageData;

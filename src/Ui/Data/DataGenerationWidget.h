@@ -1,7 +1,9 @@
 #pragma once
 
 #include <QWidget>
+#include <QThread>
 
+#include <filesystem>
 #include <mutex>
 
 class QLabel;
@@ -37,10 +39,16 @@ public Q_SLOTS:
     DisableButtons() const -> void;
 
 private:
+    friend class GenerateImagesTaskWidget;
+    friend class ExtractFeaturesTaskWidget;
+    friend class DoPcaTaskWidget;
+    friend class DoTsneTaskWidget;
+
+
     struct Statuses {
         using Status = DataGenerationStatus;
 
-        Statuses(DataGenerationWidget& dataGenerationWidget);
+        explicit Statuses(DataGenerationWidget& dataGenerationWidget);
 
         [[nodiscard]] auto
         AllUpToDate() const noexcept -> bool { return Image == Status::UP_TO_DATE
@@ -76,46 +84,167 @@ private:
 };
 
 
-struct DataGenerationTaskWidget : public QWidget {
+//class DataGenerationTaskWidget : public QWidget {
+//public:
+//    struct ProgressCallback {
+//        auto
+//        operator()(double progress) -> void;
+//
+//        QProgressBar& ProgressBar;
+//        std::mutex& Mutex;
+//    };
+//
+//    using Status = DataGenerationStatus;
+//    using DataGenerator = std::function<void(ProgressCallback)>;
+//
+//    explicit DataGenerationTaskWidget(DataGenerationWidget& parent,
+//                                      DataGenerator&& generator,
+//                                      QString const& name,
+//                                      QString const& progressBarFormat,
+//                                      DataGenerator&& Importer = {}, DataGenerator&& Exporter = {});
+//
+//    auto
+//    Generate() -> void;
+//
+//    auto
+//    SetButtonEnabled(bool enabled) const -> void;
+//
+//    auto
+//    UpdateStatus(Status status, Status previousStepStatus) const -> void;
+//
+//
+//private:
+//    DataGenerationWidget& ParentWidget;
+//    DataGenerator Generator;
+//    std::mutex Mutex;
+//
+//    QLabel* Name;
+//    QProgressBar* ProgressBar;
+//    QPushButton* ImportButton;
+//    DataGenerator Importer;
+//    QPushButton* ExportButton;
+//    DataGenerator Exporter;
+//    QPushButton* GenerateButton;
+//    DataGenerationStatusWidget* StatusWidget;
+//};
+
+
+class DataGenerationTaskWidget : public QWidget {
+public:
     struct ProgressCallback {
         auto
         operator()(double progress) -> void;
 
-       QProgressBar& ProgressBar;
+        QProgressBar& ProgressBar;
         std::mutex& Mutex;
     };
 
     using Status = DataGenerationStatus;
     using DataGenerator = std::function<void(ProgressCallback)>;
 
-    explicit DataGenerationTaskWidget(DataGenerationWidget& parent,
-                                      DataGenerator&& generator,
-                                      QString const& name,
-                                      QString const& progressBarFormat,
-                                      DataGenerator&& Importer = {}, DataGenerator&& Exporter = {});
+    explicit DataGenerationTaskWidget(DataGenerationWidget& parent);
+    ~DataGenerationTaskWidget() override;
+
+    virtual auto
+    Generate() -> void = 0;
 
     auto
-    Generate() -> void;
-
-    auto
-    SetButtonEnabled(bool enabled) const -> void;
+    SetButtonsEnabled(bool enabled) const -> void;
 
     auto
     UpdateStatus(Status status, Status previousStepStatus) const -> void;
 
+protected:
+    auto
+    DoBeforeTask(QString const& progressBarFormat) const -> void;
+
+    auto
+    DoAfterTask() const -> void;
 
     DataGenerationWidget& ParentWidget;
-    DataGenerator Generator;
     std::mutex Mutex;
+    QThread WorkerThread;
 
     QLabel* Name;
     QProgressBar* ProgressBar;
     QPushButton* ImportButton;
-    DataGenerator Importer;
     QPushButton* ExportButton;
-    DataGenerator Exporter;
     QPushButton* GenerateButton;
     DataGenerationStatusWidget* StatusWidget;
+};
+
+class GenerateImagesTaskWidget : public DataGenerationTaskWidget {
+public:
+    explicit GenerateImagesTaskWidget(DataGenerationWidget& parent);
+
+    auto
+    Generate() -> void override { GenerateImages(); }
+
+private:
+    auto
+    GenerateImages() -> void;
+
+    [[nodiscard]] auto
+    PrepareImportImages() -> std::filesystem::path;
+
+    auto
+    ImportImages(std::filesystem::path const& importPath) -> void;
+
+    enum struct ExportType : uint8_t { HDF5, VTK };
+
+    [[nodiscard]] auto
+    PrepareExportImages() -> std::pair<std::filesystem::path, ExportType>;
+
+    auto
+    ExportImages(std::filesystem::path const& exportPath, ExportType exportType) -> void;
+};
+
+class ExtractFeaturesTaskWidget : public DataGenerationTaskWidget {
+public:
+    explicit ExtractFeaturesTaskWidget(DataGenerationWidget& parent);
+
+    auto
+    Generate() -> void override { ExtractFeatures(); }
+
+private:
+    auto
+    ExtractFeatures() -> void;
+
+    [[nodiscard]] auto
+    PrepareImportFeatures() -> std::filesystem::path;
+
+    auto
+    ImportFeatures(std::filesystem::path const& importPath) -> void;
+
+    [[nodiscard]] auto
+    PrepareExportFeatures() -> std::filesystem::path;
+
+    auto
+    ExportFeatures(std::filesystem::path const& exportPath) -> void;
+};
+
+class DoPcaTaskWidget : public DataGenerationTaskWidget {
+public:
+    explicit DoPcaTaskWidget(DataGenerationWidget& parent);
+
+    auto
+    Generate() -> void override { DoPca(); }
+
+private:
+    auto
+    DoPca() -> void;
+};
+
+class DoTsneTaskWidget : public DataGenerationTaskWidget {
+public:
+    explicit DoTsneTaskWidget(DataGenerationWidget& parent);
+
+    auto
+    Generate() -> void override { DoTsne(); }
+
+private:
+    auto
+    DoTsne() -> void;
 };
 
 

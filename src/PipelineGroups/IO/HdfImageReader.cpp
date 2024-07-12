@@ -188,3 +188,49 @@ auto HdfImageReader::ReadImageBatch(BatchImages& batchImages) -> void {
     }
 }
 
+auto HdfImageReader::Validate(std::filesystem::path const& filePath,
+                              HdfImageReader::ValidationParameters const& params) -> void {
+    if (params.ArrayNames.empty()
+//        || params.ImageSize == 0
+        || params.NumberOfImages == 0)
+        throw std::runtime_error("invalid validation parameters");
+
+    if (filePath.empty() || !is_regular_file(filePath))
+        throw std::runtime_error("invalid filename");
+
+    auto file = HighFive::File(filePath.string(), HighFive::File::ReadOnly);
+
+    auto numberOfImagesAttribute = file.getAttribute("number of images");
+    auto const numberOfImages = numberOfImagesAttribute.read<uint16_t>();
+    if (numberOfImages != params.NumberOfImages)
+        throw std::runtime_error("given file contains invalid number of images");
+
+    auto imageExtentAttribute = file.getAttribute("extent");
+    std::array<int, 6> imageExtent {};
+    imageExtentAttribute.read(imageExtent);
+    std::array<uint64_t, 3> imageDimensions {};
+    for (int i = 0; i < imageDimensions.size(); i++)
+        imageDimensions.at(i) = imageExtent.at(2 * i + 1) - imageExtent.at(2 * i) + 1;
+    uint64_t const imageNumberOfPoints = std::reduce(imageDimensions.cbegin(), imageDimensions.cend(),
+                                                     1, std::multiplies{});
+//    if (imageNumberOfPoints != params.ImageSize)
+//        throw std::runtime_error("given file contains images with invalid size");
+
+
+    auto const objectNames = file.listObjectNames();
+    uint16_t numberOfDataSets = 0;
+    bool allDataSetsFound = true;
+    for (auto const& name : objectNames) {
+        try {
+            file.getDataSet(name);
+
+            if (std::find(params.ArrayNames.begin(), params.ArrayNames.end(), name) == params.ArrayNames.cend())
+                allDataSetsFound = false;
+
+            numberOfDataSets++;
+        } catch (std::exception const& e) { /*ignore*/ }
+    }
+    if (!allDataSetsFound)
+        throw std::runtime_error("given file does not contain datasets for all arrays");
+}
+

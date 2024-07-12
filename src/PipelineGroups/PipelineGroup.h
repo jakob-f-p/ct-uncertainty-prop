@@ -38,6 +38,9 @@ public:
     [[nodiscard]] auto
     GetParameterSpace() const noexcept -> PipelineParameterSpace const&;
 
+    auto
+    UpdateParameterSpaceStates() noexcept -> void;
+
     using ProgressEventCallback = std::function<void(double)>;
     auto
     GenerateImages(HdfImageWriter& imageWriter, ProgressEventCallback const& callback = [](double) {}) -> void;
@@ -64,14 +67,20 @@ public:
     GetTsneData() const -> TimeStampedDataRef<SampleCoordinateData>;
 
     auto
+    SetFeatureData(FeatureData&& featureData) -> void;
+
+    auto
     SetTsneData(SampleCoordinateData&& tsneData) -> void;
 
     [[nodiscard]] auto
     GetDataStatus() const noexcept -> DataStatus;
 
     auto
-    ImportFeatures(std::filesystem::path const& importFilePath,
-                   ProgressEventCallback const& callback = [](double) {}) -> void;
+    ImportImages() -> void;
+
+    auto
+    ExportImagesVtk(std::filesystem::path const& exportDir,
+                    ProgressEventCallback const& callback = [](double) {}) -> void;
 
     auto
     AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
@@ -88,9 +97,6 @@ public:
 
 private:
     friend class PipelineBatch;
-
-    auto
-    UpdateParameterSpaceStates() noexcept -> void;
 
     [[nodiscard]] static auto
     GetMaxImageBatchSize() -> uint64_t;
