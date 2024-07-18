@@ -13,10 +13,10 @@ ImageArtifactsView::ImageArtifactsView(Pipeline* pipeline, QWidget* parent) : QT
 
     setHeaderHidden(true);
 
-    setItemDelegate(new ImageArtifactsDelegate());
+    setItemDelegate(new ImageArtifactsDelegate(this));
 
     if (pipeline)
-        QTreeView::setModel(new ImageArtifactsModel(pipeline->GetImageArtifactConcatenation()));
+        QTreeView::setModel(new ImageArtifactsModel(pipeline->GetImageArtifactConcatenation(), this));
 }
 
 void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, const QModelIndex& index) const {
@@ -140,9 +140,11 @@ int ImageArtifactsView::getLevel(const QModelIndex& index) {
 
 ImageArtifactsReadOnlyView::ImageArtifactsReadOnlyView(Pipeline const& pipeline, QWidget* parent) :
         ImageArtifactsView(const_cast<Pipeline*>(&pipeline), parent),
-        ArtifactsModel(new ImageArtifactsReadOnlyModel(pipeline.GetImageArtifactConcatenation())){
+        ArtifactsModel(new ImageArtifactsReadOnlyModel(pipeline.GetImageArtifactConcatenation(), this)){
 
+    auto* oldModel = model();
     setModel(ArtifactsModel);
+    delete oldModel;
 }
 
 auto ImageArtifactsReadOnlyView::model() const noexcept -> ImageArtifactsReadOnlyModel* {

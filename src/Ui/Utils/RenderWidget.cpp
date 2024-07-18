@@ -5,9 +5,6 @@
 #include <QStandardPaths>
 #include <QVBoxLayout>
 
-#include <QCoreApplication>
-#include <QResizeEvent>
-
 #include <vtkAxesActor.h>
 #include <vtkCamera.h>
 #include <vtkColorTransferFunction.h>

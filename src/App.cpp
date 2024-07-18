@@ -21,8 +21,7 @@
 App::App(int argc, char* argv[]) :
         Argc(argc),
         Argv(argv),
-        QApp(new QApplication(Argc, Argv)),
-        MainWin(nullptr),
+        QApp(std::make_unique<QApplication>(Argc, Argv)),
         CtDataTree(new CtStructureTree()),
         DataSource([&]() {
             vtkNew<CtDataSource> dataSource;
@@ -48,17 +47,17 @@ App::App(int argc, char* argv[]) :
 
             return pipelineGroupList;
         }()),
-        PyInterpreter(nullptr) {
+        PyInterpreter(std::make_unique<PythonInterpreter>()) {
 
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 
     auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
-    //    smpToolsApi.SetBackend("STDTHREAD");
+//    smpToolsApi.SetBackend("STDTHREAD");
 }
 
 App::~App() {
-    QApplication::quit();
-}
+    Self = nullptr;
+};
 
 App* App::Self = nullptr;
 
@@ -83,10 +82,10 @@ auto App::Run() -> int {
 
     InitializeWithTestData();
 
-    MainWin = std::make_unique<MainWindow>(*CtDataTree, *DataSource, *ThresholdFilterAlgorithm,
-                                           *Pipelines, *PipelineGroups);
+    MainWindow mainWindow(*CtDataTree, *DataSource, *ThresholdFilterAlgorithm,
+                          *Pipelines, *PipelineGroups);
 
-    MainWin->show();
+    mainWindow.show();
 
     return QApplication::exec();
 }
@@ -121,14 +120,11 @@ auto App::GetPipelineGroups() const -> PipelineGroupList& {
 }
 
 auto App::GetPythonInterpreter() -> PythonInterpreter& {
-    if (!PyInterpreter)
-        PyInterpreter = std::make_unique<PythonInterpreter>();
-
     return *PyInterpreter;
 }
 
 void App::InitializeWithTestData() {
-    static DataInitializer::Config const config = DataInitializer::Config::SIMPLE_SCENE;
+    static DataInitializer::Config const config = DataInitializer::Config::DEBUG;
 
     DataInitializer initializer { *this };
     initializer(config);

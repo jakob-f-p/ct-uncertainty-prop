@@ -49,8 +49,7 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& d
                              RemoveStructureButton },
         TreeView(new CtStructureView(ctStructureTree)),
         TreeModel(dynamic_cast<CtStructureTreeModel*>(TreeView->model())),
-        SelectionModel(TreeView->selectionModel()),
-        CtStructureCreateDialog(nullptr) {
+        SelectionModel(TreeView->selectionModel()) {
 
     ctStructureTree.AddTreeEventCallback([&](CtStructureTreeEvent const&) { RenderingWidget->Render(); });
 

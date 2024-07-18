@@ -20,96 +20,6 @@ DataGenerationWidget::DataGenerationWidget(PipelineGroupList& pipelineGroups,
         ThresholdFilterAlgorithm(thresholdFilter),
         GenerateAllButton(new QPushButton("Generate all")),
         TotalStatusWidget(new DataGenerationStatusWidget()),
-//        ImageTask(new DataGenerationTaskWidget(
-//                *this,
-//                [this](DataGenerationTaskWidget::ProgressCallback const& callback) {
-//                    PipelineGroups.GenerateImages(callback); },
-//                "Images",
-//                "Generating Image Data... %p%",
-//                [this](DataGenerationTaskWidget::ProgressCallback const& callback){
-//                    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
-//                    if (homeLocations.empty() || homeLocations.at(0).isEmpty())
-//                        throw std::runtime_error("home path must not be empty");
-//                    QString const& homePath = homeLocations.at(0);
-//
-//                    QString const caption = "Import Images (select all)";
-//                    QString const fileFilter = "Images (*.vtk)";
-//                    QStringList const fileNames = QFileDialog::getOpenFileNames(this, caption, homePath, fileFilter);
-//                    std::vector<std::filesystem::path> filePaths { static_cast<size_t>(fileNames.size()) };
-//                    std::transform(fileNames.cbegin(), fileNames.cend(), filePaths.begin(),
-//                                   [](QString const& str) { return std::filesystem::path(str.toStdString()); });
-//
-//                    if (filePaths.empty())
-//                        return;
-//
-//                    PipelineGroups.ImportImages(filePaths, callback);
-//                },
-//                [this](DataGenerationTaskWidget::ProgressCallback const& callback){
-//                    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
-//                    if (homeLocations.empty() || homeLocations.at(0).isEmpty())
-//                        throw std::runtime_error("home path must not be empty");
-//                    QString const& homePath = homeLocations.at(0);
-//
-//                    QString const caption = "Export Images";
-//                    QString const dirName = QFileDialog::getExistingDirectory(this, caption, homePath);
-//                    std::filesystem::path const exportDirPath = dirName.toStdString();
-//
-//                    if (exportDirPath.empty())
-//                        return;
-//
-//                    PipelineGroups.ExportImagesHdf5(exportDirPath, callback);})
-//                ),
-//        FeatureTask(new DataGenerationTaskWidget(
-//                *this,
-//                [this](DataGenerationTaskWidget::ProgressCallback const& callback) {
-//                    PipelineGroups.ExtractFeatures(callback); },
-//                "Features",
-//                "Extracting Features... %p%",
-//                [this](DataGenerationTaskWidget::ProgressCallback const& callback) {
-//                    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
-//                    if (homeLocations.empty() || homeLocations.at(0).isEmpty())
-//                        throw std::runtime_error("home path must not be empty");
-//                    QString const& homePath = homeLocations.at(0);
-//
-//                    QString const caption = "Import Features (select all)";
-//                    QString const fileFilter = "Features (*.json)";
-//                    QStringList const fileNames = QFileDialog::getOpenFileNames(this, caption, homePath, fileFilter);
-//                    std::vector<std::filesystem::path> filePaths{ static_cast<size_t>(fileNames.size()) };
-//                    std::transform(fileNames.cbegin(), fileNames.cend(), filePaths.begin(),
-//                                   [](QString const& str) { return std::filesystem::path(str.toStdString()); });
-//
-//                    if (filePaths.empty())
-//                        return;
-//
-//                    PipelineGroups.ImportFeatures(filePaths, callback);
-//                },
-//                [this](DataGenerationTaskWidget::ProgressCallback const& callback) {
-//                    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
-//                    if (homeLocations.empty() || homeLocations.at(0).isEmpty())
-//                        throw std::runtime_error("home path must not be empty");
-//                    QString const& homePath = homeLocations.at(0);
-//
-//                    QString const caption = "Export Features";
-//                    QString const dirName = QFileDialog::getExistingDirectory(this, caption, homePath);
-//                    std::filesystem::path const exportDirPath = dirName.toStdString();
-//
-//                    if (exportDirPath.empty())
-//                        return;
-//
-//                    PipelineGroups.ExportFeatures(exportDirPath, callback); })
-//                ),
-//        PcaTask(new DataGenerationTaskWidget(
-//                *this,
-//                [this](DataGenerationTaskWidget::ProgressCallback const& callback) {
-//                    PipelineGroups.DoPCAs(2, callback); },
-//                    "PCA",
-//                    "Doing PCA... %p%")),
-//        TsneTask(new DataGenerationTaskWidget(
-//                *this,
-//                [this](DataGenerationTaskWidget::ProgressCallback const& callback) {
-//                    PipelineGroups.DoTsne(2, callback); },
-//                "t-SNE",
-//                "Doing t-SNE... %p%")),
         ImageTask(new GenerateImagesTaskWidget(*this)),
         FeatureTask(new ExtractFeaturesTaskWidget(*this)),
         PcaTask(new DoPcaTaskWidget(*this)),
@@ -136,33 +46,56 @@ DataGenerationWidget::DataGenerationWidget(PipelineGroupList& pipelineGroups,
 
     connect(GenerateAllButton, &QPushButton::clicked, this, [this]() {
         GenerateAllButton->setEnabled(false);
-        for (auto* row : TaskWidgets)
-            row->SetButtonsEnabled(false);
 
-        GeneratingAll = true;
+        auto* generateAllWorker = new VoidWorker([this]() {
+            Statuses const statuses { *this };
 
-        Statuses const statuses { *this };
-        if (statuses.Image != DataGenerationStatus::UP_TO_DATE) {
-            ImageTask->Generate();
-            DisableButtons();
-        }
-        if (statuses.Feature != DataGenerationStatus::UP_TO_DATE) {
-            FeatureTask->Generate();
-            DisableButtons();
-        }
-        if (statuses.Pca != DataGenerationStatus::UP_TO_DATE) {
-            PcaTask->Generate();
-            DisableButtons();
-        }
-        if (statuses.Tsne != DataGenerationStatus::UP_TO_DATE) {
-            TsneTask->Generate();
-            DisableButtons();
-        }
+            std::atomic_bool taskIsRunning = false;
 
-        GeneratingAll = false;
+            for (auto* taskWidget : TaskWidgets)
+                connect(taskWidget, &DataGenerationTaskWidget::TaskDone,
+                        this, [&taskIsRunning]() {
+                            taskIsRunning = false;
+                            taskIsRunning.notify_all();
+                        });
 
-        UpdateRowStatuses();
+            if (statuses.Image != DataGenerationStatus::UP_TO_DATE) {
+                taskIsRunning.wait(true);
+                taskIsRunning = true;
+                ImageTask->Generate();
+            }
+            if (statuses.Feature != DataGenerationStatus::UP_TO_DATE) {
+                taskIsRunning.wait(true);
+                taskIsRunning = true;
+                FeatureTask->Generate();
+            }
+            if (statuses.Pca != DataGenerationStatus::UP_TO_DATE) {
+                taskIsRunning.wait(true);
+                taskIsRunning = true;
+                PcaTask->Generate();
+            }
+            if (statuses.Tsne != DataGenerationStatus::UP_TO_DATE) {
+                taskIsRunning.wait(true);
+                taskIsRunning = true;
+                TsneTask->Generate();
+            }
+
+            taskIsRunning.wait(true);
+        });
+
+        generateAllWorker->moveToThread(&WorkerThread);
+        connect(&WorkerThread, &QThread::started, generateAllWorker, &VoidWorker::DoWork);
+        connect(&WorkerThread, &QThread::finished, generateAllWorker, &QObject::deleteLater);
+        connect(generateAllWorker, &VoidWorker::Done, &WorkerThread, &QThread::quit);
+        connect(generateAllWorker, &VoidWorker::Done, this, [this]() { UpdateRowStatuses(); });
+
+        WorkerThread.start();
     });
+}
+
+DataGenerationWidget::~DataGenerationWidget() {
+    WorkerThread.quit();
+    WorkerThread.wait();
 }
 
 auto DataGenerationWidget::UpdateRowStatuses() -> void {
@@ -186,123 +119,6 @@ auto DataGenerationWidget::DisableButtons() const -> void {
     for (auto* row : TaskWidgets)
         row->SetButtonsEnabled(false);
 }
-
-//DataGenerationTaskWidget::DataGenerationTaskWidget(DataGenerationWidget& parent,
-//                                                   DataGenerator&& generator, QString const& name,
-//                                                   QString const& progressBarFormat,
-//                                                   DataGenerator&& importer, DataGenerator&& exporter) :
-//        ParentWidget(parent),
-//        Generator(std::move(generator)),
-//        Name([&name]() {
-//            auto* label = new QLabel(name);
-//            label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-//            static int const minWidth = (new QLabel("Features"))->sizeHint().width() + 15;
-//            label->setMinimumWidth(minWidth);
-//            return label;
-//        }()),
-//        ProgressBar([&progressBarFormat]() {
-//            auto* progressBar = new QProgressBar();
-//            progressBar->setRange(0, 1000);
-//            progressBar->setFormat(progressBarFormat);
-//            return progressBar;
-//        }()),
-//        ImportButton([]() {
-//            auto* button = new QPushButton("Import");
-//            static int const minWidth = (new QLabel("Import"))->sizeHint().width() + 5;
-//            button->setMinimumWidth(minWidth);
-//            auto sizePolicy = button->sizePolicy();
-//            sizePolicy.setRetainSizeWhenHidden(true);
-//            button->setSizePolicy(sizePolicy);
-//            return button;
-//        }()),
-//        Importer(importer ? std::move(importer) : nullptr),
-//        ExportButton([]() {
-//            auto* button = new QPushButton("Export");
-//            static int const minWidth = (new QLabel("Import"))->sizeHint().width() + 5;
-//            button->setMinimumWidth(minWidth);
-//            auto sizePolicy = button->sizePolicy();
-//            sizePolicy.setRetainSizeWhenHidden(true);
-//            button->setSizePolicy(sizePolicy);
-//            return button;
-//        }()),
-//        Exporter(exporter ? std::move(exporter) : nullptr),
-//        GenerateButton(new QPushButton("Generate")),
-//        StatusWidget(new DataGenerationStatusWidget()) {
-//
-//    auto* hLayout = new QHBoxLayout(this);
-//    hLayout->addWidget(Name);
-//    hLayout->addWidget(ProgressBar);
-//    hLayout->addWidget(ImportButton);
-//    hLayout->addWidget(ExportButton);
-//    hLayout->addWidget(GenerateButton);
-//    hLayout->addWidget(StatusWidget);
-//
-//    connect(GenerateButton, &QPushButton::clicked, this, [this]() { Generate(); });
-//
-//    if (Importer)
-//        connect(ImportButton, &QPushButton::clicked, this, [this]() {
-//            ParentWidget.DisableButtons();
-//
-//            QString const oldFormat = ProgressBar->format();
-//            ProgressBar->setFormat("Importing... %p%");
-//            Importer(ProgressCallback { *ProgressBar, Mutex });
-//
-//            ProgressBar->reset();
-//            ProgressBar->setFormat(oldFormat);
-//
-//            ParentWidget.UpdateRowStatuses();
-//        });
-//    else
-//        ImportButton->hide();
-//
-//    if (Exporter)
-//        connect(ExportButton, &QPushButton::clicked, this, [this]() {
-//            ParentWidget.DisableButtons();
-//
-//            QString const oldFormat = ProgressBar->format();
-//            ProgressBar->setFormat("Exporting... %p%");
-//            Exporter(ProgressCallback { *ProgressBar, Mutex });
-//
-//            ProgressBar->reset();
-//            ProgressBar->setFormat(oldFormat);
-//
-//            ParentWidget.UpdateRowStatuses();
-//        });
-//    else
-//        ExportButton->hide();
-//}
-//
-//auto DataGenerationTaskWidget::ProgressCallback::operator()(double progress) -> void {
-//    std::scoped_lock<std::mutex> const lock { Mutex };
-//
-//    ProgressBar.setValue(static_cast<int>(progress * 1000.0));
-//}
-//
-//auto DataGenerationTaskWidget::Generate() -> void {
-//    ParentWidget.DisableButtons();
-//
-//    Generator(ProgressCallback { *ProgressBar, Mutex });
-//
-//    ProgressBar->reset();
-//
-//    ParentWidget.UpdateRowStatuses();
-//}
-//
-//auto DataGenerationTaskWidget::SetButtonEnabled(bool enabled) const -> void {
-//    GenerateButton->setEnabled(enabled);
-//}
-//
-//auto DataGenerationTaskWidget::UpdateStatus(Status status, Status previousStepStatus) const -> void {
-//    bool const previousIsGenerated = previousStepStatus != Status::NOT_GENERATED;
-//    GenerateButton->setEnabled(status != Status::UP_TO_DATE && previousIsGenerated);
-//    GenerateButton->setText(status == Status::OUT_OF_DATE ? "Update" : "Generate");
-//
-//    ImportButton->setEnabled(status != Status::UP_TO_DATE && previousIsGenerated);
-//    ExportButton->setEnabled(status != Status::NOT_GENERATED);
-//
-//    StatusWidget->UpdateStatus(status);
-//}
-
 
 DataGenerationWidget::Statuses::Statuses(DataGenerationWidget& dataGenerationWidget) {
     auto dataStatus = dataGenerationWidget.PipelineGroups.GetDataStatus();
@@ -334,10 +150,10 @@ DataGenerationWidget::Statuses::Statuses(DataGenerationWidget& dataGenerationWid
 DataGenerationTaskWidget::DataGenerationTaskWidget(DataGenerationWidget& parent) :
         ParentWidget(parent),
         Name([]() {
-            auto* label = new QLabel("");
-            label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
-            static int const minWidth = (new QLabel("Features"))->sizeHint().width() + 15;
+            auto* label = new QLabel("Features");
+            static int const minWidth = label->sizeHint().width() + 15;
             label->setMinimumWidth(minWidth);
+            label->setAlignment(Qt::AlignVCenter | Qt::AlignLeft);
             return label;
         }()),
         ProgressBar([]() {
@@ -347,7 +163,7 @@ DataGenerationTaskWidget::DataGenerationTaskWidget(DataGenerationWidget& parent)
         }()),
         ImportButton([]() {
             auto* button = new QPushButton("Import");
-            static int const minWidth = (new QLabel("Import"))->sizeHint().width() + 5;
+            static int const minWidth = button->sizeHint().width() + 5;
             button->setMinimumWidth(minWidth);
             auto sizePolicy = button->sizePolicy();
             sizePolicy.setRetainSizeWhenHidden(true);
@@ -356,7 +172,7 @@ DataGenerationTaskWidget::DataGenerationTaskWidget(DataGenerationWidget& parent)
         }()),
         ExportButton([]() {
             auto* button = new QPushButton("Export");
-            static int const minWidth = (new QLabel("Import"))->sizeHint().width() + 5;
+            static int const minWidth = button->sizeHint().width() + 5;
             button->setMinimumWidth(minWidth);
             auto sizePolicy = button->sizePolicy();
             sizePolicy.setRetainSizeWhenHidden(true);
@@ -373,12 +189,12 @@ DataGenerationTaskWidget::DataGenerationTaskWidget(DataGenerationWidget& parent)
     hLayout->addWidget(ExportButton);
     hLayout->addWidget(GenerateButton);
     hLayout->addWidget(StatusWidget);
+
+    connect(this, &DataGenerationTaskWidget::ProgressUpdated, this, &DataGenerationTaskWidget::UpdateProgress);
 }
 
 auto DataGenerationTaskWidget::ProgressCallback::operator()(double progress) -> void {
-    std::scoped_lock<std::mutex> const lock { Mutex };
-
-    ProgressBar.setValue(static_cast<int>(progress * 1000.0));
+    Q_EMIT Widget.ProgressUpdated(progress);
 }
 
 auto DataGenerationTaskWidget::SetButtonsEnabled(bool enabled) const -> void {
@@ -406,10 +222,16 @@ auto DataGenerationTaskWidget::DoBeforeTask(QString const& progressBarFormat) co
     ProgressBar->setFormat(progressBarFormat);
 }
 
-auto DataGenerationTaskWidget::DoAfterTask() const -> void {
+auto DataGenerationTaskWidget::DoAfterTask() -> void {
+    Q_EMIT TaskDone();
+
     ProgressBar->reset();
 
     ParentWidget.UpdateRowStatuses();
+}
+
+auto DataGenerationTaskWidget::UpdateProgress(double progress) -> void {
+    ProgressBar->setValue(static_cast<int>(progress * 1000.0));
 }
 
 DataGenerationTaskWidget::~DataGenerationTaskWidget() {
@@ -419,6 +241,8 @@ DataGenerationTaskWidget::~DataGenerationTaskWidget() {
 
 GenerateImagesTaskWidget::GenerateImagesTaskWidget(DataGenerationWidget& parent) :
         DataGenerationTaskWidget(parent) {
+
+    Name->setText("Images");
 
     connect(GenerateButton, &QPushButton::clicked, this, [this]() {
         DoBeforeTask("Generating Image Data... %p%");
@@ -443,16 +267,17 @@ GenerateImagesTaskWidget::GenerateImagesTaskWidget(DataGenerationWidget& parent)
 
 
 auto GenerateImagesTaskWidget::GenerateImages() -> void {
-    auto* imageImportWorker = new VoidWorker([this]() {
-        ParentWidget.PipelineGroups.GenerateImages(ProgressCallback { *ProgressBar, Mutex });
+    auto* imageGenerateWorker = new VoidWorker([this]() {
+        ParentWidget.PipelineGroups.GenerateImages(ProgressCallback { *this });
     });
 
-    imageImportWorker->moveToThread(&WorkerThread);
-    connect(&WorkerThread, &QThread::finished, imageImportWorker, &QObject::deleteLater);
-    connect(imageImportWorker, &VoidWorker::Done, this, [this]() { DoAfterTask(); });
+    imageGenerateWorker->moveToThread(&WorkerThread);
+    connect(&WorkerThread, &QThread::started, imageGenerateWorker, &VoidWorker::DoWork);
+    connect(&WorkerThread, &QThread::finished, imageGenerateWorker, &QObject::deleteLater);
+    connect(imageGenerateWorker, &VoidWorker::Done, &WorkerThread, &QThread::quit);
+    connect(imageGenerateWorker, &VoidWorker::Done, this, [this]() { DoAfterTask(); });
 
     WorkerThread.start();
-    imageImportWorker->DoWork();
 }
 
 auto GenerateImagesTaskWidget::PrepareImportImages() -> std::filesystem::path {
@@ -473,20 +298,23 @@ auto GenerateImagesTaskWidget::PrepareImportImages() -> std::filesystem::path {
 }
 
 auto GenerateImagesTaskWidget::ImportImages(std::filesystem::path const& importPath) -> void {
-    if (importPath.empty())
+    if (importPath.empty()) {
+        DoAfterTask();
         return;
+    }
 
-    auto* imageImportWorker = new VoidWorker([this, &importPath]() {
+    auto* imageImportWorker = new VoidWorker([this, importPath]() {
         ParentWidget.PipelineGroups.ImportImages(importPath,
-                                                 ProgressCallback { *ProgressBar, Mutex });
+                                                 ProgressCallback { *this });
     });
 
     imageImportWorker->moveToThread(&WorkerThread);
+    connect(&WorkerThread, &QThread::started, imageImportWorker, &VoidWorker::DoWork);
     connect(&WorkerThread, &QThread::finished, imageImportWorker, &QObject::deleteLater);
+    connect(imageImportWorker, &VoidWorker::Done, &WorkerThread, &QThread::quit);
     connect(imageImportWorker, &VoidWorker::Done, this, [this]() { DoAfterTask(); });
 
     WorkerThread.start();
-    imageImportWorker->DoWork();
 }
 
 auto GenerateImagesTaskWidget::PrepareExportImages() -> std::pair<std::filesystem::path, ExportType> {
@@ -506,7 +334,7 @@ auto GenerateImagesTaskWidget::PrepareExportImages() -> std::pair<std::filesyste
     ExportType exportType = ExportType::HDF5;
 
     connect(dialogHdf5Button, &QPushButton::clicked,
-            this, [this, selectImageFormatDialog, &homePath, &exportPath, &exportType]() {
+            this, [this, selectImageFormatDialog, homePath, &exportPath, &exportType]() {
         QString const caption = "Export Images (.h5)";
         QString const fileFilter = "Images (*.h5)";
         QString const filePath = QFileDialog::getSaveFileName(this, caption, homePath, fileFilter);
@@ -521,7 +349,7 @@ auto GenerateImagesTaskWidget::PrepareExportImages() -> std::pair<std::filesyste
     });
 
     connect(dialogVtkButton, &QPushButton::clicked,
-            this, [this, selectImageFormatDialog, &homePath, &exportPath, &exportType]() {
+            this, [this, selectImageFormatDialog, homePath, &exportPath, &exportType]() {
         QString const caption = "Export Images (.vtk)";
         QString const dirName = QFileDialog::getExistingDirectory(this, caption, homePath);
         std::filesystem::path const exportDirPath = dirName.toStdString();
@@ -542,47 +370,52 @@ auto GenerateImagesTaskWidget::PrepareExportImages() -> std::pair<std::filesyste
 }
 
 auto GenerateImagesTaskWidget::ExportImages(std::filesystem::path const& exportPath, ExportType exportType) -> void {
-    if (exportPath.empty())
+    if (exportPath.empty()) {
+        DoAfterTask();
         return;
+    }
 
-    auto* imageExportWorker = new VoidWorker([this, &exportPath, exportType]() {
+    auto* imageExportWorker = new VoidWorker([this, exportPath, exportType]() {
         switch (exportType) {
             case ExportType::HDF5: {
-                ParentWidget.PipelineGroups.ExportImagesHdf5(exportPath, ProgressCallback{ *ProgressBar, Mutex });
+                ParentWidget.PipelineGroups.ExportImagesHdf5(exportPath, ProgressCallback{ *this });
                 break;
             }
             case ExportType::VTK:
-                ParentWidget.PipelineGroups.ExportImagesVtk(exportPath, ProgressCallback{ *ProgressBar, Mutex });
+                ParentWidget.PipelineGroups.ExportImagesVtk(exportPath, ProgressCallback{ *this });
                 break;
         }
     });
 
     imageExportWorker->moveToThread(&WorkerThread);
+    connect(&WorkerThread, &QThread::started, imageExportWorker, &VoidWorker::DoWork);
     connect(&WorkerThread, &QThread::finished, imageExportWorker, &QObject::deleteLater);
+    connect(imageExportWorker, &VoidWorker::Done, &WorkerThread, &QThread::quit);
     connect(imageExportWorker, &VoidWorker::Done, this, [this]() { DoAfterTask(); });
 
     WorkerThread.start();
-    imageExportWorker->DoWork();
 }
 
 ExtractFeaturesTaskWidget::ExtractFeaturesTaskWidget(DataGenerationWidget& parent) :
         DataGenerationTaskWidget(parent) {
 
+    Name->setText("Features");
+
     connect(GenerateButton, &QPushButton::clicked, this, [this]() {
-        DoBeforeTask("Generating image data... %p%");
+        DoBeforeTask("Extracting features... %p%");
 
         ExtractFeatures();
     });
 
     connect(ImportButton, &QPushButton::clicked, this, [this]() {
-        DoBeforeTask("Extracting features... %p%");
+        DoBeforeTask("Importing features... %p%");
 
         auto const importPath = PrepareImportFeatures();
         ImportFeatures(importPath);
     });
 
     connect(ExportButton, &QPushButton::clicked, this, [this]() {
-        DoBeforeTask("Exporting images... %p%");
+        DoBeforeTask("Exporting features... %p%");
 
         auto const exportPath = PrepareExportFeatures();
         ExportFeatures(exportPath);
@@ -590,16 +423,17 @@ ExtractFeaturesTaskWidget::ExtractFeaturesTaskWidget(DataGenerationWidget& paren
 }
 
 auto ExtractFeaturesTaskWidget::ExtractFeatures() -> void {
-    auto* imageImportWorker = new VoidWorker([this]() {
-        ParentWidget.PipelineGroups.ExtractFeatures(ProgressCallback { *ProgressBar, Mutex });
+    auto* extractFeaturesWorker = new VoidWorker([this]() {
+        ParentWidget.PipelineGroups.ExtractFeatures(ProgressCallback { *this });
     });
 
-    imageImportWorker->moveToThread(&WorkerThread);
-    connect(&WorkerThread, &QThread::finished, imageImportWorker, &QObject::deleteLater);
-    connect(imageImportWorker, &VoidWorker::Done, this, [this]() { DoAfterTask(); });
+    extractFeaturesWorker->moveToThread(&WorkerThread);
+    connect(&WorkerThread, &QThread::started, extractFeaturesWorker, &VoidWorker::DoWork);
+    connect(&WorkerThread, &QThread::finished, extractFeaturesWorker, &QObject::deleteLater);
+    connect(extractFeaturesWorker, &VoidWorker::Done, &WorkerThread, &QThread::quit);
+    connect(extractFeaturesWorker, &VoidWorker::Done, this, [this]() { DoAfterTask(); });
 
     WorkerThread.start();
-    imageImportWorker->DoWork();
 }
 
 auto ExtractFeaturesTaskWidget::PrepareImportFeatures() -> std::filesystem::path {
@@ -621,20 +455,22 @@ auto ExtractFeaturesTaskWidget::PrepareImportFeatures() -> std::filesystem::path
 }
 
 auto ExtractFeaturesTaskWidget::ImportFeatures(std::filesystem::path const& importPath) -> void {
-    if (importPath.empty())
+    if (importPath.empty()) {
+        DoAfterTask();
         return;
+    }
 
-    auto* featureImportWorker = new VoidWorker([this, &importPath]() {
-        ParentWidget.PipelineGroups.ImportFeatures(importPath,
-                                                   ProgressCallback { *ProgressBar, Mutex });
+    auto* featureImportWorker = new VoidWorker([this, importPath]() {
+        ParentWidget.PipelineGroups.ImportFeatures(importPath, ProgressCallback { *this });
     });
 
     featureImportWorker->moveToThread(&WorkerThread);
+    connect(&WorkerThread, &QThread::started, featureImportWorker, &VoidWorker::DoWork);
     connect(&WorkerThread, &QThread::finished, featureImportWorker, &QObject::deleteLater);
+    connect(featureImportWorker, &VoidWorker::Done, &WorkerThread, &QThread::quit);
     connect(featureImportWorker, &VoidWorker::Done, this, [this]() { DoAfterTask(); });
 
     WorkerThread.start();
-    featureImportWorker->DoWork();
 }
 
 auto ExtractFeaturesTaskWidget::PrepareExportFeatures() -> std::filesystem::path {
@@ -652,26 +488,31 @@ auto ExtractFeaturesTaskWidget::PrepareExportFeatures() -> std::filesystem::path
 }
 
 auto ExtractFeaturesTaskWidget::ExportFeatures(std::filesystem::path const& exportPath) -> void {
-    if (exportPath.empty())
+    if (exportPath.empty()) {
+        DoAfterTask();
         return;
+    }
 
-    auto* featureExportWorker  = new VoidWorker([this, &exportPath]() {
-        ParentWidget.PipelineGroups.ExportFeatures(exportPath, ProgressCallback{ *ProgressBar, Mutex });
+    auto* featureExportWorker  = new VoidWorker([this, exportPath]() {
+        ParentWidget.PipelineGroups.ExportFeatures(exportPath, ProgressCallback{ *this });
     });
 
     featureExportWorker->moveToThread(&WorkerThread);
+    connect(&WorkerThread, &QThread::started, featureExportWorker, &VoidWorker::DoWork);
     connect(&WorkerThread, &QThread::finished, featureExportWorker, &QObject::deleteLater);
+    connect(featureExportWorker, &VoidWorker::Done, &WorkerThread, &QThread::quit);
     connect(featureExportWorker, &VoidWorker::Done, this, [this]() { DoAfterTask(); });
 
     WorkerThread.start();
-    featureExportWorker->DoWork();
 }
 
 DoPcaTaskWidget::DoPcaTaskWidget(DataGenerationWidget& parent) :
         DataGenerationTaskWidget(parent) {
 
+    Name->setText("PCAs");
+
     connect(GenerateButton, &QPushButton::clicked, this, [this]() {
-        DoBeforeTask("Doing PCA... %p%");
+        DoBeforeTask("Doing PCAs... %p%");
 
         DoPca();
     });
@@ -684,19 +525,22 @@ DoPcaTaskWidget::DoPcaTaskWidget(DataGenerationWidget& parent) :
 
 auto DoPcaTaskWidget::DoPca() -> void {
     auto* pcaWorker = new VoidWorker([this]() {
-        ParentWidget.PipelineGroups.DoPCAs(2, ProgressCallback { *ProgressBar, Mutex });
+        ParentWidget.PipelineGroups.DoPCAs(2, ProgressCallback { *this });
     });
 
     pcaWorker->moveToThread(&WorkerThread);
+    connect(&WorkerThread, &QThread::started, pcaWorker, &VoidWorker::DoWork);
     connect(&WorkerThread, &QThread::finished, pcaWorker, &QObject::deleteLater);
+    connect(pcaWorker, &VoidWorker::Done, &WorkerThread, &QThread::quit);
     connect(pcaWorker, &VoidWorker::Done, this, [this]() { DoAfterTask(); });
 
     WorkerThread.start();
-    pcaWorker->DoWork();
 }
 
 DoTsneTaskWidget::DoTsneTaskWidget(DataGenerationWidget& parent) :
         DataGenerationTaskWidget(parent) {
+
+    Name->setText("t-SNE");
 
     connect(GenerateButton, &QPushButton::clicked, this, [this]() {
         DoBeforeTask("Doing t-SNE... %p%");
@@ -711,24 +555,25 @@ DoTsneTaskWidget::DoTsneTaskWidget(DataGenerationWidget& parent) :
 
 
 auto DoTsneTaskWidget::DoTsne() -> void {
-    auto* pcaWorker = new VoidWorker([this]() {
-        ParentWidget.PipelineGroups.DoTsne(2, ProgressCallback { *ProgressBar, Mutex });
+    auto* tsneWorker = new VoidWorker([this]() {
+        ParentWidget.PipelineGroups.DoTsne(2, ProgressCallback { *this });
     });
 
-    pcaWorker->moveToThread(&WorkerThread);
-    connect(&WorkerThread, &QThread::finished, pcaWorker, &QObject::deleteLater);
-    connect(pcaWorker, &VoidWorker::Done, this, [this]() { DoAfterTask(); });
+    tsneWorker->moveToThread(&WorkerThread);
+    connect(&WorkerThread, &QThread::started, tsneWorker, &VoidWorker::DoWork);
+    connect(&WorkerThread, &QThread::finished, tsneWorker, &QObject::deleteLater);
+    connect(tsneWorker, &VoidWorker::Done, &WorkerThread, &QThread::quit);
+    connect(tsneWorker, &VoidWorker::Done, this, [this]() { DoAfterTask(); });
 
     WorkerThread.start();
-    pcaWorker->DoWork();
 }
 
 DataGenerationStatusWidget::DataGenerationStatusWidget() :
         TextLabel([]() {
-            auto* label = new QLabel("");
-            label->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
-            static int const minWidth = (new QLabel("Not generated"))->sizeHint().width() + 10;
+            auto* label = new QLabel("Not generated");
+            static int const minWidth = label->sizeHint().width() + 10;
             label->setMinimumWidth(minWidth);
+            label->setAlignment(Qt::AlignVCenter | Qt::AlignHCenter);
             return label;
         }()) {
 

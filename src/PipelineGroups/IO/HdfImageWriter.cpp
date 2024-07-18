@@ -23,31 +23,27 @@ auto HdfImageWriter::SetBatch(HdfImageWriter::BatchImages&& images) noexcept -> 
 
     MaxSampleId = std::ranges::max_element(Batch, {}, &BatchImage::Id)->Id;
 
-    RemoveAllInputs();
-    std::ranges::for_each(Batch,
-                          [this](BatchImage& batchImage) { AddInputDataObject(&batchImage.ImageData); });
+    InputImages.clear();
+    for (auto& batchImage : Batch)
+        InputImages.emplace_back(batchImage.ImageData);
+
+    SetInputDataObject(0, vtkImageData::New());  // dummy
 
     Modified();
 }
 
 void HdfImageWriter::WriteData() {
-    int const numberOfInputConnections = GetNumberOfInputConnections(0);
-
     if (Filename.empty())
         throw std::runtime_error("filename must not be empty");
 
     if (ArrayNames.empty())
         throw std::runtime_error("array names must not be empty");
 
-    InputImages.clear();
-    for (int i = 0; i < numberOfInputConnections; i++)
-        InputImages.emplace_back(*vtkImageData::SafeDownCast(GetInputDataObject(0, i)));
+    if (InputImages.empty())
+        throw std::runtime_error("input images must not be empty");
 
     unsigned int const openFlags = TruncateFileBeforeWrite ? HighFive::File::Truncate : HighFive::File::ReadWrite;
     auto file = HighFive::File(Filename.string(), openFlags);
-
-    if (InputImages.empty())
-        throw std::runtime_error("input images must not be empty");
 
     if (TruncateFileBeforeWrite)
         InitializeFile(file);
@@ -56,13 +52,6 @@ void HdfImageWriter::WriteData() {
 }
 
 auto HdfImageWriter::FillInputPortInformation(int port, vtkInformation* info) -> int {
-    if (port == 0) {
-        info->Set(vtkAlgorithm::INPUT_REQUIRED_DATA_TYPE(), "vtkImageData");
-        info->Set(vtkAlgorithm::INPUT_IS_REPEATABLE(), 1);
-
-        return 1;
-    }
-
     return 0;
 }
 
@@ -96,8 +85,12 @@ auto HdfImageWriter::InitializeFile(HighFive::File& file) -> void {
             }
         }();
 
-        std::visit([vtkDataType, &file, &arrayName, &dataSpace](auto type) {
-            auto dataSet = file.createDataSet(arrayName, dataSpace, type);
+        std::visit([vtkDataType, numberOfElements, &file, &arrayName, &dataSpace](auto type) {
+            HighFive::DataSetCreateProps dataSetCreateProps {};
+            dataSetCreateProps.add(HighFive::Chunking { { 1, numberOfElements } });
+            dataSetCreateProps.add(HighFive::Deflate { 5 });
+            auto dataSet = file.createDataSet(arrayName, dataSpace, type, dataSetCreateProps);
+
             dataSet.createAttribute("vtkType", vtkDataType);
         }, h5Type);
     }
@@ -190,6 +183,7 @@ auto HdfImageWriter::WriteImageBatch(HighFive::File& file) -> void {
         }, arrayPointerVariant);
     });
 
+    std::cout << "before real write" << std::endl;
     for (size_t i = 0; i < ArrayNames.size(); i++) {
         auto& arrayName = ArrayNames.at(i);
         auto& dataVector = imagesDataVectors.at(i);
@@ -206,6 +200,7 @@ auto HdfImageWriter::WriteImageBatch(HighFive::File& file) -> void {
             selection.write(data);
         }, dataVector);
     }
+    std::cout << "after real write" << std::endl;
 
     NumberOfProcessedImages += InputImages.size();
 

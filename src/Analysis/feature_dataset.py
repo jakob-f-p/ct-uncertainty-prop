@@ -3,28 +3,27 @@ import numpy.typing as npt
 
 from feature_extraction_cpp import FeatureData, SampleId
 from sklearn import preprocessing
-from typing import List
 
 
-Array2D = List[List[float]]
-Array2DList = List[Array2D]
+Array2D = list[list[float]]
+Array2DList = list[Array2D]
 
 
 class FeatureDataset:
     original_data: npt.NDArray
     data: npt.NDArray  # normalized
-    feature_names: List[str]
-    sample_ids: List[SampleId]
+    feature_names: list[str]
+    sample_ids: list[SampleId]
     dimensions: tuple[int, int]
 
-    def __init__(self, feature_data_list: List[FeatureData], scale: bool = True):
+    def __init__(self, feature_data_list: list[FeatureData], scale: bool = True):
         if (len(feature_data_list) == 0 or len(feature_data_list[0].values) == 0
                 or len(feature_data_list[0].values[0]) == 0):
             raise ValueError("Feature data list is empty")
 
-        sample_values: List[List[float]] = []
-        self.feature_names: List[str] = feature_data_list[0].names
-        self.sample_ids: List[SampleId] = []
+        sample_values: list[list[float]] = []
+        self.feature_names: list[str] = feature_data_list[0].names
+        self.sample_ids: list[SampleId] = []
 
         for group_idx, feature_data in enumerate(feature_data_list):
             for state_idx, feature_row in enumerate(feature_data.values):

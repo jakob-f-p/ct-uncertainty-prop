@@ -3,10 +3,10 @@ import numpy.typing as npt
 from feature_extraction_cpp import FeatureData, SampleId
 from feature_dataset import Array2D, Array2DList, FeatureDataset
 from sklearn import manifold
-from typing import cast, List
+from typing import cast
 
 
-def calculate(feature_data_list: List[FeatureData], dimensions: int = 2) -> Array2DList:
+def calculate(feature_data_list: list[FeatureData], dimensions: int = 2) -> Array2DList:
     if len(feature_data_list) == 0 or len(feature_data_list[0].values) == 0:
         return Array2DList()
 

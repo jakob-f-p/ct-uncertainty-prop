@@ -43,9 +43,8 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree,
         if (idx == tabWidget->indexOf(pipelineGroupsWidget))
             pipelineGroupsWidget->UpdatePipelineList();
 
-        if (idx == tabWidget->indexOf(dataGenerationWidget)) {
+        if (idx == tabWidget->indexOf(dataGenerationWidget))
             dataGenerationWidget->UpdateRowStatuses();
-        }
 
         if (idx == tabWidget->indexOf(analysisWidget))
             analysisWidget->UpdateData();

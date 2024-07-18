@@ -9,7 +9,7 @@
 PipelineParameterSpaceStateView::PipelineParameterSpaceStateView(
         PipelineParameterSpaceState const& parameterSpaceState) {
 
-    setModel(new PipelineParameterSpaceStateModel(parameterSpaceState));
+    setModel(new PipelineParameterSpaceStateModel(parameterSpaceState, this));
 
     setMinimumWidth(350);
 

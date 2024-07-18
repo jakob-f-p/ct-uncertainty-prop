@@ -6,7 +6,7 @@
 
 
 PipelineGroupListView::PipelineGroupListView(PipelineGroupList& pipelineGroups) :
-        GroupListModel(new PipelineGroupListModel(pipelineGroups)) {
+        GroupListModel(new PipelineGroupListModel(pipelineGroups, this)) {
     setModel(GroupListModel);
 }
 

@@ -42,7 +42,7 @@ ChartWidget::ChartWidget(ChartView* chartView) :
             return button;
         }()),
         ThemeButtonGroup([this]() {
-            auto* buttonGroup = new QButtonGroup();
+            auto* buttonGroup = new QButtonGroup(this);
             buttonGroup->addButton(LightThemeButton);
             buttonGroup->addButton(DarkThemeButton);
             return buttonGroup;

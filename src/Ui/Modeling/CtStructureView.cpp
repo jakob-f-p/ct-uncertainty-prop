@@ -11,8 +11,8 @@
 #include <QEvent>
 
 CtStructureView::CtStructureView(CtStructureTree& ctStructureTree) {
-    setModel(new CtStructureTreeModel(ctStructureTree));
-    setItemDelegate(new CtStructureDelegate());
+    setModel(new CtStructureTreeModel(ctStructureTree, this));
+    setItemDelegate(new CtStructureDelegate(this));
 }
 
 CtStructureView::CtStructureDelegate::CtStructureDelegate(QObject* parent) : DialogDelegate(parent) {}
@@ -54,9 +54,11 @@ void CtStructureView::CtStructureDelegate::setModelData(QWidget* editor,
 
 CtStructureReadOnlyView::CtStructureReadOnlyView(CtStructureTree const& ctStructureTree) :
         CtStructureView(const_cast<CtStructureTree&>(ctStructureTree)),
-        StructureTreeModel(new CtStructureTreeReadOnlyModel(ctStructureTree)) {
+        StructureTreeModel(new CtStructureTreeReadOnlyModel(ctStructureTree, this)) {
 
+    auto* oldModel = model();
     setModel(StructureTreeModel);
+    delete oldModel;
 }
 
 auto CtStructureReadOnlyView::model() const noexcept -> CtStructureTreeReadOnlyModel* {
@@ -64,7 +66,7 @@ auto CtStructureReadOnlyView::model() const noexcept -> CtStructureTreeReadOnlyM
 }
 
 void CtStructureReadOnlyView::selectionChanged(QItemSelection const& selected, QItemSelection const& deselected) {
-    QTreeView::selectionChanged(selected, deselected);
+    selectionChanged(selected, deselected);
 
     QModelIndexList const selectedIndices = selected.indexes();
 

@@ -26,6 +26,7 @@
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
 
+#include <chrono>
 #include <memory>
 
 
@@ -81,6 +82,7 @@ auto PipelineGroup::GenerateImages(HdfImageWriter& imageWriter, ProgressEventCal
 
         std::vector<vtkNew<vtkImageData>> batchImageData { currentBatchSize };
         HdfImageWriter::BatchImages batchImages {};
+        auto const generateStartTime = std::chrono::system_clock::now();
         for (auto& imageData : batchImageData) {
             double const progress = static_cast<double>(i) / static_cast<double>(numberOfStates);
             callback(progress);
@@ -91,7 +93,8 @@ auto PipelineGroup::GenerateImages(HdfImageWriter& imageWriter, ProgressEventCal
 
             state->Apply();
             thresholdAlgorithm.Update();
-            imageData->DeepCopy(thresholdAlgorithm.GetOutput());
+            imageData->ShallowCopy(thresholdAlgorithm.GetOutput());
+            thresholdAlgorithm.SetOutput(vtkImageData::New());
 
             SampleId const sampleId { GroupId, static_cast<uint16_t>(i) };
             batchImages.push_back({ sampleId, *imageData });
@@ -100,8 +103,19 @@ auto PipelineGroup::GenerateImages(HdfImageWriter& imageWriter, ProgressEventCal
             i++;
         }
 
+        auto const generateEndTime = std::chrono::system_clock::now();
+        auto const generateDuration = std::chrono::duration_cast<std::chrono::seconds>(generateEndTime - generateStartTime);
+        std::cout << std::format("generated ({}), {}", i, generateDuration) << std::endl;
+
+        std::cout << "before write" << std::endl;
+        auto const writeStartTime = std::chrono::system_clock::now();
+
         imageWriter.SetBatch(std::move(batchImages));
         imageWriter.Write();
+
+        auto const writeEndTime = std::chrono::system_clock::now();
+        auto const writeDuration = std::chrono::duration_cast<std::chrono::seconds>(writeEndTime - writeStartTime);
+        std::cout << std::format("after write: {}", writeDuration) << std::endl;
     }
 
     Data.InitialState->Apply();
@@ -114,10 +128,13 @@ PYBIND11_EMBEDDED_MODULE(feature_extraction_cpp, m) {
 
     enum struct VtkType : uint8_t { SHORT = VTK_SHORT, FLOAT = VTK_FLOAT };
 
-    py::enum_<VtkType>(m, "VtkType")
-            .value("Short", VtkType::SHORT)
-            .value("Float", VtkType::FLOAT)
-            .export_values();
+//    py::enum_<VtkType>(m, "VtkType")
+//            .value("Short", VtkType::SHORT)
+//            .value("Float", VtkType::FLOAT)
+//            .export_values();
+
+    m.attr("VtkType_Short") = static_cast<uint8_t>(VtkType::SHORT);
+    m.attr("VtkType_Float") = static_cast<uint8_t>(VtkType::FLOAT);
 
     py::class_<vtkImageData, std::unique_ptr<vtkImageData, py::nodelete>>(m, "VtkImageData", py::buffer_protocol())
             .def("get_dimensions", [](vtkImageData& imageData) {
@@ -199,6 +216,8 @@ PYBIND11_EMBEDDED_MODULE(feature_extraction_cpp, m) {
 auto PipelineGroup::ExtractFeatures(HdfImageReader& imageReader, ProgressEventCallback const& callback) -> void {
     auto& interpreter = App::GetInstance()->GetPythonInterpreter();
 
+    pybind11::gil_scoped_acquire const acquire {};
+
     uint64_t const numberOfStates = Data.States.size();
     uint64_t const maxBatchSize = GetMaxImageBatchSize();
 
@@ -274,6 +293,8 @@ auto PipelineGroup::ExtractFeatures(HdfImageReader& imageReader, ProgressEventCa
 auto PipelineGroup::DoPCA(uint8_t numberOfDimensions) -> void {
     auto& interpreter = App::GetInstance()->GetPythonInterpreter();
 
+    pybind11::gil_scoped_acquire const acquire {};
+
     pybind11::object const pcaCoordinateData = interpreter.ExecuteFunction("pca", "calculate",
                                                                            *Data.Features, numberOfDimensions);
 
@@ -337,7 +358,7 @@ auto PipelineGroup::ImportImages() -> void {
 
 auto PipelineGroup::ExportImagesVtk(std::filesystem::path const& exportDir,
                                     PipelineGroup::ProgressEventCallback const& callback) -> void {
-    std::atomic_uint numberOfExportedImages = 0;
+    std::atomic_uint const numberOfExportedImages = 0;
     size_t const numberOfImages = Data.Images->size();
 
     auto const now = std::chrono::system_clock::now();
@@ -401,10 +422,14 @@ auto PipelineGroup::GetMaxImageBatchSize() -> uint64_t {
     auto const dimensions = dataSource.GetVolumeNumberOfVoxels();
     uint64_t const numberOfVoxels = std::reduce(dimensions.cbegin(), dimensions.cend(), 1, std::multiplies {});
 
-    auto const imageSizeInBytes = numberOfVoxels * sizeof(float) * 2;
+    auto const imageSizeInBytes = numberOfVoxels * sizeof(float) * 10;
     auto const applicationMemoryMaxSize = System::GetMaxApplicationMemory();
 
     uint64_t const maxNumberOfImages = applicationMemoryMaxSize / imageSizeInBytes;
 
+    std::cout << std::format("imageSize (B): {}\napplicationMemoryMaxSize: {}\nmaxNumberImages: {}",
+                             imageSizeInBytes, applicationMemoryMaxSize, maxNumberOfImages) << std::endl;
+
+    return 1;
     return std::max({ maxNumberOfImages, 1ULL });
 }

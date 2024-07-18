@@ -148,8 +148,21 @@ StructureArtifactsFilter::Algorithm::Algorithm(StructureArtifactsFilter* self,
                                                std::array<float* const, 3> structureArtifactValues) :
         Self(self),
         VolumeData(volumeData),
-        Spacing(),
-        UpdateDims(),
+        Spacing([this]() {
+            std::array<double, 3> spacing {};
+            std::copy(VolumeData->GetSpacing(), std::next(VolumeData->GetSpacing(), 3), spacing.begin());
+            return spacing;
+        }()),
+        UpdateDims([this]() {
+            std::array<int, 3> updateDims {};
+            std::copy(VolumeData->GetDimensions(), std::next(VolumeData->GetDimensions(), 3), updateDims.begin());
+            return updateDims;
+        }()),
+        StartPoint([this]() {
+            DoublePoint startPoint;
+            VolumeData->GetPoint(0, startPoint.data());
+            return startPoint;
+        }()),
         TreeArtifacts(treeArtifacts),
         Radiodensities(radiodensities),
         BasicStructureIds(basicStructureIds),
@@ -179,22 +192,26 @@ struct Calculate {
         float* const artifactValues = StructureArtifactValues[static_cast<uint8_t>(subType)];
 
         DoublePoint point = StartPoint;
+        point[0] += X1 * Spacing[0];
+        point[1] += Y1 * Spacing[1];
+        point[2] += Z1 * Spacing[2];
+
         for (vtkIdType z = Z1; z <= Z2; z++) {
             vtkIdType y = 0;
             if (z == Z1)
                 y = Y1;
 
             vtkIdType yEnd = UpdateDims[1] - 1;
-            if (z == Z2 - 1)
+            if (z == Z2)
                 yEnd = Y2;
 
             for (; y <= yEnd; y++) {
                 vtkIdType x = 0;
-                if (y == Y1)
+                if (z == Z1 && y == Y1)
                     x = X1;
 
                 vtkIdType xEnd = UpdateDims[0] - 1;
-                if (y == Y2 - 1)
+                if (z == Z2 && y == Y2)
                     xEnd = X2;
 
                 for (; x <= xEnd; x++) {
@@ -208,9 +225,11 @@ struct Calculate {
 
                     point[0] += Spacing[0];
                 }
+
                 point[0] = StartPoint[0];
                 point[1] += Spacing[1];
             }
+
             point[0] = StartPoint[0];
             point[1] = StartPoint[1];
             point[2] += Spacing[2];
@@ -224,16 +243,13 @@ void StructureArtifactsFilter::Algorithm::operator()(vtkIdType pointId, vtkIdTyp
     if (Self->GetAbortOutput())
         return;
 
-    DoublePoint startPoint;
-    VolumeData->GetPoint(pointId, startPoint.data());
-
     std::array<int, 3> const startPointCoordinates = PointIdToDimensionCoordinates(pointId, UpdateDims);
     std::array<int, 3> const endPointCoordinates = PointIdToDimensionCoordinates(endPointId, UpdateDims);
     auto lastValidPointCoordinates = GetDecrementedCoordinates(endPointCoordinates, UpdateDims);
     auto [ x1, y1, z1 ] = startPointCoordinates;
     auto [ x2, y2, z2 ] = lastValidPointCoordinates;
 
-    TreeArtifacts->ArtifactValue( Calculate { startPoint, Spacing, UpdateDims,
+    TreeArtifacts->ArtifactValue( Calculate { StartPoint, Spacing, UpdateDims,
                                               x1, y1, z1, x2, y2, z2, pointId,
                                               BasicStructureIds, StructureArtifactValues });
 }

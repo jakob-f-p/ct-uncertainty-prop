@@ -27,6 +27,7 @@ public:
         vtkImageData* VolumeData;
         std::array<double, 3> Spacing;
         std::array<int, 3> UpdateDims;
+        DoublePoint StartPoint;
         TreeStructureArtifactListCollection* TreeArtifacts;
         float* Radiodensities;
         StructureId const* BasicStructureIds;

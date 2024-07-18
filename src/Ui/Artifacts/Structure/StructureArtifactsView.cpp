@@ -6,8 +6,8 @@
 #include "../../../Artifacts/Structure/StructureArtifact.h"
 
 StructureArtifactsView::StructureArtifactsView(StructureArtifactList& structureArtifactList) {
-    setModel(new StructureArtifactsModel(structureArtifactList));
-    setItemDelegate(new StructureArtifactsDelegate());
+    setModel(new StructureArtifactsModel(structureArtifactList, this));
+    setItemDelegate(new StructureArtifactsDelegate(this));
 }
 
 StructureArtifactsView::StructureArtifactsDelegate::StructureArtifactsDelegate(QObject* parent) :
@@ -34,9 +34,11 @@ void StructureArtifactsView::StructureArtifactsDelegate::setModelData(QWidget* e
 }
 
 StructureArtifactsReadOnlyView::StructureArtifactsReadOnlyView(StructureArtifactList const& structureArtifactList) :
-        Model(new StructureArtifactsReadOnlyModel(structureArtifactList)) {
+        Model(new StructureArtifactsReadOnlyModel(structureArtifactList, this)) {
 
+    auto* oldModel = model();
     setModel(Model);
+    delete oldModel;
 }
 
 auto StructureArtifactsReadOnlyView::Select(StructureArtifact const& structureArtifact) -> void {

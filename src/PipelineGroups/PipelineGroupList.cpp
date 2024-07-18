@@ -1,6 +1,5 @@
 #include "PipelineGroupList.h"
 
-#include "PipelineBatch.h"
 #include "PipelineGroup.h"
 #include "PipelineParameterSpace.h"
 #include "IO/HdfImageWriter.h"
@@ -193,6 +192,8 @@ auto PipelineGroupList::DoTsne(uint8_t numberOfDimensions, ProgressEventCallback
 
     auto& interpreter = App::GetInstance()->GetPythonInterpreter();
 
+    pybind11::gil_scoped_acquire const acquire {};
+
     pybind11::object const tsneGroupCoordinateObject = interpreter.ExecuteFunction("tsne", "calculate",
                                                                                    featureDataVector,
                                                                                    numberOfDimensions);
@@ -323,7 +324,8 @@ auto PipelineGroupList::ExportImagesVtk(std::filesystem::path const& exportDir,
     });
 
     for (int i = 0; i < PipelineGroups.size(); i++)
-        PipelineGroups[i]->ExportImagesVtk(exportDir, WeightedProgressUpdater { i, progressList, groupSizeWeightVector, callback });
+        PipelineGroups[i]->ExportImagesVtk(exportDir, WeightedProgressUpdater { i, progressList,
+                                                                                groupSizeWeightVector, callback });
 
     callback(1.0);
 }
@@ -361,8 +363,8 @@ auto PipelineGroupList::ExportFeatures(std::filesystem::path const& exportPath,
     if (GetDataStatus().Feature <= 0)
         throw std::runtime_error("Cannot export features. They have not been generated yet");
 
-    int const numberOfGroups = PipelineGroups.size();
-    int const groupIdx = 1;
+    size_t const numberOfGroups = PipelineGroups.size();
+    size_t const groupIdx = 1;
 
     callback(0.0);
 
@@ -421,7 +423,7 @@ auto PipelineGroupList::ImportFeatures(std::filesystem::path const& importFilePa
         for (auto& jsonSampleFeatures : jsonGroupFeatures) {
             std::vector<double> featureValues;
 
-            for (auto& jsonSampleFeature : jsonSampleFeatures.items()) {
+            for (const auto& jsonSampleFeature : jsonSampleFeatures.items()) {
                 auto const featureValue = jsonSampleFeature.value().get<float>();
                 featureValues.emplace_back(featureValue);
             }

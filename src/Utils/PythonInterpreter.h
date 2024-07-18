@@ -6,11 +6,10 @@
 #include <utility>
 
 
-class PythonInterpreter : public pybind11::scoped_interpreter {
+class PythonInterpreter {
 public:
     explicit PythonInterpreter(int argc = 0, const char* const* argv = nullptr) :
-            pybind11::scoped_interpreter(
-                    [argc, argv]() {
+            Interpreter([argc, argv]() {
                         PyConfig config;
                         PyConfig_InitPythonConfig(&config);
 
@@ -19,8 +18,9 @@ public:
 
                         AddPythonLibPaths(config);
 
-                        return pybind11::scoped_interpreter(&config, argc, argv, true);
-                    }()) {
+                        return new pybind11::scoped_interpreter(&config, argc, argv, true);
+            }()),
+            NameModuleMap(new std::unordered_map<std::string, ImportedModule>()){
 
         std::string const setMultiprocessingPath = "import multiprocessing\n"
                                                    "import os.path\n"
@@ -35,12 +35,22 @@ public:
         AddImportedModule("extract_features");
         AddImportedModule("pca");
         AddImportedModule("tsne");
+
+        ThreadState = PyEval_SaveThread();
+    }
+
+    ~PythonInterpreter() {
+        PyEval_RestoreThread(ThreadState);
+        delete NameModuleMap;
+        delete Interpreter;
+
+        delete &pybind11::detail::get_local_internals();
     }
 
     template<typename ...T>
     auto
     ExecuteFunction(std::string const& moduleName, std::string const& functionName, T... args) -> pybind11::object {
-        auto& module = NameModuleMap.at(moduleName);
+        auto& module = NameModuleMap->at(moduleName);
 
         return module.ExecuteFunction(functionName, args...);
     }
@@ -114,10 +124,11 @@ private:
 
     auto
     AddImportedModule(std::string moduleName) -> void {
-        auto moduleNameCopy = moduleName;
-        NameModuleMap.emplace(std::move(moduleName), std::move(moduleNameCopy));
+        NameModuleMap->emplace(moduleName, moduleName);
     }
 
 
-    std::unordered_map<std::string, ImportedModule> NameModuleMap;
+    pybind11::scoped_interpreter* Interpreter;
+    std::unordered_map<std::string, ImportedModule>* NameModuleMap;
+    PyThreadState* ThreadState = nullptr;
 };

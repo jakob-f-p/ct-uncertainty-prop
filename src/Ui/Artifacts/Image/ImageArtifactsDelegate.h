@@ -4,6 +4,8 @@
 
 class ImageArtifactsDelegate : public DialogDelegate {
 public:
+    explicit ImageArtifactsDelegate(QWidget* parent = nullptr);
+
     auto
     getDialog(const QModelIndex& index, QWidget* parent) const noexcept -> QDialog* override;
 

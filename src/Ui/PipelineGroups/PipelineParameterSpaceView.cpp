@@ -6,7 +6,7 @@
 
 
 PipelineParameterSpaceView::PipelineParameterSpaceView(PipelineParameterSpace& parameterSpace) :
-        ParameterSpaceModel(new PipelineParameterSpaceModel(parameterSpace)) {
+        ParameterSpaceModel(new PipelineParameterSpaceModel(parameterSpace, this)) {
 
     setModel(ParameterSpaceModel);
 

@@ -1,9 +1,9 @@
 from collections import OrderedDict
+from collections.abc import Callable
 from functools import partial
 from multiprocessing import cpu_count, Pool, Value
 from multiprocessing.pool import AsyncResult
 from radiomics.scripts import segment
-from typing import Callable, List
 
 
 def do_extraction(extractor, logging_config, case):
@@ -16,10 +16,10 @@ def do_extraction(extractor, logging_config, case):
 def do_parallel_feature_extraction(cases,
                                    extractor,
                                    logging_config,
-                                   progress_callback: Callable[[int], None]) -> List[OrderedDict]:
+                                   progress_callback: Callable[[int], None]) -> list[OrderedDict]:
     number_of_workers = min(cpu_count() - 1, len(cases))
 
-    results: List[OrderedDict] = []
+    results: list[OrderedDict] = []
     with Pool(number_of_workers) as pool:
         done_counter = Value("i", 0)
 
@@ -32,7 +32,7 @@ def do_parallel_feature_extraction(cases,
 
         do_extraction_helper = partial(do_extraction, extractor, logging_config)
 
-        async_results: List[AsyncResult] = [pool.apply_async(partial(do_extraction_helper, case),
+        async_results: list[AsyncResult] = [pool.apply_async(partial(do_extraction_helper, case),
                                                              (), {}, callback)
                                             for case in cases]
 

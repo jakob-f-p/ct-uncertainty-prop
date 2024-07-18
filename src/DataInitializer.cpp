@@ -259,7 +259,7 @@ auto DebugSceneInitializer::operator()() -> void {
 
     BasicStructure sphere(Sphere{});
     sphere.SetTissueType(cancellousBoneTissueType);
-    sphere.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 2.5F, 2.5F, 2.5F });
+    sphere.SetTransformData({ 10.0F, 10.0F, 10.0F, 0.0F, 0.0F, 0.0F, 2.5F, 2.5F, 2.5F });
 
     CtDataTree.AddBasicStructure(std::move(sphere));
 

@@ -21,9 +21,12 @@ AnalysisMainWidget::AnalysisMainWidget(PipelineGroupList const& pipelineGroups, 
                                        ChartWidget* chartWidget, AnalysisDataWidget* dataWidget) :
         RenderWidget(new ParameterSpaceStateRenderWidget(dataSource)),
         GroupList(pipelineGroups),
-        BatchData(pipelineGroups.GetBatchData()
-                      ? std::make_unique<PipelineBatchListData>(*pipelineGroups.GetBatchData())
-                      : nullptr),
+        BatchData([&pipelineGroups]() {
+            auto batchData = pipelineGroups.GetBatchData();
+            return batchData
+                    ? std::make_unique<PipelineBatchListData>(std::move(*batchData))
+                    : nullptr;
+        }()),
         ChartWidget_(new OptionalWidget<ChartWidget>("Please generate the data first", chartWidget)),
         DataWidget(new OptionalWidget<AnalysisDataWidget>("Please select a sample point", dataWidget)) {
 
@@ -78,9 +81,10 @@ TsneMainWidget::TsneMainWidget(PipelineGroupList const& pipelineGroups, CtDataSo
 TsneMainWidget::~TsneMainWidget() = default;
 
 auto AnalysisMainWidget::UpdateData() -> void {
-    BatchData = GroupList.GetBatchData()
-                      ? std::make_unique<PipelineBatchListData>(*GroupList.GetBatchData())
-                      : nullptr;
+    auto optionalBatchData = GroupList.GetBatchData();
+    BatchData = optionalBatchData
+            ? std::make_unique<PipelineBatchListData>(std::move(*optionalBatchData))
+            : nullptr;
 
     PipelineBatchListData const* data = BatchData.get();
     RenderWidget->UpdateData(data);

@@ -12,7 +12,6 @@ class PythonInterpreter;
 class ThresholdFilter;
 
 class QApplication;
-class MainWindow;
 class vtkImageAlgorithm;
 
 
@@ -23,6 +22,7 @@ public:
     void operator=(const App&) = delete;
     App(App&&) = delete;
     void operator=(App&&) = delete;
+    ~App();
 
     [[nodiscard]] static
     auto CreateInstance(int argc, char* argv[]) -> App*;
@@ -54,7 +54,6 @@ public:
 
 protected:
     App(int argc, char* argv[]);
-    ~App();
 
 private:
     auto InitializeWithTestData() -> void;
@@ -65,7 +64,6 @@ private:
     char** Argv;
 
     std::unique_ptr<QApplication> QApp;
-    std::unique_ptr<MainWindow> MainWin;
     std::unique_ptr<CtStructureTree> CtDataTree;
     vtkNew<CtDataSource> DataSource;
     vtkNew<ThresholdFilter> ThresholdFilterAlgorithm;

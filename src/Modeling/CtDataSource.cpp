@@ -43,10 +43,10 @@ void CtDataSource::SetDataTree(CtStructureTree* ctStructureTree) {
 CtDataSource::CtDataSource() {
 #ifdef BUILD_TYPE_DEBUG
 //    int const defaultResolution = 8;
-    int const defaultResolution = 16;
+    int const defaultResolution = 32;
 #else
 //    int const defaultResolution = 256;
-    int const defaultResolution = 128;
+    int const defaultResolution = 256;
 #endif
     std::fill(NumberOfVoxels.begin(), NumberOfVoxels.end(), defaultResolution);
 
@@ -115,7 +115,7 @@ void CtDataSource::ExecuteDataWithInformation(vtkDataObject *output, vtkInformat
         return;
     }
 
-    SampleAlgorithm sampleAlgorithm(this, data, DataTree, radiodensities, functionValues, basicStructureIds);
+    SampleAlgorithm sampleAlgorithm { this, data, DataTree, radiodensities, functionValues, basicStructureIds };
     vtkSMPTools::For(0, numberOfPoints, sampleAlgorithm);
 }
 
@@ -159,12 +159,20 @@ CtDataSource::SampleAlgorithm::SampleAlgorithm(CtDataSource* self,
         Self(self),
         VolumeData(volumeData),
         Spacing(self->GetSpacing()),
+        UpdateDims([this]() {
+            std::array<int, 3> updateDims {};
+            std::copy(VolumeData->GetDimensions(), std::next(VolumeData->GetDimensions(), 3), updateDims.begin());
+            return updateDims;
+        }()),
+        StartPoint([this]() {
+            Point startPoint {};
+            VolumeData->GetPoint(0, startPoint.data());
+            return startPoint;
+        }()),
         Tree(tree),
         Radiodensities(radiodensities),
         FunctionValues(functionValues),
-        BasicStructureIds(basicStructureIds) {
-    std::copy(volumeData->GetDimensions(), std::next(volumeData->GetDimensions(), 3), UpdateDims.begin());
-}
+        BasicStructureIds(basicStructureIds) {}
 
 void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endPointId) const {
     Self->CheckAbort();
@@ -172,32 +180,33 @@ void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endP
     if (Self->GetAbortOutput())
         return;
 
-    Point startPoint;
-    VolumeData->GetPoint(pointId, startPoint.data());
-
     std::array<int, 3> const startPointCoordinates = PointIdToDimensionCoordinates(pointId, UpdateDims);
     std::array<int, 3> const endPointCoordinates = PointIdToDimensionCoordinates(endPointId, UpdateDims);
     auto [ x1, y1, z1 ] = startPointCoordinates;
     auto lastValidPointCoordinates = GetDecrementedCoordinates(endPointCoordinates, UpdateDims);
     auto [ x2, y2, z2 ] = lastValidPointCoordinates;
 
-    Point point = startPoint;
+    Point point = StartPoint;
+    point[0] += x1 * Spacing[0];
+    point[1] += y1 * Spacing[1];
+    point[2] += z1 * Spacing[2];
+
     for (vtkIdType z = z1; z <= z2; z++) {
         vtkIdType y = 0;
         if (z == z1)
             y = y1;
 
         vtkIdType yEnd = UpdateDims[1] - 1;
-        if (z == z2 - 1)
+        if (z == z2)
             yEnd = y2;
 
         for (; y <= yEnd; y++) {
             vtkIdType x = 0;
-            if (y == y1)
+            if (z == z1 && y == y1)
                 x = x1;
 
             vtkIdType xEnd = UpdateDims[0] - 1;
-            if (y == y2 - 1)
+            if (z == z2 && y == y2)
                 xEnd = x2;
 
             for (; x <= xEnd; x++) {
@@ -215,11 +224,13 @@ void CtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdType endP
 
                 point[0] += Spacing[0];
             }
-            point[0] = startPoint[0];
+
+            point[0] = StartPoint[0];
             point[1] += Spacing[1];
         }
-        point[0] = startPoint[0];
-        point[1] = startPoint[1];
+
+        point[0] = StartPoint[0];
+        point[1] = StartPoint[1];
         point[2] += Spacing[2];
     }
 }

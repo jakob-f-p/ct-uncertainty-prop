@@ -68,6 +68,21 @@ void RingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
 RingArtifactFilter::Algorithm::Algorithm(RingArtifactFilter* self, vtkImageData* volumeData, float* artifactValues) :
         Self(self),
         VolumeData(volumeData),
+        Spacing([this]() {
+            std::array<double, 3> spacing {};
+            std::copy(VolumeData->GetSpacing(), std::next(VolumeData->GetSpacing(), 3), spacing.begin());
+            return spacing;
+        }()),
+        UpdateDims([this]() {
+            std::array<int, 3> updateDims {};
+            std::copy(VolumeData->GetDimensions(), std::next(VolumeData->GetDimensions(), 3), updateDims.begin());
+            return updateDims;
+        }()),
+        StartPoint([this]() {
+            DoublePoint startPoint;
+            VolumeData->GetPoint(0, startPoint.data());
+            return startPoint;
+        }()),
         ArtifactValues(artifactValues),
         BrightRingWidth(Self->GetBrightRingWidth()),
         DarkRingWidth(Self->GetDarkRingWidth()),
@@ -75,10 +90,7 @@ RingArtifactFilter::Algorithm::Algorithm(RingArtifactFilter* self, vtkImageData*
         BrightDarkThreshold(CombinedRingWidth == 0.0 ? 0.0 : BrightRingWidth / CombinedRingWidth),
         BrightIntensityValue(Self->GetBrightIntensityValue()),
         DarkIntensityValue(Self->GetDarkIntensityValue()),
-        Center(Self->GetCenterPoint()) {
-    std::copy(volumeData->GetSpacing(), std::next(volumeData->GetSpacing(), 3), Spacing.begin());
-    std::copy(volumeData->GetDimensions(), std::next(volumeData->GetDimensions(), 3), UpdateDims.begin());
-}
+        Center(Self->GetCenterPoint()) {}
 
 void RingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType endPointId) const {
     Self->CheckAbort();
@@ -98,23 +110,27 @@ void RingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType endP
     auto lastValidPointCoordinates = GetDecrementedCoordinates(endPointCoordinates, UpdateDims);
     auto [ x2, y2, z2 ] = lastValidPointCoordinates;
 
-    DoublePoint point = startPoint;
+    DoublePoint point = StartPoint;
+    point[0] += x1 * Spacing[0];
+    point[1] += y1 * Spacing[1];
+    point[2] += z1 * Spacing[2];
+
     for (vtkIdType z = z1; z <= z2; z++) {
         vtkIdType y = 0;
         if (z == z1)
             y = y1;
 
         vtkIdType yEnd = UpdateDims[1] - 1;
-        if (z == z2 - 1)
+        if (z == z2)
             yEnd = y2;
 
         for (; y <= yEnd; y++) {
             vtkIdType x = 0;
-            if (y == y1)
+            if (z == z1 && y == y1)
                 x = x1;
 
             vtkIdType xEnd = UpdateDims[0] - 1;
-            if (y == y2 - 1)
+            if (z == z2 && y == y2)
                 xEnd = x2;
 
             for (; x <= xEnd; x++) {
@@ -134,11 +150,13 @@ void RingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType endP
 
                 point[0] += Spacing[0];
             }
-            point[0] = startPoint[0];
+
+            point[0] = StartPoint[0];
             point[1] += Spacing[1];
         }
-        point[0] = startPoint[0];
-        point[1] = startPoint[1];
+
+        point[0] = StartPoint[0];
+        point[1] = StartPoint[1];
         point[2] += Spacing[2];
     }
 }

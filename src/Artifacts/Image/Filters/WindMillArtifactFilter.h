@@ -47,6 +47,7 @@ protected:
         vtkImageData* VolumeData;
         std::array<double, 3> Spacing;
         std::array<int, 3> UpdateDims;
+        DoublePoint StartPoint;
         float* ArtifactValues;
         float BrightAngularWidth;
         float DarkAngularWidth;

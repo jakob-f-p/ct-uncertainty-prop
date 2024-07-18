@@ -1,12 +1,10 @@
 #include "App.h"
 
-#include <iostream>
-#include <span>
-#include <string>
-#include <stdexcept>
 
 auto main(int argc, char* argv[]) -> int {
-    App* app = App::CreateInstance(argc, argv);
+    _CrtSetDbgFlag ( _CRTDBG_ALLOC_MEM_DF | _CRTDBG_LEAK_CHECK_DF );
+
+    std::unique_ptr<App> app { App::CreateInstance(argc, argv) };
 
     int const appExitCode = app->Run();
 

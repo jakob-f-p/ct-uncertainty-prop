@@ -9,21 +9,22 @@ import threading
 import warnings
 
 from collections import OrderedDict
+from collections.abc import Callable
 from datetime import datetime
 from extract_features_parallel import do_parallel_feature_extraction
 from feature_extraction_cpp import (extraction_params_file, FeatureData, feature_directory,
-                                    VtkImageMaskPair, VtkImageData, VtkType)
+                                    VtkImageMaskPair, VtkImageData, VtkType_Short, VtkType_Float)
 from multiprocessing import Manager
 from pathlib import Path
 from radiomics import featureextractor
 from radiomics.scripts import segment
-from typing import cast, Dict, Callable, List, Tuple
+from typing import cast
 
 warnings.filterwarnings(action="ignore", category=RuntimeWarning)
 
 logger = logging.getLogger(__file__)
 
-FeatureExtractionResult = List[OrderedDict[str, float]]
+FeatureExtractionResult = list[OrderedDict[str, float]]
 
 
 class SitkImageMaskPair:
@@ -37,8 +38,8 @@ def vtk_to_sitk_image(vtk_image: VtkImageData) -> sitk.Image:
     origin = vtk_image.get_origin()
     spacing = vtk_image.get_spacing()
 
-    vtk_data_type: VtkType = vtk_image.get_data_type()
-    vtk_to_np_type_dict = {VtkType.Short: np.short, VtkType.Float: np.float32}
+    vtk_data_type: int = vtk_image.get_data_type()
+    vtk_to_np_type_dict = {VtkType_Short: np.short, VtkType_Float: np.float32}
     np_data_type = vtk_to_np_type_dict[vtk_data_type]
 
     np_data = np.frombuffer(vtk_image, dtype=np_data_type)
@@ -53,8 +54,8 @@ def vtk_to_sitk_image(vtk_image: VtkImageData) -> sitk.Image:
     return sitk_image
 
 
-def vtk_pairs_to_sitk_pairs(vtk_image_mask_pairs: List[VtkImageMaskPair]) -> List[SitkImageMaskPair]:
-    sitk_pairs: List[SitkImageMaskPair] = []
+def vtk_pairs_to_sitk_pairs(vtk_image_mask_pairs: list[VtkImageMaskPair]) -> list[SitkImageMaskPair]:
+    sitk_pairs: list[SitkImageMaskPair] = []
 
     for vtk_image_mask_pair in vtk_image_mask_pairs:
         vtk_image: VtkImageData = vtk_image_mask_pair.image
@@ -68,19 +69,19 @@ def vtk_pairs_to_sitk_pairs(vtk_image_mask_pairs: List[VtkImageMaskPair]) -> Lis
 
 class FeatureExtraction:
     params_file: Path
-    vtk_image_mask_pairs: List[VtkImageMaskPair]
-    sitk_image_mask_pairs: List[SitkImageMaskPair]
+    vtk_image_mask_pairs: list[VtkImageMaskPair]
+    sitk_image_mask_pairs: list[SitkImageMaskPair]
     number_of_images: int
     is_multiprocessing: bool
     out_dir: Path
     log_file: Path
-    logging_config: Dict
+    logging_config: dict
     logging_queue_listener: logging.handlers.QueueListener
     progress_callback: Callable[[float], None]
 
     debug: bool = False
 
-    def __init__(self, vtk_image_mask_pairs: List[VtkImageMaskPair], progress_callback: Callable[[float], None]):
+    def __init__(self, vtk_image_mask_pairs: list[VtkImageMaskPair], progress_callback: Callable[[float], None]):
         self.params_file = extraction_params_file
         self.vtk_image_mask_pairs = vtk_image_mask_pairs
         self.sitk_image_mask_pairs = vtk_pairs_to_sitk_pairs(self.vtk_image_mask_pairs)
@@ -128,7 +129,7 @@ class FeatureExtraction:
 
         return result_feature_dicts
 
-    def get_logging_config(self) -> (Dict, logging.handlers.QueueListener):
+    def get_logging_config(self) -> (dict, logging.handlers.QueueListener):
         queue_listener = None
 
         file_handler_level = 30
@@ -196,7 +197,7 @@ class FeatureExtraction:
 
         return logging_config, queue_listener
 
-    def get_cases(self) -> List[Tuple[int, Dict[str, str]]]:
+    def get_cases(self) -> list[tuple[int, dict[str, str]]]:
         generator = []
         for i in range(0, self.number_of_images):
             pair = self.sitk_image_mask_pairs[i]
@@ -204,7 +205,7 @@ class FeatureExtraction:
 
         return generator
 
-    def extract_features(self, cases) -> List[OrderedDict]:
+    def extract_features(self, cases) -> list[OrderedDict]:
         extractor = featureextractor.RadiomicsFeatureExtractor(str(self.params_file))
 
         if self.is_multiprocessing:
@@ -267,15 +268,15 @@ class FeatureExtraction:
             json.dump(results, json_file, cls=NumpyEncoder, indent=2)
 
 
-def extract(image_mask_pairs: List[VtkImageMaskPair],
+def extract(image_mask_pairs: list[VtkImageMaskPair],
             progress_callback: Callable[[float], None] = lambda f: None) -> FeatureExtractionResult:
 
     extraction = FeatureExtraction(image_mask_pairs, progress_callback)
 
     result: FeatureExtractionResult = extraction.run()
 
-    feature_names: List[str] = list(result[0].keys())
-    feature_values: List[List[float]] = []
+    feature_names: list[str] = list(result[0].keys())
+    feature_values: list[list[float]] = []
     for ordered_dict in result:
         feature_values.append(list(ordered_dict.values()))
 
