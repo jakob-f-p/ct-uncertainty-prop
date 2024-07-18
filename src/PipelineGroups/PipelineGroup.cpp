@@ -94,7 +94,7 @@ auto PipelineGroup::GenerateImages(HdfImageWriter& imageWriter, ProgressEventCal
             state->Apply();
             thresholdAlgorithm.Update();
             imageData->ShallowCopy(thresholdAlgorithm.GetOutput());
-            thresholdAlgorithm.SetOutput(vtkImageData::New());
+            thresholdAlgorithm.SetOutput(vtkNew<vtkImageData>());
 
             SampleId const sampleId { GroupId, static_cast<uint16_t>(i) };
             batchImages.push_back({ sampleId, *imageData });
@@ -151,7 +151,7 @@ PYBIND11_EMBEDDED_MODULE(feature_extraction_cpp, m) {
             })
             .def("get_data_type", [](vtkImageData& imageData) {
                 int const vtkType = imageData.GetPointData()->GetScalars()->GetDataType();
-                return static_cast<VtkType>(vtkType);
+                return static_cast<uint8_t>(vtkType);
             })
             .def_buffer([](vtkImageData& imageData) -> py::buffer_info {
                 auto* scalarAbstractArray = imageData.GetPointData()->GetScalars();
@@ -241,7 +241,7 @@ auto PipelineGroup::ExtractFeatures(HdfImageReader& imageReader, ProgressEventCa
         HdfImageReader::BatchImages batchImages {};
         for (int k = 0; k < currentBatchSize; k++) {
             auto& imageData = *batchImageData.at(k);
-            batchImages.emplace_back(SampleId { GroupId, static_cast<uint16_t>(k) }, imageData);
+            batchImages.emplace_back(SampleId { GroupId, static_cast<uint16_t>(i + k) }, imageData);
         }
 
         imageReader.ReadImageBatch(batchImages);
@@ -265,7 +265,7 @@ auto PipelineGroup::ExtractFeatures(HdfImageReader& imageReader, ProgressEventCa
 
             auto& mask = *pair.Mask;
             mask.ShallowCopy(&imageData);
-            image.GetPointData()->SetActiveScalars("Segmentation Mask");
+            mask.GetPointData()->SetActiveScalars("Segmentation Mask");
 
             batchImageMaskRefPairs.emplace_back(image, mask);
         }
@@ -369,7 +369,7 @@ auto PipelineGroup::ExportImagesVtk(std::filesystem::path const& exportDir,
         callback(progress);
 
         auto& imageReadHandle = Data.Images->at(i);
-        auto image = imageReadHandle.Read();
+        auto image = imageReadHandle.Read({ "Radiodensities", "Segmentation Mask" });
         using std::filesystem::path;
 
         uint32_t const stateIdx = i;

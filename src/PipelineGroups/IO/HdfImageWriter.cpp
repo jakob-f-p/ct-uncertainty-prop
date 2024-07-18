@@ -15,6 +15,11 @@
 
 vtkStandardNewMacro(HdfImageWriter);
 
+HdfImageWriter::HdfImageWriter() {
+    SetNumberOfInputPorts(0);
+    SetNumberOfOutputPorts(0);
+}
+
 auto HdfImageWriter::SetBatch(HdfImageWriter::BatchImages&& images) noexcept -> void {
     if (Batch == images)
         return;
@@ -27,12 +32,16 @@ auto HdfImageWriter::SetBatch(HdfImageWriter::BatchImages&& images) noexcept -> 
     for (auto& batchImage : Batch)
         InputImages.emplace_back(batchImage.ImageData);
 
-    SetInputDataObject(0, vtkImageData::New());  // dummy
-
     Modified();
 }
 
-void HdfImageWriter::WriteData() {
+auto HdfImageWriter::Write() -> int {
+    WriteData();
+
+    return 1;
+}
+
+auto HdfImageWriter::WriteData() -> void {
     if (Filename.empty())
         throw std::runtime_error("filename must not be empty");
 
@@ -49,10 +58,6 @@ void HdfImageWriter::WriteData() {
         InitializeFile(file);
 
     WriteImageBatch(file);
-}
-
-auto HdfImageWriter::FillInputPortInformation(int port, vtkInformation* info) -> int {
-    return 0;
 }
 
 auto HdfImageWriter::InitializeFile(HighFive::File& file) -> void {

@@ -20,7 +20,8 @@ from radiomics import featureextractor
 from radiomics.scripts import segment
 from typing import cast
 
-warnings.filterwarnings(action="ignore", category=RuntimeWarning)
+# warnings.filterwarnings(action="ignore", category=RuntimeWarning)
+logging.captureWarnings(True)
 
 logger = logging.getLogger(__file__)
 
@@ -86,9 +87,9 @@ class FeatureExtraction:
         self.vtk_image_mask_pairs = vtk_image_mask_pairs
         self.sitk_image_mask_pairs = vtk_pairs_to_sitk_pairs(self.vtk_image_mask_pairs)
         self.number_of_images = len(vtk_image_mask_pairs)
-        self.is_multiprocessing = self.number_of_images > 1
+        self.is_multiprocessing = False  # self.number_of_images > 1
         self.out_dir = feature_directory
-        self.log_file = self.out_dir / "log.txt"
+        self.log_file = self.out_dir / "extraction_log.txt"
         self.logging_config, self.logging_queue_listener = self.get_logging_config()
         self.progress_callback = progress_callback
 
@@ -114,6 +115,8 @@ class FeatureExtraction:
                         handler = cast(logging.Handler, item)
                         handler.close()
                 self.logging_queue_listener.stop()
+            radiomics_logger = logging.getLogger("radiomics")
+            radiomics_logger.handlers.clear()
 
         result_feature_dicts: FeatureExtractionResult = []
         for res_dict in results:
@@ -136,7 +139,10 @@ class FeatureExtraction:
         console_handler_level = 50
         logger_level = min(file_handler_level, console_handler_level)
 
-        self.log_file.unlink(missing_ok=True)
+        try:
+            self.log_file.unlink(missing_ok=True)
+        except Exception as e:
+            print(e)
 
         logging_config = {
             "version": 1,
@@ -270,7 +276,6 @@ class FeatureExtraction:
 
 def extract(image_mask_pairs: list[VtkImageMaskPair],
             progress_callback: Callable[[float], None] = lambda f: None) -> FeatureExtractionResult:
-
     extraction = FeatureExtraction(image_mask_pairs, progress_callback)
 
     result: FeatureExtractionResult = extraction.run()

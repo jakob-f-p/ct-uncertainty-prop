@@ -9,10 +9,10 @@ HdfImageReadHandle::HdfImageReadHandle(std::filesystem::path const& hdfFilePath,
         Filename(hdfFilePath),
         SId(sampleId) {}
 
-auto HdfImageReadHandle::Read() const noexcept -> vtkSmartPointer<vtkImageData> {
+auto HdfImageReadHandle::Read(std::vector<std::string>&& arrayNames) const noexcept -> vtkSmartPointer<vtkImageData> {
     vtkNew<HdfImageReader> reader;
     reader->SetFilename(Filename);
-    reader->SetArrayNames({ "Radiodensities" });
+    reader->SetArrayNames(std::move(arrayNames));
 
     vtkNew<vtkImageData> image;
     HdfImageWriter::BatchImages batchImages { { SId, *image } };

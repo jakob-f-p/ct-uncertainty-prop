@@ -177,9 +177,6 @@ protected:
     CreateScatterSeries() noexcept -> std::map<uint16_t, QScatterSeries*> override;
 
     auto
-    RemoveItemsFromSceneOnUpdateData() -> void override;
-
-    auto
     AddItemsFromSceneOnUpdateData() -> void override;
 
 private:

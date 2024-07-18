@@ -467,14 +467,8 @@ auto TsneChartView::CreateScatterSeries() noexcept -> std::map<uint16_t, QScatte
     return indexScatterSeriesMap;
 }
 
-void TsneChartView::RemoveItemsFromSceneOnUpdateData() {
-    delete LassoTool;
-    LassoTool = nullptr;
-}
-
 void TsneChartView::AddItemsFromSceneOnUpdateData() {
     LassoTool = new ChartLassoSelectionTool(*Chart, GetCurrentForegroundBackground());
-    GraphicsScene->addItem(LassoTool);
 
     connect(LassoTool, &ChartLassoSelectionTool::PointsSelected, this, &TsneChartView::PointsSelected);
 }

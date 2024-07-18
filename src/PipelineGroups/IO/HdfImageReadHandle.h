@@ -14,7 +14,7 @@ public:
     HdfImageReadHandle(std::filesystem::path const& hdfFilePath, SampleId sampleId) noexcept;
 
     [[nodiscard]] auto
-    Read() const noexcept -> vtkSmartPointer<vtkImageData>;
+    Read(std::vector<std::string>&& arrayNames = { "Radiodensities" }) const noexcept -> vtkSmartPointer<vtkImageData>;
 
 private:
     std::filesystem::path Filename;

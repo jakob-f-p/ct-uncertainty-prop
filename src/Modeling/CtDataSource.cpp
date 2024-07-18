@@ -43,10 +43,10 @@ void CtDataSource::SetDataTree(CtStructureTree* ctStructureTree) {
 CtDataSource::CtDataSource() {
 #ifdef BUILD_TYPE_DEBUG
 //    int const defaultResolution = 8;
-    int const defaultResolution = 32;
+    int const defaultResolution = 16;
 #else
 //    int const defaultResolution = 256;
-    int const defaultResolution = 256;
+    int const defaultResolution = 64;
 #endif
     std::fill(NumberOfVoxels.begin(), NumberOfVoxels.end(), defaultResolution);
 

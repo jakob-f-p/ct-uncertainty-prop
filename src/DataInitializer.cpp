@@ -34,6 +34,10 @@ auto DataInitializer::operator()(DataInitializer::Config config) -> void {
             DebugSceneInitializer{ App_ }();
             break;
 
+        case Config::DEBUG_SINGLE:
+            DebugSingleSceneInitializer{ App_ }();
+            break;
+
         case Config::SPHERE:
             InitializeSpherical();
             break;
@@ -264,6 +268,50 @@ auto DebugSceneInitializer::operator()() -> void {
     CtDataTree.AddBasicStructure(std::move(sphere));
 
     static Range<float> const meanRange = { -25.0,  25.0, 5.0 };
+
+    auto& pipeline = Pipelines.AddPipeline();
+
+    ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
+
+    GaussianArtifact gaussianArtifact {};
+    gaussianArtifact.SetMean(meanRange.GetCenter());
+    gaussianArtifact.SetStandardDeviation(20.0);
+
+    BasicImageArtifact gaussianBasicArtifact { std::move(gaussianArtifact) };
+    gaussianBasicArtifact.SetName("gaussian");
+    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact));
+
+    PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Gaussian Pipelines");
+
+    auto gaussianProperties = gaussian.GetProperties();
+
+    auto& meanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
+    ParameterSpan<float> meanSpan {
+            ArtifactVariantPointer(&gaussian),
+            meanProperty,
+            { meanRange.Min, meanRange.Max, meanRange.Step },
+            "Mean Span"
+    };
+    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(meanSpan));
+}
+
+DebugSingleSceneInitializer::DebugSingleSceneInitializer(App& app) :
+        SceneInitializer(app) {}
+
+auto DebugSingleSceneInitializer::operator()() -> void {
+    auto cancellousBoneTissueType = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
+
+    auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
+    thresholdFilter.ThresholdBetween(cancellousBoneTissueType.CtNumber * 0.95,
+                                     cancellousBoneTissueType.CtNumber * 1.05);
+
+    BasicStructure sphere(Sphere{});
+    sphere.SetTissueType(cancellousBoneTissueType);
+    sphere.SetTransformData({ 10.0F, 10.0F, 10.0F, 0.0F, 0.0F, 0.0F, 2.5F, 2.5F, 2.5F });
+
+    CtDataTree.AddBasicStructure(std::move(sphere));
+
+    static Range<float> const meanRange = { 0.0,  0.0, 0.0 };
 
     auto& pipeline = Pipelines.AddPipeline();
 

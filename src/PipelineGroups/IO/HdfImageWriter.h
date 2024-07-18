@@ -80,15 +80,15 @@ public:
     virtual auto
     GetTruncateFileBeforeWrite() const noexcept -> bool { return TruncateFileBeforeWrite; }
 
+    auto
+    Write() -> int override;
+
 protected:
+    HdfImageWriter();
+    ~HdfImageWriter() override = default;
+
     auto
     WriteData() -> void override;
-
-    auto
-    FillInputPortInformation(int port, vtkInformation* info) -> int override;
-
-    HdfImageWriter() = default;
-    ~HdfImageWriter() override = default;
 
 private:
     friend class HdfImageReader;

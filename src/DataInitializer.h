@@ -17,6 +17,7 @@ public:
     enum struct Config : uint8_t {
         DEFAULT,
         DEBUG,
+        DEBUG_SINGLE,
         SPHERE,
         SIMPLE_SCENE
     };
@@ -78,6 +79,14 @@ public:
 class DebugSceneInitializer : public SceneInitializer {
 public:
     explicit DebugSceneInitializer(App& app);
+
+    auto
+    operator()() -> void;
+};
+
+class DebugSingleSceneInitializer : public SceneInitializer {
+public:
+    explicit DebugSingleSceneInitializer(App& app);
 
     auto
     operator()() -> void;
