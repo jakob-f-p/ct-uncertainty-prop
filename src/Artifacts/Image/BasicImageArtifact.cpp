@@ -72,7 +72,7 @@ auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::Populate(const Dat
                SubTypeWidgetVariant);
 }
 
-auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::UpdateSubTypeWidget() noexcept -> void {
+auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::UpdateSubTypeWidget() -> void {
     auto subType = SubTypeComboBox->currentData().value<SubType>();
 
     BasicImageArtifactWidgetVariant newWidgetVariant = [subType]() -> BasicImageArtifactWidgetVariant {
@@ -83,19 +83,20 @@ auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::UpdateSubTypeWidge
             case SubType::CUPPING:     return new CuppingArtifactWidget();
             case SubType::WIND_MILL:   return new WindMillArtifactWidget();
             case SubType::STAIR_STEP:  return new StairStepArtifactWidget();
-            default: qWarning("Todo");
+            default: throw std::runtime_error("invalid type");
         }
-        return new GaussianArtifactWidget();
     }();
 
-    std::visit([&, newWidgetVariant](auto* oldSubTypeWidget) {
-        std::visit([&, oldSubTypeWidget](auto* newSubTypeWidget) {
-            SubTypeGroupBox->layout()->replaceWidget(oldSubTypeWidget, newSubTypeWidget);
-            delete oldSubTypeWidget;
-
-            SubTypeWidgetVariant = newWidgetVariant;
-        }, newWidgetVariant);
+    std::visit([this](auto* oldSubTypeWidget) {
+        SubTypeGroupBox->layout()->removeWidget(oldSubTypeWidget);
+        delete oldSubTypeWidget;
     }, SubTypeWidgetVariant);
+
+    std::visit([this](auto* newSubTypeWidget) {
+        SubTypeGroupBox->layout()->addWidget(newSubTypeWidget);
+    }, newWidgetVariant);
+
+    SubTypeWidgetVariant = newWidgetVariant;
 
     SubTypeGroupBox->setTitle(QString::fromStdString(SubTypeToString(subType)));
 }

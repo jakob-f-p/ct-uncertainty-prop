@@ -23,11 +23,14 @@
 #include <nlohmann/json.hpp>
 
 #include <pybind11/embed.h>
+#include <pybind11/functional.h>
 #include <pybind11/stl.h>
 #include <pybind11/stl/filesystem.h>
 
 #include <chrono>
 #include <memory>
+
+#include <spdlog/spdlog.h>
 
 
 PipelineGroup::PipelineGroup(Pipeline const& basePipeline, std::string name) :
@@ -62,6 +65,9 @@ auto PipelineGroup::GetParameterSpace() const noexcept -> PipelineParameterSpace
 }
 
 auto PipelineGroup::GenerateImages(HdfImageWriter& imageWriter, ProgressEventCallback const& callback) -> void {
+    spdlog::trace("Generating images for group {}", GroupId);
+    auto const startTime = std::chrono::high_resolution_clock::now();
+
     UpdateParameterSpaceStates();
 
     auto const numberOfStates = Data.States.size();
@@ -82,7 +88,10 @@ auto PipelineGroup::GenerateImages(HdfImageWriter& imageWriter, ProgressEventCal
 
         std::vector<vtkNew<vtkImageData>> batchImageData { currentBatchSize };
         HdfImageWriter::BatchImages batchImages {};
-        auto const generateStartTime = std::chrono::system_clock::now();
+
+        auto const generateStartTime = std::chrono::high_resolution_clock::now();
+        spdlog::trace("Generating batch image data ...");
+
         for (auto& imageData : batchImageData) {
             double const progress = static_cast<double>(i) / static_cast<double>(numberOfStates);
             callback(progress);
@@ -98,29 +107,36 @@ auto PipelineGroup::GenerateImages(HdfImageWriter& imageWriter, ProgressEventCal
 
             SampleId const sampleId { GroupId, static_cast<uint16_t>(i) };
             batchImages.push_back({ sampleId, *imageData });
-            imageReadHandles.push_back({ PipelineGroupList::ImagesFile, sampleId });
+            imageReadHandles.emplace_back(PipelineGroupList::ImagesFile, sampleId);
 
             i++;
         }
 
-        auto const generateEndTime = std::chrono::system_clock::now();
-        auto const generateDuration = std::chrono::duration_cast<std::chrono::seconds>(generateEndTime - generateStartTime);
-        std::cout << std::format("generated ({}), {}", i, generateDuration) << std::endl;
+        auto const generateEndTime = std::chrono::high_resolution_clock::now();
+        auto const generateDuration = std::chrono::duration<double>(generateEndTime - generateStartTime);
+        spdlog::debug("Generated {} image data (indices {}-{}) for group {} in {}",
+                      currentBatchSize, i - currentBatchSize, i - 1, GroupId, generateDuration);
 
-        std::cout << "before write" << std::endl;
-        auto const writeStartTime = std::chrono::system_clock::now();
+        spdlog::trace("Writing images to disk ...");
+        auto const writeStartTime = std::chrono::high_resolution_clock::now();
 
         imageWriter.SetBatch(std::move(batchImages));
         imageWriter.Write();
 
-        auto const writeEndTime = std::chrono::system_clock::now();
-        auto const writeDuration = std::chrono::duration_cast<std::chrono::seconds>(writeEndTime - writeStartTime);
-        std::cout << std::format("after write: {}", writeDuration) << std::endl;
+        auto const writeEndTime = std::chrono::high_resolution_clock::now();
+        auto const writeDuration = std::chrono::duration<double>(writeEndTime - writeStartTime);
+        spdlog::debug("Written {} images (indices {}-{}) to disk for group {} in {}",
+                      currentBatchSize, i - currentBatchSize, i - 1, GroupId, writeDuration);
     }
 
     Data.InitialState->Apply();
 
     Data.Images.Emplace(std::move(imageReadHandles));
+
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration = std::chrono::duration<double>(endTime - startTime);
+    spdlog::debug("Generated {} images for group {} in {}",
+                  numberOfStates, GroupId, duration);
 }
 
 PYBIND11_EMBEDDED_MODULE(feature_extraction_cpp, m) {
@@ -128,10 +144,11 @@ PYBIND11_EMBEDDED_MODULE(feature_extraction_cpp, m) {
 
     enum struct VtkType : uint8_t { SHORT = VTK_SHORT, FLOAT = VTK_FLOAT };
 
-//    py::enum_<VtkType>(m, "VtkType")
-//            .value("Short", VtkType::SHORT)
-//            .value("Float", VtkType::FLOAT)
-//            .export_values();
+    //    py::enum_<VtkType>(m, "VtkType")
+    //            .value("Short", VtkType::SHORT)
+    //            .value("Float", VtkType::FLOAT)
+    //            .export_values();
+    // do not use py::enum because of memory leaks
 
     m.attr("VtkType_Short") = static_cast<uint8_t>(VtkType::SHORT);
     m.attr("VtkType_Float") = static_cast<uint8_t>(VtkType::FLOAT);
@@ -176,9 +193,19 @@ PYBIND11_EMBEDDED_MODULE(feature_extraction_cpp, m) {
                 }, vtkDataTypeHolder);
             });
 
+    py::class_<SampleId>(m, "SampleId")
+            .def(py::init<uint16_t, uint16_t>())
+            .def_readwrite("group_idx", &SampleId::GroupIdx)
+            .def_readwrite("state_idx", &SampleId::StateIdx)
+            .def("__repr__", [](SampleId const& id) { return std::format("({}, {})", id.GroupIdx, id.StateIdx); })
+            .def("__lt__", [](SampleId const& id, SampleId const& other) { return id < other; })
+            .def("__gt__", [](SampleId const& id, SampleId const& other) { return id > other; })
+            .def("__eq__", [](SampleId const& id, SampleId const& other) { return id == other; });
+
     using ImageMaskRefPair = PipelineGroup::ImageMaskRefPair;
 
     py::class_<ImageMaskRefPair>(m, "VtkImageMaskPair")
+            .def_readonly("s_id", &ImageMaskRefPair::Id)
             .def_readonly("image", &ImageMaskRefPair::Image)
             .def_readonly("mask", &ImageMaskRefPair::Mask);
 
@@ -203,50 +230,51 @@ PYBIND11_EMBEDDED_MODULE(feature_extraction_cpp, m) {
                 return repr.str();
             });
 
-    py::class_<SampleId>(m, "SampleId")
-            .def(py::init<uint16_t, uint16_t>())
-            .def_readwrite("group_idx", &SampleId::GroupIdx)
-            .def_readwrite("state_idx", &SampleId::StateIdx)
-            .def("__repr__", [](SampleId const& id) { return std::format("({}, {})", id.GroupIdx, id.StateIdx); });
-
     m.attr("extraction_params_file") = std::filesystem::path { FEATURE_EXTRACTION_PARAMETERS_FILE }.make_preferred();
     m.attr("feature_directory") = PipelineGroupList::FeatureDirectory;
 }
 
 auto PipelineGroup::ExtractFeatures(HdfImageReader& imageReader, ProgressEventCallback const& callback) -> void {
+    spdlog::trace("Extracting features for group {}", GroupId);
+    auto const startTime = std::chrono::high_resolution_clock::now();
+
     auto& interpreter = App::GetInstance()->GetPythonInterpreter();
 
     pybind11::gil_scoped_acquire const acquire {};
 
-    uint64_t const numberOfStates = Data.States.size();
+    uint64_t const numberOfImages = Data.States.size();
     uint64_t const maxBatchSize = GetMaxImageBatchSize();
 
     uint64_t const numberOfTasks = 3;
 
     callback(0.0);
 
-    std::vector<FeatureData> batchFeatureDataVector {};
-    for (uint16_t i = 0; i < numberOfStates;) {
-        uint64_t const currentBatchSize = i + maxBatchSize < numberOfStates
-                ? maxBatchSize
-                : std::min({ maxBatchSize, numberOfStates - i });
+    std::function<void(int)> const extractionCallback = [&callback, numberOfImages](int i) {
+        double const progress = static_cast<double>(i + 1) / static_cast<double>(numberOfImages);
+        callback(progress);
+    };
 
-        double const baseProgress = static_cast<double>(i) / static_cast<double>(numberOfStates);
-        double const progressPerTask = static_cast<double>(currentBatchSize)
-                                               / static_cast<double>(numberOfStates)
-                                               / static_cast<double>(numberOfTasks);
-        callback(baseProgress);
+    std::vector<FeatureData> batchFeatureDataVector {};
+    for (uint16_t i = 0; i < numberOfImages;) {
+        uint64_t const currentBatchSize = i + maxBatchSize < numberOfImages
+                ? maxBatchSize
+                : std::min({ maxBatchSize, numberOfImages - i });
 
         std::vector<vtkNew<vtkImageData>> batchImageData { currentBatchSize };
         HdfImageReader::BatchImages batchImages {};
-        for (int k = 0; k < currentBatchSize; k++) {
-            auto& imageData = *batchImageData.at(k);
-            batchImages.emplace_back(SampleId { GroupId, static_cast<uint16_t>(i + k) }, imageData);
-        }
+        for (int k = 0; k < currentBatchSize; k++)
+            batchImages.emplace_back(SampleId { GroupId, static_cast<uint16_t>(i + k) },
+                                     *batchImageData.at(k));
+
+        auto const readStartTime = std::chrono::high_resolution_clock::now();
+        spdlog::trace("Reading images from disk ...");
 
         imageReader.ReadImageBatch(batchImages);
 
-        callback(baseProgress + progressPerTask);
+        auto const readEndTime = std::chrono::high_resolution_clock::now();
+        auto const readDuration = std::chrono::duration<double>(readEndTime - readStartTime);
+        spdlog::debug("Read {} images (indices {}-{}) from disk for group {} in {}",
+                      currentBatchSize, i, i + currentBatchSize - 1, GroupId, readDuration);
 
         struct ImageMaskPair {
             vtkNew<vtkImageData> Image;
@@ -267,16 +295,24 @@ auto PipelineGroup::ExtractFeatures(HdfImageReader& imageReader, ProgressEventCa
             mask.ShallowCopy(&imageData);
             mask.GetPointData()->SetActiveScalars("Segmentation Mask");
 
-            batchImageMaskRefPairs.emplace_back(image, mask);
+            batchImageMaskRefPairs.emplace_back(SampleId { GroupId, static_cast<uint16_t>(i + k) },
+                                                image, mask);
         }
+
+        auto const extractionStartTime = std::chrono::high_resolution_clock::now();
+        spdlog::trace("Extracting features ...");
 
         pybind11::object const featureObject = interpreter.ExecuteFunction("extract_features",
                                                                            "extract",
-                                                                           batchImageMaskRefPairs);
+                                                                           batchImageMaskRefPairs,
+                                                                           extractionCallback);
+
+        auto const extractionEndTime = std::chrono::high_resolution_clock::now();
+        auto const extractionDuration = std::chrono::duration<double>(extractionEndTime - extractionStartTime);
+        spdlog::debug("Extracted features from {} images (indices {}-{}) for group {} in {}",
+                      currentBatchSize, i, i + currentBatchSize - 1, GroupId, extractionDuration);
 
         batchFeatureDataVector.emplace_back(featureObject.cast<FeatureData>());
-
-        callback(baseProgress + 2.0 * progressPerTask);
 
         i += currentBatchSize;
     }
@@ -288,9 +324,17 @@ auto PipelineGroup::ExtractFeatures(HdfImageReader& imageReader, ProgressEventCa
                                   batchFeatureData.Values.end());
 
     Data.Features.Emplace(std::move(featureData));
+
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration = std::chrono::duration<double>(endTime - startTime);
+    spdlog::debug("Extracted features for {} images for group {} in {}",
+                  numberOfImages, GroupId, duration);
 }
 
 auto PipelineGroup::DoPCA(uint8_t numberOfDimensions) -> void {
+    spdlog::trace("Doing PCA for group {}", GroupId);
+    auto const startTime = std::chrono::high_resolution_clock::now();
+
     auto& interpreter = App::GetInstance()->GetPythonInterpreter();
 
     pybind11::gil_scoped_acquire const acquire {};
@@ -299,6 +343,11 @@ auto PipelineGroup::DoPCA(uint8_t numberOfDimensions) -> void {
                                                                            *Data.Features, numberOfDimensions);
 
     Data.PcaData.Emplace(pcaCoordinateData.cast<SampleCoordinateData>());
+
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration = std::chrono::duration<double>(endTime - startTime);
+    spdlog::trace("Did PCA for {} images for group {} in {}",
+                  Data.PcaData->size(), GroupId, duration);
 }
 
 auto PipelineGroup::GetParameterSpaceStates() -> std::vector<std::reference_wrapper<PipelineParameterSpaceState>> {
@@ -350,8 +399,8 @@ auto PipelineGroup::ImportImages() -> void {
     imageReadHandles.reserve(numberOfStates);
 
     for (int i = 0; i < numberOfStates; i++)
-        imageReadHandles.push_back({ PipelineGroupList::ImagesFile,
-                                     SampleId { GroupId, static_cast<uint16_t>(i) } });
+        imageReadHandles.emplace_back( PipelineGroupList::ImagesFile,
+                                       SampleId { GroupId, static_cast<uint16_t>(i) } );
 
     Data.Images.Emplace(std::move(imageReadHandles));
 }
@@ -427,9 +476,8 @@ auto PipelineGroup::GetMaxImageBatchSize() -> uint64_t {
 
     uint64_t const maxNumberOfImages = applicationMemoryMaxSize / imageSizeInBytes;
 
-    std::cout << std::format("imageSize (B): {}\napplicationMemoryMaxSize: {}\nmaxNumberImages: {}",
-                             imageSizeInBytes, applicationMemoryMaxSize, maxNumberOfImages) << std::endl;
+//    std::cout << std::format("imageSize (B): {}\napplicationMemoryMaxSize: {}\nmaxNumberImages: {}",
+//                             imageSizeInBytes, applicationMemoryMaxSize, maxNumberOfImages) << std::endl;
 
-    return 1;
     return std::max({ maxNumberOfImages, 1ULL });
 }

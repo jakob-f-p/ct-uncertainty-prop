@@ -77,7 +77,7 @@ namespace BasicImageArtifactDetails {
 
     private:
         auto
-        UpdateSubTypeWidget() noexcept -> void;
+        UpdateSubTypeWidget() -> void;
 
         QFormLayout* Layout;
         QComboBox* SubTypeComboBox;

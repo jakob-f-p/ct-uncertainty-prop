@@ -34,6 +34,7 @@ void StructureArtifactsView::StructureArtifactsDelegate::setModelData(QWidget* e
 }
 
 StructureArtifactsReadOnlyView::StructureArtifactsReadOnlyView(StructureArtifactList const& structureArtifactList) :
+        StructureArtifactsView(const_cast<StructureArtifactList&>(structureArtifactList)),
         Model(new StructureArtifactsReadOnlyModel(structureArtifactList, this)) {
 
     auto* oldModel = model();

@@ -111,19 +111,20 @@ auto StructureArtifactWidget::UpdateSubTypeWidget() noexcept -> void {
     StructureArtifactWidgetVariant newWidgetVariant = [subType]() -> StructureArtifactWidgetVariant {
         switch (subType) {
             case StructureArtifact::SubType::MOTION: return new MotionArtifactWidget();
-            default: qWarning("Todo");
+            default: throw std::runtime_error("Todo");
         }
-        return new MotionArtifactWidget();
     }();
 
-    std::visit([&, newWidgetVariant](auto* oldSubTypeWidget) {
-        std::visit([&, oldSubTypeWidget](auto* newSubTypeWidget) {
-            SubTypeGroupBox->layout()->replaceWidget(oldSubTypeWidget, newSubTypeWidget);
-            delete oldSubTypeWidget;
-
-            WidgetVariant = newWidgetVariant;
-        }, newWidgetVariant);
+    std::visit([this](auto* oldSubTypeWidget) {
+        SubTypeGroupBox->layout()->removeWidget(oldSubTypeWidget);
+        delete oldSubTypeWidget;
     }, WidgetVariant);
+
+    std::visit([this](auto* newSubTypeWidget) {
+        SubTypeGroupBox->layout()->addWidget(newSubTypeWidget);
+    }, newWidgetVariant);
+
+    WidgetVariant = newWidgetVariant;
 
     SubTypeGroupBox->setTitle(QString::fromStdString(StructureArtifactDetails::SubTypeToString(subType)));
 }

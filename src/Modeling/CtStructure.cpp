@@ -19,7 +19,7 @@ auto CtStructureBaseData<StructureData>::PopulateStructure(Structure& structure)
 }
 
 template<TStructureData StructureData>
-auto CtStructureBaseData<StructureData>::PopulateFromStructure(const Structure& structure) -> void {
+auto CtStructureBaseData<StructureData>::PopulateFromStructure(Structure const& structure) -> void {
     Name = QString::fromStdString(structure.Name);
     ViewName = QString::fromStdString(structure.GetViewName());
     Transform = structure.GetTransformData();
@@ -35,7 +35,7 @@ CtStructureBaseWidget<StructureWidget, Data>::CtStructureBaseWidget() :
         Layout(new QFormLayout(this)),
         NameEdit(new NameLineEdit()),
         SubWidget(new StructureWidget()),
-        TransformWidget(new SimpleTransformWidget) {
+        TransformWidget(new SimpleTransformWidget()) {
 
     Layout->setFieldGrowthPolicy(QFormLayout::FieldGrowthPolicy::FieldsStayAtSizeHint);
     Layout->setHorizontalSpacing(15);
@@ -63,7 +63,7 @@ auto CtStructureBaseWidget<StructureWidget, Data>::GetData() const noexcept -> D
 }
 
 template<TStructureWidget StructureWidget, typename Data>
-auto CtStructureBaseWidget<StructureWidget, Data>::Populate(const Data& data) noexcept -> void {
+auto CtStructureBaseWidget<StructureWidget, Data>::Populate(Data const& data) noexcept -> void {
     NameEdit->SetText(data.Name);
     TransformWidget->SetData(data.Transform);
 

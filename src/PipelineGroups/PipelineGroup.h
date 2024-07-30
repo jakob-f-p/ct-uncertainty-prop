@@ -91,6 +91,7 @@ public:
                         PipelineParameterSpan const& parameterSpan) -> void;
 
     struct ImageMaskRefPair {
+        SampleId Id;
         std::reference_wrapper<vtkImageData> Image;
         std::reference_wrapper<vtkImageData> Mask;
     };

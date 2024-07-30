@@ -73,7 +73,7 @@ namespace System {
     [[nodiscard]] auto
     GetMaxApplicationMemory() -> uint64_t {
         uint64_t const totalMemory = GetTotalSystemMemory();
-        uint64_t const halfTotalMemory = totalMemory / 4;
+        uint64_t const halfTotalMemory = totalMemory / 2;
 
         if (GetArchitectureType() == Architecture::BIT32)
             return std::min(halfTotalMemory, 2 * GigaByte);

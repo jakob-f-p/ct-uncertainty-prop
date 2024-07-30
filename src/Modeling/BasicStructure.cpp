@@ -117,21 +117,23 @@ auto BasicStructureDetails::BasicStructureWidgetImpl::UpdateFunctionParametersGr
 
     ShapeWidgetVariant newSubTypeWidgetVariant = [functionType]() {
         switch (functionType) {
-            case FunctionType::SPHERE: { return ShapeWidgetVariant{ new SphereWidget() }; }
-            case FunctionType::BOX:    { return ShapeWidgetVariant{ new BoxWidget() }; }
-            case FunctionType::CONE:   { qWarning("todo"); return ShapeWidgetVariant{}; }
+            case FunctionType::SPHERE: return ShapeWidgetVariant{ new SphereWidget() };
+            case FunctionType::BOX:    return ShapeWidgetVariant{ new BoxWidget() };
+            case FunctionType::CONE:   throw std::runtime_error("Todo");
+            default: throw std::runtime_error("invalid function type");
         }
-        return ShapeWidgetVariant{};
     }();
 
-    std::visit([&, newSubTypeWidgetVariant](auto* oldSubTypeWidget) {
-        std::visit([&, oldSubTypeWidget](auto* newSubTypeWidget) {
-            SubTypeGroupBox->layout()->replaceWidget(oldSubTypeWidget, newSubTypeWidget);
-            delete oldSubTypeWidget;
-
-            SubTypeWidgetVariant = newSubTypeWidgetVariant;
-        }, newSubTypeWidgetVariant);
+    std::visit([this](auto* oldSubTypeWidget) {
+        SubTypeGroupBox->layout()->removeWidget(oldSubTypeWidget);
+        delete oldSubTypeWidget;
     }, SubTypeWidgetVariant);
+
+    std::visit([this](auto* newSubTypeWidget) {
+        SubTypeGroupBox->layout()->addWidget(newSubTypeWidget);
+    }, newSubTypeWidgetVariant);
+
+    SubTypeWidgetVariant = newSubTypeWidgetVariant;
 
     SubTypeGroupBox->setTitle(QString::fromStdString(BasicStructureDetails::FunctionTypeToString(functionType)));
 }

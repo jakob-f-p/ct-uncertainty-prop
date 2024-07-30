@@ -140,12 +140,7 @@ int ImageArtifactsView::getLevel(const QModelIndex& index) {
 
 ImageArtifactsReadOnlyView::ImageArtifactsReadOnlyView(Pipeline const& pipeline, QWidget* parent) :
         ImageArtifactsView(const_cast<Pipeline*>(&pipeline), parent),
-        ArtifactsModel(new ImageArtifactsReadOnlyModel(pipeline.GetImageArtifactConcatenation(), this)){
-
-    auto* oldModel = model();
-    setModel(ArtifactsModel);
-    delete oldModel;
-}
+        ArtifactsModel(new ImageArtifactsReadOnlyModel(pipeline.GetImageArtifactConcatenation(), this)) {}
 
 auto ImageArtifactsReadOnlyView::model() const noexcept -> ImageArtifactsReadOnlyModel* {
     return ArtifactsModel;

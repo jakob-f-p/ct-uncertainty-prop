@@ -41,6 +41,9 @@ public:
     GetCtDataSource() const -> CtDataSource&;
 
     [[nodiscard]] auto
+    GetImageDimensions() const -> std::array<uint32_t, 3>;
+
+    [[nodiscard]] auto
     GetPipelines() const -> PipelineList&;
 
     [[nodiscard]] auto

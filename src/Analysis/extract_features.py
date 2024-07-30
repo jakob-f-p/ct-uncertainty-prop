@@ -6,26 +6,28 @@ import numpy as np
 import radiomics
 import SimpleITK as sitk
 import threading
-import warnings
 
 from collections import OrderedDict
 from collections.abc import Callable
 from datetime import datetime
 from extract_features_parallel import do_parallel_feature_extraction
-from feature_extraction_cpp import (extraction_params_file, FeatureData, feature_directory,
+from feature_extraction_cpp import (extraction_params_file, FeatureData, feature_directory, SampleId,
                                     VtkImageMaskPair, VtkImageData, VtkType_Short, VtkType_Float)
 from multiprocessing import Manager
 from pathlib import Path
 from radiomics import featureextractor
 from radiomics.scripts import segment
+from radiomics.shape import RadiomicsShape
+from radiomics.firstorder import RadiomicsFirstOrder
 from typing import cast
 
-# warnings.filterwarnings(action="ignore", category=RuntimeWarning)
-logging.captureWarnings(True)
-
-logger = logging.getLogger(__file__)
 
 FeatureExtractionResult = list[OrderedDict[str, float]]
+
+
+logging.captureWarnings(True)
+
+logger = logging.getLogger("uncertainty_propagation")
 
 
 class SitkImageMaskPair:
@@ -69,34 +71,39 @@ def vtk_pairs_to_sitk_pairs(vtk_image_mask_pairs: list[VtkImageMaskPair]) -> lis
 
 
 class FeatureExtraction:
-    params_file: Path
-    vtk_image_mask_pairs: list[VtkImageMaskPair]
-    sitk_image_mask_pairs: list[SitkImageMaskPair]
-    number_of_images: int
-    is_multiprocessing: bool
-    out_dir: Path
-    log_file: Path
-    logging_config: dict
-    logging_queue_listener: logging.handlers.QueueListener
-    progress_callback: Callable[[float], None]
-
     debug: bool = False
+    highest_sample_id: SampleId = None
 
-    def __init__(self, vtk_image_mask_pairs: list[VtkImageMaskPair], progress_callback: Callable[[float], None]):
-        self.params_file = extraction_params_file
-        self.vtk_image_mask_pairs = vtk_image_mask_pairs
-        self.sitk_image_mask_pairs = vtk_pairs_to_sitk_pairs(self.vtk_image_mask_pairs)
-        self.number_of_images = len(vtk_image_mask_pairs)
-        self.is_multiprocessing = False  # self.number_of_images > 1
-        self.out_dir = feature_directory
-        self.log_file = self.out_dir / "extraction_log.txt"
+    def __init__(self, vtk_image_mask_pairs: list[VtkImageMaskPair], progress_callback: Callable[[int], None]):
+        self.vtk_image_mask_pairs: list[VtkImageMaskPair] = vtk_image_mask_pairs
+        self.sample_ids: list[SampleId] = [vtk_image_mask_pair.s_id for vtk_image_mask_pair in self.vtk_image_mask_pairs]
+        self.sitk_image_mask_pairs: list[SitkImageMaskPair] = vtk_pairs_to_sitk_pairs(self.vtk_image_mask_pairs)
+        self.number_of_images: int = len(vtk_image_mask_pairs)
+
+        new_highest_sample_id: SampleId = vtk_image_mask_pairs[-1].s_id
+        self.is_new_extraction: bool = (FeatureExtraction.highest_sample_id is None
+                                        or new_highest_sample_id < FeatureExtraction.highest_sample_id)
+        if FeatureExtraction.highest_sample_id is None or not self.is_new_extraction:
+            FeatureExtraction.highest_sample_id = new_highest_sample_id
+
+        self.progress_callback: Callable[[int], None] = progress_callback
+        self.is_multiprocessing: bool = self.number_of_images > 1
+
+        self.params_file: Path = extraction_params_file
+        self.out_dir: Path = feature_directory
+
+        self.log_file: Path = self.out_dir / "extraction_log.txt"
+        self.logging_config: dict
+        self.logging_queue_listener: logging.handlers.QueueListener
         self.logging_config, self.logging_queue_listener = self.get_logging_config()
-        self.progress_callback = progress_callback
+
+        self.number_of_successes: int = 0
+        self.number_of_failures: int = 0
 
     def run(self) -> FeatureExtractionResult:
         results = []
         try:
-            logger.info("Starting PyRadiomics (version: %s)", radiomics.__version__)
+            logger.info(f"Processing batch of size {self.number_of_images} with PyRadiomics ({radiomics.__version__})")
 
             cases = self.get_cases()
 
@@ -135,14 +142,25 @@ class FeatureExtraction:
     def get_logging_config(self) -> (dict, logging.handlers.QueueListener):
         queue_listener = None
 
-        file_handler_level = 30
+        if self.is_new_extraction:
+            try:
+                self.log_file.unlink(missing_ok=True)
+            except Exception as e:
+                print(e)
+
+        file_handler_level = 20  # 30
         console_handler_level = 50
         logger_level = min(file_handler_level, console_handler_level)
 
-        try:
-            self.log_file.unlink(missing_ok=True)
-        except Exception as e:
-            print(e)
+        file_handler = logging.FileHandler(self.log_file)
+        file_handler.setLevel(file_handler_level)
+        formatter = logging.Formatter(fmt="[%(asctime)s] %(levelname)-.1s: %(name)s: %(message)s",
+                                      datefmt="%Y-%m-%d %H:%M:%S")
+        file_handler.setFormatter(formatter)
+
+        global logger
+        logger.setLevel(logger_level)
+        logger.addHandler(file_handler)
 
         logging_config = {
             "version": 1,
@@ -163,7 +181,7 @@ class FeatureExtraction:
             "loggers": {
                 "radiomics": {
                     "level": logger_level,
-                    "handlers": ["console"]
+                    "handlers": ["console", "logfile"]
                 }
             }
         }
@@ -180,12 +198,8 @@ class FeatureExtraction:
                 "class": "logging.handlers.QueueHandler",
                 "queue": q,
                 "level": file_handler_level,
-                "formatter": "default"
+                "formatter": "default",
             }
-
-            file_handler = logging.FileHandler(filename=self.log_file, mode="a")
-            file_handler.setFormatter(logging.Formatter(fmt=logging_config["formatters"]["default"].get("format"),
-                                                        datefmt=logging_config["formatters"]["default"].get("datefmt")))
 
             queue_listener = logging.handlers.QueueListener(q, file_handler)
             queue_listener.start()
@@ -195,9 +209,8 @@ class FeatureExtraction:
                 "filename": self.log_file,
                 "mode": "a",
                 "level": file_handler_level,
-                "formatter": "default"
+                "formatter": "default",
             }
-        logging_config["loggers"]["radiomics"]["handlers"].append("logfile")
 
         logging.config.dictConfig(logging_config)
 
@@ -215,24 +228,35 @@ class FeatureExtraction:
         extractor = featureextractor.RadiomicsFeatureExtractor(str(self.params_file))
 
         if self.is_multiprocessing:
-            results = do_parallel_feature_extraction(cases, extractor, self.logging_config, self.progress_callback)
-
-            # set feature values of empty results to 0
-            lengths = [len(result) for result in results]
-            max_length = max(lengths)
-            max_idx = lengths.index(max_length)
-            max_element = results[max_idx]
-            for result in results:
-                if len(result) < max_length:
-                    for max_key in max_element:
-                        if max_key not in result:
-                            result[max_key] = max_element[max_key] if not max_key.startswith("original") else 0.0
+            results = do_parallel_feature_extraction(cases,
+                                                     self.sample_ids,
+                                                     extractor,
+                                                     self.logging_config,
+                                                     self.progress_callback)
 
         else:
             results = []
             for (i, case) in enumerate(cases):
-                self.progress_callback(i)
-                results.append(segment.extractSegment(*case, extractor=extractor))
+                self.progress_callback(self.sample_ids[i].state_idx)
+                logger.info("Processing %s", self.vtk_image_mask_pairs[i].s_id)
+                try:
+                    results.append(segment.extractSegment(*case, extractor=extractor))
+                except ValueError:
+                    results.append(OrderedDict())
+
+        # set feature values of empty results to 0
+        lengths = [len(result) for result in results]
+        max_length = max(lengths)
+        max_idx = lengths.index(max_length)
+        max_element = results[max_idx]
+        for result in results:
+            if len(result) < max_length:
+                self.number_of_failures += 1
+                for max_key in max_element:
+                    if max_key not in result:
+                        result[max_key] = 0.0 if max_key.startswith("original") else max_element[max_key]
+            else:
+                self.number_of_successes += 1
 
         return results
 
@@ -274,13 +298,34 @@ class FeatureExtraction:
             json.dump(results, json_file, cls=NumpyEncoder, indent=2)
 
 
+def get_feature_names() -> list[str]:
+    shape_features_dict: dict[str, bool] = RadiomicsShape.getFeatureNames()
+    first_order_features_dict: dict[str, bool] = RadiomicsFirstOrder.getFeatureNames()
+
+    shape_feature_names: list[str] = [name for name, deprecated in shape_features_dict.items()
+                                            if not deprecated]
+    first_order_feature_names: list[str] = [name for name, deprecated in first_order_features_dict.items()
+                                            if not deprecated]
+
+    feature_names = shape_feature_names + first_order_feature_names
+
+    return feature_names
+
+
 def extract(image_mask_pairs: list[VtkImageMaskPair],
-            progress_callback: Callable[[float], None] = lambda f: None) -> FeatureExtractionResult:
+            progress_callback: Callable[[int], None] = lambda f: None) -> FeatureExtractionResult:
+
     extraction = FeatureExtraction(image_mask_pairs, progress_callback)
 
     result: FeatureExtractionResult = extraction.run()
 
-    feature_names: list[str] = list(result[0].keys())
+    feature_names = get_feature_names()
+
+    for ordered_dict in result:
+        if len(ordered_dict) == 0:
+            for feature_name in feature_names:
+                ordered_dict[feature_name] = 0.0
+
     feature_values: list[list[float]] = []
     for ordered_dict in result:
         feature_values.append(list(ordered_dict.values()))

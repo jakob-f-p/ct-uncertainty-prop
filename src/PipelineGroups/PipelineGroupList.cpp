@@ -14,6 +14,8 @@
 
 #include "nlohmann/json.hpp"
 
+#include "spdlog/spdlog.h"
+
 #include <ranges>
 #include <regex>
 
@@ -92,11 +94,15 @@ auto PipelineGroupList::FindPipelineGroupsByBasePipeline(Pipeline const& basePip
 }
 
 auto PipelineGroupList::GenerateImages(ProgressEventCallback const& callback) -> void {
+    spdlog::debug("Generating images ...");
+    auto const startTime = std::chrono::high_resolution_clock::now();
+
     std::vector<double> progressList (PipelineGroups.size(), 0.0);
     callback(0.0);
 
-    auto const now = round<std::chrono::seconds>(std::chrono::system_clock::now());
-    std::string const timeStampString = std::format("{0:%Y}-{0:%m}-{0:%d}_{0:%H}-{0:%M}-{0:2%S}", now);
+    auto const timeStampTime = std::chrono::system_clock::now();
+    auto const roundedStartTime = round<std::chrono::seconds>(timeStampTime);
+    std::string const timeStampString = std::format("{0:%Y}-{0:%m}-{0:%d}_{0:%H}-{0:%M}-{0:2%S}", timeStampTime);
 
     ImagesFile = std::filesystem::path(DataDirectory) /= { std::format("images_{}.h5", timeStampString) };
 
@@ -107,9 +113,20 @@ auto PipelineGroupList::GenerateImages(ProgressEventCallback const& callback) ->
 
     for (int i = 0; i < PipelineGroups.size(); i++)
         PipelineGroups[i]->GenerateImages(*imageWriter, ProgressUpdater { i, progressList, callback });
+
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration = std::chrono::duration<double>(endTime - startTime);
+    auto const imageDims = App::GetInstance()->GetImageDimensions();
+    spdlog::info("Generated {} images with dimensions ({}, {}, {}) in {}",
+                 GetNumberOfPipelines(),
+                 imageDims.at(0), imageDims.at(1), imageDims.at(2),
+                 duration);
 }
 
 auto PipelineGroupList::ExtractFeatures(PipelineGroupList::ProgressEventCallback const& callback) -> void {
+    spdlog::debug("Extracting features ...");
+    auto const startTime = std::chrono::high_resolution_clock::now();
+
     std::vector<double> progressList (PipelineGroups.size(), 0.0);
     std::vector<int> groupSizeVector (PipelineGroups.size(), 0.0);
     std::vector<double> groupSizeWeightVector (PipelineGroups.size(), 0.0);
@@ -126,11 +143,22 @@ auto PipelineGroupList::ExtractFeatures(PipelineGroupList::ProgressEventCallback
     imageReader->SetArrayNames({ "Radiodensities", "Segmentation Mask" });
 
     for (int i = 0; i < PipelineGroups.size(); i++)
-        PipelineGroups[i]->ExtractFeatures(*imageReader, WeightedProgressUpdater { i, progressList,
-                                                                                  groupSizeWeightVector, callback });
+        PipelineGroups[i]->ExtractFeatures(*imageReader,
+                                           WeightedProgressUpdater { i, progressList,
+                                                                     groupSizeWeightVector, callback });
+
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration = std::chrono::duration<double>(endTime - startTime);
+    auto const imageDims = App::GetInstance()->GetImageDimensions();
+    spdlog::info("Extracted features with dimensions ({}, {}, {}) in {}",
+                 imageDims.at(0), imageDims.at(1), imageDims.at(2),
+                 duration);
 }
 
 auto PipelineGroupList::DoPCAs(uint8_t numberOfDimensions, ProgressEventCallback const& callback) -> void {
+    spdlog::debug("Doing PCAs ...");
+    auto const startTime = std::chrono::high_resolution_clock::now();
+
     for (int i = 0; i < PipelineGroups.size(); i++) {
         double const progress = static_cast<double>(PipelineGroups.size()) / static_cast<double>(i);
         callback(progress);
@@ -139,10 +167,20 @@ auto PipelineGroupList::DoPCAs(uint8_t numberOfDimensions, ProgressEventCallback
     }
 
     callback(1.0);
+
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration = std::chrono::duration<double>(endTime - startTime);
+    spdlog::info("Did {} PCAs with {} total samples and {} number of features in {}",
+                 PipelineGroups.size(), GetNumberOfPipelines(),
+                 PipelineGroups.at(0)->GetFeatureData()->Names.size(),
+                 duration);
 }
 
 auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
                                        ProgressEventCallback const& callback) -> PipelineBatchListData {
+    spdlog::debug("Doing PCA for subset ...");
+    auto const startTime = std::chrono::high_resolution_clock::now();
+
     PipelineBatchListData batchListData { subsetData };
 
     callback(0.1);
@@ -153,6 +191,7 @@ auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
             featureData.Values.push_back(stateData.FeatureValues);
 
     auto& interpreter = App::GetInstance()->GetPythonInterpreter();
+    pybind11::gil_scoped_acquire const acquire {};
 
     auto it = std::find_if(subsetData.Data.cbegin(), subsetData.Data.cend(),
                  [](PipelineBatchData const& batchData) {
@@ -180,10 +219,19 @@ auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
         }
     }
 
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration = std::chrono::duration<double>(endTime - startTime);
+    spdlog::info("Did PCA for subset with {} total samples and {} number of features in {}",
+                 featureData.Values.size(), featureData.Names.size(),
+                 duration);
+
     return batchListData;
 }
 
 auto PipelineGroupList::DoTsne(uint8_t numberOfDimensions, ProgressEventCallback const& callback) -> void {
+    spdlog::debug("Doing t-SNE ...");
+    auto const startTime = std::chrono::high_resolution_clock::now();
+
     callback(0.0);
 
     std::vector<FeatureData const*> featureDataVector;
@@ -208,6 +256,13 @@ auto PipelineGroupList::DoTsne(uint8_t numberOfDimensions, ProgressEventCallback
     }
 
     callback(1.0);
+
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration = std::chrono::duration<double>(endTime - startTime);
+    spdlog::info("Did t-SNE with {} total samples and {} number of features in {}",
+                 GetNumberOfPipelines(),
+                 PipelineGroups.at(0)->GetFeatureData()->Names.size(),
+                 duration);
 }
 
 auto PipelineGroupList::GetDataStatus() const noexcept -> DataStatus {
@@ -289,6 +344,9 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
 
 auto PipelineGroupList::ExportImagesHdf5(std::filesystem::path const& exportPath,
                                          PipelineGroupList::ProgressEventCallback const& callback) const -> void {
+    spdlog::debug("Exporting Images in .hdf5 format ...");
+    auto const startTime = std::chrono::high_resolution_clock::now();
+
     callback(0.0);
 
     if (GetDataStatus().Image == 0)
@@ -300,10 +358,19 @@ auto PipelineGroupList::ExportImagesHdf5(std::filesystem::path const& exportPath
     std::filesystem::copy(ImagesFile, exportPath, std::filesystem::copy_options::overwrite_existing);
 
     callback(1.0);
+
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration = std::chrono::duration<double>(endTime - startTime);
+    spdlog::info("Exported images in .hdf5 format with file size {} MB in {}",
+                 file_size(exportPath) / 1000000, duration);
 }
 
 auto PipelineGroupList::ExportImagesVtk(std::filesystem::path const& exportDir,
                                         PipelineGroupList::ProgressEventCallback const& callback) -> void {
+    spdlog::debug("Exporting Images in .vtk format ...");
+    auto const startTime = std::chrono::high_resolution_clock::now();
+    auto const startFileTime = std::chrono::file_clock::now();
+
     callback(0.0);
 
     if (GetDataStatus().Image == 0)
@@ -328,10 +395,32 @@ auto PipelineGroupList::ExportImagesVtk(std::filesystem::path const& exportDir,
                                                                                 groupSizeWeightVector, callback });
 
     callback(1.0);
+
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration = std::chrono::duration<double>(endTime - startTime);
+
+    std::filesystem::directory_iterator const exportDirIt { exportDir };
+    auto&& exportedImages = exportDirIt
+            | std::views::filter([startFileTime](std::filesystem::path const& path) {
+                return is_regular_file(path) && last_write_time(path) > startFileTime;
+            });
+    uint32_t const numberOfExportedImages = std::ranges::count_if(exportedImages, [](auto const&) { return true; });
+    std::vector<uintmax_t> exportedImagesFileSizes { numberOfExportedImages };
+    std::ranges::transform(exportedImages,
+                           exportedImagesFileSizes.begin(),
+                           [](std::filesystem::path const& file) { return file_size(file); });
+    auto const fileSizeSum = std::reduce(exportedImagesFileSizes.begin(), exportedImagesFileSizes.end());
+    auto const fileSizeSumMb = fileSizeSum / 1000000;
+
+    spdlog::info("Exported {} images in .vtk format with file size {} MB in {}",
+                 GetNumberOfPipelines(), fileSizeSumMb, duration);
 }
 
 auto PipelineGroupList::ImportImages(std::filesystem::path const& importFilePath,
                                      PipelineGroupList::ProgressEventCallback const& callback) -> void {
+    spdlog::debug("Importing Images ...");
+    auto const startTime = std::chrono::high_resolution_clock::now();
+
     callback(0.0);
 
     auto const now = round<std::chrono::seconds>(std::chrono::system_clock::now());
@@ -345,14 +434,23 @@ auto PipelineGroupList::ImportImages(std::filesystem::path const& importFilePath
                              HdfImageReader::ValidationParameters { GetNumberOfPipelines(),
                                                                     { "Radiodensities", "Segmentation Mask" } });
 
-    ImagesFile = std::filesystem::path(DataDirectory) /= { std::format("images_{}.h5", timeStampString) };
+    bool const isAlreadyInDataDirectory = equivalent(importFilePath.parent_path(), DataDirectory);
+    ImagesFile = isAlreadyInDataDirectory
+                 ? importFilePath
+                 : std::filesystem::path(DataDirectory) /= { std::format("images_{}.h5", timeStampString) };
 
-    std::filesystem::copy_file(importFilePath, ImagesFile, std::filesystem::copy_options::overwrite_existing);
+    if (!isAlreadyInDataDirectory)
+        std::filesystem::copy_file(importFilePath, ImagesFile, std::filesystem::copy_options::overwrite_existing);
 
     for (auto& group : PipelineGroups)
         group->ImportImages();
 
     callback(1.0);
+
+    auto const endTime = std::chrono::high_resolution_clock::now();
+    auto const duration = std::chrono::duration<double>(endTime - startTime);
+    spdlog::info("Imported images in .hdf5 format with file size {} MB in {}",
+                 file_size(ImagesFile) / 1000000, duration);
 }
 
 auto PipelineGroupList::ExportFeatures(std::filesystem::path const& exportPath,
@@ -393,6 +491,8 @@ auto PipelineGroupList::ExportFeatures(std::filesystem::path const& exportPath,
 
     std::ofstream outStream { exportPath, std::ios::trunc };
     outStream << jsonObject;
+
+    spdlog::info("Exported features");
 }
 
 auto PipelineGroupList::ImportFeatures(std::filesystem::path const& importFilePath,
@@ -435,6 +535,8 @@ auto PipelineGroupList::ImportFeatures(std::filesystem::path const& importFilePa
 
         i++;
     }
+
+    spdlog::info("Imported features");
 }
 
 auto PipelineGroupList::ProgressUpdater::operator()(double current) noexcept -> void {

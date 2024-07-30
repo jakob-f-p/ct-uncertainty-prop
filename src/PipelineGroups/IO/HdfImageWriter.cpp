@@ -93,7 +93,7 @@ auto HdfImageWriter::InitializeFile(HighFive::File& file) -> void {
         std::visit([vtkDataType, numberOfElements, &file, &arrayName, &dataSpace](auto type) {
             HighFive::DataSetCreateProps dataSetCreateProps {};
             dataSetCreateProps.add(HighFive::Chunking { { 1, numberOfElements } });
-            dataSetCreateProps.add(HighFive::Deflate { 5 });
+            dataSetCreateProps.add(HighFive::Deflate { 9 });
             auto dataSet = file.createDataSet(arrayName, dataSpace, type, dataSetCreateProps);
 
             dataSet.createAttribute("vtkType", vtkDataType);
@@ -188,7 +188,6 @@ auto HdfImageWriter::WriteImageBatch(HighFive::File& file) -> void {
         }, arrayPointerVariant);
     });
 
-    std::cout << "before real write" << std::endl;
     for (size_t i = 0; i < ArrayNames.size(); i++) {
         auto& arrayName = ArrayNames.at(i);
         auto& dataVector = imagesDataVectors.at(i);
@@ -205,7 +204,6 @@ auto HdfImageWriter::WriteImageBatch(HighFive::File& file) -> void {
             selection.write(data);
         }, dataVector);
     }
-    std::cout << "after real write" << std::endl;
 
     NumberOfProcessedImages += InputImages.size();
 

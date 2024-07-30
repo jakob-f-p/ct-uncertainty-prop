@@ -46,7 +46,7 @@ CtDataSource::CtDataSource() {
     int const defaultResolution = 16;
 #else
 //    int const defaultResolution = 256;
-    int const defaultResolution = 64;
+    int const defaultResolution = 192;
 #endif
     std::fill(NumberOfVoxels.begin(), NumberOfVoxels.end(), defaultResolution);
 

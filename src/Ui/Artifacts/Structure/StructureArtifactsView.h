@@ -28,7 +28,7 @@ private:
 };
 
 
-class StructureArtifactsReadOnlyView : public QListView {
+class StructureArtifactsReadOnlyView : public StructureArtifactsView {
     Q_OBJECT
 
 public:

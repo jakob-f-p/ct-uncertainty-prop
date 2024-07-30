@@ -178,35 +178,35 @@ auto ImageArtifactWidget::Populate(const ImageArtifactData& data) noexcept -> vo
     }, TypeWidget);
 }
 
-auto ImageArtifactWidget::UpdateTypeWidget() noexcept -> void {
+auto ImageArtifactWidget::UpdateTypeWidget() -> void {
     auto type = TypeComboBox->currentData().value<Type>();
 
     TypeWidgetVariant newWidgetVariant = [type]() {
         switch (type) {
             case Type::BASIC:     return TypeWidgetVariant { new BasicImageArtifactWidget() };
             case Type::COMPOSITE: return TypeWidgetVariant { new CompositeImageArtifactWidget() };
+            default: throw std::runtime_error("invalid type");
         }
-
-        return TypeWidgetVariant {};
     }();
 
-    std::visit([&, newWidgetVariant](auto* oldSubTypeWidget) {
-        std::visit([&, oldSubTypeWidget](auto* newSubTypeWidget) {
-            Layout->replaceWidget(oldSubTypeWidget, newSubTypeWidget);
-            delete oldSubTypeWidget;
-
-            TypeWidget = newWidgetVariant;
-        }, newWidgetVariant);
+    std::visit([this](auto* oldSubTypeWidget) {
+        Layout->removeWidget(oldSubTypeWidget);
+        delete oldSubTypeWidget;
     }, TypeWidget);
+
+    std::visit([this](auto* newSubTypeWidget) {
+        Layout->addWidget(newSubTypeWidget);
+    }, newWidgetVariant);
+
+    TypeWidget = newWidgetVariant;
 }
 
-auto ImageArtifactWidget::TypeToString(ImageArtifactWidget::Type type) noexcept -> std::string {
+auto ImageArtifactWidget::TypeToString(ImageArtifactWidget::Type type) -> std::string {
     switch (type) {
         case Type::BASIC:     return "Artifact";
         case Type::COMPOSITE: return "Composition";
+        default: throw std::runtime_error("invalid type");
     }
-
-    return "";
 }
 
 auto ImageArtifactWidget::FindWidget(QWidget* widget) -> ImageArtifactWidget& {

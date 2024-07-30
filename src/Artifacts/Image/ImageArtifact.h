@@ -105,10 +105,10 @@ private:
     FindWidget(QWidget* widget) -> ImageArtifactWidget&;
 
     auto
-    UpdateTypeWidget() noexcept -> void;
+    UpdateTypeWidget() -> void;
 
     [[nodiscard]] static auto
-    TypeToString(Type type) noexcept -> std::string;
+    TypeToString(Type type) -> std::string;
 
     using TypeWidgetVariant = std::variant<BasicImageArtifactWidget*, CompositeImageArtifactWidget*>;
 

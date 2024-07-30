@@ -1,4 +1,5 @@
 #include <pybind11/embed.h>
+#include <pybind11/stl/filesystem.h>
 
 #include <filesystem>
 #include <iostream>
@@ -63,7 +64,7 @@ public:
         template<typename ...T>
         auto
         ExecuteFunction(std::string const& functionName, T... args) -> pybind11::object {
-            Module.reload();
+//            Module.reload();
 
             SetArgvPathToModulePath();
 

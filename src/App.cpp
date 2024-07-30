@@ -17,6 +17,8 @@
 
 #include <SMP/Common/vtkSMPToolsAPI.h>
 
+#include <spdlog/spdlog.h>
+
 
 App::App(int argc, char* argv[]) :
         Argc(argc),
@@ -51,8 +53,10 @@ App::App(int argc, char* argv[]) :
 
     QSurfaceFormat::setDefaultFormat(QVTKOpenGLNativeWidget::defaultFormat());
 
+#ifndef BUILD_TYPE_DEBUG
     auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
-//    smpToolsApi.SetBackend("STDTHREAD");
+    smpToolsApi.SetBackend("STDTHREAD");  // leaks a small, constant amount of memory
+#endif
 }
 
 App::~App() {
@@ -78,14 +82,20 @@ auto App::GetInstance() -> App* {
 
 auto App::Run() -> int {
     auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
-    qWarning(("Backend: " + std::string(smpToolsApi.GetBackend())).c_str());
+    spdlog::debug("Running backend '{}'", smpToolsApi.GetBackend());
+
+    spdlog::debug("Initializing with test data...");
 
     InitializeWithTestData();
+
+    spdlog::debug("Creating Ui...");
 
     MainWindow mainWindow(*CtDataTree, *DataSource, *ThresholdFilterAlgorithm,
                           *Pipelines, *PipelineGroups);
 
     mainWindow.show();
+
+    spdlog::info("Application running...");
 
     return QApplication::exec();
 }
@@ -107,6 +117,20 @@ auto App::GetCtDataSource() const -> CtDataSource& {
     return *DataSource;
 }
 
+auto App::GetImageDimensions() const -> std::array<uint32_t, 3> {
+    if (!DataSource)
+        throw std::runtime_error("data source does not exist");
+
+    auto const intDims = DataSource->GetVolumeNumberOfVoxels();
+
+    std::array<uint32_t, 3> uintDims {};
+    std::transform(intDims.cbegin(), intDims.cend(),
+                   uintDims.begin(),
+                   [](int n) { return static_cast<uint32_t>(n); });
+
+    return uintDims;
+}
+
 auto App::GetPipelines() const -> PipelineList& {
     return *Pipelines;
 }
@@ -124,7 +148,7 @@ auto App::GetPythonInterpreter() -> PythonInterpreter& {
 }
 
 void App::InitializeWithTestData() {
-    static DataInitializer::Config const config = DataInitializer::Config::DEBUG;
+    static DataInitializer::Config const config = DataInitializer::Config::SIMPLE_SCENE;
 
     DataInitializer initializer { *this };
     initializer(config);

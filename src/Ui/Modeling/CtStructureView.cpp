@@ -54,19 +54,14 @@ void CtStructureView::CtStructureDelegate::setModelData(QWidget* editor,
 
 CtStructureReadOnlyView::CtStructureReadOnlyView(CtStructureTree const& ctStructureTree) :
         CtStructureView(const_cast<CtStructureTree&>(ctStructureTree)),
-        StructureTreeModel(new CtStructureTreeReadOnlyModel(ctStructureTree, this)) {
-
-    auto* oldModel = model();
-    setModel(StructureTreeModel);
-    delete oldModel;
-}
+        StructureTreeModel(new CtStructureTreeReadOnlyModel(ctStructureTree, this)) {}
 
 auto CtStructureReadOnlyView::model() const noexcept -> CtStructureTreeReadOnlyModel* {
     return StructureTreeModel;
 }
 
 void CtStructureReadOnlyView::selectionChanged(QItemSelection const& selected, QItemSelection const& deselected) {
-    selectionChanged(selected, deselected);
+    QTreeView::selectionChanged(selected, deselected);
 
     QModelIndexList const selectedIndices = selected.indexes();
 
