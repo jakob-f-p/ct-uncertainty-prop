@@ -23,6 +23,5 @@ def calculate(feature_data: FeatureData, dimensions: int = 2) -> PcaData:
     pca_components: Array2D = pca_components_np.tolist()
 
     pca_data = PcaData(explained_variance_ratios, pca_components, values)
-    print(pca_data, flush=True)
 
     return pca_data

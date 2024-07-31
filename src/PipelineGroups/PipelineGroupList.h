@@ -107,8 +107,8 @@ struct PipelineBatchListData {
 
     PipelineGroupList const& GroupList;
     std::vector<std::string> const& FeatureNames;
-    std::vector<double> const& PcaExplainedVarianceRatios;
-    Vector2DDouble const& PcaPrincipalAxes;
+    std::vector<double> PcaExplainedVarianceRatios;
+    Vector2DDouble PcaPrincipalAxes;
     StateDataLists Data;
     MTimes Time;
 };

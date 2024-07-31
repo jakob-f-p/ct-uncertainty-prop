@@ -29,10 +29,10 @@ class AnalysisDataWidget : public QWidget {
 public:
     explicit AnalysisDataWidget(AnalysisSampleDataWidget* sampleDataWidget);
 
+public Q_SLOTS:
     auto
     UpdateData(PipelineBatchListData const* batchData) -> void;
 
-public Q_SLOTS:
     auto
     UpdateSample(std::optional<SampleId> sampleId) -> void;
 

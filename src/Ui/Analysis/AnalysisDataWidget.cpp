@@ -50,9 +50,7 @@ PcaDataWidget::PcaDataWidget() :
     auto* separator = new QFrame();
     separator->setFrameShape(QFrame::HLine);
 
-    VLayout->addSpacing(5);
     VLayout->addWidget(separator);
-    VLayout->addSpacing(5);
 
     VLayout->addWidget(PcaAnalysisChartWidget);
 }
@@ -134,6 +132,7 @@ AnalysisSampleDataWidget::AnalysisSampleDataWidget(QString const& analysisName) 
     fLayout->addRow(selectedPointLabel, pointWidget);
 
     fLayout->addRow(ParameterSpaceStateView);
+    ParameterSpaceStateView->setMaximumHeight(150);
 
     fLayout->addItem(new QSpacerItem(1, 1, QSizePolicy::Policy::Minimum, QSizePolicy::Policy::Expanding));
 }
@@ -225,6 +224,7 @@ auto PcaAnalysisDataWidget::UpdateExplainedVarianceChart() -> void {
     chart->addSeries(barSeries);
     chart->legend()->hide();
     chart->setTheme(QChart::ChartTheme::ChartThemeDark);
+//    chart->setBackgroundBrush(Qt::BrushStyle::NoBrush);
     chart->setMaximumWidth(450);
     chart->setMaximumHeight(150);
     chart->setMinimumHeight(150);
@@ -322,10 +322,11 @@ auto PcaFeaturesChartView::UpdateData(PcaAnalysisDataWidget* parentWidget, int b
     chart->addSeries(barSeries);
     chart->legend()->hide();
     chart->setTheme(QChart::ChartTheme::ChartThemeDark);
+//    chart->setBackgroundBrush(Qt::BrushStyle::NoBrush);
     chart->setMaximumWidth(450);
     chart->setMaximumHeight(300);
-    chart->setContentsMargins(QMargins { 0, 0, 0, -30 });
-    chart->setMargins({ 10, 5, 5, 30 });
+    chart->setContentsMargins(QMargins { 0, 0, 0, -20 });
+    chart->setMargins({ 10, 5, 5, 20 });
 
     auto* xAxis = new QBarCategoryAxis();
     std::for_each(featureData.begin(), featureData.end(),

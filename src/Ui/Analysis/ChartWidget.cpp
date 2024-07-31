@@ -123,8 +123,10 @@ auto PcaChartWidget::UpdateData(PipelineBatchListData const* batchListData) -> v
             if (text.isEmpty())
                 return;
 
-            dynamic_cast<PcaChartView*>(View)->SetBatchListData(*PcaSelectionMap.at(text));
-            ChartWidget::UpdateData(BatchListData);
+            auto const* data = PcaSelectionMap.at(text).get();
+            ChartWidget::UpdateData(data);
+
+            Q_EMIT PcaDataChanged(data);
         });
 
         SelectPointSetComboBox->setCurrentIndex(-1);
@@ -137,7 +139,7 @@ auto PcaChartWidget::UpdateData(PipelineBatchListData const* batchListData) -> v
 auto PcaChartWidget::SelectPcaPoints(QString const& name, QList<QPointF> const& points) -> void {
     auto&& data = BatchListData->TrimTo(points, PipelineBatchListData::AnalysisType::TSNE);
     PipelineGroupList const& groupList = data.GroupList;
-    auto&& trimmedData = groupList.DoPCAForSubset(data);
+    auto&& trimmedData = PipelineGroupList::DoPCAForSubset(data);
 
     PcaSelectionMap.emplace(name, std::make_unique<PipelineBatchListData>(trimmedData));
 
@@ -415,18 +417,18 @@ auto ChartView::ConnectScatterSeries(std::map<uint16_t, QScatterSeries*> const& 
 
 
 PcaChartView::PcaChartView() :
-        ChartView("PCA"),
-        PcaBatchListData(nullptr) {}
+        ChartView("PCA") {}
+//        PcaBatchListData(nullptr) {}
 
-auto PcaChartView::SetBatchListData(PipelineBatchListData const& batchListData) noexcept -> void {
-    PcaBatchListData = &batchListData;
-}
+//auto PcaChartView::SetBatchListData(PipelineBatchListData const& batchListData) noexcept -> void {
+//    PcaBatchListData = &batchListData;
+//}
 
 auto PcaChartView::CreateScatterSeries() noexcept -> std::map<uint16_t, QScatterSeries*> {
     std::map<uint16_t, QScatterSeries*> indexScatterSeriesMap;
 
-    for (int i = 0; i < PcaBatchListData->Data.size(); i++) {
-        auto const& batchData = PcaBatchListData->Data.at(i);
+    for (int i = 0; i < BatchListData->Data.size(); i++) {
+        auto const& batchData = BatchListData->Data.at(i);
         if (batchData.StateDataList.empty())
             continue;
 
@@ -487,5 +489,8 @@ auto TsneChartView::CreateScatterSeries() noexcept -> std::map<uint16_t, QScatte
 void TsneChartView::AddItemsFromSceneOnUpdateData() {
     LassoTool = new ChartLassoSelectionTool(*Chart, GetCurrentForegroundBackground());
 
-    connect(LassoTool, &ChartLassoSelectionTool::PointsSelected, this, &TsneChartView::PointsSelected);
+    connect(LassoTool, &ChartLassoSelectionTool::PointsSelected, this, [this](QList<QPointF> const& points) {
+        if (points.size() > 2)
+            Q_EMIT PointsSelected(points);
+    });
 }

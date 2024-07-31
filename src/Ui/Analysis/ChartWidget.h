@@ -59,6 +59,10 @@ public:
     auto
     SelectPcaPoints(QString const& name, QList<QPointF> const& points) -> void;
 
+Q_SIGNALS:
+    auto
+    PcaDataChanged(PipelineBatchListData const* batchListData) -> void;
+
 private:
     PipelineBatchListData const* BatchListData = nullptr;
     QComboBox* SelectPointSetComboBox;
@@ -154,8 +158,8 @@ class PcaChartView : public ChartView {
 public:
     explicit PcaChartView();
 
-    auto
-    SetBatchListData(PipelineBatchListData const& batchListData) noexcept -> void;
+//    auto
+//    SetBatchListData(PipelineBatchListData const& batchListData) noexcept -> void;
 
 protected:
     [[nodiscard]] auto
@@ -164,8 +168,8 @@ protected:
     auto
     EditAxes(QValueAxis* xAxis, QValueAxis* yAxis) -> void override;
 
-private:
-    PipelineBatchListData const* PcaBatchListData;
+//private:
+//    PipelineBatchListData const* PcaBatchListData;
 };
 
 

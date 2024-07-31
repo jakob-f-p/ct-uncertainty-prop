@@ -73,7 +73,12 @@ auto AnalysisMainWidget::UpdateData() -> void {
 }
 
 PcaMainWidget::PcaMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource) :
-        AnalysisMainWidget(pipelineGroups, dataSource, new PcaChartWidget(), new PcaDataWidget()) {}
+        AnalysisMainWidget(pipelineGroups, dataSource, new PcaChartWidget(), new PcaDataWidget()) {
+    auto* pcaChartWidget = findChild<PcaChartWidget*>();
+    auto* pcaDataWidget = findChild<PcaDataWidget*>();
+
+    connect(pcaChartWidget, &PcaChartWidget::PcaDataChanged, pcaDataWidget, &PcaDataWidget::UpdateData);
+}
 
 PcaMainWidget::~PcaMainWidget() = default;
 
