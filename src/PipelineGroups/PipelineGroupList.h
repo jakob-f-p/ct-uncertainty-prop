@@ -58,7 +58,9 @@ struct PipelineBatchListData {
 
     [[nodiscard]] auto
     TrimTo(QList<QPointF> const& pointsToKeep, AnalysisType analysisType) const -> PipelineBatchListData {
-        PipelineBatchListData batchListData { GroupList, FeatureNames, {}, Time };
+        PipelineBatchListData batchListData { GroupList, FeatureNames,
+                                              PcaExplainedVarianceRatios, PcaPrincipalAxes,
+                                              {}, Time };
 
         for (auto const& batchData : Data) {
             PipelineBatchData trimmedBatchData { batchData.Group, {} };
@@ -95,9 +97,6 @@ struct PipelineBatchListData {
         return Data.at(sampleId.GroupIdx).StateDataList.at(sampleId.StateIdx);
     };
 
-    PipelineGroupList const& GroupList;
-    std::vector<std::string> const& FeatureNames;
-    StateDataLists Data;
     struct MTimes {
         vtkMTimeType Image, Feature, Pca, Tsne;
         vtkMTimeType Total;
@@ -105,6 +104,12 @@ struct PipelineBatchListData {
         [[nodiscard]] auto
         operator==(MTimes const& other) const noexcept -> bool = default;
     };
+
+    PipelineGroupList const& GroupList;
+    std::vector<std::string> const& FeatureNames;
+    std::vector<double> const& PcaExplainedVarianceRatios;
+    Vector2DDouble const& PcaPrincipalAxes;
+    StateDataLists Data;
     MTimes Time;
 };
 

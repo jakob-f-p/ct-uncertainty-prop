@@ -9,11 +9,16 @@
 using SampleCoordinateData = std::vector<std::vector<double>>;
 using GroupCoordinateData = std::vector<SampleCoordinateData>;
 
-struct FeatureData {
-    using StringVector = std::vector<std::string>;
-    using Vector2DDouble = std::vector<std::vector<double>>;
+using Vector2DDouble = std::vector<std::vector<double>>;
 
-    StringVector Names;
+struct FeatureData {
+    std::vector<std::string> Names;
+    Vector2DDouble Values;
+};
+
+struct PcaData {
+    std::vector<double> ExplainedVarianceRatios;
+    Vector2DDouble PrincipalAxes;
     Vector2DDouble Values;
 };
 

@@ -61,7 +61,7 @@ public:
     GetFeatureData() const -> TimeStampedDataRef<FeatureData>;
 
     [[nodiscard]] auto
-    GetPcaData() const -> TimeStampedDataRef<SampleCoordinateData>;
+    GetPcaData() const -> TimeStampedDataRef<PcaData>;
 
     [[nodiscard]] auto
     GetTsneData() const -> TimeStampedDataRef<SampleCoordinateData>;
@@ -116,7 +116,7 @@ private:
 
         TimeStampedData<HdfImageReadHandles> Images;
         TimeStampedData<FeatureData> Features;
-        TimeStampedData<SampleCoordinateData> PcaData;
+        TimeStampedData<PcaData> PcaData;
         TimeStampedData<SampleCoordinateData> TsneData;
     };
     GroupData Data;

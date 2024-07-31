@@ -8,18 +8,12 @@
 
 #include <memory>
 
-class QDoubleSpinBox;
-class QPushButton;
-class QSpinBox;
 
 class AnalysisDataWidget;
 class ChartWidget;
 class CtDataSource;
-class NameLineEdit;
-class ParameterSpaceStateData;
 class ParameterSpaceStateRenderWidget;
 class PipelineGroupList;
-class PipelineParameterSpaceStateView;
 
 struct PipelineBatchListData;
 
@@ -33,15 +27,16 @@ public:
     auto
     UpdateData() -> void;
 
-protected:
-    OptionalWidget<ChartWidget>* ChartWidget_;
-
 private:
     PipelineGroupList const& GroupList;
     std::unique_ptr<PipelineBatchListData> BatchData;
 
+protected:
+    OptionalWidget<ChartWidget>* ChartWidget_;
+
+private:
     ParameterSpaceStateRenderWidget* RenderWidget;
-    OptionalWidget<AnalysisDataWidget>* DataWidget;
+    AnalysisDataWidget* DataWidget;
 };
 
 class PcaMainWidget : public AnalysisMainWidget {
@@ -88,60 +83,3 @@ private:
 };
 
 
-
-class AnalysisDataWidget : public QWidget {
-    Q_OBJECT
-
-public:
-    explicit AnalysisDataWidget(QString const& analysisName);
-
-    auto
-    UpdateData(PipelineBatchListData const* batchData) -> void;
-
-Q_SIGNALS:
-    void RequestResetCamera();
-
-public Q_SLOTS:
-    auto
-    UpdateSample(std::optional<SampleId> sampleId) -> void;
-
-protected:
-    struct XYCoords {
-        double X, Y;
-    };
-
-    [[nodiscard]] virtual auto
-    GetXYData(ParameterSpaceStateData const& spaceStateData) const noexcept -> XYCoords = 0;
-
-private:
-    QString AnalysisName;
-
-    PipelineBatchListData const* BatchListData;
-
-    NameLineEdit* PipelineGroupNameEdit;
-    NameLineEdit* BasePipelineNameEdit;
-    QSpinBox* NumberOfGroupPipelinesSpinBox;
-
-    QDoubleSpinBox* PointXSpinBox;
-    QDoubleSpinBox* PointYSpinBox;
-
-    OptionalWidget<PipelineParameterSpaceStateView>* ParameterSpaceStateView;
-};
-
-class PcaDataWidget : public AnalysisDataWidget {
-public:
-    PcaDataWidget();
-
-protected:
-    [[nodiscard]] auto
-    GetXYData(ParameterSpaceStateData const& spaceStateData) const noexcept -> XYCoords override;
-};
-
-class TsneDataWidget : public AnalysisDataWidget {
-public:
-    TsneDataWidget();
-
-protected:
-    [[nodiscard]] auto
-    GetXYData(ParameterSpaceStateData const& spaceStateData) const noexcept -> XYCoords override;
-};

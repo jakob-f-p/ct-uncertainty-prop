@@ -210,7 +210,7 @@ PYBIND11_EMBEDDED_MODULE(feature_extraction_cpp, m) {
             .def_readonly("mask", &ImageMaskRefPair::Mask);
 
     py::class_<FeatureData>(m, "FeatureData")
-            .def(py::init<FeatureData::StringVector const&, FeatureData::Vector2DDouble const&>())
+            .def(py::init<std::vector<std::string> const&, Vector2DDouble const&>())
             .def_readwrite("names", &FeatureData::Names)
             .def_readwrite("values", &FeatureData::Values)
             .def("__repr__", [](FeatureData const& featureData) {
@@ -220,6 +220,37 @@ PYBIND11_EMBEDDED_MODULE(feature_extraction_cpp, m) {
                           std::ostream_iterator<std::string>(repr, ", "));
                 repr << "]\nData: [";
                 for (auto const& row : featureData.Values) {
+                    repr << "[";
+                    std::transform(row.cbegin(), row.cend(),
+                                   std::ostream_iterator<std::string>(repr, ", "),
+                                   [](double value) { return std::to_string(value); });
+                    repr << "]\n";
+                }
+                repr << "]\n";
+                return repr.str();
+            });
+
+    py::class_<PcaData>(m, "PcaData")
+            .def(py::init<std::vector<double> const&, Vector2DDouble const&, Vector2DDouble const&>())
+            .def_readwrite("explained_variance_ratios", &PcaData::ExplainedVarianceRatios)
+            .def_readwrite("principal_axes", &PcaData::PrincipalAxes)
+            .def_readwrite("values", &PcaData::Values)
+            .def("__repr__", [](PcaData const& pcaData) {
+                std::ostringstream repr;
+                repr << "Explained variance ratios: [";
+                std::copy(pcaData.ExplainedVarianceRatios.cbegin(), pcaData.ExplainedVarianceRatios.cend(),
+                          std::ostream_iterator<double>(repr, ", "));
+                repr << "]\nPrincipal Axes: [";
+                for (auto const& row : pcaData.PrincipalAxes) {
+                    repr << "[";
+                    std::transform(row.cbegin(), row.cend(),
+                                   std::ostream_iterator<std::string>(repr, ", "),
+                                   [](double value) { return std::to_string(value); });
+                    repr << "]\n";
+                }
+                repr << "]\n";
+                repr << "]\nValues: [";
+                for (auto const& row : pcaData.Values) {
                     repr << "[";
                     std::transform(row.cbegin(), row.cend(),
                                    std::ostream_iterator<std::string>(repr, ", "),
@@ -342,12 +373,12 @@ auto PipelineGroup::DoPCA(uint8_t numberOfDimensions) -> void {
     pybind11::object const pcaCoordinateData = interpreter.ExecuteFunction("pca", "calculate",
                                                                            *Data.Features, numberOfDimensions);
 
-    Data.PcaData.Emplace(pcaCoordinateData.cast<SampleCoordinateData>());
+    Data.PcaData.Emplace(pcaCoordinateData.cast<PcaData>());
 
     auto const endTime = std::chrono::high_resolution_clock::now();
     auto const duration = std::chrono::duration<double>(endTime - startTime);
     spdlog::trace("Did PCA for {} images for group {} in {}",
-                  Data.PcaData->size(), GroupId, duration);
+                  Data.PcaData->Values.size(), GroupId, duration);
 }
 
 auto PipelineGroup::GetParameterSpaceStates() -> std::vector<std::reference_wrapper<PipelineParameterSpaceState>> {
@@ -370,8 +401,8 @@ auto PipelineGroup::GetFeatureData() const -> TimeStampedDataRef<FeatureData> {
     return TimeStampedDataRef<FeatureData> { Data.Features };
 }
 
-auto PipelineGroup::GetPcaData() const -> TimeStampedDataRef<SampleCoordinateData> {
-    return TimeStampedDataRef<SampleCoordinateData> { Data.PcaData };
+auto PipelineGroup::GetPcaData() const -> TimeStampedDataRef<PcaData> {
+    return TimeStampedDataRef<PcaData> { Data.PcaData };
 }
 
 auto PipelineGroup::GetTsneData() const -> TimeStampedDataRef<SampleCoordinateData> {
