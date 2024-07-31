@@ -1,5 +1,6 @@
 #include "AnalysisDataWidget.h"
 
+#include "ChartTooltip.h"
 #include "PipelineParameterSpaceStateView.h"
 #include "../Utils/NameLineEdit.h"
 #include "../Utils/WidgetUtils.h"
@@ -190,8 +191,10 @@ TsneSampleDataWidget::GetXYData(ParameterSpaceStateData const& spaceStateData) c
 PcaAnalysisDataWidget::PcaAnalysisDataWidget() :
         BatchData(nullptr),
         ExplainedVarianceChartView(new QChartView()),
-        PrincipalAxesChartView(new OptionalWidget<QChartView>("Please select a principal component",
-                                                              new QChartView())) {
+        PrincipalAxesChartView(new OptionalWidget<PcaFeaturesChartView>("Please select a principal component",
+                                                                        new PcaFeaturesChartView())) {
+
+    ExplainedVarianceChartView->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Preferred);
 
     auto* vLayout = new QVBoxLayout(this);
     vLayout->setContentsMargins({});
@@ -252,7 +255,8 @@ auto PcaAnalysisDataWidget::UpdateExplainedVarianceChart() -> void {
         barSet->deselectAllBars();
         barSet->selectBar(barIdx);
 
-        UpdatePrincipalAxesChart(barIdx);
+        PrincipalAxesChartView->Widget().UpdateData(this, barIdx);
+        PrincipalAxesChartView->ShowWidget();
     });
     connect(barSet, &QBarSet::hovered, this, [this](bool entered, int barIdx) {
         if (entered)
@@ -262,15 +266,39 @@ auto PcaAnalysisDataWidget::UpdateExplainedVarianceChart() -> void {
     });
 }
 
-auto PcaAnalysisDataWidget::UpdatePrincipalAxesChart(int barIdx) -> void {
-    auto& explainedVarianceChart = *ExplainedVarianceChartView->chart();
+
+
+PcaFeaturesChartView::PcaFeaturesChartView() :
+        QGraphicsView(new QGraphicsScene()),
+        GraphicsScene(scene()),
+        Chart(nullptr),
+        Tooltip(nullptr) {
+
+    setDragMode(QGraphicsView::NoDrag);
+    setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
+    setFrameShape(QFrame::NoFrame);
+    setBackgroundRole(QPalette::Window);
+    setRenderHint(QPainter::Antialiasing);
+    setMouseTracking(true);
+}
+
+PcaFeaturesChartView::~PcaFeaturesChartView() { delete GraphicsScene; }
+
+auto PcaFeaturesChartView::UpdateData(PcaAnalysisDataWidget* parentWidget, int barIdx) -> void {
+    auto const* batchData = parentWidget->BatchData;
+
+    if (!batchData)
+        return;
+
+    auto& explainedVarianceChart = *parentWidget->ExplainedVarianceChartView->chart();
     auto* varianceChartYAxis = dynamic_cast<QBarCategoryAxis*>(explainedVarianceChart.axes(Qt::Vertical).at(0));
     QString const pcName = varianceChartYAxis->at(barIdx);
     QString const title = QString("Most important features for %1").arg(pcName);
 
-    size_t const forwardBarIdx = BatchData->PcaPrincipalAxes.size() - 1 - barIdx;
-    std::vector<double> const& featureCoefficients = BatchData->PcaPrincipalAxes.at(forwardBarIdx);
-    std::vector<std::string> const& featureNames = BatchData->FeatureNames;
+    size_t const forwardBarIdx = batchData->PcaPrincipalAxes.size() - 1 - barIdx;
+    std::vector<double> const& featureCoefficients = batchData->PcaPrincipalAxes.at(forwardBarIdx);
+    std::vector<std::string> const& featureNames = batchData->FeatureNames;
 
     struct FeatureData {
         double Coefficient;
@@ -313,9 +341,46 @@ auto PcaAnalysisDataWidget::UpdatePrincipalAxesChart(int barIdx) -> void {
     barSeries->attachAxis(yAxis);
     yAxis->applyNiceNumbers();
 
-    auto* previousChart = PrincipalAxesChartView->Widget().chart();
-    PrincipalAxesChartView->Widget().setChart(chart);
-    delete previousChart;
+    if (Chart)
+        delete Chart;
 
-    PrincipalAxesChartView->ShowWidget();
+    Chart = chart;
+
+    GraphicsScene->addItem(Chart);
+
+    Chart->resize(size());
+
+    connect(barSet, &QBarSet::hovered, this, &PcaFeaturesChartView::ToggleTooltip);
+}
+
+auto PcaFeaturesChartView::resizeEvent(QResizeEvent* event) -> void {
+    GraphicsScene->setSceneRect(QRect(QPoint(0, 0), event->size()));
+    if (Chart)
+        Chart->resize(event->size());
+}
+
+void PcaFeaturesChartView::ToggleTooltip(bool entered, int barIdx) {
+    if (!entered) {
+        assert(Tooltip != nullptr);
+        delete Tooltip;
+        Tooltip = nullptr;
+    } else if (!Tooltip) {  // after clicked during hover, hovered signal is emitted again
+        auto* xAxis = dynamic_cast<QBarCategoryAxis*>(Chart->axes(Qt::Horizontal).at(0));
+        QString const featureName = xAxis->at(barIdx);
+
+        auto* barSeries = dynamic_cast<QBarSeries*>(Chart->series().at(0));
+        auto* barSet = barSeries->barSets().at(0);
+        double const value = barSet->at(barIdx);
+
+        QPointF const anchorPoint = { static_cast<qreal>(barIdx), value / 2.0 };
+
+        QString const valueString = QString::fromStdString(std::format("{:.{}f}", value, 2));
+        QString const text = QString("%1: %2").arg(featureName).arg(valueString);
+
+        auto penColor = QPen(Chart->axes(Qt::Orientation::Horizontal).at(0)->labelsColor());
+        auto brushColor = QBrush(palette().color(QPalette::ColorRole::Window));
+
+        Tooltip = new ChartTooltip(*Chart, anchorPoint, text, { penColor, brushColor });
+        Tooltip->show();
+    }
 }

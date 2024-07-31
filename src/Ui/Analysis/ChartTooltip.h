@@ -12,7 +12,10 @@ class QChart;
 
 class ChartTooltip : public QGraphicsItem {
 public:
-    explicit ChartTooltip(QChart& parentChart, QPointF anchorPoint, PenBrushPair const& foregroundBackgroundColors);
+    explicit ChartTooltip(QChart& parentChart,
+                          QPointF anchorPoint,
+                          QString text,
+                          PenBrushPair const& foregroundBackgroundColors);
 
     [[nodiscard]] auto
     boundingRect() const -> QRectF override;

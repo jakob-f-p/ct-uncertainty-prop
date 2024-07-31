@@ -121,6 +121,9 @@ protected:
     virtual auto
     AddItemsFromSceneOnUpdateData() -> void;
 
+    virtual auto
+    EditAxes(QValueAxis* xAxis, QValueAxis* yAxis) -> void {};
+
 private Q_SLOTS:
     void ToggleTooltip(QPointF const& point, bool entered);
 
@@ -157,6 +160,9 @@ public:
 protected:
     [[nodiscard]] auto
     CreateScatterSeries() noexcept -> std::map<uint16_t, QScatterSeries*> override;
+
+    auto
+    EditAxes(QValueAxis* xAxis, QValueAxis* yAxis) -> void override;
 
 private:
     PipelineBatchListData const* PcaBatchListData;

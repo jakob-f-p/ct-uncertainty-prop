@@ -234,6 +234,7 @@ auto ChartView::UpdateData(PipelineBatchListData const* batchListData) -> void {
         yAxis->setTickType(QValueAxis::TickType::TicksDynamic);
         xAxis->setTickInterval(GetAxisTickInterval(xAxis));
         yAxis->setTickInterval(GetAxisTickInterval(yAxis));
+        EditAxes(xAxis, yAxis);
     }
 
     if (Chart) {
@@ -336,7 +337,18 @@ void ChartView::ToggleTooltip(QPointF const& point, bool entered) {
         delete Tooltip;
         Tooltip = nullptr;
     } else if (!Tooltip) {  // after clicked during hover, hovered signal is emitted again
-        Tooltip = new ChartTooltip(*Chart, point, GetCurrentForegroundBackground());
+
+        uint16_t const numberOfNonDecimals = std::floor(
+                std::max({ std::log10(std::abs(point.x())), std::log10(std::abs(point.y())) }) + 1);
+        uint16_t const numberOfDecimals = 2;
+        uint16_t const formatWidth = numberOfNonDecimals + numberOfDecimals + 2;
+        std::string const tooltipString = std::format("x: {:{}.{}f}\ny: {:{}.{}f}",
+                                                      point.x(), formatWidth, numberOfDecimals, point.y(),
+                                                      formatWidth, numberOfDecimals);
+
+        Tooltip = new ChartTooltip(*Chart, point,
+                                   QString::fromStdString(tooltipString),
+                                   GetCurrentForegroundBackground());
         Tooltip->show();
     }
 }
@@ -434,6 +446,11 @@ auto PcaChartView::CreateScatterSeries() noexcept -> std::map<uint16_t, QScatter
     }
 
     return indexScatterSeriesMap;
+}
+
+auto PcaChartView::EditAxes(QValueAxis* xAxis, QValueAxis* yAxis) -> void {
+    xAxis->setTitleText("PC1");
+    yAxis->setTitleText("PC2");
 }
 
 TsneChartView::TsneChartView() :

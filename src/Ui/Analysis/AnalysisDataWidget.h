@@ -3,16 +3,20 @@
 #include "../Utils/OptionalWidget.h"
 #include "../../PipelineGroups/Types.h"
 
+#include <QGraphicsView>
 #include <QWidget>
 
 class AnalysisSampleDataWidget;
+class ChartTooltip;
 class NameLineEdit;
 class PcaAnalysisDataWidget;
+class PcaFeaturesChartView;
 class PipelineParameterSpaceStateView;
 
 struct ParameterSpaceStateData;
 struct PipelineBatchListData;
 
+class QChart;
 class QChartView;
 class QDoubleSpinBox;
 class QSpinBox;
@@ -62,6 +66,7 @@ class TsneDataWidget : public AnalysisDataWidget {
 public:
     TsneDataWidget();
 };
+
 
 
 class AnalysisSampleDataWidget : public QWidget {
@@ -114,6 +119,7 @@ protected:
 };
 
 
+
 class PcaAnalysisDataWidget : public QWidget {
     Q_OBJECT
 
@@ -123,17 +129,37 @@ public:
     auto
     UpdateData(PipelineBatchListData const* batchData) -> void;
 
-private Q_SLOTS:
-    auto
-    UpdatePrincipalAxesChart(int barIdx) -> void;
-
 private:
     auto
     UpdateExplainedVarianceChart() -> void;
 
+    friend class PcaFeaturesChartView;
+
     PipelineBatchListData const* BatchData;
 
     QChartView* ExplainedVarianceChartView;
-    OptionalWidget<QChartView>* PrincipalAxesChartView;
+    OptionalWidget<PcaFeaturesChartView>* PrincipalAxesChartView;
 };
 
+class PcaFeaturesChartView : public QGraphicsView {
+    Q_OBJECT
+
+public:
+    PcaFeaturesChartView();
+    ~PcaFeaturesChartView() override;
+
+    auto
+    UpdateData(PcaAnalysisDataWidget* parentWidget, int barIdx) -> void;
+
+protected:
+    auto
+    resizeEvent(QResizeEvent *event) -> void override;
+
+private Q_SLOTS:
+    void ToggleTooltip(bool entered, int barIdx);
+
+private:
+    QGraphicsScene* GraphicsScene;
+    QChart* Chart;
+    ChartTooltip* Tooltip;
+};

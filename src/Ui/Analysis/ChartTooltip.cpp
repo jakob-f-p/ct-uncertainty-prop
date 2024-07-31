@@ -8,21 +8,14 @@
 #include <QPainter>
 
 
-ChartTooltip::ChartTooltip(QChart& parentChart, QPointF anchorPoint, PenBrushPair const& foregroundBackgroundColors) :
+ChartTooltip::ChartTooltip(QChart& parentChart,
+                           QPointF anchorPoint,
+                           QString text,
+                           PenBrushPair const& foregroundBackgroundColors) :
         QGraphicsItem(&parentChart),
         Chart(&parentChart),
         Anchor(anchorPoint),
-        Text([this]() {
-            uint16_t const numberOfNonDecimals = std::floor(
-                    std::max({ std::log10(std::abs(Anchor.x())) + 1, std::log10(std::abs(Anchor.y())) }) + 1);
-            uint16_t const numberOfDecimals = 2;
-            uint16_t const formatWidth = numberOfNonDecimals + numberOfDecimals + 2;
-            std::string const tooltipString = std::format("x: {:{}.{}f}\ny: {:{}.{}f}",
-                                                          Anchor.x(), formatWidth, numberOfDecimals, Anchor.y(),
-                                                          formatWidth, numberOfDecimals);
-
-            return QString::fromStdString(tooltipString);
-        }()),
+        Text(std::move(text)),
         Font(QFontDatabase::systemFont(QFontDatabase::FixedFont)),
         TextPen(foregroundBackgroundColors.Pen),
         BackgroundBrush(foregroundBackgroundColors.Brush) {
@@ -66,7 +59,7 @@ auto ChartTooltip::GetTooltipPath() const -> QPainterPath {
 
     QPointF const anchor = mapFromParent(Chart->mapToPosition(Anchor));
     if (!Rectangle.contains(anchor) && !Anchor.isNull()) {
-        // establish the position of the anchor point in relation to Rectangle
+        // establish the position of the anchor point in relation to rectangle
         bool const above = anchor.y() <= Rectangle.top();
         bool const aboveCenter = anchor.y() > Rectangle.top() && anchor.y() <= Rectangle.center().y();
         bool const belowCenter = anchor.y() > Rectangle.center().y() && anchor.y() <= Rectangle.bottom();
@@ -77,7 +70,7 @@ auto ChartTooltip::GetTooltipPath() const -> QPainterPath {
         bool const rightOfCenter = anchor.x() > Rectangle.center().x() && anchor.x() <= Rectangle.right();
         bool const onRight = anchor.x() > Rectangle.right();
 
-        // get the nearest Rectangle corner.
+        // get the nearest rectangle corner
         qreal const x = onRight || rightOfCenter
                         ? Rectangle.width()
                         : 0;
