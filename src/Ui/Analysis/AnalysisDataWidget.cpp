@@ -224,7 +224,7 @@ auto PcaAnalysisDataWidget::UpdateExplainedVarianceChart() -> void {
     chart->addSeries(barSeries);
     chart->legend()->hide();
     chart->setTheme(QChart::ChartTheme::ChartThemeDark);
-//    chart->setBackgroundBrush(Qt::BrushStyle::NoBrush);
+    chart->setBackgroundBrush(Qt::BrushStyle::NoBrush);
     chart->setMaximumWidth(450);
     chart->setMaximumHeight(150);
     chart->setMinimumHeight(150);
@@ -322,7 +322,7 @@ auto PcaFeaturesChartView::UpdateData(PcaAnalysisDataWidget* parentWidget, int b
     chart->addSeries(barSeries);
     chart->legend()->hide();
     chart->setTheme(QChart::ChartTheme::ChartThemeDark);
-//    chart->setBackgroundBrush(Qt::BrushStyle::NoBrush);
+    chart->setBackgroundBrush(Qt::BrushStyle::NoBrush);
     chart->setMaximumWidth(450);
     chart->setMaximumHeight(300);
     chart->setContentsMargins(QMargins { 0, 0, 0, -20 });

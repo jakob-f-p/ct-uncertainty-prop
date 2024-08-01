@@ -1,5 +1,7 @@
 #include "RenderWidget.h"
 
+#include "RangeSlider.h"
+
 #include <QFileDialog>
 #include <QPushButton>
 #include <QStandardPaths>
@@ -23,14 +25,10 @@
 
 
 RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls, QWidget* parent) :
-        VtkRenderWidget(new CtRenderWidget(imageAlgorithm, parent)) {
+        VtkRenderWidget(nullptr) {
 
     setFrameShape(QFrame::Shape::StyledPanel);
     setFrameShadow(QFrame::Shadow::Sunken);
-
-    auto* vLayout = new QVBoxLayout(this);
-
-    vLayout->addWidget(VtkRenderWidget);
 
     if (!controls)
         return;
@@ -41,24 +39,53 @@ RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls,
     if (controls.Render) {
         RenderButton = new QPushButton("Render");
         controlBarHLayout->addWidget(RenderButton);
-        connect(RenderButton, &QPushButton::clicked, VtkRenderWidget, &CtRenderWidget::Render);
     }
 
     if (controls.Render) {
         ResetCameraButton = new QPushButton("Reset Camera");
         controlBarHLayout->addWidget(ResetCameraButton);
-        connect(ResetCameraButton, &QPushButton::clicked, VtkRenderWidget, &CtRenderWidget::ResetCamera);
     }
 
     controlBarHLayout->addStretch();
 
-    if (controls.Render) {
-        ExportButton = new QPushButton("Export");
-        controlBarHLayout->addWidget(ExportButton);
-        connect(ExportButton, &QPushButton::clicked, VtkRenderWidget, &CtRenderWidget::Export);
+    if (controls.RangeSlider) {
+        Slider = new LabeledRangeSlider("Window Width [HU]", { -1500, 2500, 1 });
+        controlBarHLayout->addWidget(Slider);
+        controlBarHLayout->addStretch();
     }
 
+    if (controls.Export) {
+        ExportButton = new QPushButton("Export");
+        controlBarHLayout->addWidget(ExportButton);
+    }
+
+
+    auto* vLayout = new QVBoxLayout(this);
+
+    VtkRenderWidget = new CtRenderWidget(this, imageAlgorithm, parent);
+    vLayout->addWidget(VtkRenderWidget);
+
     vLayout->addWidget(controlBarWidget);
+
+
+    if (RenderButton)
+        connect(RenderButton, &QPushButton::clicked, VtkRenderWidget, &CtRenderWidget::Render);
+
+    if (ResetCameraButton)
+        connect(ResetCameraButton, &QPushButton::clicked, VtkRenderWidget, &CtRenderWidget::ResetCamera);
+
+    if (Slider) {
+        connect(Slider, &LabeledRangeSlider::ValueChanged, this, [this](RangeSlider::Range range) {
+            VtkRenderWidget->UpdateWindowWidth({ static_cast<double>(range.Min), static_cast<double>(range.Max) });
+        });
+
+//        connect(VtkRenderWidget, &CtRenderWidget::RequestSliderUpdate, this, [this](CtRenderWidget::Range<int> range) {
+//            Slider->SetValue({ range.Min, range.Max });
+//        });
+    }
+
+    if (ExportButton)
+        connect(ExportButton, &QPushButton::clicked, VtkRenderWidget, &CtRenderWidget::Export);
 }
 
 auto RenderWidget::Render() const -> void {
@@ -78,8 +105,9 @@ auto RenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) -> void {
 }
 
 
-CtRenderWidget::CtRenderWidget(vtkImageAlgorithm* imageAlgorithm, QWidget* parent) :
+CtRenderWidget::CtRenderWidget(RenderWidget* renderWidget, vtkImageAlgorithm* imageAlgorithm, QWidget* parent) :
         QVTKOpenGLNativeWidget(parent),
+        Parent(renderWidget),
         ImageAlgorithm([imageAlgorithm]() -> vtkSmartPointer<vtkAlgorithm> {
             if (imageAlgorithm)
                 return imageAlgorithm;
@@ -107,17 +135,11 @@ CtRenderWidget::CtRenderWidget(vtkImageAlgorithm* imageAlgorithm, QWidget* paren
 
     UpdateImageAlgorithm(*ImageAlgorithm);
 
-    vtkNew<vtkPiecewiseFunction> opacityMappingFunction;
-    opacityMappingFunction->AddPoint(-1000.0, 0.005);
-    opacityMappingFunction->AddPoint(2000.0, 0.05);
-
-    vtkNew<vtkColorTransferFunction> colorTransferFunction;
-    colorTransferFunction->AddRGBPoint(-1000.0, 0.0, 0.0, 0.0);
-    colorTransferFunction->AddRGBPoint(2000.0, 3 * 1.0, 3 * 1.0, 3 * 1.0);
+    UpdateColorMappingFunctions();
 
     vtkNew<vtkVolumeProperty> volumeProperty;
-    volumeProperty->SetColor(colorTransferFunction.GetPointer());
-    volumeProperty->SetScalarOpacity(opacityMappingFunction.GetPointer());
+    volumeProperty->SetColor(ColorTransferFunction.GetPointer());
+    volumeProperty->SetScalarOpacity(OpacityMappingFunction.GetPointer());
     volumeProperty->ShadeOn();
     volumeProperty->SetInterpolationTypeToLinear();
     volumeProperty->SetAmbient(0.3);
@@ -188,3 +210,43 @@ auto CtRenderWidget::UpdateImageAlgorithm(vtkAlgorithm& imageAlgorithm) -> void 
 auto CtRenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) -> void {
     VolumeMapper->SetInputData(&imageData);
 }
+
+auto CtRenderWidget::UpdateWindowWidth(CtRenderWidget::Range<double> range) -> void {
+    Range<int> const newWindowWidth = { static_cast<int>(range.Min), static_cast<int>(range.Max) };
+    if (newWindowWidth.Min == WindowWidth.Min && newWindowWidth.Max == WindowWidth.Max)
+        return;
+
+    WindowWidth = newWindowWidth;
+    UpdateColorMappingFunctions();
+}
+
+auto CtRenderWidget::showEvent(QShowEvent* event) -> void {
+    UpdateColorMappingFunctions();
+
+    auto currentRange = Parent->Slider->GetValue();
+    if (currentRange.Min != WindowWidth.Min || currentRange.Max != WindowWidth.Max)
+        Parent->Slider->SetValue({ WindowWidth.Min, WindowWidth.Max });
+
+    QWidget::showEvent(event);
+}
+
+auto CtRenderWidget::UpdateColorMappingFunctions() -> void {
+    OpacityMappingFunction->RemoveAllPoints();
+    ColorTransferFunction->RemoveAllPoints();
+
+    double const belowLow = std::max(0.75 * WindowWidth.Min, -1500.0);
+    double const low = std::max(static_cast<double>(WindowWidth.Min), -1500.0);
+    double const high = std::max(static_cast<double>(WindowWidth.Max), 2500.0);
+    OpacityMappingFunction->AddPoint(-1500.0, 0.003, 0.5, 0.5);
+    OpacityMappingFunction->AddPoint(belowLow, 0.003, 0.0, 0.0);
+    OpacityMappingFunction->AddPoint(low, 0.005, 0.5, 0.0);
+    OpacityMappingFunction->AddPoint(high, 0.07, 0.0, 0.0);
+    OpacityMappingFunction->AddPoint(high + 0.1, 0.000);
+
+    ColorTransferFunction->AddRGBPoint(-1500.0, 0.0, 0.0, 0.0, 0.5, 0.5);
+    ColorTransferFunction->AddRGBPoint(belowLow, 0.1, 0.1, 0.1, 0.0, 0.0);
+    ColorTransferFunction->AddRGBPoint(low, 0.7, 0.7, 0.7, 0.5, 0.0);
+    ColorTransferFunction->AddRGBPoint(high, 1.0, 1.0, 1.0, 0.0, 0.0);
+}
+
+CtRenderWidget::Range<int> CtRenderWidget::WindowWidth = { 0, 750 };
