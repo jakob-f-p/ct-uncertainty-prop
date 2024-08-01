@@ -28,24 +28,12 @@
 #include <QVBoxLayout>
 
 
-ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& initialDataSource, QWidget* parent) :
+ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, QWidget* parent) :
         QMainWindow(parent),
-        CurrentDataSource(initialDataSource),
-        RenderingWidget(new RenderWidget(initialDataSource)),
-        PhysicalDimensionsSpinBoxes([this]() {
-            auto* widget = new DoubleCoordinateRowWidget({ 1.0, 100.0, 1.0, 1.0  }, "Physical Dimensions");
-            widget->SetRowData(
-                    0,
-                    DoubleCoordinateRowWidget::RowData { CurrentDataSource.get().GetVolumeDataPhysicalDimensions() });
-            return widget;
-        }()),
-        ResolutionSpinBoxes([this]() {
-            auto* widget = new IntegerCoordinateRowWidget({ 16, 512, 1, 16 }, "Resolution along Axes");
-            widget->SetRowData(
-                    0,
-                    IntegerCoordinateRowWidget::RowData { CurrentDataSource.get().GetVolumeNumberOfVoxels() });
-            return widget;
-        }()) {
+        CurrentDataSource(nullptr),
+        RenderingWidget(new RenderWidget()),
+        PhysicalDimensionsSpinBoxes(new DoubleCoordinateRowWidget({ 1.0, 100.0, 1.0, 1.0  }, "Physical Dimensions")),
+        ResolutionSpinBoxes(new IntegerCoordinateRowWidget({ 16, 512, 1, 16 }, "Resolution along Axes")) {
 
     ctStructureTree.AddTreeEventCallback([&](CtStructureTreeEvent const&) { RenderingWidget->Render(); });
 
@@ -81,24 +69,31 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& i
 
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dockWidget);
 
+
     connect(PhysicalDimensionsSpinBoxes, &DoubleCoordinateRowWidget::ValueChanged, this, [this]() {
-        CurrentDataSource.get().SetVolumeDataPhysicalDimensions(
-                PhysicalDimensionsSpinBoxes->GetRowData(0).ToFloatArray());
+        CurrentDataSource->SetVolumeDataPhysicalDimensions(PhysicalDimensionsSpinBoxes->GetRowData(0).ToFloatArray());
     });
     connect(ResolutionSpinBoxes, &IntegerCoordinateRowWidget::ValueChanged, this, [this]() {
-        CurrentDataSource.get().SetVolumeNumberOfVoxels(
-                ResolutionSpinBoxes->GetRowData(0).ToArray());
+        CurrentDataSource->SetVolumeNumberOfVoxels(ResolutionSpinBoxes->GetRowData(0).ToArray());
     });
 
-    connect(dataSourceWidget, &DataSourceWidget::DataSourceUpdated, this, [this](CtDataSource& ctDataSource) {
-        CurrentDataSource = ctDataSource;
-        CurrentDataSource.get().SetVolumeDataPhysicalDimensions(
-                PhysicalDimensionsSpinBoxes->GetRowData(0).ToFloatArray());
-        CurrentDataSource.get().SetVolumeNumberOfVoxels(
-                ResolutionSpinBoxes->GetRowData(0).ToArray());
-        RenderingWidget->UpdateImageAlgorithm(CurrentDataSource);
-        App::GetInstance()->SetCtDataSource(CurrentDataSource);
+    connect(dataSourceWidget, &DataSourceWidget::DataSourceUpdated,
+            this, [this](CtDataSource& ctDataSource, uint8_t dataSourceType) {
+        auto const ctDataSourceType = static_cast<App::CtDataSourceType>(dataSourceType);
+
+        CurrentDataSource = &ctDataSource;
+        RenderingWidget->UpdateImageAlgorithm(*CurrentDataSource);
+        App::GetInstance().SetCtDataSource(*CurrentDataSource, ctDataSourceType);
+
+        PhysicalDimensionsSpinBoxes->SetRowData(
+                0, DoubleCoordinateRowWidget::RowData { CurrentDataSource->GetVolumeDataPhysicalDimensions() });
+        ResolutionSpinBoxes->SetRowData(
+                0, IntegerCoordinateRowWidget::RowData { CurrentDataSource->GetVolumeNumberOfVoxels() });
+
+        Q_EMIT DataSourceUpdated();
     });
+
+    dataSourceWidget->EmitInitial();
 }
 
 
@@ -128,7 +123,7 @@ DataSourceWidget::DataSourceWidget(CtStructureTree& ctStructureTree, QWidget* pa
             auto* stackedWidget = new QStackedWidget();
             stackedWidget->addWidget(new CtStructureTreeWidget(ctStructureTree));
             stackedWidget->addWidget(new CtDataImportWidget());
-            stackedWidget->setCurrentIndex(0);
+            stackedWidget->setCurrentIndex(1);
             return stackedWidget;
         }()) {
 
@@ -146,7 +141,7 @@ DataSourceWidget::DataSourceWidget(CtStructureTree& ctStructureTree, QWidget* pa
 
     vLayout->addWidget(StackedWidget);
 
-    connect(SelectSourceTypeButtonGroup, &QButtonGroup::buttonPressed, this, [this](QAbstractButton* button) {
+    connect(SelectSourceTypeButtonGroup, &QButtonGroup::buttonClicked, this, [this](QAbstractButton* button) {
         auto* pushButton = qobject_cast<QPushButton*>(button);
 
         using WidgetVariant = std::variant<CtStructureTreeWidget*, CtDataImportWidget*>;
@@ -181,9 +176,33 @@ DataSourceWidget::DataSourceWidget(CtStructureTree& ctStructureTree, QWidget* pa
         ImplicitButton->setChecked(std::holds_alternative<CtStructureTreeWidget*>(newWidgetVariant));
         NrrdButton->setChecked(std::holds_alternative<CtDataImportWidget*>(newWidgetVariant));
 
-        Q_EMIT DataSourceUpdated(ctDataSource);
+        App::CtDataSourceType const dataSourceType = std::visit(Overload {
+            [](CtStructureTreeWidget*) { return App::CtDataSourceType::IMPLICIT; },
+            [](CtDataImportWidget*)    { return App::CtDataSourceType::IMPORTED; },
+        }, newWidgetVariant);
+
+        Q_EMIT DataSourceUpdated(ctDataSource, static_cast<uint8_t>(dataSourceType));
     });
 }
+
+auto DataSourceWidget::EmitInitial() const noexcept -> void {
+    Q_EMIT ImplicitButton->click();
+}
+
+//auto DataSourceWidget::GetCtDataSource() -> CtDataSource& {
+//    using WidgetVariant = std::variant<CtStructureTreeWidget*, CtDataImportWidget*>;
+//
+//    WidgetVariant newWidgetVariant = [this]() -> WidgetVariant {
+//        switch (StackedWidget->currentIndex()) {
+//            case 0: return dynamic_cast<CtStructureTreeWidget*>(StackedWidget->widget(0));
+//            case 1: return dynamic_cast<CtDataImportWidget*>(StackedWidget->widget(1));
+//            default: throw std::runtime_error("invalid widget index");
+//        }
+//    }();
+//
+//    return std::visit([](auto* widget) -> CtDataSource& { return widget->GetCtDataSource(); },
+//                      newWidgetVariant);
+//}
 
 CtStructureTreeWidget::CtStructureTreeWidget(CtStructureTree& ctStructureTree, QWidget* parent) :
         QWidget(parent),

@@ -29,7 +29,7 @@ public:
     auto CreateInstance(int argc, char* argv[]) -> App*;
 
     [[nodiscard]] static
-    auto GetInstance() -> App*;
+    auto GetInstance() -> App&;
 
     auto Run() -> int;
 
@@ -38,11 +38,16 @@ public:
     [[nodiscard]] auto
     GetCtDataTree() const -> CtStructureTree&;
 
+    enum struct CtDataSourceType : uint8_t { IMPLICIT, IMPORTED };
+
     [[nodiscard]] auto
     GetCtDataSource() const -> CtDataSource&;
 
     auto
-    SetCtDataSource(CtDataSource& ctDataSource) -> void;
+    SetCtDataSource(CtDataSource& ctDataSource, CtDataSourceType type) -> void;
+
+    [[nodiscard]] auto
+    GetCtDataSourceType() const noexcept -> CtDataSourceType;
 
     [[nodiscard]] auto
     GetImageDimensions() const -> std::array<uint32_t, 3>;
@@ -73,6 +78,7 @@ private:
     std::unique_ptr<QApplication> QApp;
     std::unique_ptr<CtStructureTree> CtDataTree;
     vtkSmartPointer<CtDataSource> DataSource;
+    CtDataSourceType DataSourceType;
     vtkNew<ThresholdFilter> ThresholdFilterAlgorithm;
     std::unique_ptr<PipelineList> Pipelines;
     std::unique_ptr<PipelineGroupList> PipelineGroups;

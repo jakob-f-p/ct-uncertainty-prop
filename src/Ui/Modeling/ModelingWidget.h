@@ -29,14 +29,14 @@ class ModelingWidget : public QMainWindow {
     Q_OBJECT
 
 public:
-    ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& initialDataSource, QWidget* parent = nullptr);
+    explicit ModelingWidget(CtStructureTree& ctStructureTree, QWidget* parent = nullptr);
 
 Q_SIGNALS:
     auto
-    DataSourceUpdated(CtDataSource& dataSource) -> void;
+    DataSourceUpdated() -> void;
 
 private:
-    std::reference_wrapper<CtDataSource> CurrentDataSource;
+    CtDataSource* CurrentDataSource;
 
     RenderWidget* const RenderingWidget;
 
@@ -51,9 +51,12 @@ class DataSourceWidget : public QWidget {
 public:
     explicit DataSourceWidget(CtStructureTree& ctStructureTree, QWidget* parent = nullptr);
 
+    auto
+    EmitInitial() const noexcept -> void;
+
 Q_SIGNALS:
     auto
-    DataSourceUpdated(CtDataSource& dataSource) -> void;
+    DataSourceUpdated(CtDataSource& dataSource, uint8_t dataSourceType) -> void;
 
 private:
     QPushButton* ImplicitButton;

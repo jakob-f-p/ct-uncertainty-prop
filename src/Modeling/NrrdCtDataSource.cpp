@@ -1,12 +1,17 @@
 #include "NrrdCtDataSource.h"
 
+#include <vtkDataArray.h>
+#include <vtkFloatArray.h>
 #include <vtkImageData.h>
 #include <vtkImageResample.h>
-#include <vtkObjectFactory.h>
 #include <vtkNew.h>
 #include <vtkNrrdReader.h>
-#include <span>
+#include <vtkObjectFactory.h>
+#include <vtkPointData.h>
+#include <vtkTypeUInt8Array.h>
+
 #include <cassert>
+#include <span>
 
 vtkStandardNewMacro(NrrdCtDataSource)
 
@@ -23,7 +28,6 @@ void NrrdCtDataSource::ExecuteDataWithInformation(vtkDataObject* output, vtkInfo
     nrrdReader->SetFileName(absolute(Filename).string().c_str());
     nrrdReader->Update();
     data->ShallowCopy(nrrdReader->GetOutput());
-    data->Print(std::cout);
 
     std::span<int, 3> const oldDimensions { data->GetDimensions(), 3 };
     std::array<int, 3> const newDimensions = GetDimensions();
@@ -45,4 +49,18 @@ void NrrdCtDataSource::ExecuteDataWithInformation(vtkDataObject* output, vtkInfo
     std::span<int, 6> const newExtent { data->GetExtent(), 6 };
     for (int i = 0; i < 6; ++i)
         assert(newExtent[i] == targetExtent[i]);
+
+    auto* pointData = data->GetPointData();
+    auto* dataArray = pointData->GetScalars();
+    auto* uint8DataArray = vtkTypeUInt8Array::SafeDownCast(dataArray);
+    if (!uint8DataArray)
+        throw std::runtime_error("unsupported data type");
+
+    vtkNew<vtkFloatArray> floatArray;
+    floatArray->DeepCopy(uint8DataArray);
+    floatArray->SetName("Radiodensities");
+
+    pointData->RemoveArray(0);
+    pointData->AddArray(floatArray);
+    pointData->SetActiveScalars("Radiodensities");
 }

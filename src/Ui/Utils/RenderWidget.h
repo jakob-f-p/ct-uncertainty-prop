@@ -9,6 +9,7 @@ class QVTKInteractor;
 
 class CtRenderWidget;
 
+class vtkAlgorithm;
 class vtkCamera;
 class vtkImageAlgorithm;
 class vtkImageData;
@@ -29,7 +30,7 @@ public:
         explicit operator bool() const noexcept { return Render || ResetCamera || Export; }
     };
 
-    explicit RenderWidget(vtkImageAlgorithm& imageAlgorithm,
+    explicit RenderWidget(vtkImageAlgorithm* imageAlgorithm = nullptr,
                           Controls controls = { true, true, true },
                           QWidget* parent = nullptr);
 
@@ -57,11 +58,8 @@ class CtRenderWidget : public QVTKOpenGLNativeWidget {
     Q_OBJECT
 
 public:
-    explicit CtRenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent = nullptr);
+    explicit CtRenderWidget(vtkImageAlgorithm* imageAlgorithm = nullptr, QWidget* parent = nullptr);
     ~CtRenderWidget() override;
-
-    [[nodiscard]] auto
-    GetCurrentFilter() -> vtkImageAlgorithm&;
 
 public Q_SLOTS:
     auto
@@ -80,7 +78,10 @@ public Q_SLOTS:
     UpdateImageAlgorithm(vtkImageData& imageData) -> void;
 
 private:
-    vtkImageAlgorithm* ImageAlgorithm;
+    auto
+    UpdateImageAlgorithm(vtkAlgorithm& imageAlgorithm) -> void;
+
+    vtkSmartPointer<vtkAlgorithm> ImageAlgorithm;
     vtkNew<vtkOpenGLGPUVolumeRayCastMapper> VolumeMapper;
     vtkNew<QVTKInteractor> RenderWindowInteractor;
     vtkNew<vtkOrientationMarkerWidget> OrientationMarkerWidget;

@@ -116,7 +116,7 @@ auto PipelineGroupList::GenerateImages(ProgressEventCallback const& callback) ->
 
     auto const endTime = std::chrono::high_resolution_clock::now();
     auto const duration = std::chrono::duration<double>(endTime - startTime);
-    auto const imageDims = App::GetInstance()->GetImageDimensions();
+    auto const imageDims = App::GetInstance().GetImageDimensions();
     spdlog::info("Generated {} images with dimensions ({}, {}, {}) in {}",
                  GetNumberOfPipelines(),
                  imageDims.at(0), imageDims.at(1), imageDims.at(2),
@@ -149,7 +149,7 @@ auto PipelineGroupList::ExtractFeatures(PipelineGroupList::ProgressEventCallback
 
     auto const endTime = std::chrono::high_resolution_clock::now();
     auto const duration = std::chrono::duration<double>(endTime - startTime);
-    auto const imageDims = App::GetInstance()->GetImageDimensions();
+    auto const imageDims = App::GetInstance().GetImageDimensions();
     spdlog::info("Extracted features with dimensions ({}, {}, {}) in {}",
                  imageDims.at(0), imageDims.at(1), imageDims.at(2),
                  duration);
@@ -188,7 +188,7 @@ auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
         for (auto const& stateData : batchData.StateDataList)
             featureData.Values.push_back(stateData.FeatureValues);
 
-    auto& interpreter = App::GetInstance()->GetPythonInterpreter();
+    auto& interpreter = App::GetInstance().GetPythonInterpreter();
     pybind11::gil_scoped_acquire const acquire {};
 
     auto it = std::find_if(subsetData.Data.cbegin(), subsetData.Data.cend(),
@@ -241,7 +241,7 @@ auto PipelineGroupList::DoTsne(uint8_t numberOfDimensions, ProgressEventCallback
     for (auto& group: PipelineGroups)
         featureDataVector.emplace_back(&*group->GetFeatureData());
 
-    auto& interpreter = App::GetInstance()->GetPythonInterpreter();
+    auto& interpreter = App::GetInstance().GetPythonInterpreter();
 
     pybind11::gil_scoped_acquire const acquire {};
 

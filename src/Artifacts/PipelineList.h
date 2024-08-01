@@ -21,7 +21,7 @@ struct PipelineEvent {
 
 class PipelineList {
 public:
-    explicit PipelineList(CtStructureTree& structureTree, CtDataSource& dataSource);
+    explicit PipelineList(CtStructureTree& structureTree);
 
     [[nodiscard]] auto
     IsEmpty() const noexcept -> bool;
@@ -55,7 +55,6 @@ public:
 
 private:
     CtStructureTree& StructureTree;
-    CtDataSource& DataSource;
     std::vector<std::unique_ptr<Pipeline>> Pipelines;
     std::vector<TreeEventCallback> TreeEventCallbacks;
     std::vector<PipelineEventCallback> PipelineEventCallbacks;

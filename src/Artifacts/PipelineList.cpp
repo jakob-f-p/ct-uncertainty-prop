@@ -3,9 +3,8 @@
 #include "Pipeline.h"
 #include "../Modeling/CtStructureTree.h"
 
-PipelineList::PipelineList(CtStructureTree& structureTree, CtDataSource& dataSource) :
-        StructureTree(structureTree),
-        DataSource(dataSource) {
+PipelineList::PipelineList(CtStructureTree& structureTree) :
+        StructureTree(structureTree) {
 
     structureTree.AddTreeEventCallback([&](CtStructureTreeEvent const& event) {
             ProcessCtStructureTreeEvent(event);
@@ -29,7 +28,7 @@ auto PipelineList::Get(int idx) const noexcept -> Pipeline const& {
 }
 
 auto PipelineList::AddPipeline() -> Pipeline& {
-    return *Pipelines.emplace_back(std::make_unique<Pipeline>(StructureTree, DataSource));
+    return *Pipelines.emplace_back(std::make_unique<Pipeline>(StructureTree));
 }
 
 void PipelineList::RemovePipeline(Pipeline& pipeline) {

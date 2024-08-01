@@ -9,7 +9,7 @@ class TsneMainWidget;
 
 class AnalysisWidget : public QTabWidget {
 public:
-    explicit AnalysisWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource);
+    explicit AnalysisWidget(PipelineGroupList const& pipelineGroups);
 
     auto
     UpdateData() -> void;

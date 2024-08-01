@@ -2,8 +2,10 @@
 
 #include "../Utils/WidgetUtils.h"
 #include "../Utils/VoidWorker.h"
+#include "../../Modeling/CtDataSource.h"
 #include "../../PipelineGroups/PipelineGroupList.h"
 #include "../../Segmentation/ThresholdFilter.h"
+#include "../../App.h"
 
 #include <QFileDialog>
 #include <QLabel>
@@ -24,7 +26,8 @@ DataGenerationWidget::DataGenerationWidget(PipelineGroupList& pipelineGroups,
         FeatureTask(new ExtractFeaturesTaskWidget(*this)),
         PcaTask(new DoPcaTaskWidget(*this)),
         TsneTask(new DoTsneTaskWidget(*this)),
-        TaskWidgets({ ImageTask, FeatureTask, PcaTask, TsneTask }) {
+        TaskWidgets({ ImageTask, FeatureTask, PcaTask, TsneTask }),
+        TaskIsRunning(false) {
 
     auto* vLayout = new QVBoxLayout(this);
     vLayout->setSpacing(10);
@@ -50,37 +53,28 @@ DataGenerationWidget::DataGenerationWidget(PipelineGroupList& pipelineGroups,
         auto* generateAllWorker = new VoidWorker([this]() {
             Statuses const statuses { *this };
 
-            std::atomic_bool taskIsRunning = false;
-
-            for (auto* taskWidget : TaskWidgets)
-                connect(taskWidget, &DataGenerationTaskWidget::TaskDone,
-                        this, [&taskIsRunning]() {
-                            taskIsRunning = false;
-                            taskIsRunning.notify_all();
-                        });
-
             if (statuses.Image != DataGenerationStatus::UP_TO_DATE) {
-                taskIsRunning.wait(true);
-                taskIsRunning = true;
+                TaskIsRunning.wait(true);
+                TaskIsRunning = true;
                 ImageTask->Generate();
             }
             if (statuses.Feature != DataGenerationStatus::UP_TO_DATE) {
-                taskIsRunning.wait(true);
-                taskIsRunning = true;
+                TaskIsRunning.wait(true);
+                TaskIsRunning = true;
                 FeatureTask->Generate();
             }
             if (statuses.Pca != DataGenerationStatus::UP_TO_DATE) {
-                taskIsRunning.wait(true);
-                taskIsRunning = true;
+                TaskIsRunning.wait(true);
+                TaskIsRunning = true;
                 PcaTask->Generate();
             }
             if (statuses.Tsne != DataGenerationStatus::UP_TO_DATE) {
-                taskIsRunning.wait(true);
-                taskIsRunning = true;
+                TaskIsRunning.wait(true);
+                TaskIsRunning = true;
                 TsneTask->Generate();
             }
 
-            taskIsRunning.wait(true);
+            TaskIsRunning.wait(true);
         });
 
         generateAllWorker->moveToThread(&WorkerThread);
@@ -91,6 +85,12 @@ DataGenerationWidget::DataGenerationWidget(PipelineGroupList& pipelineGroups,
 
         WorkerThread.start();
     });
+
+    for (auto* taskWidget : TaskWidgets)
+        connect(taskWidget, &DataGenerationTaskWidget::TaskDone, this, [this]() {
+            TaskIsRunning = false;
+            TaskIsRunning.notify_all();
+        });
 }
 
 DataGenerationWidget::~DataGenerationWidget() {
@@ -122,11 +122,12 @@ auto DataGenerationWidget::DisableButtons() const -> void {
 
 DataGenerationWidget::Statuses::Statuses(DataGenerationWidget& dataGenerationWidget) {
     auto dataStatus = dataGenerationWidget.PipelineGroups.GetDataStatus();
+    vtkMTimeType const dataSourceTime = App::GetInstance().GetCtDataSource().GetMTime();
     vtkMTimeType const pipelineGroupsTime = dataGenerationWidget.PipelineGroups.GetMTime();
     vtkMTimeType const thresholdFilterMTime = dataGenerationWidget.ThresholdFilterAlgorithm.GetMTime();
 
     auto compareAndUpdate = [this, dataStatus](vtkMTimeType time) noexcept -> void {
-        if (dataStatus.Image   < time) {
+        if (dataStatus.Image < time) {
             Image   = dataStatus.Image   == 0 ? Status::NOT_GENERATED : Status::OUT_OF_DATE;
             Feature = dataStatus.Feature == 0 ? Status::NOT_GENERATED : Status::OUT_OF_DATE;
             Pca     = dataStatus.Pca     == 0 ? Status::NOT_GENERATED : Status::OUT_OF_DATE;
@@ -136,13 +137,15 @@ DataGenerationWidget::Statuses::Statuses(DataGenerationWidget& dataGenerationWid
             Pca     = dataStatus.Pca     == 0 ? Status::NOT_GENERATED : Status::OUT_OF_DATE;
             Tsne    = dataStatus.Tsne    == 0 ? Status::NOT_GENERATED : Status::OUT_OF_DATE;
         } else {
-            if (dataStatus.Pca     < time)
-                Pca     = dataStatus.Pca     == 0 ? Status::NOT_GENERATED : Status::OUT_OF_DATE;
+            if (dataStatus.Pca  < time)
+                Pca  = dataStatus.Pca  == 0 ? Status::NOT_GENERATED : Status::OUT_OF_DATE;
 
-            if (dataStatus.Tsne    < time)
-                Tsne    = dataStatus.Tsne    == 0 ? Status::NOT_GENERATED : Status::OUT_OF_DATE;
+            if (dataStatus.Tsne < time)
+                Tsne = dataStatus.Tsne == 0 ? Status::NOT_GENERATED : Status::OUT_OF_DATE;
         }
     };
+
+    compareAndUpdate(dataSourceTime);
     compareAndUpdate(pipelineGroupsTime);
     compareAndUpdate(thresholdFilterMTime);
 }

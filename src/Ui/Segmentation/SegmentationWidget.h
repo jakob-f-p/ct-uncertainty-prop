@@ -15,12 +15,16 @@ class ThresholdFilter;
 
 class SegmentationWidget : public QMainWindow {
 public:
-    explicit SegmentationWidget(CtDataSource& dataSource, ThresholdFilter& thresholdFilter);
+    explicit SegmentationWidget(ThresholdFilter& thresholdFilter);
 
     auto
-    UpdateDataSource(Pipeline& pipeline) -> void;
+    UpdateDataSourceOnPipelineChange(Pipeline& pipeline) -> void;
+
+    auto
+    UpdateDataSourceOnDataSourceChange() -> void;
 
 private:
+    Pipeline const* Pipeline_;
     SegmentationFilterWidget* FilterWidget;
     SegmentationRenderWidget* RenderWidget;
 };
@@ -30,8 +34,7 @@ class SegmentationRenderWidget : public RenderWidget {
     Q_OBJECT
 
 public:
-    explicit SegmentationRenderWidget(CtDataSource& ctDataSource,
-                                      vtkImageAlgorithm& segmentationFilter);
+    explicit SegmentationRenderWidget(vtkImageAlgorithm& segmentationFilter);
     ~SegmentationRenderWidget() override;
 
 public Q_SLOTS:

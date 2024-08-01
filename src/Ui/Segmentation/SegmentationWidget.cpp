@@ -3,15 +3,17 @@
 #include "SegmentationFilterWidget.h"
 #include "../../Artifacts/PipelineList.h"
 #include "../../Modeling/CtDataSource.h"
+#include "../../App.h"
 
 #include <QDockWidget>
 #include <QFrame>
 #include <QPushButton>
 #include <QVBoxLayout>
 
-SegmentationWidget::SegmentationWidget(CtDataSource& dataSource, ThresholdFilter& thresholdFilter) :
+SegmentationWidget::SegmentationWidget(ThresholdFilter& thresholdFilter) :
+        Pipeline_(nullptr),
         FilterWidget(new SegmentationFilterWidget(thresholdFilter)),
-        RenderWidget(new SegmentationRenderWidget(dataSource, FilterWidget->GetFilter())) {
+        RenderWidget(new SegmentationRenderWidget(FilterWidget->GetFilter())) {
 
     setCentralWidget(RenderWidget);
 
@@ -33,21 +35,45 @@ SegmentationWidget::SegmentationWidget(CtDataSource& dataSource, ThresholdFilter
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dockWidget);
 }
 
-auto SegmentationWidget::UpdateDataSource(Pipeline& pipeline) -> void {
-    RenderWidget->UpdateDataSource(pipeline.GetImageAlgorithm());
+auto SegmentationWidget::UpdateDataSourceOnPipelineChange(Pipeline& pipeline) -> void {
+    Pipeline_ = &pipeline;
+
+    auto& app = App::GetInstance();
+    auto& ctDataSource = app.GetCtDataSource();
+    auto artifactsPipeline = [&app, &pipeline]() {
+        switch (app.GetCtDataSourceType()) {
+            case App::CtDataSourceType::IMPLICIT: return pipeline.GetArtifactsAlgorithm();
+            case App::CtDataSourceType::IMPORTED: return pipeline.GetImageArtifactsAlgorithm();
+            default: throw std::runtime_error("invalid data source type");
+        }
+    }();
+    artifactsPipeline.In.SetInputConnection(ctDataSource.GetOutputPort());
+
+    RenderWidget->UpdateDataSource(artifactsPipeline.Out);
+}
+
+auto SegmentationWidget::UpdateDataSourceOnDataSourceChange() -> void {
+    if (!Pipeline_)
+        return;
+
+    auto& app = App::GetInstance();
+    auto& ctDataSource = app.GetCtDataSource();
+    auto artifactsPipeline = [this, &app]() {
+        switch (app.GetCtDataSourceType()) {
+            case App::CtDataSourceType::IMPLICIT: return Pipeline_->GetArtifactsAlgorithm();
+            case App::CtDataSourceType::IMPORTED: return Pipeline_->GetImageArtifactsAlgorithm();
+            default: throw std::runtime_error("invalid data source type");
+        }
+    }();
+    artifactsPipeline.In.SetInputConnection(ctDataSource.GetOutputPort());
+
+    RenderWidget->UpdateDataSource(artifactsPipeline.Out);
 }
 
 
-SegmentationRenderWidget::SegmentationRenderWidget(CtDataSource& ctDataSource,
-                                                   vtkImageAlgorithm& segmentationFilter) :
-        RenderWidget([&]() -> vtkImageAlgorithm& {
-            DataSource = &ctDataSource;
-            SegmentationFilter = &segmentationFilter;
-
-            SegmentationFilter->SetInputConnection(DataSource->GetOutputPort());
-
-            return *SegmentationFilter;
-        }()) {}
+SegmentationRenderWidget::SegmentationRenderWidget(vtkImageAlgorithm& segmentationFilter) :
+        DataSource(nullptr),
+        SegmentationFilter(&segmentationFilter) {}
 
 SegmentationRenderWidget::~SegmentationRenderWidget() = default;
 

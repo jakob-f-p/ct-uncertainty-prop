@@ -72,9 +72,18 @@ auto PipelineGroup::GenerateImages(HdfImageWriter& imageWriter, ProgressEventCal
 
     auto const numberOfStates = Data.States.size();
 
-    auto& radiodensitiesAlgorithm = GetBasePipeline().GetImageAlgorithm();
-    auto& thresholdAlgorithm = App::GetInstance()->GetThresholdFilter();
-    thresholdAlgorithm.SetInputConnection(radiodensitiesAlgorithm.GetOutputPort());
+    auto& app = App::GetInstance();
+    auto& ctDataSource = app.GetCtDataSource();
+    auto artifactsPipeline = [this, &app]() {
+        switch (app.GetCtDataSourceType()) {
+            case App::CtDataSourceType::IMPLICIT: return GetBasePipeline().GetArtifactsAlgorithm();
+            case App::CtDataSourceType::IMPORTED: return GetBasePipeline().GetImageArtifactsAlgorithm();
+            default: throw std::runtime_error("invalid data source type");
+        }
+    }();
+    auto& thresholdAlgorithm = app.GetThresholdFilter();
+    artifactsPipeline.In.SetInputConnection(ctDataSource.GetOutputPort());
+    thresholdAlgorithm.SetInputConnection(artifactsPipeline.Out.GetOutputPort());
 
     HdfImageReadHandles imageReadHandles;
     imageReadHandles.reserve(numberOfStates);
@@ -269,7 +278,7 @@ auto PipelineGroup::ExtractFeatures(HdfImageReader& imageReader, ProgressEventCa
     spdlog::trace("Extracting features for group {}", GroupId);
     auto const startTime = std::chrono::high_resolution_clock::now();
 
-    auto& interpreter = App::GetInstance()->GetPythonInterpreter();
+    auto& interpreter = App::GetInstance().GetPythonInterpreter();
 
     pybind11::gil_scoped_acquire const acquire {};
 
@@ -366,7 +375,7 @@ auto PipelineGroup::DoPCA(uint8_t numberOfDimensions) -> void {
     spdlog::trace("Doing PCA for group {}", GroupId);
     auto const startTime = std::chrono::high_resolution_clock::now();
 
-    auto& interpreter = App::GetInstance()->GetPythonInterpreter();
+    auto& interpreter = App::GetInstance().GetPythonInterpreter();
 
     pybind11::gil_scoped_acquire const acquire {};
 
@@ -498,7 +507,7 @@ auto PipelineGroup::UpdateParameterSpaceStates() noexcept -> void {
 }
 
 auto PipelineGroup::GetMaxImageBatchSize() -> uint64_t {
-    auto const& dataSource = App::GetInstance()->GetCtDataSource();
+    auto const& dataSource = App::GetInstance().GetCtDataSource();
     auto const dimensions = dataSource.GetVolumeNumberOfVoxels();
     uint64_t const numberOfVoxels = std::reduce(dimensions.cbegin(), dimensions.cend(), 1, std::multiplies {});
 

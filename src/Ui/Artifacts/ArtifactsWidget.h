@@ -18,6 +18,9 @@ public:
     [[nodiscard]] auto
     GetCurrentPipeline() -> Pipeline&;
 
+    auto
+    UpdateDataSource() -> void;
+
 private:
     PipelinesWidget* PipelineWidget;
     ArtifactRenderWidget* RenderWidget;
@@ -28,12 +31,16 @@ class ArtifactRenderWidget : public RenderWidget {
     Q_OBJECT
 
 public:
-    explicit ArtifactRenderWidget(PipelineList& pipelines,
-                                  Pipeline& pipeline,
-                                  QWidget* parent = nullptr);
+    explicit ArtifactRenderWidget(PipelineList& pipelines, QWidget* parent = nullptr);
     ~ArtifactRenderWidget() override;
+
+    auto
+    UpdateDataSource() -> void;
 
 public Q_SLOTS:
     auto
     UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) -> void;
+
+private:
+    Pipeline const* Pipeline_;
 };

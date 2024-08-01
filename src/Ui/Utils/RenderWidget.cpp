@@ -10,15 +10,19 @@
 #include <vtkColorTransferFunction.h>
 #include <vtkGenericOpenGLRenderWindow.h>
 #include <vtkImageAlgorithm.h>
+#include <vtkImageData.h>
 #include <vtkInteractorStyleTrackballCamera.h>
+#include <vtkFloatArray.h>
 #include <vtkOpenGLGPUVolumeRayCastMapper.h>
 #include <vtkOpenGLRenderer.h>
 #include <vtkOrientationMarkerWidget.h>
 #include <vtkPiecewiseFunction.h>
+#include <vtkPointData.h>
+#include <vtkTrivialProducer.h>
 #include <vtkVolumeProperty.h>
 
 
-RenderWidget::RenderWidget(vtkImageAlgorithm& imageAlgorithm, Controls controls, QWidget* parent) :
+RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls, QWidget* parent) :
         VtkRenderWidget(new CtRenderWidget(imageAlgorithm, parent)) {
 
     setFrameShape(QFrame::Shape::StyledPanel);
@@ -74,13 +78,34 @@ auto RenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) -> void {
 }
 
 
-CtRenderWidget::CtRenderWidget(vtkImageAlgorithm& imageAlgorithm, QWidget* parent) :
+CtRenderWidget::CtRenderWidget(vtkImageAlgorithm* imageAlgorithm, QWidget* parent) :
         QVTKOpenGLNativeWidget(parent),
-        ImageAlgorithm(&imageAlgorithm) {
+        ImageAlgorithm([imageAlgorithm]() -> vtkSmartPointer<vtkAlgorithm> {
+            if (imageAlgorithm)
+                return imageAlgorithm;
+
+            vtkNew<vtkImageData> trivialImage;
+            trivialImage->SetDimensions(101, 101, 101);
+            trivialImage->SetSpacing(1, 1, 1);
+            trivialImage->SetOrigin(-50, -50, -50);
+
+            vtkNew<vtkFloatArray> trivialDataArray;
+            trivialDataArray->SetNumberOfComponents(1);
+            trivialDataArray->SetName("Radiodensities");
+            trivialDataArray->SetNumberOfTuples(trivialImage->GetNumberOfPoints());
+            trivialDataArray->FillValue(-1000.0F);
+            trivialImage->GetPointData()->AddArray(trivialDataArray);
+            trivialImage->GetPointData()->SetActiveScalars("Radiodensities");
+
+            vtkSmartPointer<vtkTrivialProducer> trivialImageSource = vtkTrivialProducer::New();
+            trivialImageSource->SetOutput(trivialImage);
+
+            return trivialImageSource;
+        }()) {
 
     setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 
-    UpdateImageAlgorithm(imageAlgorithm);
+    UpdateImageAlgorithm(*ImageAlgorithm);
 
     vtkNew<vtkPiecewiseFunction> opacityMappingFunction;
     opacityMappingFunction->AddPoint(-1000.0, 0.005);
@@ -155,13 +180,11 @@ auto CtRenderWidget::UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> 
     VolumeMapper->SetInputConnection(ImageAlgorithm->GetOutputPort());
 }
 
-auto CtRenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) -> void {
-    VolumeMapper->SetInputData(&imageData);
+auto CtRenderWidget::UpdateImageAlgorithm(vtkAlgorithm& imageAlgorithm) -> void {
+    ImageAlgorithm = &imageAlgorithm;
+    VolumeMapper->SetInputConnection(ImageAlgorithm->GetOutputPort());
 }
 
-auto CtRenderWidget::GetCurrentFilter() -> vtkImageAlgorithm& {
-    if (!ImageAlgorithm)
-        throw std::runtime_error("Filter must not be null");
-
-    return *ImageAlgorithm;
+auto CtRenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) -> void {
+    VolumeMapper->SetInputData(&imageData);
 }

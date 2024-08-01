@@ -20,8 +20,9 @@ struct PipelineBatchListData;
 
 class AnalysisMainWidget : public QMainWindow {
 public:
-    AnalysisMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource,
-                       ChartWidget* chartWidget, AnalysisDataWidget* dataWidget);
+    AnalysisMainWidget(PipelineGroupList const& pipelineGroups,
+                       ChartWidget* chartWidget,
+                       AnalysisDataWidget* dataWidget);
     ~AnalysisMainWidget() override;
 
     auto
@@ -43,7 +44,7 @@ class PcaMainWidget : public AnalysisMainWidget {
     Q_OBJECT
 
 public:
-    PcaMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource);
+    PcaMainWidget(PipelineGroupList const& pipelineGroups);
     ~PcaMainWidget() override;
 
 public Q_SLOTS:
@@ -54,7 +55,7 @@ class TsneMainWidget : public AnalysisMainWidget {
     Q_OBJECT
 
 public:
-    TsneMainWidget(PipelineGroupList const& pipelineGroups, CtDataSource& dataSource);
+    TsneMainWidget(PipelineGroupList const& pipelineGroups);
     ~TsneMainWidget() override;
 
 Q_SIGNALS:
@@ -67,7 +68,7 @@ class ParameterSpaceStateRenderWidget : public RenderWidget {
     Q_OBJECT
 
 public:
-    explicit ParameterSpaceStateRenderWidget(CtDataSource& dataSource);
+    explicit ParameterSpaceStateRenderWidget();
 
     auto
     UpdateData(PipelineBatchListData const* batchData) -> void;
@@ -78,7 +79,7 @@ public Q_SLOTS:
 
 private:
     PipelineBatchListData const* BatchListData;
-    CtDataSource& DataSource;
+    CtDataSource* DataSource;
     vtkSmartPointer<vtkImageData> CurrentImage;
 };
 

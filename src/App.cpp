@@ -25,12 +25,9 @@ App::App(int argc, char* argv[]) :
         Argv(argv),
         QApp(std::make_unique<QApplication>(Argc, Argv)),
         CtDataTree(new CtStructureTree()),
-        DataSource([&]() {
-            vtkNew<ImplicitCtDataSource> dataSource;
-            dataSource->SetDataTree(CtDataTree.get());
-            return dataSource;
-        }()),
-        Pipelines(new PipelineList(*CtDataTree, *DataSource)),
+        DataSource(nullptr),
+        DataSourceType(CtDataSourceType::IMPLICIT),
+        Pipelines(new PipelineList(*CtDataTree)),
         PipelineGroups([&pipelines = *Pipelines]() {
             auto* const pipelineGroupList = new PipelineGroupList(pipelines);
 
@@ -73,11 +70,11 @@ auto App::CreateInstance(int argc, char* argv[]) -> App* {
     return Self;
 }
 
-auto App::GetInstance() -> App* {
+auto App::GetInstance() -> App& {
     if (!Self)
         throw std::runtime_error("No instance exists. Instance needs to be created first.");
 
-    return Self;
+    return *Self;
 }
 
 auto App::Run() -> int {
@@ -90,8 +87,7 @@ auto App::Run() -> int {
 
     spdlog::debug("Creating Ui...");
 
-    MainWindow mainWindow(*CtDataTree, *DataSource, *ThresholdFilterAlgorithm,
-                          *Pipelines, *PipelineGroups);
+    MainWindow mainWindow(*CtDataTree, *ThresholdFilterAlgorithm, *Pipelines, *PipelineGroups);
 
     mainWindow.show();
 
@@ -117,10 +113,13 @@ auto App::GetCtDataSource() const -> CtDataSource& {
     return *DataSource;
 }
 
-auto App::SetCtDataSource(CtDataSource& ctDataSource) -> void {
+auto App::SetCtDataSource(CtDataSource& ctDataSource, CtDataSourceType type) -> void {
     ctDataSource.Modified();
     DataSource = &ctDataSource;
+    DataSourceType = type;
 }
+
+auto App::GetCtDataSourceType() const noexcept -> App::CtDataSourceType { return DataSourceType; }
 
 auto App::GetImageDimensions() const -> std::array<uint32_t, 3> {
     if (!DataSource)

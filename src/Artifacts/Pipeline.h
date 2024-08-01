@@ -18,7 +18,7 @@ class vtkImageAlgorithm;
 
 class Pipeline {
 public:
-    explicit Pipeline(CtStructureTree& structureTree, CtDataSource& dataSource, std::string name = "");
+    explicit Pipeline(CtStructureTree& structureTree, std::string name = "");
     ~Pipeline();
 
     [[nodiscard]] auto
@@ -39,8 +39,16 @@ public:
     [[nodiscard]] auto
     GetImageArtifactConcatenation() const -> ImageArtifactConcatenation&;
 
+    struct AlgorithmPipeline {
+        vtkImageAlgorithm& In;
+        vtkImageAlgorithm& Out;
+    };
+
     [[nodiscard]] auto
-    GetImageAlgorithm() const -> vtkImageAlgorithm&;
+    GetArtifactsAlgorithm() const -> AlgorithmPipeline;
+
+    [[nodiscard]] auto
+    GetImageArtifactsAlgorithm() const -> AlgorithmPipeline;
 
     auto ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) const -> void;
 
@@ -49,7 +57,6 @@ public:
 private:
     std::string Name;
     CtStructureTree& StructureTree;
-    CtDataSource& DataSource;
     std::unique_ptr<TreeStructureArtifactListCollection> TreeStructureArtifacts;
     std::unique_ptr<ImageArtifactConcatenation> ImageArtifactConcat;
 

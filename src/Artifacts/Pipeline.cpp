@@ -5,12 +5,11 @@
 #include "../Modeling/CtDataSource.h"
 #include "../Modeling/CtStructureTree.h"
 
-Pipeline::Pipeline(CtStructureTree& structureTree, CtDataSource& dataSource, std::string name) :
+Pipeline::Pipeline(CtStructureTree& structureTree, std::string name) :
         Name(name.empty()
                 ? "Pipeline " + std::to_string(PipelineId++)
                 : std::move(name)),
         StructureTree(structureTree),
-        DataSource(dataSource),
         TreeStructureArtifacts(new TreeStructureArtifactListCollection(structureTree)),
         ImageArtifactConcat(new ImageArtifactConcatenation()) {
 
@@ -26,9 +25,7 @@ auto Pipeline::GetName() const noexcept -> std::string {
 
 auto Pipeline::GetMTime() const noexcept -> vtkMTimeType {
     ImageArtifactConcat->UpdateArtifactFilter();
-    return std::max({ DataSource.GetMTime(),
-                      TreeStructureArtifacts->GetMTime(),
-                      ImageArtifactConcat->GetFilterMTime() });
+    return std::max({ TreeStructureArtifacts->GetMTime(), ImageArtifactConcat->GetFilterMTime() });
 }
 
 auto Pipeline::GetCtStructureTree() const noexcept -> CtStructureTree& {
@@ -47,15 +44,18 @@ auto Pipeline::GetImageArtifactConcatenation() const -> ImageArtifactConcatenati
     return *ImageArtifactConcat;
 }
 
-auto Pipeline::GetImageAlgorithm() const -> vtkImageAlgorithm& {
-    auto& treeArtifactsFilter = TreeStructureArtifacts->GetFilter();
-    treeArtifactsFilter.SetInputConnection(DataSource.GetOutputPort());
-
+auto Pipeline::GetArtifactsAlgorithm() const -> AlgorithmPipeline {
     ImageArtifactConcat->UpdateArtifactFilter();
+    auto& treeArtifactsFilter = TreeStructureArtifacts->GetFilter();
     auto& imageArtifactStartFilter = ImageArtifactConcat->GetStartFilter();
     imageArtifactStartFilter.SetInputConnection(treeArtifactsFilter.GetOutputPort());
 
-    return ImageArtifactConcat->GetEndFilter();
+    return { treeArtifactsFilter, ImageArtifactConcat->GetEndFilter() };
+}
+
+auto Pipeline::GetImageArtifactsAlgorithm() const -> AlgorithmPipeline {
+    ImageArtifactConcat->UpdateArtifactFilter();
+    return { ImageArtifactConcat->GetStartFilter(), ImageArtifactConcat->GetEndFilter() };
 }
 
 void Pipeline::ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) const {

@@ -1,3 +1,4 @@
+import numpy as np
 import numpy.typing as npt
 
 from feature_extraction_cpp import FeatureData, SampleId
@@ -11,6 +12,20 @@ def calculate(feature_data_list: list[FeatureData], dimensions: int = 2) -> Arra
         return Array2DList()
 
     dataset = FeatureDataset(feature_data_list)
+
+    if np.all(dataset.data == 0):
+        arr_1d_0: list[float] = []
+        for j in range(0, dimensions):
+            arr_1d_0.append(0)
+
+        result: list[Array2D] = []
+        for feature_data in feature_data_list:
+            arr_2d: Array2D = []
+            for i in range(0, len(feature_data.values)):
+                arr_2d.append(list(arr_1d_0))
+            result.append(arr_2d)
+
+        return result
 
     tsne_params = {
         "n_components": dimensions,

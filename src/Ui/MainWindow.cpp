@@ -8,11 +8,9 @@
 #include "Segmentation/SegmentationWidget.h"
 
 MainWindow::MainWindow(CtStructureTree& ctStructureTree,
-                       CtDataSource& dataSource,
                        ThresholdFilter& thresholdFilter,
                        PipelineList& pipelineList,
-                       PipelineGroupList& pipelineGroups) :
-        DataSource(dataSource) {
+                       PipelineGroupList& pipelineGroups) {
     resize(1400, 700);
 
     setWindowTitle("CT Uncertainty Propagation");
@@ -20,12 +18,12 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree,
     auto* tabWidget = new QTabWidget(this);
     tabWidget->setTabPosition(QTabWidget::TabPosition::West);
 
-    auto* modelingWidget = new ModelingWidget(ctStructureTree, DataSource);
+    auto* modelingWidget = new ModelingWidget(ctStructureTree);
     auto* artifactsWidget = new ArtifactsWidget(pipelineList);
-    auto* segmentationWidget = new SegmentationWidget(DataSource, thresholdFilter);
+    auto* segmentationWidget = new SegmentationWidget(thresholdFilter);
     auto* pipelineGroupsWidget = new PipelineGroupsWidget(pipelineGroups);
     auto* dataGenerationWidget = new DataGenerationWidget(pipelineGroups, thresholdFilter);
-    auto* analysisWidget = new AnalysisWidget(pipelineGroups, DataSource);
+    auto* analysisWidget = new AnalysisWidget(pipelineGroups);
 
     tabWidget->addTab(modelingWidget, "Modeling");
     tabWidget->addTab(artifactsWidget, "Artifacts");
@@ -38,7 +36,7 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree,
 
     auto updateWidgets = [=](int idx) {
         if (idx == tabWidget->indexOf(segmentationWidget))
-            segmentationWidget->UpdateDataSource(artifactsWidget->GetCurrentPipeline());
+            segmentationWidget->UpdateDataSourceOnPipelineChange(artifactsWidget->GetCurrentPipeline());
 
         if (idx == tabWidget->indexOf(pipelineGroupsWidget))
             pipelineGroupsWidget->UpdatePipelineList();
@@ -50,4 +48,14 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree,
             analysisWidget->UpdateData();
     };
     connect(tabWidget, &QTabWidget::currentChanged, this, updateWidgets);
+
+    auto updateDataSources = [=]() {
+        artifactsWidget->UpdateDataSource();
+        segmentationWidget->UpdateDataSourceOnDataSourceChange();
+        dataGenerationWidget->UpdateRowStatuses();
+//        analysisWidget->UpdateDataSource();
+    };
+    connect(modelingWidget, &ModelingWidget::DataSourceUpdated, this, updateDataSources);
+
+    Q_EMIT modelingWidget->DataSourceUpdated();
 }

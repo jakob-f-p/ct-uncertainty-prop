@@ -81,6 +81,7 @@ private:
     DataGenerationTaskWidget* TsneTask;
     std::vector<DataGenerationTaskWidget*> TaskWidgets;
     QThread WorkerThread;
+    std::atomic_bool TaskIsRunning;
 };
 
 

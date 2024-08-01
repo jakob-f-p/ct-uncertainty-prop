@@ -40,7 +40,7 @@ void StructureArtifactsWidget::AddView(Pipeline& pipeline) {
     auto* newView = new QTreeView();
     auto* newDelegate = new StructureArtifactsWidgetDelegate(pipeline, newView);
     newView->setItemDelegate(newDelegate);
-    auto* newModel = new CtStructureTreeModel(App::GetInstance()->GetCtDataTree(), newView);
+    auto* newModel = new CtStructureTreeModel(App::GetInstance().GetCtDataTree(), newView);
     newView->setModel(newModel);
     newView->setHeaderHidden(true);
 
