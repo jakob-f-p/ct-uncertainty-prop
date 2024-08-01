@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vtkNew.h>
+#include <vtkSmartPointer.h>
 
 #include <memory>
 
@@ -40,6 +41,9 @@ public:
     [[nodiscard]] auto
     GetCtDataSource() const -> CtDataSource&;
 
+    auto
+    SetCtDataSource(CtDataSource& ctDataSource) -> void;
+
     [[nodiscard]] auto
     GetImageDimensions() const -> std::array<uint32_t, 3>;
 
@@ -68,7 +72,7 @@ private:
 
     std::unique_ptr<QApplication> QApp;
     std::unique_ptr<CtStructureTree> CtDataTree;
-    vtkNew<CtDataSource> DataSource;
+    vtkSmartPointer<CtDataSource> DataSource;
     vtkNew<ThresholdFilter> ThresholdFilterAlgorithm;
     std::unique_ptr<PipelineList> Pipelines;
     std::unique_ptr<PipelineGroupList> PipelineGroups;

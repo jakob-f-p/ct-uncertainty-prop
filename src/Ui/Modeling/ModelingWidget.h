@@ -1,8 +1,8 @@
 #pragma once
 
-#include "../Utils/RenderWidget.h"
-
 #include <QMainWindow>
+
+#include <vtkNew.h>
 
 class BasicStructureData;
 class CombinedStructureData;
@@ -12,33 +12,81 @@ class CtStructureDialog;
 class CtStructureTree;
 class CtStructureView;
 class DoubleCoordinateRowWidget;
+class ImplicitCtDataSource;
 class IntegerCoordinateRowWidget;
+class NrrdCtDataSource;
 class RenderWidget;
 
+class QButtonGroup;
 class QItemSelection;
 class QItemSelectionModel;
+class QLabel;
 class QPushButton;
+class QStackedWidget;
+
 
 class ModelingWidget : public QMainWindow {
+    Q_OBJECT
+
 public:
-    explicit ModelingWidget(CtStructureTree& ctStructureTree,
-                            CtDataSource& dataSource,
-                            QWidget* parent = nullptr);
+    ModelingWidget(CtStructureTree& ctStructureTree, CtDataSource& initialDataSource, QWidget* parent = nullptr);
+
+Q_SIGNALS:
+    auto
+    DataSourceUpdated(CtDataSource& dataSource) -> void;
 
 private:
-    void ConnectButtons();
-
-    void DisableButtons();
-
-    void OpenBasicAndCombinedStructureCreateDialog(
-            const std::function<const void(BasicStructureData const&, CombinedStructureData const&)>& onAccepted);
-
-    void UpdateButtonStates(QItemSelection const& selected, QItemSelection const&);
+    std::reference_wrapper<CtDataSource> CurrentDataSource;
 
     RenderWidget* const RenderingWidget;
 
     DoubleCoordinateRowWidget* PhysicalDimensionsSpinBoxes;
     IntegerCoordinateRowWidget* ResolutionSpinBoxes;
+};
+
+
+class DataSourceWidget : public QWidget {
+    Q_OBJECT
+
+public:
+    explicit DataSourceWidget(CtStructureTree& ctStructureTree, QWidget* parent = nullptr);
+
+Q_SIGNALS:
+    auto
+    DataSourceUpdated(CtDataSource& dataSource) -> void;
+
+private:
+    QPushButton* ImplicitButton;
+    QPushButton* NrrdButton;
+    QButtonGroup* SelectSourceTypeButtonGroup;
+
+    QStackedWidget* StackedWidget;
+};
+
+
+class CtStructureTreeWidget : public QWidget {
+    Q_OBJECT
+
+public:
+    explicit CtStructureTreeWidget(CtStructureTree& ctStructureTree, QWidget* parent = nullptr);
+    ~CtStructureTreeWidget() override;
+
+    auto
+    DisableButtons() -> void;
+
+    using OnAcceptedFunction = std::function<void(BasicStructureData const&, CombinedStructureData const&)>;
+
+    auto
+    OpenBasicAndCombinedStructureCreateDialog(OnAcceptedFunction const& onAccepted) -> void;
+
+    auto
+    UpdateButtonStates(QItemSelection const& selected, QItemSelection const&) -> void;
+
+    auto
+    GetCtDataSource() -> CtDataSource&;
+
+private:
+    vtkNew<ImplicitCtDataSource> DataSource;
 
     QPushButton* const AddStructureButton;
     QPushButton* const CombineWithStructureButton;
@@ -51,4 +99,23 @@ private:
     QItemSelectionModel* const SelectionModel;
 
     CtStructureDialog* CtStructureCreateDialog;
+};
+
+class CtDataImportWidget : public QWidget {
+    Q_OBJECT
+
+public:
+    explicit CtDataImportWidget(QWidget* parent = nullptr);
+    ~CtDataImportWidget() override;
+
+    [[nodiscard]] auto
+    Prepare() -> bool;
+
+    auto
+    GetCtDataSource() -> CtDataSource&;
+
+private:
+    vtkNew<NrrdCtDataSource> DataSource;
+
+    QLabel* const ImportNotice;
 };

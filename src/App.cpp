@@ -2,7 +2,7 @@
 
 #include "Artifacts/PipelineList.h"
 #include "DataInitializer.h"
-#include "Modeling/CtDataSource.h"
+#include "Modeling/ImplicitCtDataSource.h"
 #include "Modeling/CtStructureTree.h"
 #include "PipelineGroups/PipelineGroupList.h"
 #include "PipelineGroups/PipelineParameterSpan.h"
@@ -26,7 +26,7 @@ App::App(int argc, char* argv[]) :
         QApp(std::make_unique<QApplication>(Argc, Argv)),
         CtDataTree(new CtStructureTree()),
         DataSource([&]() {
-            vtkNew<CtDataSource> dataSource;
+            vtkNew<ImplicitCtDataSource> dataSource;
             dataSource->SetDataTree(CtDataTree.get());
             return dataSource;
         }()),
@@ -115,6 +115,11 @@ auto App::GetCtDataTree() const -> CtStructureTree& {
 
 auto App::GetCtDataSource() const -> CtDataSource& {
     return *DataSource;
+}
+
+auto App::SetCtDataSource(CtDataSource& ctDataSource) -> void {
+    ctDataSource.Modified();
+    DataSource = &ctDataSource;
 }
 
 auto App::GetImageDimensions() const -> std::array<uint32_t, 3> {

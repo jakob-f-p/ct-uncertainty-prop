@@ -4,21 +4,11 @@
 
 #include <vtkImageAlgorithm.h>
 
-#include <array>
-
-class vtkImageData;
-
-class CtStructureTree;
 
 class CtDataSource : public vtkImageAlgorithm {
 public:
-    static CtDataSource* New();
-    vtkTypeMacro(CtDataSource, vtkImageAlgorithm);
+    vtkAbstractTypeMacro(CtDataSource, vtkImageAlgorithm);
     void PrintSelf(ostream& os, vtkIndent indent) override;
-
-    vtkMTimeType GetMTime() override;
-
-    void SetDataTree(CtStructureTree* ctStructureTree);
 
     /**
      * Set physical dimensions of the scanned image in mm along each axis.
@@ -55,17 +45,11 @@ protected:
     CtDataSource();
     ~CtDataSource() override = default;
 
-    friend class RingArtifactFilter;
-    friend class WindMillArtifactFilter;
-    friend class CuppingArtifactFilter;
-
     vtkExecutive* CreateDefaultExecutive() override;
 
     int RequestInformation(vtkInformation *request,
                            vtkInformationVector **inputVector,
                            vtkInformationVector *outputVector) override;
-
-    void ExecuteDataWithInformation(vtkDataObject *output, vtkInformation *outInfo) override;
 
     std::array<double, 3> GetSpacing();
 
@@ -73,28 +57,9 @@ protected:
 
     std::array<int, 6> GetWholeExtent();
 
-    struct SampleAlgorithm {
-        CtDataSource* Self;
-        vtkImageData* VolumeData;
-        std::array<double, 3> Spacing;
-        std::array<int, 3> UpdateDims;
-        DoublePoint StartPoint;
-        CtStructureTree* Tree;
-        float* Radiodensities;
-        float* FunctionValues;
-        uint16_t* BasicStructureIds;
+    std::array<int, 3> GetDimensions();
 
-        SampleAlgorithm(CtDataSource* self,
-                        vtkImageData* volumeData,
-                        CtStructureTree* tree,
-                        float* radiodensities,
-                        float* functionValues,
-                        uint16_t* basicStructureIds);
-
-        void operator()(vtkIdType pointId, vtkIdType endPointId) const;
-    };
 
     FloatVector PhysicalDimensions {};
     std::array<int, 3> NumberOfVoxels {};
-    CtStructureTree* DataTree = nullptr;
 };
