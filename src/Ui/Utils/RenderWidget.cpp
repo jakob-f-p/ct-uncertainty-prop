@@ -49,7 +49,7 @@ RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls,
     controlBarHLayout->addStretch();
 
     if (controls.RangeSlider) {
-        Slider = new LabeledRangeSlider("Window Width [HU]", { -1500, 2500, 1 });
+        Slider = new LabeledRangeSlider("Window Width [HU]", { -1500, 3500, 1 });
         controlBarHLayout->addWidget(Slider);
         controlBarHLayout->addStretch();
     }
@@ -234,14 +234,14 @@ auto CtRenderWidget::UpdateColorMappingFunctions() -> void {
     OpacityMappingFunction->RemoveAllPoints();
     ColorTransferFunction->RemoveAllPoints();
 
-    double const belowLow = std::max(0.75 * WindowWidth.Min, -1500.0);
+    double const belowLow = std::max(WindowWidth.Min - std::abs(0.25 * WindowWidth.Min), -1500.0);
     double const low = std::max(static_cast<double>(WindowWidth.Min), -1500.0);
-    double const high = std::max(static_cast<double>(WindowWidth.Max), 2500.0);
+    double const high = std::min(static_cast<double>(WindowWidth.Max), 3500.0);
     OpacityMappingFunction->AddPoint(-1500.0, 0.003, 0.5, 0.5);
     OpacityMappingFunction->AddPoint(belowLow, 0.003, 0.0, 0.0);
     OpacityMappingFunction->AddPoint(low, 0.005, 0.5, 0.0);
     OpacityMappingFunction->AddPoint(high, 0.07, 0.0, 0.0);
-    OpacityMappingFunction->AddPoint(high + 0.1, 0.000);
+    OpacityMappingFunction->AddPoint(high + 1.0, 0.000);
 
     ColorTransferFunction->AddRGBPoint(-1500.0, 0.0, 0.0, 0.0, 0.5, 0.5);
     ColorTransferFunction->AddRGBPoint(belowLow, 0.1, 0.1, 0.1, 0.0, 0.0);

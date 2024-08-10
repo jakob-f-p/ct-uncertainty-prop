@@ -40,9 +40,16 @@ PipelineGroup::PipelineGroup(Pipeline const& basePipeline, std::string name) :
         GroupId(PipelineGroupId++),
         BasePipeline(basePipeline),
         ParameterSpace(new PipelineParameterSpace()),
-        Data({}) {}
+        Data({}) {
 
-PipelineGroup::~PipelineGroup() = default;
+    BasePipeline.AddBeforeArtifactRemovedCallback(this, [this](ArtifactVariantPointer const& artifactVariantPointer) {
+        RemoveParameterSpansForArtifact(artifactVariantPointer);
+    });
+}
+
+PipelineGroup::~PipelineGroup() {
+    BasePipeline.RemoveBeforeArtifactRemovedCallback(this);
+}
 
 auto PipelineGroup::GetName() const noexcept -> std::string {
     return Name;
@@ -488,6 +495,10 @@ auto PipelineGroup::AddParameterSpan(ArtifactVariantPointer artifactVariantPoint
 auto PipelineGroup::RemoveParameterSpan(ArtifactVariantPointer artifactVariantPointer,
                                         PipelineParameterSpan const& parameterSpan) -> void {
     ParameterSpace->RemoveParameterSpan(artifactVariantPointer, parameterSpan);
+}
+
+auto PipelineGroup::RemoveParameterSpansForArtifact(ArtifactVariantPointer artifactVariantPointer) -> void {
+    ParameterSpace->RemoveParameterSpansForArtifact(artifactVariantPointer);
 }
 
 uint16_t PipelineGroup::PipelineGroupId = 0;

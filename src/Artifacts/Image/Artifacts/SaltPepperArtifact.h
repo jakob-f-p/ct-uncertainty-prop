@@ -51,12 +51,12 @@ public:
                                            [this] { return SaltAmount; },
                                            [this](float amount) { this->SetSaltAmount(amount);
                                                this->UpdateFilterParameters(); },
-                                           FloatObjectProperty::PropertyRange{ 0.0, 1.0 }));
+                                           FloatObjectProperty::PropertyRange{ 0.0, 1.0, 0.001, 4 }));
         properties.Add(FloatObjectProperty("Pepper Amount",
                                            [this] { return PepperAmount; },
                                            [this](float amount) { this->SetPepperAmount(amount);
                                                this->UpdateFilterParameters(); },
-                                           FloatObjectProperty::PropertyRange{ 0.0, 1.0 }));
+                                           FloatObjectProperty::PropertyRange{ 0.0, 1.0, 0.001, 4 }));
         properties.Add(FloatObjectProperty("Salt Intensity",
                                            [this] { return SaltIntensityValue; },
                                            [this](float intensity) { this->SetSaltIntensity(intensity);

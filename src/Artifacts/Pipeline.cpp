@@ -4,14 +4,20 @@
 #include "Structure/StructureArtifactListCollection.h"
 #include "../Modeling/CtDataSource.h"
 #include "../Modeling/CtStructureTree.h"
+#include "../PipelineGroups/ArtifactVariantPointer.h"
 
 Pipeline::Pipeline(CtStructureTree& structureTree, std::string name) :
         Name(name.empty()
                 ? "Pipeline " + std::to_string(PipelineId++)
                 : std::move(name)),
         StructureTree(structureTree),
-        TreeStructureArtifacts(new TreeStructureArtifactListCollection(structureTree)),
-        ImageArtifactConcat(new ImageArtifactConcatenation()) {
+        TreeStructureArtifacts(new TreeStructureArtifactListCollection(structureTree,
+                                                                       [this](StructureArtifact& artifact) {
+            BeforeArtifactRemoved(ArtifactVariantPointer { &artifact });
+        })),
+        ImageArtifactConcat(new ImageArtifactConcatenation([this](ImageArtifact& artifact) {
+            BeforeArtifactRemoved(ArtifactVariantPointer { &artifact });
+        })) {
 
     for (uidx_t i = 0; i < structureTree.StructureCount(); ++i)
         TreeStructureArtifacts->AddStructureArtifactList(i);
@@ -78,6 +84,21 @@ auto Pipeline::operator==(const Pipeline& other) const noexcept -> bool {
     return Name == other.Name
             && &TreeStructureArtifacts == &other.TreeStructureArtifacts
             && &ImageArtifactConcat == &other.ImageArtifactConcat;
+}
+
+auto
+Pipeline::AddBeforeArtifactRemovedCallback(void* receiver,
+                                           Pipeline::BeforeArtifactRemovedCallback&& callback) const noexcept -> void {
+    CallbackMap.emplace(receiver, std::move(callback));
+}
+
+auto Pipeline::RemoveBeforeArtifactRemovedCallback(void* receiver) const noexcept -> void {
+    CallbackMap.erase(receiver);
+}
+
+auto Pipeline::BeforeArtifactRemoved(ArtifactVariantPointer const& artifactVariantPointer) const -> void {
+    for (auto const& [receiver, callback] : CallbackMap)
+        callback(artifactVariantPointer);
 }
 
 uint16_t Pipeline::PipelineId = 1;

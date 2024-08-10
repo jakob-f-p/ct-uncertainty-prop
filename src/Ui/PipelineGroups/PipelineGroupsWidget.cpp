@@ -34,6 +34,11 @@ void PipelineGroupsWidget::UpdatePipelineList() noexcept {
     GroupListWidget->UpdatePipelineList();
 }
 
+void PipelineGroupsWidget::hideEvent(QHideEvent* event) {
+    GroupWidget->HideWidget();
+    ParameterSpanWidget->HideWidget();
+}
+
 void PipelineGroupsWidget::OnPipelineGroupChanged(PipelineGroup* pipelineGroup) {
     if (!pipelineGroup) {
         GroupWidget->HideWidget();

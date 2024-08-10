@@ -25,5 +25,13 @@ auto StructureArtifactsWidgetDelegate::createEditor(QWidget* parent,
     auto title = index.data().toString().toStdString();
     auto* dialog = new StructureArtifactsWidgetDialog(structureArtifactList, title, parent);
 
+    connect(dialog, &QDialog::rejected, this, &StructureArtifactsWidgetDelegate::Close);
+
     return dialog;
+}
+
+void StructureArtifactsWidgetDelegate::Close() {
+    auto* ctStructureEditDialog = qobject_cast<QDialog*>(sender());
+
+    Q_EMIT closeEditor(ctStructureEditDialog);
 }

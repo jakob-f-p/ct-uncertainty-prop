@@ -14,13 +14,16 @@ class vtkImageAlgorithm;
 
 class StructureArtifactList {
 public:
+    using BeforeRemoveArtifactCallback = std::function<void(StructureArtifact&)>;
     using BasicStructureIdProvider = std::function<std::vector<StructureId>(StructureArtifactList const&)>;
     using TissueValueProvider = std::function<StructureArtifact::StructureEvaluator(StructureArtifactList const&)>;
     using StructureEvaluatorProvider = std::function<StructureArtifact::StructureEvaluator(StructureArtifactList const&)>;
 
-    StructureArtifactList(BasicStructureIdProvider&& basicStructureIdProvider,
+    StructureArtifactList(BeforeRemoveArtifactCallback removeCallback,
+                          BasicStructureIdProvider&& basicStructureIdProvider,
                           TissueValueProvider&& tissueValueProvider,
                           StructureEvaluatorProvider&& structureEvaluatorProvider):
+            BeforeRemoveCallback(std::move(removeCallback)),
             BasicStructureIdProv(std::move(basicStructureIdProvider)),
             TissueValueProv(std::move(tissueValueProvider)),
             StructureEvaluatorProv(std::move(structureEvaluatorProvider)) {};
@@ -105,6 +108,8 @@ private:
 
     std::vector<StructureArtifact> Artifacts;
 
+    BeforeRemoveArtifactCallback BeforeRemoveCallback;
+
     // Basic structure ids associated with this artifact list
     // If artifact refers to basic structure, then this vector contains one element. For composite structures it
     // contains multiple IDs.
@@ -119,8 +124,12 @@ private:
 
 class TreeStructureArtifactListCollection {
 public:
-    explicit TreeStructureArtifactListCollection(CtStructureTree const& ctStructureTree);
-    TreeStructureArtifactListCollection(TreeStructureArtifactListCollection const& other);
+    using BeforeRemoveArtifactCallback = std::function<void(StructureArtifact&)>;
+
+    explicit TreeStructureArtifactListCollection(
+            CtStructureTree const& ctStructureTree,
+            BeforeRemoveArtifactCallback&& removeCallback = [](StructureArtifact&) {});
+//    TreeStructureArtifactListCollection(TreeStructureArtifactListCollection const& other);
     ~TreeStructureArtifactListCollection();
 
     [[nodiscard]] auto
@@ -153,6 +162,7 @@ public:
 
 private:
     CtStructureTree const& StructureTree;
+    BeforeRemoveArtifactCallback BeforeRemoveCallback;
 
     std::vector<StructureArtifactList> ArtifactLists;
 

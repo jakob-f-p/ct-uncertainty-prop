@@ -1,6 +1,7 @@
 #pragma once
 
 #include <cstdint>
+#include <functional>
 #include <memory>
 #include <string>
 
@@ -12,6 +13,7 @@ class ImageArtifactConcatenation;
 class StructureArtifactList;
 class TreeStructureArtifactListCollection;
 
+struct ArtifactVariantPointer;
 struct CtStructureTreeEvent;
 
 class vtkImageAlgorithm;
@@ -50,15 +52,29 @@ public:
     [[nodiscard]] auto
     GetImageArtifactsAlgorithm() const -> AlgorithmPipeline;
 
-    auto ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) const -> void;
+    auto
+    ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) const -> void;
 
-    auto operator==(const Pipeline& other) const noexcept -> bool;
+    auto
+    operator==(const Pipeline& other) const noexcept -> bool;
+
+    using BeforeArtifactRemovedCallback = std::function<void(ArtifactVariantPointer const&)>;
+    auto
+    AddBeforeArtifactRemovedCallback(void* receiver, BeforeArtifactRemovedCallback&& callback) const noexcept -> void;
+
+    auto
+    RemoveBeforeArtifactRemovedCallback(void* receiver) const noexcept -> void;
 
 private:
+    auto
+    BeforeArtifactRemoved(ArtifactVariantPointer const& artifactVariantPointer) const -> void;
+
     std::string Name;
     CtStructureTree& StructureTree;
     std::unique_ptr<TreeStructureArtifactListCollection> TreeStructureArtifacts;
     std::unique_ptr<ImageArtifactConcatenation> ImageArtifactConcat;
+
+    mutable std::unordered_map<void*, BeforeArtifactRemovedCallback> CallbackMap;
 
     static uint16_t PipelineId;
 };

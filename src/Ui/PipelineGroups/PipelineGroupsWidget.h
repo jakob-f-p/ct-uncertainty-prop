@@ -22,6 +22,9 @@ public:
 public Q_SLOTS:
     void UpdatePipelineList() noexcept;
 
+protected:
+    void hideEvent(QHideEvent* event) override;
+
 private Q_SLOTS:
     void OnPipelineGroupChanged(PipelineGroup* pipelineGroup);
     void OnParameterSpanChanged(PipelineGroup* pipelineGroup, PipelineParameterSpan* parameterSpan);

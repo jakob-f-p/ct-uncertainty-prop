@@ -22,6 +22,9 @@ public:
     auto
     RemoveParameterSpan(PipelineParameterSpan const& parameterSpan) -> void;
 
+    auto
+    RemoveParameterSpansForArtifact(ArtifactVariantPointer artifact) -> void;
+
     [[nodiscard]] auto
     GetName() const noexcept -> std::string;
 
@@ -77,6 +80,9 @@ public:
     auto
     RemoveParameterSpan(PipelineParameterSpanSet& spanSet,
                         PipelineParameterSpan const& parameterSpan) -> void;
+
+    auto
+    RemoveParameterSpansForArtifact(ArtifactVariantPointer artifactVariantPointer) -> void;
 
     [[nodiscard]] auto
     GetNumberOfSpans() const noexcept -> uint16_t;

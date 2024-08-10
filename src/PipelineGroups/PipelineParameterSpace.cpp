@@ -22,6 +22,11 @@ auto PipelineParameterSpanSet::RemoveParameterSpan(PipelineParameterSpan const& 
     ParameterSpans.erase(it);
 }
 
+auto PipelineParameterSpanSet::RemoveParameterSpansForArtifact(ArtifactVariantPointer artifact) -> void {
+    std::erase_if(ParameterSpans,
+                  [artifact](auto& span) { return span.GetArtifact() == artifact; });
+}
+
 auto PipelineParameterSpanSet::GetName() const noexcept -> std::string {
     return ArtifactPointer.GetName();
 }
@@ -61,7 +66,6 @@ auto PipelineParameterSpanSet::operator==(const PipelineParameterSpanSet& other)
 }
 
 
-
 auto PipelineParameterSpace::GetMTime() const noexcept -> vtkMTimeType {
     return MTime;
 }
@@ -97,6 +101,17 @@ auto PipelineParameterSpace::RemoveParameterSpan(PipelineParameterSpanSet& spanS
     if (spanSet.GetSize() == 0) {
         auto it = std::find(ParameterSpanSets.cbegin(), ParameterSpanSets.cend(), spanSet);
         ParameterSpanSets.erase(it);
+    }
+
+    MTime.Modified();
+}
+
+auto PipelineParameterSpace::RemoveParameterSpansForArtifact(ArtifactVariantPointer artifactVariantPointer) -> void {
+    for (auto& spanSet : ParameterSpanSets) {
+        spanSet.RemoveParameterSpansForArtifact(artifactVariantPointer);
+
+        if (spanSet.GetSize() == 0)
+            std::erase(ParameterSpanSets, spanSet);
     }
 
     MTime.Modified();

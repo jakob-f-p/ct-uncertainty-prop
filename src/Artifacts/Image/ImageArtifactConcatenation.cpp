@@ -1,17 +1,21 @@
 #include "ImageArtifactConcatenation.h"
 
+#include <utility>
+
 #include "ImageArtifact.h"
+#include "../Pipeline.h"
 #include "Filters/PassThroughImageArtifactFilter.h"
 
-ImageArtifactConcatenation::ImageArtifactConcatenation() noexcept :
+ImageArtifactConcatenation::ImageArtifactConcatenation(BeforeRemoveArtifactCallback callback) noexcept :
+        BeforeRemoveCallback(std::move(callback)),
         Start(new ImageArtifact { std::move(CompositeImageArtifact(
                 CompositeImageArtifact::CompositionType::SEQUENTIAL)) }) {}
 
-ImageArtifactConcatenation::ImageArtifactConcatenation(ImageArtifactConcatenation const& other) :
-        Start(new ImageArtifact(*other.Start)) {
-
-    UpdateArtifactFilter();
-}
+//ImageArtifactConcatenation::ImageArtifactConcatenation(ImageArtifactConcatenation const& other) :
+//        Start(new ImageArtifact(*other.Start)) {
+//
+//    UpdateArtifactFilter();
+//}
 
 ImageArtifactConcatenation::~ImageArtifactConcatenation() = default;
 
@@ -25,14 +29,11 @@ auto ImageArtifactConcatenation::AddImageArtifact(ImageArtifact&& imageArtifact,
     if (ContainsImageArtifact(imageArtifact) || (parent && !parent->IsComposite()))
         throw std::runtime_error("Cannot add given image artifact");
 
-    if (!parent) {
-        imageArtifact.SetParent(Start.get());
-        return Start->ToComposite().AddImageArtifact(std::move(imageArtifact), insertionIdx);
-    }
+    ImageArtifact& realParent = parent ? *parent : *Start;
 
-    imageArtifact.SetParent(parent);
+    imageArtifact.SetParent(&realParent);
 
-    auto& addedArtifact = parent->ToComposite().AddImageArtifact(std::move(imageArtifact), insertionIdx);
+    auto& addedArtifact = realParent.ToComposite().AddImageArtifact(std::move(imageArtifact), insertionIdx);
 
     EmitEvent();
 
@@ -46,6 +47,8 @@ void ImageArtifactConcatenation::RemoveImageArtifact(ImageArtifact& imageArtifac
 
     if (imageArtifact.IsComposite() && Start.get() == &imageArtifact)
         throw std::runtime_error("Cannot remove root image artifact");
+
+    BeforeRemoveCallback(imageArtifact);
 
     imageArtifact.GetParent()->ToComposite().RemoveImageArtifact(imageArtifact);
 
@@ -82,14 +85,6 @@ auto ImageArtifactConcatenation::GetFilterMTime() const noexcept -> vtkMTimeType
     return EndFilter->GetMTime();
 }
 
-void
-ImageArtifactConcatenation::AddEventCallback(void* receiver, ImageArtifactConcatenation::EventCallback&& callback) {
-    if (receiver == nullptr)
-        throw std::runtime_error("receiver may not be null");
-
-    CallbackMap.emplace(receiver, std::move(callback));
-}
-
 auto ImageArtifactConcatenation::GetStart() noexcept -> ImageArtifact& {
     return *Start;
 }
@@ -114,7 +109,4 @@ auto ImageArtifactConcatenation::IndexOf(ImageArtifact const& imageArtifact) con
 
 auto ImageArtifactConcatenation::EmitEvent() -> void {
     UpdateArtifactFilter();
-
-    for (auto const& [receiver, callback] : CallbackMap)
-        callback();
 }

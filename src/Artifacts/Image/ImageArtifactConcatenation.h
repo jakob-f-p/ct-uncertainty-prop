@@ -11,24 +11,13 @@ class ImageArtifact;
 class PassThroughImageArtifactFilter;
 class vtkImageAlgorithm;
 
-enum struct ImageArtifactConcatenationEventType : uint8_t {
-    Add,
-    Remove,
-    Move,
-    Edit
-};
-
-class ImageArtifactConcatenation;
-
-struct ImageArtifactConcatenationEvent {
-    ImageArtifactConcatenationEventType Type;
-    ImageArtifactConcatenation* Emitter;
-};
 
 class ImageArtifactConcatenation {
 public:
-    ImageArtifactConcatenation() noexcept;
-    ImageArtifactConcatenation(ImageArtifactConcatenation const& other);
+    using BeforeRemoveArtifactCallback = std::function<void(ImageArtifact&)>;
+
+    explicit ImageArtifactConcatenation(BeforeRemoveArtifactCallback callback = [](ImageArtifact&){}) noexcept;
+//    ImageArtifactConcatenation(ImageArtifactConcatenation const& other);
     ~ImageArtifactConcatenation();
 
     [[nodiscard]] auto
@@ -57,9 +46,6 @@ public:
     [[nodiscard]] auto
     GetEndFilter() const -> vtkImageAlgorithm&;
 
-    using EventCallback = std::function<void()>;
-    void AddEventCallback(void* receiver, EventCallback&& callback);
-
 private:
     friend class ImageArtifactsModel;
     friend class ImageArtifactsReadOnlyModel1;
@@ -76,9 +62,11 @@ private:
     auto
     EmitEvent() -> void;
 
+    auto
+    EmitRemoveEvent(ImageArtifact* artifact) -> void;
+
+    BeforeRemoveArtifactCallback BeforeRemoveCallback;
     std::unique_ptr<ImageArtifact> Start; // Composite
     vtkNew<PassThroughImageArtifactFilter> StartFilter;
     vtkNew<PassThroughImageArtifactFilter> EndFilter;
-
-    std::map<void*, EventCallback> CallbackMap;
 };

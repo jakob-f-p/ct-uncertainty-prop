@@ -198,7 +198,7 @@ LabeledRangeSlider::LabeledRangeSlider(QString const& labelText,
         TextLabel(new QLabel(labelText)) {
 
     auto* labelHLayout = new QHBoxLayout();
-    labelHLayout->setSpacing(5);
+    labelHLayout->setSpacing(20);
     labelHLayout->addWidget(LowLabel);
     labelHLayout->addStretch();
     labelHLayout->addWidget(TextLabel);

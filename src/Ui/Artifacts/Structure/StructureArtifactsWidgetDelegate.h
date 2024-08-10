@@ -17,8 +17,13 @@ public:
     void updateEditorGeometry(QWidget* editor,
                               QStyleOptionViewItem const& option,
                               QModelIndex const& index) const override {};
+
+protected Q_SLOTS:
+    void Close();
+
 protected:
     auto eventFilter(QObject* object, QEvent* event) -> bool override { return false; };
+
 
     Pipeline const& APipeline;
 };

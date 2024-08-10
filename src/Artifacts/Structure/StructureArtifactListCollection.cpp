@@ -57,6 +57,8 @@ void StructureArtifactList::RemoveStructureArtifact(StructureArtifact const& str
     if (it == Artifacts.end())
         throw std::runtime_error("Cannot remove structure artifact. Given artifact not contained in this list");
 
+    BeforeRemoveCallback(*it);
+
     Artifacts.erase(it);
 }
 
@@ -84,17 +86,21 @@ StructureArtifactList::~StructureArtifactList() = default;
 
 
 
-TreeStructureArtifactListCollection::TreeStructureArtifactListCollection(CtStructureTree const& ctStructureTree) :
+TreeStructureArtifactListCollection::TreeStructureArtifactListCollection(
+        CtStructureTree const& ctStructureTree,
+        BeforeRemoveArtifactCallback&& removeCallback) :
+
+        BeforeRemoveCallback(removeCallback),
         StructureTree(ctStructureTree) {
     Filter->SetStructureArtifactCollection(this);
 };
 
-TreeStructureArtifactListCollection::TreeStructureArtifactListCollection(
-        TreeStructureArtifactListCollection const& other) :
-        StructureTree(other.StructureTree),
-        ArtifactLists(other.ArtifactLists) {
-    Filter->SetStructureArtifactCollection(this);
-}
+//TreeStructureArtifactListCollection::TreeStructureArtifactListCollection(
+//        TreeStructureArtifactListCollection const& other) :
+//        StructureTree(other.StructureTree),
+//        ArtifactLists(other.ArtifactLists) {
+//    Filter->SetStructureArtifactCollection(this);
+//}
 
 TreeStructureArtifactListCollection::~TreeStructureArtifactListCollection() = default;
 
@@ -156,7 +162,8 @@ void TreeStructureArtifactListCollection::AddStructureArtifactList(uidx_t insert
     };
 
     ArtifactLists.emplace(std::next(ArtifactLists.cbegin(), insertionIdx),
-                          basicStructureIdProvider, tissueValueProvider, structureEvaluatorProvider);
+                          BeforeRemoveCallback, basicStructureIdProvider,
+                          tissueValueProvider, structureEvaluatorProvider);
 }
 
 void TreeStructureArtifactListCollection::RemoveStructureArtifactList(uidx_t removeIdx) {

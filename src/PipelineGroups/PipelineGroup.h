@@ -90,6 +90,9 @@ public:
     RemoveParameterSpan(ArtifactVariantPointer artifactVariantPointer,
                         PipelineParameterSpan const& parameterSpan) -> void;
 
+    auto
+    RemoveParameterSpansForArtifact(ArtifactVariantPointer artifactVariantPointer) -> void;
+
     struct ImageMaskRefPair {
         SampleId Id;
         std::reference_wrapper<vtkImageData> Image;
