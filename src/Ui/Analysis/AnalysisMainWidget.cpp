@@ -9,7 +9,12 @@
 #include <QDockWidget>
 #include <QSplitter>
 
+#include <vtkFloatArray.h>
 #include <vtkImageData.h>
+#include <vtkPointData.h>
+#include <vtkTypeInt16Array.h>
+
+#include <span>
 
 
 AnalysisMainWidget::AnalysisMainWidget(PipelineGroupList const& pipelineGroups,
@@ -116,7 +121,28 @@ auto ParameterSpaceStateRenderWidget::UpdateSample(std::optional<SampleId> sampl
     else {
         auto const& parameterSpaceStateData = BatchListData->GetSpaceStateData(*sampleId);
 
-        CurrentImage = parameterSpaceStateData.ImageHandle.Read();
+        CurrentImage = parameterSpaceStateData.ImageHandle.Read({ "Radiodensities", "Segmentation Mask" });
+
+        auto const numberOfPoints = CurrentImage->GetNumberOfPoints();
+
+        auto* radiodensityArray = vtkFloatArray::SafeDownCast(CurrentImage->GetPointData()->GetScalars());
+        auto* maskArray = vtkTypeInt16Array::SafeDownCast(CurrentImage->GetPointData()->GetArray("Segmentation Mask"));
+
+        if (!radiodensityArray || !maskArray)
+            throw std::runtime_error("arrays may not be null");
+
+        auto* radiodensities = radiodensityArray->WritePointer(0, numberOfPoints);
+        auto* mask = maskArray->WritePointer(0, numberOfPoints);
+
+        std::span<float> const radiodensitySpan { radiodensities, std::next(radiodensities, numberOfPoints) };
+        std::span<vtkTypeInt16> const maskSpan { mask, std::next(mask, numberOfPoints) };
+
+        std::transform(radiodensitySpan.begin(), radiodensitySpan.end(),
+                       maskSpan.begin(),
+                       radiodensitySpan.begin(),
+                       [](float const& radiodensity, vtkTypeInt16 const& mask) {
+            return mask == 0 ? -1000.0 : radiodensity;
+        });
 
         UpdateImageAlgorithm(*CurrentImage);
     }

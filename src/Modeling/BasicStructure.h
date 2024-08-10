@@ -51,7 +51,7 @@ namespace BasicStructureDetails {
             { "Soft Tissue",     { "Soft Tissue",      200.0F } },
             { "Cancellous Bone", { "Cancellous Bone",  350.0F } },
             { "Cortical Bone",   { "Cortical Bone",    800.0F } },
-            { "Metal",           { "Metal",          15000.0F } }
+            { "Metal",           { "Metal",           3000.0F } }
     };
 
     [[nodiscard]] auto static

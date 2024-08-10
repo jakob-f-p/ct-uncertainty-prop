@@ -35,8 +35,8 @@ class ThresholdFilterWidget : public QWidget {
 
 public:
     enum struct FilterMode : uint8_t {
-        UPPER = 0,
-        LOWER,
+        ABOVE = 0,
+        BELOW,
         BETWEEN
     };
 

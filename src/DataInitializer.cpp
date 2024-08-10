@@ -299,44 +299,94 @@ DebugSingleSceneInitializer::DebugSingleSceneInitializer(App& app) :
         SceneInitializer(app) {}
 
 auto DebugSingleSceneInitializer::operator()() -> void {
+//    auto cancellousBoneTissueType = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
+//
+//    auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
+//    thresholdFilter.ThresholdBetween(cancellousBoneTissueType.CtNumber * 0.95,
+//                                     cancellousBoneTissueType.CtNumber * 1.05);
+//
+//    BasicStructure sphere(Sphere{});
+//    sphere.SetTissueType(cancellousBoneTissueType);
+//    sphere.SetTransformData({ 10.0F, 10.0F, 10.0F, 0.0F, 0.0F, 0.0F, 2.5F, 2.5F, 2.5F });
+//
+//    CtDataTree.AddBasicStructure(std::move(sphere));
+
     auto cancellousBoneTissueType = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
 
     auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
-    thresholdFilter.ThresholdBetween(cancellousBoneTissueType.CtNumber * 0.95,
-                                     cancellousBoneTissueType.CtNumber * 1.05);
+    thresholdFilter.ThresholdByUpper(cancellousBoneTissueType.CtNumber * 0.95);
 
     BasicStructure sphere(Sphere{});
     sphere.SetTissueType(cancellousBoneTissueType);
-    sphere.SetTransformData({ 10.0F, 10.0F, 10.0F, 0.0F, 0.0F, 0.0F, 2.5F, 2.5F, 2.5F });
+    sphere.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F });
 
     CtDataTree.AddBasicStructure(std::move(sphere));
 
-    static Range<float> const meanRange = { 0.0,  0.0, 0.0 };
+//    static Range<float> const meanRange = { 0.0,  0.0, 0.0 };
+//
+//    auto& pipeline = Pipelines.AddPipeline();
+//
+//    ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
+//
+//    GaussianArtifact gaussianArtifact {};
+//    gaussianArtifact.SetMean(meanRange.GetCenter());
+//    gaussianArtifact.SetStandardDeviation(20.0);
+//
+//    BasicImageArtifact gaussianBasicArtifact { std::move(gaussianArtifact) };
+//    gaussianBasicArtifact.SetName("gaussian");
+//    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact));
+//
+//    PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Gaussian Pipelines");
+//
+//    auto gaussianProperties = gaussian.GetProperties();
+//
+//    auto& meanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
+//    ParameterSpan<float> meanSpan {
+//            ArtifactVariantPointer(&gaussian),
+//            meanProperty,
+//            { meanRange.Min, meanRange.Max, meanRange.Step },
+//            "Mean Span"
+//    };
+//    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(meanSpan));
+
+    static Range<float> const saltAmountRange = { 0.0, 0.01, 0.001 };
+    static Range<float> const pepperAmountRange = { 0.0, 0.01, 0.001 };
 
     auto& pipeline = Pipelines.AddPipeline();
 
     ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 
-    GaussianArtifact gaussianArtifact {};
-    gaussianArtifact.SetMean(meanRange.GetCenter());
-    gaussianArtifact.SetStandardDeviation(20.0);
+    SaltPepperArtifact saltPepperArtifact {};
+    saltPepperArtifact.SetSaltIntensity(1500.0F);
+    saltPepperArtifact.SetPepperIntensity(-900.0F);
+    saltPepperArtifact.SetSaltAmount(saltAmountRange.GetCenter());
+    saltPepperArtifact.SetPepperAmount(pepperAmountRange.GetCenter());
 
-    BasicImageArtifact gaussianBasicArtifact { std::move(gaussianArtifact) };
-    gaussianBasicArtifact.SetName("gaussian");
-    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact));
+    BasicImageArtifact saltPepperBasicArtifact { std::move(saltPepperArtifact) };
+    saltPepperBasicArtifact.SetName("salt and pepper");
+    auto& saltPepper = concatenation.AddImageArtifact(std::move(saltPepperBasicArtifact));
 
-    PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Gaussian Pipelines");
+    PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Salt Pepper Pipelines");
 
-    auto gaussianProperties = gaussian.GetProperties();
+    auto saltPepperProperties = saltPepper.GetProperties();
 
-    auto& meanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
-    ParameterSpan<float> meanSpan {
-            ArtifactVariantPointer(&gaussian),
-            meanProperty,
-            { meanRange.Min, meanRange.Max, meanRange.Step },
-            "Mean Span"
+    auto& saltAmountProperty = saltPepperProperties.GetPropertyByName<float>("Salt Amount");
+    ParameterSpan<float> saltAmountSpan {
+            ArtifactVariantPointer(&saltPepper),
+            saltAmountProperty,
+            { saltAmountRange.Min, saltAmountRange.Max, saltAmountRange.Step },
+            "Salt Amount Span"
     };
-    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(meanSpan));
+    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(saltAmountSpan));
+
+    auto& pepperAmountProperty = saltPepperProperties.GetPropertyByName<float>("Pepper Amount");
+    ParameterSpan<float> pepperAmountSpan {
+            ArtifactVariantPointer(&saltPepper),
+            pepperAmountProperty,
+            { pepperAmountRange.Min, pepperAmountRange.Max, pepperAmountRange.Step },
+            "Pepper Amount Span"
+    };
+    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(pepperAmountSpan));
 }
 
 SimpleSceneInitializer::SimpleSceneInitializer(App& app) :
@@ -497,8 +547,8 @@ auto SimpleSceneInitializer::InitializeSaltPepper() noexcept -> void {
     ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 
     SaltPepperArtifact saltPepperArtifact {};
-    saltPepperArtifact.SetSaltIntensity(1000.0F);
-    saltPepperArtifact.SetPepperIntensity(-2000.0F);
+    saltPepperArtifact.SetSaltIntensity(1500.0F);
+    saltPepperArtifact.SetPepperIntensity(-900.0F);
     saltPepperArtifact.SetSaltAmount(saltAmountRange.GetCenter());
     saltPepperArtifact.SetPepperAmount(pepperAmountRange.GetCenter());
 

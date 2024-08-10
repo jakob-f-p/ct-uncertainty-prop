@@ -186,6 +186,9 @@ auto HdfImageReader::ReadImageBatch(BatchImages& batchImages) -> void {
             }
         }, pileDataVectors.at(i));
     }
+
+    for (auto& batchImage : batchImages)
+        batchImage.ImageData.GetPointData()->SetActiveScalars(ArrayNames.at(0).c_str());
 }
 
 auto HdfImageReader::Validate(std::filesystem::path const& filePath,

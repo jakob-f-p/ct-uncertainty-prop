@@ -40,6 +40,9 @@ struct FillWithRandomIndices {
     auto operator() () noexcept -> void {
         vtkNew<vtkMinimalStandardRandomSequence> random;
 
+        static int Seed = 0;
+        random->SetSeed(++Seed);
+
         Indices.reserve(NumberOfIndices);
 
         while (Indices.size() != NumberOfIndices) {

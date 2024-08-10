@@ -38,4 +38,17 @@ void vtkImageDataArrayIterator<DType>::Initialize(vtkImageData* id, ExtentType e
     this->SliceEndPointer = this->Pointer + this->Increments[1] * (ext[3] - ext[2] + 1);
 }
 
+template class vtkImageDataArrayIterator<vtkTypeInt8>;
+template class vtkImageDataArrayIterator<vtkTypeUInt8>;
 template class vtkImageDataArrayIterator<vtkTypeInt16>;
+template class vtkImageDataArrayIterator<vtkTypeUInt16>;
+template class vtkImageDataArrayIterator<vtkTypeUInt32>;
+template class vtkImageDataArrayIterator<vtkTypeInt32>;
+template class vtkImageDataArrayIterator<vtkTypeUInt64>;
+template class vtkImageDataArrayIterator<vtkTypeInt64>;
+template class vtkImageDataArrayIterator<vtkTypeFloat32>;
+template class vtkImageDataArrayIterator<vtkTypeFloat64>;
+
+template class vtkImageDataArrayIterator<char>;
+template class vtkImageDataArrayIterator<long>;
+template class vtkImageDataArrayIterator<unsigned long>;
