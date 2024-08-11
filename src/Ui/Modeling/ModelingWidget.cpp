@@ -33,7 +33,7 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, QWidget* parent
         CurrentDataSource(nullptr),
         RenderingWidget(new RenderWidget()),
         PhysicalDimensionsSpinBoxes(new DoubleCoordinateRowWidget({ 1.0, 100.0, 1.0, 1.0  }, "Physical Dimensions")),
-        ResolutionSpinBoxes(new IntegerCoordinateRowWidget({ 16, 512, 1, 16 }, "Resolution along Axes")) {
+        ResolutionSpinBoxes(new IntegerCoordinateRowWidget({ 16, 512, 1, 16 }, "Resolution")) {
 
     ctStructureTree.AddTreeEventCallback([&](CtStructureTreeEvent const&) { RenderingWidget->Render(); });
 
@@ -131,6 +131,10 @@ DataSourceWidget::DataSourceWidget(CtStructureTree& ctStructureTree, QWidget* pa
     vLayout->setContentsMargins({});
     vLayout->setSpacing(15);
 
+    auto* titleLabel = new QLabel("Image Source");
+    titleLabel->setStyleSheet(GetHeader1StyleSheet());
+    vLayout->addWidget(titleLabel);
+
     auto* buttonsHLayout = new QHBoxLayout();
     buttonsHLayout->setSpacing(15);
     buttonsHLayout->addStretch();
@@ -189,27 +193,12 @@ auto DataSourceWidget::EmitInitial() const noexcept -> void {
     Q_EMIT ImplicitButton->click();
 }
 
-//auto DataSourceWidget::GetCtDataSource() -> CtDataSource& {
-//    using WidgetVariant = std::variant<CtStructureTreeWidget*, CtDataImportWidget*>;
-//
-//    WidgetVariant newWidgetVariant = [this]() -> WidgetVariant {
-//        switch (StackedWidget->currentIndex()) {
-//            case 0: return dynamic_cast<CtStructureTreeWidget*>(StackedWidget->widget(0));
-//            case 1: return dynamic_cast<CtDataImportWidget*>(StackedWidget->widget(1));
-//            default: throw std::runtime_error("invalid widget index");
-//        }
-//    }();
-//
-//    return std::visit([](auto* widget) -> CtDataSource& { return widget->GetCtDataSource(); },
-//                      newWidgetVariant);
-//}
-
 CtStructureTreeWidget::CtStructureTreeWidget(CtStructureTree& ctStructureTree, QWidget* parent) :
         QWidget(parent),
-        AddStructureButton(new QPushButton("Add Structure")),
-        CombineWithStructureButton(new QPushButton("Combine With Structure")),
-        RefineWithStructureButton(new QPushButton("Refine With Structure")),
-        RemoveStructureButton(new QPushButton("Remove Structure")),
+        AddStructureButton(new QPushButton(GenerateIcon("Plus"), " Sibling")),
+        CombineWithStructureButton(new QPushButton(GenerateIcon("Plus"), " Combine")),
+        RefineWithStructureButton(new QPushButton(GenerateIcon("Plus"), " Refine")),
+        RemoveStructureButton(new QPushButton(GenerateIcon("Minus"), " Remove")),
         CtStructureButtons { AddStructureButton,
                              CombineWithStructureButton,
                              RefineWithStructureButton,
@@ -223,10 +212,6 @@ CtStructureTreeWidget::CtStructureTreeWidget(CtStructureTree& ctStructureTree, Q
 
     auto* vLayout = new QVBoxLayout(this);
     vLayout->setContentsMargins({});
-
-    auto* titleLabel = new QLabel("CT Structures");
-    titleLabel->setStyleSheet(GetHeader1StyleSheet());
-    vLayout->addWidget(titleLabel);
 
     auto* treeButtonBarWidget = new QWidget();
     auto* treeButtonBarHorizontalLayout = new QHBoxLayout(treeButtonBarWidget);

@@ -17,16 +17,18 @@ namespace BasicStructureDetails {
     enum struct FunctionType : uint8_t {
         SPHERE,
         BOX,
-        CONE
+        CONE,
+        CYLINDER
     };
     Q_ENUM_NS(FunctionType);
 
     [[nodiscard]] auto static
     FunctionTypeToString(FunctionType functionType) noexcept -> std::string {
         switch (functionType) {
-            case FunctionType::SPHERE: return "Sphere";
-            case FunctionType::BOX:    return "Box";
-            case FunctionType::CONE:   return "Cone";
+            case FunctionType::SPHERE:   return "Sphere";
+            case FunctionType::BOX:      return "Box";
+            case FunctionType::CONE:     return "Cone";
+            case FunctionType::CYLINDER: return "Cylinder";
             default: { qWarning("No matching implicit function type found"); return ""; }
         }
     }

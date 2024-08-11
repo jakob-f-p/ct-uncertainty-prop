@@ -26,12 +26,15 @@ auto BasicStructureDetails::BasicStructureDataImpl::PopulateStructure(Structure&
 }
 
 BasicStructure::BasicStructure(FunctionType functionType) :
-        Shape([=]() -> ShapeVariant { switch (functionType) {
-            case FunctionType::SPHERE: return Sphere();
-            case FunctionType::BOX:    return Box();
-            case FunctionType::CONE: { qWarning("Todo");
-                                       return Sphere(); }
-        } return {}; }()) {
+        Shape([=]() -> ShapeVariant {
+            switch (functionType) {
+                case FunctionType::SPHERE:   return Sphere();
+                case FunctionType::BOX:      return Box();
+                case FunctionType::CONE:     return Cone();
+                case FunctionType::CYLINDER: return Cylinder();
+                default: return {};
+            }
+        }()) {
 }
 
 BasicStructure::BasicStructure(const BasicStructureData& data) : BasicStructure(data.Data.FunctionType) {
@@ -44,9 +47,11 @@ auto BasicStructure::GetViewName() const noexcept -> std::string {
 
 auto BasicStructure::GetFunctionType() const noexcept -> FunctionType {
     return std::visit(Overload {
-        [](const Sphere&) { return FunctionType::SPHERE; },
-        [](const Box&)    { return FunctionType::BOX; },
-        [](const auto&)       { qWarning("Invalid function type"); return FunctionType::SPHERE; },
+        [](Sphere const&)   { return FunctionType::SPHERE; },
+        [](Box const&)      { return FunctionType::BOX; },
+        [](Cone const&)     { return FunctionType::CONE; },
+        [](Cylinder const&) { return FunctionType::CYLINDER; },
+        [](auto const&) { qWarning("Invalid function type"); return FunctionType::SPHERE; },
     }, Shape);
 }
 
@@ -117,9 +122,10 @@ auto BasicStructureDetails::BasicStructureWidgetImpl::UpdateFunctionParametersGr
 
     ShapeWidgetVariant newSubTypeWidgetVariant = [functionType]() {
         switch (functionType) {
-            case FunctionType::SPHERE: return ShapeWidgetVariant{ new SphereWidget() };
-            case FunctionType::BOX:    return ShapeWidgetVariant{ new BoxWidget() };
-            case FunctionType::CONE:   throw std::runtime_error("Todo");
+            case FunctionType::SPHERE:   return ShapeWidgetVariant { new SphereWidget() };
+            case FunctionType::BOX:      return ShapeWidgetVariant { new BoxWidget() };
+            case FunctionType::CONE:     return ShapeWidgetVariant { new ConeWidget() };
+            case FunctionType::CYLINDER: return ShapeWidgetVariant { new CylinderWidget() };
             default: throw std::runtime_error("invalid function type");
         }
     }();

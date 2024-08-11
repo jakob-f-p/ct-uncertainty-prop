@@ -4,12 +4,17 @@
 #include "../Artifacts/Types.h"
 
 #include <vtkBox.h>
+#include <vtkCone.h>
+#include <vtkCylinder.h>
+#include <vtkImplicitBoolean.h>
 #include <vtkNew.h>
+#include <vtkPlane.h>
 #include <vtkSphere.h>
 
 class QFormLayout;
 class QString;
 class QWidget;
+
 
 template<typename T>
 concept Evaluable = requires(T structure, T::Data data) {
@@ -154,7 +159,134 @@ private:
 static_assert(TBasicStructure<Box>);
 
 
-#define SHAPE_TYPES Sphere, Box
+
+class ConeWidget;
+
+struct ConeData {
+    double Radius = 5.0;
+    double Height = 10.0;
+
+    using Widget = ConeWidget;
+
+    auto
+    PopulateFromWidget(Widget* widget) noexcept -> void;
+
+    auto
+    PopulateWidget(Widget* widget) const noexcept -> void;
+};
+
+
+class ConeWidget : public QWidget {
+    Q_OBJECT
+
+public:
+    ConeWidget();
+
+    [[nodiscard]] auto
+    GetData() noexcept -> ConeData;
+
+    auto
+    Populate(ConeData const& data) noexcept -> void;
+
+private:
+    QDoubleSpinBox* RadiusSpinBox;
+    QDoubleSpinBox* HeightSpinBox;
+};
+
+
+struct Cone {
+    using Data = ConeData;
+
+    Cone();
+
+    auto
+    AddFunctionData(Data& data) const noexcept -> void;
+
+    auto
+    SetFunctionData(Data const& data) noexcept -> void;
+
+    [[nodiscard]] auto
+    EvaluateFunction(Point point) const noexcept -> float {
+        return static_cast<float>(ConeFunction->EvaluateFunction(point.data()));
+    }
+
+    [[nodiscard]] auto
+    operator==(Cone const& other) const noexcept -> bool { return ConeFunction == other.ConeFunction; }
+private:
+    vtkNew<vtkCone> UnboundedCone;
+    vtkNew<vtkPlane> TipPlane;
+    vtkNew<vtkPlane> BasePlane;
+    vtkNew<vtkImplicitBoolean> ConeFunction;
+};
+
+static_assert(TBasicStructure<Cone>);
+
+
+
+class CylinderWidget;
+
+struct CylinderData {
+    double Radius = 5.0;
+    double Height = 10.0;
+
+    using Widget = CylinderWidget;
+
+    auto
+    PopulateFromWidget(Widget* widget) noexcept -> void;
+
+    auto
+    PopulateWidget(Widget* widget) const noexcept -> void;
+};
+
+
+class CylinderWidget : public QWidget {
+    Q_OBJECT
+
+public:
+    CylinderWidget();
+
+    [[nodiscard]] auto
+    GetData() noexcept -> CylinderData;
+
+    auto
+    Populate(CylinderData const& data) noexcept -> void;
+
+private:
+    QDoubleSpinBox* RadiusSpinBox;
+    QDoubleSpinBox* HeightSpinBox;
+};
+
+
+struct Cylinder {
+    using Data = CylinderData;
+
+    Cylinder();
+
+    auto
+    AddFunctionData(Data& data) const noexcept -> void;
+
+    auto
+    SetFunctionData(Data const& data) noexcept -> void;
+
+    [[nodiscard]] auto
+    EvaluateFunction(Point point) const noexcept -> float {
+        return static_cast<float>(CylinderFunction->EvaluateFunction(point.data()));
+    }
+
+    [[nodiscard]] auto
+    operator==(Cylinder const& other) const noexcept -> bool { return CylinderFunction == other.CylinderFunction; }
+private:
+    vtkNew<vtkCylinder> UnboundedCylinder;
+    vtkNew<vtkPlane> BottomPlane;
+    vtkNew<vtkPlane> TopPlane;
+    vtkNew<vtkImplicitBoolean> CylinderFunction;
+};
+
+static_assert(TBasicStructure<Cylinder>);
+
+
+
+#define SHAPE_TYPES Sphere, Box, Cone, Cylinder
 
 using ShapeVariant = std::variant<SHAPE_TYPES>;
 using ShapeDataVariant = DataVariant<SHAPE_TYPES>;

@@ -87,7 +87,8 @@ auto App::Run() -> int {
 
     spdlog::debug("Creating Ui...");
 
-    MainWindow mainWindow(*CtDataTree, *ThresholdFilterAlgorithm, *Pipelines, *PipelineGroups);
+    MainWindow mainWindow(*CtDataTree, *ThresholdFilterAlgorithm, *Pipelines, *PipelineGroups,
+                          MainWindow::Mode::PRESENTATION);
 
     mainWindow.show();
 

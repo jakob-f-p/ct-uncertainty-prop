@@ -1,10 +1,12 @@
 #pragma once
 
+#include <QApplication>
 #include <QDialog>
 #include <QStyledItemDelegate>
 #include <QWidget>
 
 #include <concepts>
+#include <format>
 
 template<typename T>
 concept TWidget = std::derived_from<T, QWidget> && std::same_as<T, std::remove_pointer_t<std::decay_t<T>>>;
@@ -31,7 +33,9 @@ GetWidgetData(QWidget* widget) { return WidgetUtilsDetails::FindWidget<Widget>(w
 
 template<TWidget Widget>
 auto static
-SetWidgetData(QWidget* widget, const auto& data) -> void { WidgetUtilsDetails::FindWidget<Widget>(widget).Populate(data); }
+SetWidgetData(QWidget* widget, const auto& data) -> void {
+    WidgetUtilsDetails::FindWidget<Widget>(widget).Populate(data);
+}
 
 
 class DialogDelegate : public QStyledItemDelegate {
@@ -40,64 +44,37 @@ public:
 
     auto
     createEditor(QWidget* parent,
-                 const QStyleOptionViewItem& option,
-                 const QModelIndex& index) const -> QWidget* override {
-        if (!index.isValid())
-            return nullptr;
-
-        auto* dialog = getDialog(index, parent);
-
-        connect(dialog, &QDialog::accepted, this, &DialogDelegate::commitEdit);
-        connect(dialog, &QDialog::rejected, this, &DialogDelegate::discardChanges);
-
-        return dialog;
-    }
+                 QStyleOptionViewItem const& option,
+                 QModelIndex const& index) const -> QWidget* override;
 
     void updateEditorGeometry(QWidget* editor,
                               QStyleOptionViewItem const& option,
-                              QModelIndex const& index) const override {}
+                              QModelIndex const& index) const override;
 
 protected Q_SLOTS:
-    void commitEdit() {
-        auto* ctStructureEditDialog = qobject_cast<QDialog*>(sender());
+    void commitEdit();
 
-        Q_EMIT commitData(ctStructureEditDialog);
-        Q_EMIT closeEditor(ctStructureEditDialog);
-    }
-
-    void discardChanges() {
-        auto* ctStructureEditDialog = qobject_cast<QDialog*>(sender());
-
-        Q_EMIT closeEditor(ctStructureEditDialog);
-    }
+    void discardChanges();
 
 protected:
     auto
-    eventFilter(QObject* object, QEvent* event) -> bool override { return false; }
+    eventFilter(QObject* object, QEvent* event) -> bool override;
 
     [[nodiscard]] virtual auto
     getDialog(QModelIndex const& modelIndex, QWidget* parent) const noexcept -> QDialog* = 0;
 };
 
-[[nodiscard]] auto static
-GenerateIcon(const std::string &fileNamePrefix) noexcept -> QIcon {
-    QIcon icon;
-    QString const qFilePrefix = QString::fromStdString(fileNamePrefix);
-    icon.addPixmap(QPixmap(":/" + qFilePrefix + "Normal.png"), QIcon::Normal);
-    icon.addPixmap(QPixmap(":/" + qFilePrefix + "Disabled.png"), QIcon::Disabled);
-    return icon;
-}
+[[nodiscard]] auto
+GenerateIcon(const std::string &fileNamePrefix) noexcept -> QIcon;
 
-[[nodiscard]] auto static
-GenerateSimpleIcon(const std::string &fileName) noexcept -> QIcon {
-    return { QPixmap(":/" + QString::fromStdString(fileName) + ".png") };
-}
+[[nodiscard]] auto
+GenerateSimpleIcon(const std::string &fileName) noexcept -> QIcon;
 
-[[nodiscard]] auto static
-GetHeader1StyleSheet() noexcept -> QString { return "font-size: 16px; font-weight: bold"; }
+[[nodiscard]] auto
+GetHeader1StyleSheet() noexcept -> QString;
 
-[[nodiscard]] auto static
-GetHeader2StyleSheet() noexcept -> QString { return "font-size: 14px; font-weight: bold"; }
+[[nodiscard]] auto
+GetHeader2StyleSheet() noexcept -> QString;
 
-[[nodiscard]] auto static
-GetHeader3StyleSheet() noexcept -> QString { return "font-size: 12px; font-weight: bold"; }
+[[nodiscard]] auto
+GetHeader3StyleSheet() noexcept -> QString;

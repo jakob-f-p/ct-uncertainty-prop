@@ -7,11 +7,21 @@
 #include "PipelineGroups/PipelineGroupsWidget.h"
 #include "Segmentation/SegmentationWidget.h"
 
+#include <QApplication>
+#include <QStyle>
+
 MainWindow::MainWindow(CtStructureTree& ctStructureTree,
                        ThresholdFilter& thresholdFilter,
                        PipelineList& pipelineList,
-                       PipelineGroupList& pipelineGroups) {
-    resize(1400, 700);
+                       PipelineGroupList& pipelineGroups,
+                       Mode mode) {
+    if (mode == Mode::NORMAL)
+        resize(1400, 700);
+    else {
+        auto font = QApplication::font();
+        font.setPointSize(font.pointSize() * 1.2);
+        QApplication::setFont(font);
+    }
 
     setWindowTitle("CT Uncertainty Propagation");
 
@@ -25,7 +35,7 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree,
     auto* dataGenerationWidget = new DataGenerationWidget(pipelineGroups, thresholdFilter);
     auto* analysisWidget = new AnalysisWidget(pipelineGroups);
 
-    tabWidget->addTab(modelingWidget, "Modeling");
+    tabWidget->addTab(modelingWidget, "Acquisition");
     tabWidget->addTab(artifactsWidget, "Artifacts");
     tabWidget->addTab(segmentationWidget, "Segmentation");
     tabWidget->addTab(pipelineGroupsWidget, "Pipeline Groups");

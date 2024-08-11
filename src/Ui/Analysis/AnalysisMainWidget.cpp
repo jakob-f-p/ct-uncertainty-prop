@@ -37,7 +37,6 @@ AnalysisMainWidget::AnalysisMainWidget(PipelineGroupList const& pipelineGroups,
     dockWidget->setAllowedAreas(Qt::DockWidgetArea::LeftDockWidgetArea | Qt::DockWidgetArea::RightDockWidgetArea);
     dockWidget->setMinimumWidth(250);
     dockWidget->setWidget(DataWidget);
-    dockWidget->setWindowTitle("Data");
     auto margins = dockWidget->contentsMargins();
     margins.setTop(0);
     dockWidget->setContentsMargins(margins);
