@@ -9,11 +9,14 @@
 #include "Artifacts/PipelineList.h"
 #include "Modeling/BasicStructure.h"
 #include "Modeling/CombinedStructure.h"
+#include "Modeling/CtDataSource.h"
 #include "Modeling/CtStructureTree.h"
 #include "PipelineGroups/PipelineGroup.h"
 #include "PipelineGroups/PipelineGroupList.h"
 #include "PipelineGroups/PipelineParameterSpan.h"
 #include "Segmentation/ThresholdFilter.h"
+
+#include "Ui/Utils/RenderWidget.h"
 
 #include <stdexcept>
 
@@ -44,6 +47,10 @@ auto DataInitializer::operator()(DataInitializer::Config config) -> void {
 
         case Config::SIMPLE_SCENE:
             SimpleSceneInitializer{ App_ }();
+            break;
+
+        case Config::METHODOLOGY:
+            MethodologySceneInitializer{ App_ }();
             break;
 
         default: throw std::runtime_error("invalid config");
@@ -687,4 +694,121 @@ auto SimpleSceneInitializer::InitializeMotion() noexcept -> void {
             "Ct Number Factor Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&motion), std::move(ctNumberFactorSpan));
+}
+
+
+
+MethodologySceneInitializer::MethodologySceneInitializer(App& app) :
+        SceneInitializer(app) {}
+
+auto MethodologySceneInitializer::operator()() -> void {
+    auto airTissue = BasicStructureDetails::GetTissueTypeByName("Air");
+    auto lungTissue = BasicStructureDetails::GetTissueTypeByName("Lung");
+    auto muscleTissue = BasicStructureDetails::GetTissueTypeByName("Muscle");
+    auto cancellousBoneTissue = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
+    auto corticalBoneTissue   = BasicStructureDetails::GetTissueTypeByName("Cortical Bone");
+
+    CtRenderWidget::SetWindowWidth({ 0.0, corticalBoneTissue.CtNumber });
+
+    auto& dataSource = App_.GetCtDataSource();
+    dataSource.SetVolumeDataPhysicalDimensions({ 40.0, 40.0, 40.0 });
+
+    auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
+    thresholdFilter.ThresholdBetween(cancellousBoneTissue.CtNumber * 0.95,
+                                     cancellousBoneTissue.CtNumber * 1.05);
+
+    Cylinder spineCylinder {};
+    spineCylinder.SetFunctionData({ 3.0, 37.5 });
+    BasicStructure spineCylinderStructure { std::move(spineCylinder) };
+    spineCylinderStructure.SetTissueType(corticalBoneTissue);
+    spineCylinderStructure.SetTransformData({ 0.0F, -20.0F, -8.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    spineCylinderStructure.SetEvaluationBias(-100.0F);
+    spineCylinderStructure.SetName("Spine");
+    CtDataTree.AddBasicStructure(std::move(spineCylinderStructure));
+
+    Cylinder ribCageInnerCylinder {};
+    ribCageInnerCylinder.SetFunctionData({ 10.0, 30.0 });
+    BasicStructure ribCageAirCylinderStructure { std::move(ribCageInnerCylinder) };
+    ribCageAirCylinderStructure.SetTissueType(airTissue);
+    ribCageAirCylinderStructure.SetTransformData({ 0.0F, -15.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.5F, 1.0F, 1.0F });
+    ribCageAirCylinderStructure.SetName("Inner");
+
+    CombinedStructure sceneUnion { CombinedStructure::OperatorType::UNION };
+    sceneUnion.SetName("Chest");
+    CtDataTree.CombineWithBasicStructure(std::move(ribCageAirCylinderStructure), std::move(sceneUnion));
+
+    Cylinder ribCageOuterCylinder {};
+    ribCageOuterCylinder.SetFunctionData({ 12.0, 30.0 });
+    BasicStructure ribCageCylinderStructure { std::move(ribCageOuterCylinder) };
+    ribCageCylinderStructure.SetTissueType(corticalBoneTissue);
+    ribCageCylinderStructure.SetTransformData({ 0.0F, -15.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.5F, 1.0F, 1.0F });
+    ribCageCylinderStructure.SetName("Outer");
+
+    CombinedStructure ribCage { CombinedStructure::OperatorType::DIFFERENCE_ };
+    ribCage.SetName("Rib Cage");
+    CtDataTree.RefineWithBasicStructure(std::move(ribCageCylinderStructure), std::move(ribCage), 1);
+
+
+    Box rightLung {};
+    rightLung.SetFunctionData({ Point {   2.0, -12.0, -7.0 },
+                                Point { 12.0, 16.0, 7.0 }});
+    BasicStructure rightLungStructure { std::move(rightLung) };
+    rightLungStructure.SetTissueType(lungTissue);
+    rightLungStructure.SetEvaluationBias(-100.0F);
+    rightLungStructure.SetName("Right");
+
+    auto* chestStructure = &std::get<CombinedStructure>(CtDataTree.GetRoot());
+    CtDataTree.AddBasicStructure(std::move(rightLungStructure), chestStructure);
+
+    Box leftLung {};
+    leftLung.SetFunctionData({ Point { -12.0, -12.0, -7.0 },
+                               Point { -2.0, 16.0, 7.0 }});
+    BasicStructure leftLungStructure { std::move(leftLung) };
+    leftLungStructure.SetTissueType(lungTissue);
+    leftLungStructure.SetEvaluationBias(-100.0F);
+    leftLungStructure.SetName("Left");
+
+    CombinedStructure lungsUnion { CombinedStructure::OperatorType::UNION };
+    lungsUnion.SetName("Lungs");
+    CtDataTree.RefineWithBasicStructure(std::move(leftLungStructure), std::move(lungsUnion), 1);
+
+
+    Sphere heartSphere {};
+    heartSphere.SetFunctionData({ 5.0, Point { 2.0, 5.0, 2.0 } });
+    BasicStructure heartSphereStructure { std::move(heartSphere) };
+    heartSphereStructure.SetTissueType(muscleTissue);
+    heartSphereStructure.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.3F, 0.9F });
+    heartSphereStructure.SetEvaluationBias(-200.0F);
+    heartSphereStructure.SetName("Left");
+
+    chestStructure = &std::get<CombinedStructure>(CtDataTree.GetRoot());
+    CtDataTree.AddBasicStructure(std::move(heartSphereStructure), chestStructure);
+
+
+    static Range<float> const meanRange = { -25.0,  25.0, 5.0 };
+
+    auto& pipeline = Pipelines.AddPipeline();
+
+    ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
+
+    GaussianArtifact gaussianArtifact {};
+    gaussianArtifact.SetMean(meanRange.GetCenter());
+    gaussianArtifact.SetStandardDeviation(20.0);
+
+    BasicImageArtifact gaussianBasicArtifact { std::move(gaussianArtifact) };
+    gaussianBasicArtifact.SetName("gaussian");
+    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact));
+
+    PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Gaussian Pipelines");
+
+    auto gaussianProperties = gaussian.GetProperties();
+
+    auto& meanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
+    ParameterSpan<float> meanSpan {
+            ArtifactVariantPointer(&gaussian),
+            meanProperty,
+            { meanRange.Min, meanRange.Max, meanRange.Step },
+            "Mean Span"
+    };
+    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(meanSpan));
 }

@@ -33,8 +33,6 @@ private Q_SLOTS:
 private:
     void InitializeViews();
 
-    void CreateArtifactsViewsForCurrentPipeline();
-
     PipelineList& Pipelines;
     int CurrentPipelineIndex;
 

@@ -70,7 +70,7 @@ auto Box::AddFunctionData(Data& data) const noexcept -> void {
     Function->GetXMax(data.MaxPoint.data());
 }
 
-auto Box::SetFunctionData(const Data& data) noexcept -> void {
+auto Box::SetFunctionData(Data const& data) noexcept -> void {
     Point minPoint {};
     Point maxPoint {};
 
@@ -242,7 +242,7 @@ Cylinder::Cylinder() {
 
 auto Cylinder::AddFunctionData(Cylinder::Data& data) const noexcept -> void {
     data.Radius = UnboundedCylinder->GetRadius();
-    data.Height = TopPlane->GetOrigin()[0];
+    data.Height = TopPlane->GetOrigin()[1];
 }
 
 auto Cylinder::SetFunctionData(Cylinder::Data const& data) noexcept -> void {

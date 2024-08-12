@@ -74,6 +74,9 @@ public:
     requires std::is_arithmetic_v<T>
     struct Range { T Min, Max; };
 
+    auto static
+    SetWindowWidth(Range<double> range) -> void;
+
 public Q_SLOTS:
     auto
     ResetCamera() const -> void;

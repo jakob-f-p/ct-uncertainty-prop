@@ -38,7 +38,7 @@ public:
     AddBasicStructure(BasicStructure&& basicStructure, CombinedStructure* parent = nullptr) -> void;
 
     auto
-    AddBasicStructure(const BasicStructureData& basicStructureData,
+    AddBasicStructure(BasicStructureData const& basicStructureData,
                       CombinedStructure* parent = nullptr) -> void;
 
     auto
@@ -46,12 +46,17 @@ public:
                               CombinedStructure&& combinedStructure) -> void;
 
     auto
-    CombineWithBasicStructure(const BasicStructureData& basicStructureData,
-                              const CombinedStructureData& combinedStructureData) -> void;
+    CombineWithBasicStructure(BasicStructureData const& basicStructureData,
+                              CombinedStructureData const& combinedStructureData) -> void;
 
     auto
-    RefineWithBasicStructure(const BasicStructureData& newStructureData,
-                             const CombinedStructureData& combinedStructureData,
+    RefineWithBasicStructure(BasicStructure&& basicStructure,
+                             CombinedStructure&& combinedStructure,
+                             uidx_t structureToRefineIdx) -> void;
+
+    auto
+    RefineWithBasicStructure(BasicStructureData const& newStructureData,
+                             CombinedStructureData const& combinedStructureData,
                              uidx_t structureToRefineIdx) -> void;
 
     auto
@@ -61,10 +66,13 @@ public:
     HasRoot() const noexcept -> bool;
 
     [[nodiscard]] auto
-    GetRoot() const -> const StructureVariant&;
+    GetRoot() const -> StructureVariant const&;
 
     [[nodiscard]] auto
-    GetStructureAt(uidx_t idx) const -> const StructureVariant&;
+    GetRoot() -> StructureVariant&;
+
+    [[nodiscard]] auto
+    GetStructureAt(uidx_t idx) const -> StructureVariant const&;
 
     [[nodiscard]] auto
     GetStructureAt(uidx_t idx) -> StructureVariant&;

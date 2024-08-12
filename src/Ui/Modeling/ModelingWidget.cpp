@@ -85,15 +85,25 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, QWidget* parent
         RenderingWidget->UpdateImageAlgorithm(*CurrentDataSource);
         App::GetInstance().SetCtDataSource(*CurrentDataSource, ctDataSourceType);
 
-        PhysicalDimensionsSpinBoxes->SetRowData(
-                0, DoubleCoordinateRowWidget::RowData { CurrentDataSource->GetVolumeDataPhysicalDimensions() });
-        ResolutionSpinBoxes->SetRowData(
-                0, IntegerCoordinateRowWidget::RowData { CurrentDataSource->GetVolumeNumberOfVoxels() });
+        SyncSpinBoxes();
 
         Q_EMIT DataSourceUpdated();
     });
 
     dataSourceWidget->EmitInitial();
+}
+
+void ModelingWidget::showEvent(QShowEvent* event) {
+    SyncSpinBoxes();
+
+    QWidget::showEvent(event);
+}
+
+auto ModelingWidget::SyncSpinBoxes() -> void {
+    PhysicalDimensionsSpinBoxes->SetRowData(
+            0, DoubleCoordinateRowWidget::RowData { CurrentDataSource->GetVolumeDataPhysicalDimensions() });
+    ResolutionSpinBoxes->SetRowData(
+            0, IntegerCoordinateRowWidget::RowData { CurrentDataSource->GetVolumeNumberOfVoxels() });
 }
 
 

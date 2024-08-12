@@ -45,7 +45,8 @@ void CtStructureTree::AddBasicStructure(BasicStructure&& basicStructure, Combine
     EmitEvent({ CtStructureTreeEventType::ADD, insertionIdx });
 }
 
-auto CtStructureTree::AddBasicStructure(const BasicStructureData& basicStructureData, CombinedStructure* parent) -> void {
+auto CtStructureTree::AddBasicStructure(BasicStructureData const& basicStructureData,
+                                        CombinedStructure* parent) -> void {
     BasicStructure basicStructure(basicStructureData);
 
     AddBasicStructure(std::move(basicStructure), parent);
@@ -70,19 +71,21 @@ void CtStructureTree::CombineWithBasicStructure(BasicStructure&& basicStructure,
     combinedStructure.ParentIdx = std::nullopt;
     uidx_t newRootIdx = 0;
     basicStructure.ParentIdx = newRootIdx;
-    std::visit([=](auto& structure)      { structure.ParentIdx = newRootIdx; },      Structures[0]);
+    std::visit([=](auto& structure) { structure.ParentIdx = newRootIdx; }, Structures[0]);
 
     RootIdx = newRootIdx;
 
-    Structures.emplace(std::next(Structures.begin(), combinedInsertionIdx), std::move(combinedStructure));
-    Structures.emplace(std::next(Structures.begin(), basicInsertionIdx), std::move(basicStructure));
+    Structures.emplace(std::next(Structures.begin(), combinedInsertionIdx),
+                       std::move(combinedStructure));
+    Structures.emplace(std::next(Structures.begin(), basicInsertionIdx),
+                       std::move(basicStructure));
 
     EmitEvent({ CtStructureTreeEventType::ADD, combinedInsertionIdx });
     EmitEvent({ CtStructureTreeEventType::ADD, basicInsertionIdx });
 }
 
-void CtStructureTree::CombineWithBasicStructure(const BasicStructureData& basicStructureData,
-                                                const CombinedStructureData& combinedStructureData) {
+void CtStructureTree::CombineWithBasicStructure(BasicStructureData const& basicStructureData,
+                                                CombinedStructureData const& combinedStructureData) {
     BasicStructure basicStructure(basicStructureData);
 
     CombinedStructure combinedStructure;
@@ -91,19 +94,14 @@ void CtStructureTree::CombineWithBasicStructure(const BasicStructureData& basicS
     CombineWithBasicStructure(std::move(basicStructure), std::move(combinedStructure));
 }
 
-void CtStructureTree::RefineWithBasicStructure(const BasicStructureData& newStructureData,
-                                               const CombinedStructureData& combinedStructureData,
-                                               uidx_t structureToRefineIdx) {
+auto CtStructureTree::RefineWithBasicStructure(BasicStructure&& basicStructure,
+                                               CombinedStructure&& combinedStructure,
+                                               uidx_t structureToRefineIdx) -> void {
     if (!HasRoot())
         throw std::runtime_error("No root is present yet. Cannot refine.");
 
     if (!StructureIdxExists(structureToRefineIdx))
         throw std::runtime_error("Index of structure to be refined does not exist.");
-
-    BasicStructure newBasicStructure(newStructureData);
-
-    CombinedStructure combinedStructure;
-    combinedStructureData.PopulateStructure(combinedStructure);
 
     auto& structureToRefine = std::get<BasicStructure>(GetStructureAt(structureToRefineIdx));
     idx_t const parentIdx = GetParentIdxOf(structureToRefine);
@@ -119,11 +117,11 @@ void CtStructureTree::RefineWithBasicStructure(const BasicStructureData& newStru
     combinedStructure.AddStructureIndex(newRefinedIdx);
 
     combinedStructure.ParentIdx = parentIdx;
-    newBasicStructure.ParentIdx = combinedInsertionIdx;
+    basicStructure.ParentIdx = combinedInsertionIdx;
     structureToRefine.ParentIdx = combinedInsertionIdx;
 
     Structures.emplace(std::next(Structures.begin(), combinedInsertionIdx), std::move(combinedStructure));
-    Structures.emplace(std::next(Structures.begin(), basicInsertionIdx), std::move(newBasicStructure));
+    Structures.emplace(std::next(Structures.begin(), basicInsertionIdx), std::move(basicStructure));
 
     EmitEvent({ CtStructureTreeEventType::ADD, combinedInsertionIdx });
     EmitEvent({ CtStructureTreeEventType::ADD, basicInsertionIdx });
@@ -137,9 +135,21 @@ void CtStructureTree::RefineWithBasicStructure(const BasicStructureData& newStru
     parent.ReplaceChild(newRefinedIdx, combinedInsertionIdx);
 }
 
+void CtStructureTree::RefineWithBasicStructure(BasicStructureData const& newStructureData,
+                                               CombinedStructureData const& combinedStructureData,
+                                               uidx_t structureToRefineIdx) {
+    BasicStructure newBasicStructure(newStructureData);
+
+    CombinedStructure combinedStructure;
+    combinedStructureData.PopulateStructure(combinedStructure);
+
+    RefineWithBasicStructure(std::move(newBasicStructure), std::move(combinedStructure), structureToRefineIdx);
+}
+
 void CtStructureTree::RemoveBasicStructure(uidx_t removeIdx) {
     if (!StructureIdxExists(removeIdx))
-        throw std::runtime_error("Given index of structure to remove does not exist. Cannot remove non-existing structure");
+        throw std::runtime_error("Given index of structure to remove does not exist. "
+                                 "Cannot remove non-existing structure");
 
     auto& structure = std::get<BasicStructure>(GetStructureAt(removeIdx));
 
@@ -195,12 +205,12 @@ struct EvaluateImplicitStructures {
     auto operator() (const CombinedStructure& combinedStructure) const noexcept -> ModelingResult {
         const Point transformedPoint = combinedStructure.GetTransformedPoint(point);
 
-        std::vector<ModelingResult> results;
+        std::vector<ModelingResult> evals;
         const std::vector<uidx_t>& childIndices = combinedStructure.GetChildIndices();
-        results.reserve(childIndices.size());
+        evals.reserve(childIndices.size());
         for (const auto childIdx : childIndices) {
-            results.emplace_back(std::visit(EvaluateImplicitStructures{structures, transformedPoint},
-                                            structures[childIdx]));
+            evals.emplace_back(std::visit(EvaluateImplicitStructures{ structures, transformedPoint},
+                                          structures[childIdx]));
         }
 
         static auto compareModelingResults
@@ -210,26 +220,26 @@ struct EvaluateImplicitStructures {
 
         switch (combinedStructure.Operator) {
             case CombinedStructure::OperatorType::UNION:
-                return *std::min_element(results.begin(), results.end(), compareModelingResults);
+                return *std::min_element(evals.begin(), evals.end(), compareModelingResults);
 
             case CombinedStructure::OperatorType::INTERSECTION:
-                return *std::max_element(results.begin(), results.end(), compareModelingResults);
+                return *std::max_element(evals.begin(), evals.end(), compareModelingResults);
 
             case CombinedStructure::OperatorType::DIFFERENCE_: {
-                ModelingResult firstResult = results[0];
-
-                firstResult.FunctionValue = std::reduce(std::next(results.begin()), results.end(),
-                                                  firstResult.FunctionValue,
-                                                  [](float resultFunctionValue,
-                                                     const ModelingResult current) -> float {
-                    float const currentFunctionValue = -current.FunctionValue;
-
-                    return resultFunctionValue <= currentFunctionValue
-                            ? resultFunctionValue
-                            : currentFunctionValue;
+                ModelingResult result = std::reduce(std::next(evals.begin()), evals.end(),
+                                                    evals[0],
+                                                    [](ModelingResult const res, ModelingResult const eval) {
+                    return ModelingResult { res.FunctionValue - eval.FunctionValue,
+                                            eval.FunctionValue < 0.0F
+                                                    ? res.Radiodensity - eval.Radiodensity
+                                                    : res.Radiodensity,
+                                            res.BasicCtStructureId };
                 });
 
-                return firstResult;
+                if (result.Radiodensity == 0.0F)
+                    result.BasicCtStructureId = -1;
+
+                return result;
             }
 
             default: return {};
@@ -273,16 +283,9 @@ struct EvaluateFunctionValue {
                 return *std::max_element(results.begin(), results.end());
 
             case CombinedStructure::OperatorType::DIFFERENCE_: {
-                float firstResult = results[0];
-
-                firstResult = std::reduce(std::next(results.begin()), results.end(), firstResult,
-                                          [](float resultFunctionValue, float current) -> float {
-                                                  return resultFunctionValue <= -current
-                                                          ? resultFunctionValue
-                                                          : -current;
-                                          });
-
-                return firstResult;
+                return std::reduce(std::next(results.begin()), results.end(),
+                                   results[0],
+                                   std::minus{});
             }
 
             default: return {};
@@ -320,7 +323,14 @@ auto CtStructureTree::HasRoot() const noexcept -> bool {
     return static_cast<bool>(RootIdx);
 }
 
-auto CtStructureTree::GetRoot() const -> const StructureVariant& {
+auto CtStructureTree::GetRoot() const -> StructureVariant const& {
+    if (!HasRoot())
+        throw std::runtime_error("Cannot get root. No root is present.");
+
+    return Structures[*RootIdx];
+}
+
+auto CtStructureTree::GetRoot() -> StructureVariant& {
     if (!HasRoot())
         throw std::runtime_error("Cannot get root. No root is present.");
 

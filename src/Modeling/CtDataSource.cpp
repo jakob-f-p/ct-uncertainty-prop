@@ -17,6 +17,28 @@ void CtDataSource::PrintSelf(ostream &os, vtkIndent indent) {
                                           << NumberOfVoxels[2] << "]\n";
 }
 
+void CtDataSource::SetVolumeDataPhysicalDimensions(FloatVector dimensions) {
+    if (PhysicalDimensions == dimensions)
+        return;
+
+    PhysicalDimensions = dimensions;
+
+    Modified();
+}
+
+FloatVector CtDataSource::GetVolumeDataPhysicalDimensions() const noexcept { return PhysicalDimensions; }
+
+void CtDataSource::SetVolumeNumberOfVoxels(std::array<int, 3> voxelCounts) {
+    if (NumberOfVoxels == voxelCounts)
+        return;
+
+    NumberOfVoxels = voxelCounts;
+
+    Modified();
+}
+
+std::array<int, 3> CtDataSource::GetVolumeNumberOfVoxels() const noexcept { return NumberOfVoxels; }
+
 CtDataSource::CtDataSource() {
 #ifdef BUILD_TYPE_DEBUG
 //    int const defaultResolution = 8;

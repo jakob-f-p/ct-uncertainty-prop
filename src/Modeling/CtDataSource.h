@@ -13,30 +13,16 @@ public:
     /**
      * Set physical dimensions of the scanned image in mm along each axis.
      */
-    void SetVolumeDataPhysicalDimensions(FloatVector dimensions) {
-        if (PhysicalDimensions == dimensions)
-            return;
+    void SetVolumeDataPhysicalDimensions(FloatVector dimensions);
 
-        PhysicalDimensions = dimensions;
-
-        Modified();
-    }
-
-    FloatVector GetVolumeDataPhysicalDimensions() const noexcept { return PhysicalDimensions; }
+    FloatVector GetVolumeDataPhysicalDimensions() const noexcept;
 
     /**
      * Set number of voxels along each axis.
      */
-    void SetVolumeNumberOfVoxels(std::array<int, 3> voxelCounts) {
-        if (NumberOfVoxels == voxelCounts)
-            return;
+    void SetVolumeNumberOfVoxels(std::array<int, 3> voxelCounts);
 
-        NumberOfVoxels = voxelCounts;
-
-        Modified();
-    }
-
-    std::array<int, 3> GetVolumeNumberOfVoxels() const noexcept { return NumberOfVoxels; }
+    std::array<int, 3> GetVolumeNumberOfVoxels() const noexcept;
 
     CtDataSource(const CtDataSource&) = delete;
     void operator=(const CtDataSource&) = delete;

@@ -33,13 +33,15 @@ auto PipelineGroupList::GetMTime() const noexcept -> vtkMTimeType {
     basePipelineMTimes.reserve(basePipelines.size());
     std::transform(basePipelines.cbegin(), basePipelines.cend(), std::back_inserter(basePipelineMTimes),
                    [](auto const* pipeline) { return pipeline->GetMTime(); });
-    vtkMTimeType const basePipelineTime = *std::max_element(basePipelineMTimes.cbegin(), basePipelineMTimes.cend());
+    auto const basePipelineTimeIt = std::max_element(basePipelineMTimes.cbegin(), basePipelineMTimes.cend());
+    vtkMTimeType const basePipelineTime = basePipelineTimeIt != basePipelineMTimes.cend() ? *basePipelineTimeIt : 0;
 
     std::vector<vtkMTimeType> pipelineGroupMTimes;
     pipelineGroupMTimes.reserve(PipelineGroups.size());
     for (auto const& group : PipelineGroups)
         pipelineGroupMTimes.emplace_back(group->GetMTime());
-    vtkMTimeType const groupMTime = *std::max_element(pipelineGroupMTimes.cbegin(), pipelineGroupMTimes.cend());
+    auto const groupMTimeIt = std::max_element(pipelineGroupMTimes.cbegin(), pipelineGroupMTimes.cend());
+    vtkMTimeType const groupMTime = groupMTimeIt != pipelineGroupMTimes.cend() ? *groupMTimeIt : 0;
 
     return std::max({ TimeStamp.GetMTime(), basePipelineTime, groupMTime });
 }

@@ -19,4 +19,8 @@ public:
                         PipelineList& pipelineList,
                         PipelineGroupList& pipelineGroups,
                         Mode mode = Mode::NORMAL);
+
+protected:
+    auto
+    keyPressEvent(QKeyEvent* event) -> void override;
 };

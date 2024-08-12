@@ -16,11 +16,11 @@ ImageArtifactsWidget::ImageArtifactsWidget(QWidget* parent) :
         QWidget(parent),
         Views(new QStackedLayout()),
         CreateDialog(nullptr),
-        AddChildButton(new QPushButton("Add Child Artifact")),
-        AddSiblingButton(new QPushButton("Add Sibling Artifact")),
-        RemoveButton(new QPushButton("Remove Artifact")),
-        MoveUpButton(new QPushButton("")),
-        MoveDownButton(new QPushButton("")),
+        AddChildButton(new QPushButton(GenerateIcon("Plus"), " Child")),
+        AddSiblingButton(new QPushButton(GenerateIcon("Plus"), " Sibling")),
+        RemoveButton(new QPushButton(GenerateIcon("Minus"), "")),
+        MoveUpButton(new QPushButton(GenerateIcon("ArrowUp"), "")),
+        MoveDownButton(new QPushButton(GenerateIcon("ArrowDown"), "")),
         Buttons({ AddChildButton,
                   AddSiblingButton,
                   RemoveButton,
@@ -37,13 +37,14 @@ ImageArtifactsWidget::ImageArtifactsWidget(QWidget* parent) :
     auto* buttonBar = new QWidget();
     auto* buttonBarHLayout = new QHBoxLayout(buttonBar);
     buttonBarHLayout->setContentsMargins(0, 5, 0, 0);
-    MoveUpButton->setIcon(GenerateIcon("ArrowUp"));
-    MoveDownButton->setIcon(GenerateIcon("ArrowDown"));
+    buttonBarHLayout->addWidget(MoveDownButton);
+    buttonBarHLayout->addWidget(MoveUpButton);
+    buttonBarHLayout->addSpacing(5);
+    buttonBarHLayout->addStretch();
+    buttonBarHLayout->addSpacing(5);
     buttonBarHLayout->addWidget(AddChildButton);
     buttonBarHLayout->addWidget(AddSiblingButton);
     buttonBarHLayout->addWidget(RemoveButton);
-    buttonBarHLayout->addWidget(MoveDownButton);
-    buttonBarHLayout->addWidget(MoveUpButton);
     connect(AddChildButton, &QPushButton::clicked, this, [this]{ AddChildArtifact(); });
     connect(AddSiblingButton, &QPushButton::clicked, this, [this]{ AddSiblingArtifact(); });
     connect(RemoveButton, &QPushButton::clicked, this, [this]{ RemoveArtifact(); });

@@ -35,7 +35,13 @@ Q_SIGNALS:
     auto
     DataSourceUpdated() -> void;
 
+protected:
+    void showEvent(QShowEvent* event) override;
+
 private:
+    auto
+    SyncSpinBoxes() -> void;
+
     CtDataSource* CurrentDataSource;
 
     RenderWidget* const RenderingWidget;

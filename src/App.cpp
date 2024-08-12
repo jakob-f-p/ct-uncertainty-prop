@@ -81,18 +81,18 @@ auto App::Run() -> int {
     auto& smpToolsApi =  vtk::detail::smp::vtkSMPToolsAPI::GetInstance();
     spdlog::debug("Running backend '{}'", smpToolsApi.GetBackend());
 
+    spdlog::debug("Creating Ui...");
+
+    auto const mode = MainWindow::Mode::PRESENTATION;
+    MainWindow mainWindow(*CtDataTree, *ThresholdFilterAlgorithm, *Pipelines, *PipelineGroups, mode);
+
     spdlog::debug("Initializing with test data...");
 
     InitializeWithTestData();
 
-    spdlog::debug("Creating Ui...");
-
-    MainWindow mainWindow(*CtDataTree, *ThresholdFilterAlgorithm, *Pipelines, *PipelineGroups,
-                          MainWindow::Mode::PRESENTATION);
+    spdlog::info("Application running...");
 
     mainWindow.show();
-
-    spdlog::info("Application running...");
 
     return QApplication::exec();
 }
@@ -153,7 +153,7 @@ auto App::GetPythonInterpreter() -> PythonInterpreter& {
 }
 
 void App::InitializeWithTestData() {
-    static DataInitializer::Config const config = DataInitializer::Config::SIMPLE_SCENE;
+    static DataInitializer::Config const config = DataInitializer::Config::METHODOLOGY;
 
     DataInitializer initializer { *this };
     initializer(config);

@@ -62,6 +62,15 @@ auto BasicStructure::SetTissueType(TissueType tissueType) noexcept -> void {
 }
 
 
+auto BasicStructure::SetEvaluationBias(float evaluationBias) noexcept -> void {
+    if (evaluationBias > 0.0)
+        return;
+
+    EvaluationBias = evaluationBias;
+
+    Modified();
+}
+
 std::atomic<StructureId> BasicStructure::GlobalBasicStructureId = 0;
 
 BasicStructureDetails::BasicStructureWidgetImpl::BasicStructureWidgetImpl() :

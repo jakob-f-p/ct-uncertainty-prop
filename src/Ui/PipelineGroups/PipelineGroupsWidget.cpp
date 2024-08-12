@@ -14,17 +14,22 @@ PipelineGroupsWidget::PipelineGroupsWidget(PipelineGroupList& pipelineGroups) :
         GroupWidget(new OptionalWidget<PipelineGroupWidget>("Select a pipeline group")),
         ParameterSpanWidget(new OptionalWidget<PipelineParameterSpanWidget>("Select a parameter span")) {
 
-    auto* centralWidget = new QWidget();
-    auto* vLayout = new QVBoxLayout(centralWidget);
+    auto* splitter = new QSplitter();
+    splitter->addWidget(GroupListWidget);
+    splitter->addWidget(GroupWidget);
+    splitter->addWidget(ParameterSpanWidget);
 
-    auto* parameterSpaceWidget = new QWidget();
-    auto* parameterSpaceEditHLayout = new QHBoxLayout(parameterSpaceWidget);
-    parameterSpaceEditHLayout->addWidget(GroupListWidget);
-    parameterSpaceEditHLayout->addWidget(GroupWidget);
-    parameterSpaceEditHLayout->addWidget(ParameterSpanWidget);
-    vLayout->addWidget(parameterSpaceWidget);
+    QList<int> const widths = { GroupListWidget->sizeHint().width(),
+                                GroupWidget->sizeHint().width(),
+                                ParameterSpanWidget->sizeHint().width() };
+    int const maxWidth = *std::max_element(widths.begin(), widths.end());
+//    QList<int> const equalWidths { 3, maxWidth };
+//    splitter->setSizes(equalWidths);
 
-    setCentralWidget(centralWidget);
+    GroupWidget->setBaseSize(maxWidth, GroupWidget->baseSize().height());
+    ParameterSpanWidget->setBaseSize(maxWidth, ParameterSpanWidget->baseSize().height());
+
+    setCentralWidget(splitter);
 
     connect(GroupListWidget, &PipelineGroupListWidget::PipelineGroupChanged,
             this, [&](PipelineGroup* pipelineGroup) { OnPipelineGroupChanged(pipelineGroup); });
@@ -34,7 +39,7 @@ void PipelineGroupsWidget::UpdatePipelineList() noexcept {
     GroupListWidget->UpdatePipelineList();
 }
 
-void PipelineGroupsWidget::hideEvent(QHideEvent* event) {
+void PipelineGroupsWidget::hideEvent(QHideEvent* /*event*/) {
     GroupWidget->HideWidget();
     ParameterSpanWidget->HideWidget();
 }

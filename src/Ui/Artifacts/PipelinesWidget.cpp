@@ -14,12 +14,12 @@
 PipelinesWidget::PipelinesWidget(PipelineList& pipelines, QWidget* parent) :
         QWidget(parent),
         Pipelines(pipelines),
-        CurrentPipelineIndex(Pipelines.IsEmpty() ? -1 : 0),
+        CurrentPipelineIndex(0),
         PipelineTitle(new QLabel()),
-        PreviousPipelineButton(new QPushButton("")),
-        NextPipelineButton(new QPushButton("")),
-        AddPipelineButton(new QPushButton("")),
-        RemovePipelineButton(new QPushButton("")),
+        PreviousPipelineButton(new QPushButton(GenerateIcon("ArrowLeft"), "")),
+        NextPipelineButton(new QPushButton(GenerateIcon("ArrowRight"), "")),
+        AddPipelineButton(new QPushButton(GenerateIcon("Plus"), "")),
+        RemovePipelineButton(new QPushButton(GenerateIcon("Minus"), "")),
         StructureArtifactModelingWidget(new StructureArtifactsWidget()),
         ImageArtifactModelingWidget(new ImageArtifactsWidget()) {
 
@@ -32,10 +32,6 @@ PipelinesWidget::PipelinesWidget(PipelineList& pipelines, QWidget* parent) :
     PipelineTitle->setStyleSheet(GetHeader1StyleSheet());
     pipelineTitleBarHLayout->addWidget(PipelineTitle);
     pipelineTitleBarHLayout->addStretch();
-    PreviousPipelineButton->setIcon(GenerateIcon("ArrowLeft"));
-    NextPipelineButton->setIcon(GenerateIcon("ArrowRight"));
-    AddPipelineButton->setIcon(GenerateIcon("Plus"));
-    RemovePipelineButton->setIcon(GenerateIcon("Minus"));
     connect(AddPipelineButton, &QPushButton::clicked, this, &PipelinesWidget::AddPipeline);
     connect(RemovePipelineButton, &QPushButton::clicked, this, &PipelinesWidget::RemovePipeline);
     connect(PreviousPipelineButton, &QPushButton::clicked, this, &PipelinesWidget::PreviousPipeline);
@@ -64,7 +60,8 @@ void PipelinesWidget::AddPipeline() {
 
     CurrentPipelineIndex = Pipelines.GetSize() - 1;
 
-    CreateArtifactsViewsForCurrentPipeline();
+    StructureArtifactModelingWidget->AddView(GetCurrentPipeline());
+    ImageArtifactModelingWidget->AddView(GetCurrentPipeline());
 
     UpdatePipelineView();
 }
@@ -75,11 +72,10 @@ void PipelinesWidget::RemovePipeline() {
     StructureArtifactModelingWidget->RemoveCurrentView();
     ImageArtifactModelingWidget->RemoveCurrentView();
 
-    if (Pipelines.IsEmpty()) {
+    if (Pipelines.IsEmpty())
         CurrentPipelineIndex = -1;
-    } else if (CurrentPipelineIndex == Pipelines.GetSize()) {
+    else if (CurrentPipelineIndex == Pipelines.GetSize())
         CurrentPipelineIndex--;
-    }
 
     UpdatePipelineView();
 }
@@ -117,15 +113,13 @@ void PipelinesWidget::UpdatePipelineView() {
 }
 
 void PipelinesWidget::InitializeViews() {
+    if (Pipelines.IsEmpty())
+        Pipelines.AddPipeline();
+
     for (int i = 0; i < Pipelines.GetSize(); ++i) {
         StructureArtifactModelingWidget->AddView(Pipelines.Get(i));
         ImageArtifactModelingWidget->AddView(Pipelines.Get(i));
     }
-}
-
-void PipelinesWidget::CreateArtifactsViewsForCurrentPipeline() {
-    StructureArtifactModelingWidget->AddView(GetCurrentPipeline());
-    ImageArtifactModelingWidget->AddView(GetCurrentPipeline());
 }
 
 auto PipelinesWidget::GetCurrentPipeline() -> Pipeline& {

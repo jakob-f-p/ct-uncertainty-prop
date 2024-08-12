@@ -48,8 +48,10 @@ namespace BasicStructureDetails {
 
     static std::map<std::string, TissueType> TissueTypeMap {
             { "Air",             { "Air",            -1000.0F } },
+            { "Lung",            { "Lung",            -600.0F } },
             { "Fat",             { "Fat",             -100.0F } },
             { "Water",           { "Water",              0.0F } },
+            { "Muscle",          { "Muscle",            50.0F } },
             { "Soft Tissue",     { "Soft Tissue",      200.0F } },
             { "Cancellous Bone", { "Cancellous Bone",  350.0F } },
             { "Cortical Bone",   { "Cortical Bone",    800.0F } },
@@ -141,6 +143,9 @@ public:
     auto
     SetTissueType(TissueType tissueType) noexcept -> void;
 
+    auto
+    SetEvaluationBias(float evaluationBias) noexcept -> void;
+
     [[nodiscard]] inline auto
     FunctionValue(Point point) const -> float;
 
@@ -157,10 +162,16 @@ private:
     StructureId Id = ++GlobalBasicStructureId;
     TissueType Tissue = BasicStructureDetails::GetTissueTypeByName("Air");
     ShapeVariant Shape;
+    float EvaluationBias = 0.0F;
 
     static std::atomic<StructureId> GlobalBasicStructureId;
 };
 
 auto BasicStructure::FunctionValue(Point point) const -> float {
-    return std::visit([&](const auto& shape) { return shape.EvaluateFunction(point); }, Shape);
+    return std::visit([this, &point](const auto& shape) {
+        float const val = shape.EvaluateFunction(point);
+        return std::min(val < 0 ? val + EvaluationBias
+                                : val,
+                        0.0F);
+    }, Shape);
 }

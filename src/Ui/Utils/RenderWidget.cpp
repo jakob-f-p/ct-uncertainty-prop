@@ -211,6 +211,10 @@ auto CtRenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) -> void {
     VolumeMapper->SetInputData(&imageData);
 }
 
+auto CtRenderWidget::SetWindowWidth(CtRenderWidget::Range<double> range) -> void {
+    WindowWidth = { static_cast<int>(range.Min), static_cast<int>(range.Max) };
+}
+
 auto CtRenderWidget::UpdateWindowWidth(CtRenderWidget::Range<double> range) -> void {
     Range<int> const newWindowWidth = { static_cast<int>(range.Min), static_cast<int>(range.Max) };
     if (newWindowWidth.Min == WindowWidth.Min && newWindowWidth.Max == WindowWidth.Max)

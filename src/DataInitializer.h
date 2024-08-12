@@ -19,7 +19,8 @@ public:
         DEBUG,
         DEBUG_SINGLE,
         SPHERE,
-        SIMPLE_SCENE
+        SIMPLE_SCENE,
+        METHODOLOGY
     };
 
     auto
@@ -121,4 +122,14 @@ private:
 
     auto
     InitializeMotion() noexcept -> void;
+};
+
+
+
+class MethodologySceneInitializer : public SceneInitializer {
+public:
+    explicit MethodologySceneInitializer(App& app);
+
+    auto
+    operator()() -> void;
 };
