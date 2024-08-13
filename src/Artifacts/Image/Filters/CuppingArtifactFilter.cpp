@@ -18,7 +18,7 @@ vtkStandardNewMacro(CuppingArtifactFilter)
 void CuppingArtifactFilter::PrintSelf(ostream &os, vtkIndent indent) {
     Superclass::PrintSelf(os, indent);
 
-    os << indent << "Dark Intensity Value" << DarkIntensityValue << ")\n";
+    os << indent << "Minimum Radiodensity Factor" << MinRadiodensityFactor << ")\n";
 }
 
 auto CuppingArtifactFilter::RequestInformation(vtkInformation* request,
@@ -36,16 +36,16 @@ void CuppingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
                                                             vtkInformation* outInfo) {
     vtkIdType const numberOfPoints = output->GetNumberOfPoints();
 
+    vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);
+    float* radiodensities = radioDensityArray->WritePointer(0, numberOfPoints);
+
     vtkNew<vtkFloatArray> newArtifactValueArray;
     newArtifactValueArray->SetNumberOfComponents(1);
     newArtifactValueArray->SetNumberOfTuples(numberOfPoints);
     newArtifactValueArray->FillValue(0.0F);
     float* newArtifactValues = newArtifactValueArray->WritePointer(0, numberOfPoints);
 
-    vtkSMPTools::For(0, numberOfPoints, Algorithm { this, output, newArtifactValues });
-
-    vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);
-    float* radiodensities = radioDensityArray->WritePointer(0, numberOfPoints);
+    vtkSMPTools::For(0, numberOfPoints, Algorithm { this, output, radiodensities, newArtifactValues });
 
     vtkFloatArray* cuppingArtifactArray = GetDeepCopiedArtifactArray(input, output, SubType::WIND_MILL);
     float* cuppingArtifactValues = cuppingArtifactArray->WritePointer(0, numberOfPoints);
@@ -66,6 +66,7 @@ void CuppingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
 
 CuppingArtifactFilter::Algorithm::Algorithm(CuppingArtifactFilter* self,
                                             vtkImageData* volumeData,
+                                            float const* radiodensities,
                                             float* artifactValues) :
         Self(self),
         VolumeData(volumeData),
@@ -84,21 +85,28 @@ CuppingArtifactFilter::Algorithm::Algorithm(CuppingArtifactFilter* self,
             VolumeData->GetPoint(0, startPoint.data());
             return startPoint;
         }()),
+        Radiodensities(radiodensities),
         ArtifactValues(artifactValues),
-        DarkIntensityValue(Self->GetDarkIntensityValue()),
+        MinRadiodensityFactor(Self->GetMinRadiodensityFactor()),
+        RadiodensityFactorRange(1.0F - MinRadiodensityFactor),
+        Center(Self->GetCenterPoint()),
         xyMaxDistance([&]() {
             std::array<double, 6> bounds {};
             VolumeData->GetBounds(bounds.data());
-            double const xMaxDistance = bounds[1] - bounds[0];
-            double const yMaxDistance = bounds[3] - bounds[2];
+            double const xMaxDistance = std::max(std::abs(bounds[1] - Center[0]),
+                                                 std::abs(Center[0] - bounds[0]));
+            double const yMaxDistance = std::max(std::abs(bounds[3] - Center[1]),
+                                                 std::abs(Center[1] - bounds[2]));
             return static_cast<float>(std::sqrt(xMaxDistance * xMaxDistance + yMaxDistance * yMaxDistance));
-        }()),
-        Center(Self->GetCenterPoint()) {}
+        }()) {}
 
 void CuppingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType endPointId) const {
     Self->CheckAbort();
 
     if (Self->GetAbortOutput())
+        return;
+
+    if (MinRadiodensityFactor == 1.0F)
         return;
 
     DoublePoint startPoint;
@@ -134,12 +142,14 @@ void CuppingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType e
                 xEnd = x2;
 
             for (; x <= xEnd; x++) {
-                float const xDistance = static_cast<float>(point[0] - Center[0]);
-                float const yDistance = static_cast<float>(point[1] - Center[1]);
+                auto const xDistance = static_cast<float>(point[0] - Center[0]);
+                auto const yDistance = static_cast<float>(point[1] - Center[1]);
                 float const xyDistance = std::sqrt(xDistance * xDistance + yDistance * yDistance);
-                float const relativeDistance = xyDistance / xyMaxDistance;
 
-                ArtifactValues[pointId] = DarkIntensityValue * (1.0F - relativeDistance);
+                float const relativeDistance = xyDistance / xyMaxDistance;
+                float const factor = relativeDistance * RadiodensityFactorRange + MinRadiodensityFactor;
+
+                ArtifactValues[pointId] = Radiodensities[pointId] * (factor - 1.0F);
 
                 pointId++;
 

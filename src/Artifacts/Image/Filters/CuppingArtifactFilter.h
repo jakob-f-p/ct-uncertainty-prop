@@ -11,11 +11,15 @@ public:
     vtkTypeMacro(CuppingArtifactFilter, ImageArtifactFilter);
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
-    vtkSetClampMacro(DarkIntensityValue, float, -1000.0, 0.0);
-    vtkGetMacro(DarkIntensityValue, float);
+    vtkSetClampMacro(MinRadiodensityFactor, float, 0.0, 1.0);
+    vtkGetMacro(MinRadiodensityFactor, float);
 
     auto
-    SetCenterPoint(std::array<float, 3> center) -> void { if (center != Center) Center = center; Modified(); }
+    SetCenterPoint(std::array<float, 3> center) -> void {
+        if (center != Center)
+            Center = center;
+        Modified();
+    }
 
     [[nodiscard]] auto
     GetCenterPoint() -> std::array<float, 3> { return Center; }
@@ -37,17 +41,22 @@ protected:
         std::array<double, 3> Spacing;
         std::array<int, 3> UpdateDims;
         DoublePoint StartPoint;
+        float const* Radiodensities;
         float* ArtifactValues;
-        float DarkIntensityValue;
-        float xyMaxDistance;
+        float MinRadiodensityFactor;
+        float RadiodensityFactorRange;
         FloatPoint Center;
+        float xyMaxDistance;
 
-        Algorithm(CuppingArtifactFilter* self, vtkImageData* volumeData, float* artifactValues);
+        Algorithm(CuppingArtifactFilter* self,
+                  vtkImageData* volumeData,
+                  float const* radiodensities,
+                  float* artifactValues);
 
         void operator()(vtkIdType pointId, vtkIdType endPointId) const;
     };
 
-    float DarkIntensityValue = 0.0F;
+    float MinRadiodensityFactor = 0.0F;
 
     FloatPoint Center = { 0.0F, 0.0F, 0.0F };
 };

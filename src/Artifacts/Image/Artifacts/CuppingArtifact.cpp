@@ -9,15 +9,15 @@
 
 CuppingArtifact::CuppingArtifact() = default;
 CuppingArtifact::CuppingArtifact(CuppingArtifact const& other)  :
-            DarkIntensityValue(other.DarkIntensityValue),
-            Center(other.Center) {}
+        MinRadiodensityFactor(other.MinRadiodensityFactor),
+        Center(other.Center) {}
 CuppingArtifact::CuppingArtifact(CuppingArtifact&&) noexcept = default;
 auto CuppingArtifact::operator= (CuppingArtifact&&) noexcept -> CuppingArtifact& = default;
 
 CuppingArtifact::~CuppingArtifact() = default;
 
 auto CuppingArtifact::UpdateFilterParameters() -> void {
-    Filter->SetDarkIntensityValue(DarkIntensityValue);
+    Filter->SetMinRadiodensityFactor(MinRadiodensityFactor);
 
     Filter->SetCenterPoint(Center);
 }
@@ -28,14 +28,30 @@ auto CuppingArtifact::GetFilter() -> vtkImageAlgorithm& {
     return *Filter;
 }
 
+auto CuppingArtifact::GetProperties() noexcept -> PipelineParameterProperties {
+    PipelineParameterProperties properties;
+    properties.Add(FloatObjectProperty("Minimum Radiodensity Factor",
+                                       [this] { return GetMinRadiodensityFactor(); },
+                                       [this](float intensity) {
+                                               this->SetMinRadiodensityFactor(intensity);
+                                               this->UpdateFilterParameters(); },
+                                       FloatObjectProperty::PropertyRange { 0.0, 1.0, 0.1, 2 }));
+    properties.Add(FloatPointObjectProperty("Center",
+                                            [this] { return GetCenter(); },
+                                            [this](FloatPoint center) { this->SetCenter(center);
+                                                                        this->UpdateFilterParameters(); },
+                                            {}));
+    return properties;
+}
+
 auto CuppingArtifactData::PopulateFromArtifact(const CuppingArtifact& artifact) noexcept -> void {
-    DarkIntensityValue = artifact.DarkIntensityValue;
+    MinRadiodensityFactor = artifact.MinRadiodensityFactor;
 
     Center = artifact.Center;
 }
 
 auto CuppingArtifactData::PopulateArtifact(CuppingArtifact& artifact) const noexcept -> void {
-    artifact.DarkIntensityValue = DarkIntensityValue;
+    artifact.MinRadiodensityFactor = MinRadiodensityFactor;
 
     artifact.Center = Center;
 
@@ -43,27 +59,28 @@ auto CuppingArtifactData::PopulateArtifact(CuppingArtifact& artifact) const noex
 }
 
 CuppingArtifactWidget::CuppingArtifactWidget() :
-        DarkIntensityValueSpinBox (new QDoubleSpinBox()),
+        MinRadiodensityFactorSpinBox (new QDoubleSpinBox()),
         CenterPointWidget(new DoubleCoordinateRowWidget({ -100.0, 100.0, 1.0, 0.0 }, "Center")) {
 
     auto* fLayout = new QFormLayout(this);
     fLayout->setHorizontalSpacing(15);
 
-    DarkIntensityValueSpinBox->setRange(-1000.0, 1000.0);
-    DarkIntensityValueSpinBox->setSingleStep(10.0);
+    MinRadiodensityFactorSpinBox->setRange(0.0, 1.0);
+    MinRadiodensityFactorSpinBox->setSingleStep(0.10);
+    MinRadiodensityFactorSpinBox->setDecimals(2);
 
-    fLayout->addRow("Dark Intensity", DarkIntensityValueSpinBox);
+    fLayout->addRow("Min Radiodensity Factor", MinRadiodensityFactorSpinBox);
 
     fLayout->addRow(CenterPointWidget);
 }
 
 auto CuppingArtifactWidget::GetData() noexcept -> CuppingArtifactData {
-    return { static_cast<float>(DarkIntensityValueSpinBox->value()),
+    return { static_cast<float>(MinRadiodensityFactorSpinBox->value()),
              CenterPointWidget->GetRowData(0).ToFloatArray() };
 }
 
 auto CuppingArtifactWidget::Populate(const CuppingArtifactData& data) noexcept -> void {
-    DarkIntensityValueSpinBox->setValue(data.DarkIntensityValue);
+    MinRadiodensityFactorSpinBox->setValue(data.MinRadiodensityFactor);
 
     CenterPointWidget->SetRowData(0, DoubleCoordinateRowWidget::RowData(data.Center));
 }

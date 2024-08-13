@@ -48,7 +48,7 @@ auto RingArtifact::GetProperties() noexcept -> PipelineParameterProperties {
                                        [this] { return RadiodensityFactor; },
                                        [this](float factor) { this->SetRadiodensityFactor(factor);
                                            this->UpdateFilterParameters(); },
-                                       FloatObjectProperty::PropertyRange{ 0.0, 100.0 }));
+                                       FloatObjectProperty::PropertyRange{ 0.0, 100.0, 0.1, 2 }));
     properties.Add(FloatPointObjectProperty("Center",
                                             [this] { return Center; },
                                             [this](FloatPoint center) { this->SetCenter(center);

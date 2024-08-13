@@ -29,10 +29,10 @@ public:
     ~CuppingArtifact();
 
     [[nodiscard]] auto
-    GetDarkIntensity() const noexcept -> float { return DarkIntensityValue; }
+    GetMinRadiodensityFactor() const noexcept -> float { return MinRadiodensityFactor; }
 
     auto
-    SetDarkIntensity(float darkIntensityValue) -> void { DarkIntensityValue = darkIntensityValue; }
+    SetMinRadiodensityFactor(float factor) -> void { MinRadiodensityFactor = factor; }
 
     [[nodiscard]] auto
     GetCenter() const noexcept -> FloatPoint { return Center; }
@@ -47,25 +47,12 @@ public:
     GetFilter() -> vtkImageAlgorithm&;
 
     [[nodiscard]] auto
-    GetProperties() noexcept -> PipelineParameterProperties {
-        PipelineParameterProperties properties;
-        properties.Add(FloatObjectProperty("Dark Intensity",
-                                           [this] { return GetDarkIntensity(); },
-                                           [this](float intensity) { this->SetDarkIntensity(intensity);
-                                                    this->UpdateFilterParameters(); },
-                                           FloatObjectProperty::PropertyRange{ -1000.0, 0.0 }));
-        properties.Add(FloatPointObjectProperty("Center",
-                                                [this] { return GetCenter(); },
-                                                [this](FloatPoint center) { this->SetCenter(center);
-                                                                            this->UpdateFilterParameters(); },
-                                                {}));
-        return properties;
-    };
+    GetProperties() noexcept -> PipelineParameterProperties;
 
 private:
     friend class CuppingArtifactData;
 
-    float DarkIntensityValue = 0.0F;
+    float MinRadiodensityFactor = 0.0F;
 
     FloatPoint Center { 0.0F, 0.0F, 0.0F };
 
@@ -79,7 +66,7 @@ struct CuppingArtifactData {
     using Artifact = CuppingArtifact;
     using Widget = CuppingArtifactWidget;
 
-    float DarkIntensityValue = 0.0F;
+    float MinRadiodensityFactor = 0.0F;
 
     FloatPoint Center = { 0.0F, 0.0F, 0.0F };
 
@@ -105,7 +92,7 @@ public:
     Populate(const CuppingArtifactData& data) noexcept -> void;
 
 private:
-    QDoubleSpinBox* DarkIntensityValueSpinBox;
+    QDoubleSpinBox* MinRadiodensityFactorSpinBox;
 
     DoubleCoordinateRowWidget* CenterPointWidget;
 };

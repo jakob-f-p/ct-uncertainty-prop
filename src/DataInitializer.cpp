@@ -191,7 +191,7 @@ auto DefaultSceneInitializer::operator()() -> void {
     imageArtifactConcatenationA.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(windMillArtifact) } });
 
     CuppingArtifact cuppingArtifact;
-    cuppingArtifact.SetDarkIntensity(-500.0);
+    cuppingArtifact.SetMinRadiodensityFactor(-500.0);
     imageArtifactConcatenationA.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(cuppingArtifact) } });
 
     StairStepArtifact stairStepArtifact;
@@ -215,7 +215,7 @@ auto DefaultSceneInitializer::operator()() -> void {
     gaussianArtifactB1.SetName("gaussian(100.0, 20.0)");
     auto& gaussianB1 = imageArtifactConcatenationB.AddImageArtifact(std::move(gaussianArtifactB1));
     CuppingArtifact cuppingArtifactBsub;
-    cuppingArtifactBsub.SetDarkIntensity(-300.0);
+    cuppingArtifactBsub.SetMinRadiodensityFactor(-300.0);
     BasicImageArtifact cuppingArtifactB(cuppingArtifactBsub);
     cuppingArtifactB.SetName("cupping(-300.0)");
     auto& cuppingB = imageArtifactConcatenationB.AddImageArtifact(std::move(cuppingArtifactB));
@@ -461,7 +461,7 @@ auto SimpleSceneInitializer::InitializeGaussian() noexcept -> void {
 }
 
 auto SimpleSceneInitializer::InitializeCupping() noexcept -> void {
-    static Range<float> const darkIntensityRange = { -100.0,  0.0, 10.0 };
+    static Range<float> const minRadiodensityFactorRange = { 0.0, 1.0, 0.1 };
     static Range<FloatPoint> const centerRange = { { -50.0, -50.0, -50.0 },
                                                    { 50.0, 50.0, 50.0 },
                                                    { 10.0, 10.0, 10.0 } };
@@ -471,7 +471,7 @@ auto SimpleSceneInitializer::InitializeCupping() noexcept -> void {
     ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 
     CuppingArtifact cuppingArtifact {};
-    cuppingArtifact.SetDarkIntensity(darkIntensityRange.GetCenter());
+    cuppingArtifact.SetMinRadiodensityFactor(minRadiodensityFactorRange.GetCenter());
     cuppingArtifact.SetCenter(centerRange.GetCenter());
 
     BasicImageArtifact cuppingBasicArtifact { std::move(cuppingArtifact) };
@@ -482,14 +482,14 @@ auto SimpleSceneInitializer::InitializeCupping() noexcept -> void {
 
     auto cuppingProperties = cupping.GetProperties();
 
-    auto& darkIntensityProperty = cuppingProperties.GetPropertyByName<float>("Dark Intensity");
-    ParameterSpan<float> darkIntensitySpan {
+    auto& minRadiodensityFactorProperty = cuppingProperties.GetPropertyByName<float>("Minimum Radiodensity Factor");
+    ParameterSpan<float> minRadiodensityFactorSpan {
             ArtifactVariantPointer(&cupping),
-            darkIntensityProperty,
-            { darkIntensityRange.Min, darkIntensityRange.Max, darkIntensityRange.Step },
-            "Dark Intensity Span"
+            minRadiodensityFactorProperty,
+            { minRadiodensityFactorRange.Min, minRadiodensityFactorRange.Max, minRadiodensityFactorRange.Step },
+            "Minimum Radiodensity Factor Span"
     };
-    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&cupping), std::move(darkIntensitySpan));
+    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&cupping), std::move(minRadiodensityFactorSpan));
 
     auto& centerProperty = cuppingProperties.GetPropertyByName<FloatPoint>("Center");
     ParameterSpan<FloatPoint> centerSpan {
@@ -514,7 +514,7 @@ auto SimpleSceneInitializer::InitializeRing() noexcept -> void {
     RingArtifact ringArtifact {};
     ringArtifact.SetInnerRadius(5.0F);
     ringArtifact.SetRingWidth(2.0F);
-    ringArtifact.SetRadiodensityFactor(radiodensityFactorRange.GetCenter());
+    ringArtifact.SetRadiodensityFactor(radiodensityFactorRange.Max);
     ringArtifact.SetCenter(centerRange.GetCenter());
 
     BasicImageArtifact ringBasicArtifact { std::move(ringArtifact) };
