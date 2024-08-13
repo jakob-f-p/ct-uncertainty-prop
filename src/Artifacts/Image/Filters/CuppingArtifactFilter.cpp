@@ -136,7 +136,6 @@ void CuppingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType e
             for (; x <= xEnd; x++) {
                 float const xDistance = static_cast<float>(point[0] - Center[0]);
                 float const yDistance = static_cast<float>(point[1] - Center[1]);
-
                 float const xyDistance = std::sqrt(xDistance * xDistance + yDistance * yDistance);
                 float const relativeDistance = xyDistance / xyMaxDistance;
 

@@ -30,6 +30,9 @@ public Q_SLOTS:
 Q_SIGNALS:
     void PipelineGroupChanged(PipelineGroup* pipelineGroup);
 
+protected:
+    void showEvent(QShowEvent* event) override;
+
 private Q_SLOTS:
     void OnAddPipelineGroup();
     void OnRemovePipelineGroup();

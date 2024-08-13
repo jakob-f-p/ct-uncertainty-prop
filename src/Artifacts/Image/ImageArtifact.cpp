@@ -189,14 +189,9 @@ auto ImageArtifactWidget::UpdateTypeWidget() -> void {
         }
     }();
 
-    std::visit([this](auto* oldSubTypeWidget) {
-        Layout->removeWidget(oldSubTypeWidget);
-        delete oldSubTypeWidget;
-    }, TypeWidget);
+    std::visit([this](auto* oldSubTypeWidget) { Layout->removeRow(oldSubTypeWidget); }, TypeWidget);
 
-    std::visit([this](auto* newSubTypeWidget) {
-        Layout->addWidget(newSubTypeWidget);
-    }, newWidgetVariant);
+    std::visit([this](auto* newSubTypeWidget) { Layout->addRow(newSubTypeWidget); }, newWidgetVariant);
 
     TypeWidget = newWidgetVariant;
 }

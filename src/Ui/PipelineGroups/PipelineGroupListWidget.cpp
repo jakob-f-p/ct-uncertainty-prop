@@ -46,7 +46,7 @@ PipelineGroupListWidget::PipelineGroupListWidget(PipelineGroupList& pipelineGrou
 
     fLayout->addRow("Number of pipelines", NumberOfPipelinesSpinBox);
 
-    fLayout->addRow("Filter by pipeline", BasePipelineFilterComboBox);
+//    fLayout->addRow("Filter by pipeline", BasePipelineFilterComboBox);
     UpdateBasePipelineFilterComboBoxItems();
 
     auto* buttonBar = new QWidget();
@@ -72,6 +72,12 @@ void PipelineGroupListWidget::UpdatePipelineList() noexcept {
 
 void PipelineGroupListWidget::UpdateNumberOfPipelines() {
     NumberOfPipelinesSpinBox->setValue(PipelineGroups.GetNumberOfPipelines());
+}
+
+void PipelineGroupListWidget::showEvent(QShowEvent* event) {
+    UpdateNumberOfPipelines();
+
+    QWidget::showEvent(event);
 }
 
 auto PipelineGroupListWidget::UpdateBasePipelineFilterComboBoxItems() noexcept -> void {

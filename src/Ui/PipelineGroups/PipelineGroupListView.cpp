@@ -14,6 +14,12 @@ auto PipelineGroupListView::model() const noexcept -> PipelineGroupListModel* {
     return GroupListModel;
 }
 
+auto PipelineGroupListView::showEvent(QShowEvent* event) -> void {
+    GroupListModel->Reset();
+
+    QWidget::showEvent(event);
+}
+
 
 PipelineGroupListModel::PipelineGroupListModel(PipelineGroupList& pipelineGroups, QObject* parent) :
         QAbstractItemModel(parent),
@@ -78,5 +84,10 @@ auto PipelineGroupListModel::RemovePipelineGroup(QModelIndex const& index) -> vo
     beginRemoveRows({}, index.row(), index.row());
     PipelineGroups.RemovePipelineGroup(*pipelineGroup);
     endRemoveRows();
+}
+
+auto PipelineGroupListModel::Reset() -> void {
+    beginResetModel();
+    endResetModel();
 }
 

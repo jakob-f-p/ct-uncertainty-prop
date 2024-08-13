@@ -153,7 +153,7 @@ auto App::GetPythonInterpreter() -> PythonInterpreter& {
 }
 
 void App::InitializeWithTestData() {
-    static DataInitializer::Config const config = DataInitializer::Config::METHODOLOGY;
+    static DataInitializer::Config const config = DataInitializer::Config::SIMPLE_SCENE;
 
     DataInitializer initializer { *this };
     initializer(config);

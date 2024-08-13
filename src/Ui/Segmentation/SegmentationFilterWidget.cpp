@@ -35,3 +35,9 @@ auto SegmentationFilterWidget::GetFilter() const -> vtkImageAlgorithm& {
 
     return *SegmentationFilter;
 }
+
+void SegmentationFilterWidget::showEvent(QShowEvent* event) {
+    FilterWidget->Populate(dynamic_cast<ThresholdFilter&>(*SegmentationFilter));
+
+    QWidget::showEvent(event);
+}

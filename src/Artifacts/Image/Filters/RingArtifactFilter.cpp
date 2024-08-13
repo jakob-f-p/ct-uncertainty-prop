@@ -16,11 +16,12 @@ vtkStandardNewMacro(RingArtifactFilter)
 void RingArtifactFilter::PrintSelf(ostream &os, vtkIndent indent) {
     Superclass::PrintSelf(os, indent);
 
-    os << indent << "Bright Ring Width" << BrightRingWidth << ")\n";
-    os << indent << "Dark Ring Width" << DarkRingWidth << ")\n";
+    os << indent << "Inner Radius" << InnerRadius << ")\n";
+    os << indent << "Ring Width" << RingWidth << ")\n";
 
-    os << indent << "Bright Intensity Value" << DarkIntensityValue << ")\n";
-    os << indent << "Dark Intensity Value" << DarkIntensityValue << ")\n";
+    os << indent << "Radiodensity Factor" << RadiodensityFactor << ")\n";
+    os << indent << std::format("Dark Intensity Value: ({}, {}, {})",
+                                Center[0], Center[1], Center[2]) << ")\n";
 }
 
 auto RingArtifactFilter::RequestInformation(vtkInformation* request,
@@ -44,10 +45,10 @@ void RingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
     newArtifactValueArray->FillValue(0.0F);
     float* newArtifactValues = newArtifactValueArray->WritePointer(0, numberOfPoints);
 
-    vtkSMPTools::For(0, numberOfPoints, Algorithm { this, output, newArtifactValues });
-
     vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);
     float* radiodensities = radioDensityArray->WritePointer(0, numberOfPoints);
+
+    vtkSMPTools::For(0, numberOfPoints, Algorithm { this, output, radiodensities, newArtifactValues });
 
     vtkFloatArray* ringArtifactArray = GetDeepCopiedArtifactArray(input, output, SubType::RING);
     float* ringArtifactValues = ringArtifactArray->WritePointer(0, numberOfPoints);
@@ -65,7 +66,10 @@ void RingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
     vtkSMPTools::For(0, numberOfPoints, addNoiseValues);
 }
 
-RingArtifactFilter::Algorithm::Algorithm(RingArtifactFilter* self, vtkImageData* volumeData, float* artifactValues) :
+RingArtifactFilter::Algorithm::Algorithm(RingArtifactFilter* self,
+                                         vtkImageData* volumeData,
+                                         float const* radiodensities,
+                                         float* artifactValues) :
         Self(self),
         VolumeData(volumeData),
         Spacing([this]() {
@@ -83,13 +87,12 @@ RingArtifactFilter::Algorithm::Algorithm(RingArtifactFilter* self, vtkImageData*
             VolumeData->GetPoint(0, startPoint.data());
             return startPoint;
         }()),
+        Radiodensities(radiodensities),
         ArtifactValues(artifactValues),
-        BrightRingWidth(Self->GetBrightRingWidth()),
-        DarkRingWidth(Self->GetDarkRingWidth()),
-        CombinedRingWidth(BrightRingWidth + DarkRingWidth),
-        BrightDarkThreshold(CombinedRingWidth == 0.0 ? 0.0 : BrightRingWidth / CombinedRingWidth),
-        BrightIntensityValue(Self->GetBrightIntensityValue()),
-        DarkIntensityValue(Self->GetDarkIntensityValue()),
+        InnerRadius(Self->GetInnerRadius()),
+        RingWidth(Self->GetRingWidth()),
+        OuterRadius(InnerRadius + RingWidth),
+        RadiodensityChangeFactor(Self->GetRadiodensityFactor() - 1.0F),
         Center(Self->GetCenterPoint()) {}
 
 void RingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType endPointId) const {
@@ -98,7 +101,7 @@ void RingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType endP
     if (Self->GetAbortOutput())
         return;
 
-    if (CombinedRingWidth == 0.0)
+    if (OuterRadius == 0.0 || RadiodensityChangeFactor == 0.0)
         return;
 
     DoublePoint startPoint;
@@ -134,17 +137,14 @@ void RingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType endP
                 xEnd = x2;
 
             for (; x <= xEnd; x++) {
-                float const xDistance = static_cast<float>(point[0] - Center[0]);
-                float const yDistance = static_cast<float>(point[1] - Center[1]);
-
+                auto const xDistance = static_cast<float>(point[0] - Center[0]);
+                auto const yDistance = static_cast<float>(point[1] - Center[1]);
                 float const xyDistance = std::sqrt(xDistance * xDistance + yDistance * yDistance);
-                float const numberOfCombinedRings = xyDistance / CombinedRingWidth;
 
-                float integralPart;
-                float const fractionalPart = std::modf(numberOfCombinedRings, &integralPart);
-
-                bool isDark = fractionalPart >= BrightDarkThreshold;
-                ArtifactValues[pointId] = isDark ? DarkIntensityValue : BrightIntensityValue;
+                bool isRing = xyDistance >= InnerRadius && xyDistance <= OuterRadius;
+                ArtifactValues[pointId] = isRing
+                        ? Radiodensities[pointId] * RadiodensityChangeFactor
+                        : 0.0;
 
                 pointId++;
 

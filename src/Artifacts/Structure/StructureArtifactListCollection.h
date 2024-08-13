@@ -129,7 +129,6 @@ public:
     explicit TreeStructureArtifactListCollection(
             CtStructureTree const& ctStructureTree,
             BeforeRemoveArtifactCallback&& removeCallback = [](StructureArtifact&) {});
-//    TreeStructureArtifactListCollection(TreeStructureArtifactListCollection const& other);
     ~TreeStructureArtifactListCollection();
 
     [[nodiscard]] auto

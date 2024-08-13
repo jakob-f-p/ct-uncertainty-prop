@@ -27,6 +27,7 @@ CompositeImageArtifactDetails::CompositeImageArtifactWidgetImpl::CompositeImageA
         CompositionTypeComboBox(new QComboBox()) {
 
     auto* fLayout = new QFormLayout(this);
+    fLayout->setContentsMargins(0, 5, 0, 5);
 
     for (const auto &compositionTypeAndName : CompositeImageArtifactDetails::GetCompositionTypeValues())
         CompositionTypeComboBox->addItem(compositionTypeAndName.Name,

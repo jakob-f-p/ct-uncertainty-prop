@@ -28,7 +28,11 @@ auto PipelineList::Get(int idx) const noexcept -> Pipeline const& {
 }
 
 auto PipelineList::AddPipeline() -> Pipeline& {
-    return *Pipelines.emplace_back(std::make_unique<Pipeline>(StructureTree));
+    Pipeline& addedPipeline =  *Pipelines.emplace_back(std::make_unique<Pipeline>(StructureTree));
+
+    EmitPipelineEvent({ PipelineEventType::POST_ADD, &addedPipeline });
+
+    return addedPipeline;
 }
 
 void PipelineList::RemovePipeline(Pipeline& pipeline) {

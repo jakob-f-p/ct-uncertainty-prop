@@ -94,5 +94,6 @@ auto SegmentationRenderWidget::UpdateFilter() -> void {
 
     UpdateImageAlgorithm(*SegmentationFilter);
 
+    SegmentationFilter->Update();
     Render();
 }

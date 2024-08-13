@@ -24,18 +24,18 @@ namespace StructureArtifactDetails {
     Q_NAMESPACE
 
     enum struct SubType : uint8_t {
-        STREAKING = 0,
-        METALLIC,
-        MOTION
+        MOTION = 0,
+        STREAKING,
+        METALLIC
     };
     Q_ENUM_NS(SubType);
 
     [[nodiscard]] static auto
     SubTypeToString(SubType subType) noexcept -> std::string {
         switch (subType) {
+            case SubType::MOTION:    return "Motion";
             case SubType::STREAKING: return "Streaking";
             case SubType::METALLIC:  return "Metallic";
-            case SubType::MOTION:    return "Motion";
         }
 
         return "";

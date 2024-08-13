@@ -11,20 +11,22 @@ public:
     vtkTypeMacro(RingArtifactFilter, ImageArtifactFilter);
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
-    vtkSetClampMacro(BrightRingWidth, float, 0.0, 100.0);
-    vtkGetMacro(BrightRingWidth, float);
+    vtkSetClampMacro(InnerRadius, float, 0.0, 100.0);
+    vtkGetMacro(InnerRadius, float);
 
-    vtkSetClampMacro(DarkRingWidth, float, 0.0, 100.0);
-    vtkGetMacro(DarkRingWidth, float);
+    vtkSetClampMacro(RingWidth, float, 0.0, 100.0);
+    vtkGetMacro(RingWidth, float);
 
-    vtkSetClampMacro(BrightIntensityValue, float, 0.0, 1000.0);
-    vtkGetMacro(BrightIntensityValue, float);
-
-    vtkSetClampMacro(DarkIntensityValue, float, -1000.0, 0.0);
-    vtkGetMacro(DarkIntensityValue, float);
+    vtkSetClampMacro(RadiodensityFactor, float, 0.0, 100.0);
+    vtkGetMacro(RadiodensityFactor, float);
 
     auto
-    SetCenterPoint(std::array<float, 3> center) -> void { if (center != Center) Center = center; Modified(); }
+    SetCenterPoint(std::array<float, 3> center) -> void {
+        if (center != Center)
+            Center = center;
+
+        Modified();
+    }
 
     [[nodiscard]] auto
     GetCenterPoint() -> std::array<float, 3> { return Center; }
@@ -46,25 +48,25 @@ protected:
         std::array<double, 3> Spacing;
         std::array<int, 3> UpdateDims;
         DoublePoint StartPoint;
+        float const* Radiodensities;
         float* ArtifactValues;
-        float BrightRingWidth;
-        float DarkRingWidth;
-        float CombinedRingWidth;
-        float BrightDarkThreshold;
-        float BrightIntensityValue;
-        float DarkIntensityValue;
+        float InnerRadius;
+        float RingWidth;
+        float OuterRadius;
+        float RadiodensityChangeFactor;
         FloatPoint Center;
 
-        Algorithm(RingArtifactFilter* self, vtkImageData* volumeData, float* artifactValues);
+        Algorithm(RingArtifactFilter* self,
+                  vtkImageData* volumeData,
+                  float const* radiodensities,
+                  float* artifactValues);
 
         void operator()(vtkIdType pointId, vtkIdType endPointId) const;
     };
 
-    float BrightRingWidth = 0.0F;
-    float DarkRingWidth = 0.0F;
-
-    float BrightIntensityValue = 0.0F;
-    float DarkIntensityValue = 0.0F;
+    float InnerRadius = 0.0F;
+    float RingWidth = 0.0F;
+    float RadiodensityFactor = 0.0F;
 
     FloatPoint Center = { 0.0F, 0.0F, 0.0F };
 };

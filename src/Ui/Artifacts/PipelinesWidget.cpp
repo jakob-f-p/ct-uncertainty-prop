@@ -53,6 +53,15 @@ PipelinesWidget::PipelinesWidget(PipelineList& pipelines, QWidget* parent) :
 
     InitializeViews();
     UpdatePipelineView();
+
+    pipelines.AddPipelineEventCallback([this](PipelineEvent const& event) {
+        if (event.Type == PipelineEventType::POST_ADD) {
+            StructureArtifactModelingWidget->AddView(*event.PipelinePointer);
+            ImageArtifactModelingWidget->AddView(*event.PipelinePointer);
+
+            UpdatePipelineView();
+        }
+    });
 }
 
 void PipelinesWidget::AddPipeline() {

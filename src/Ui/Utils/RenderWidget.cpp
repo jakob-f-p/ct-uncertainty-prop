@@ -149,7 +149,7 @@ CtRenderWidget::CtRenderWidget(RenderWidget* renderWidget, vtkImageAlgorithm* im
     volume->SetProperty(volumeProperty);
 
     Renderer->AddVolume(volume);
-    Renderer->SetBackground(0.2, 0.2, 0.2);
+    Renderer->SetBackground(0.0, 0.0, 0.0);
     Renderer->ResetCamera();
     InitialCamera->DeepCopy(Renderer->GetActiveCamera());
 

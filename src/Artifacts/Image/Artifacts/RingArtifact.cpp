@@ -9,22 +9,19 @@
 
 RingArtifact::RingArtifact() = default;
 RingArtifact::RingArtifact(RingArtifact const& other) :
-        BrightIntensityValue(other.BrightIntensityValue),
-        DarkIntensityValue(other.DarkIntensityValue),
-        BrightRingWidth(other.BrightRingWidth),
-        DarkRingWidth(other.DarkRingWidth),
+        InnerRadius(other.InnerRadius),
+        RingWidth(other.RingWidth),
+        RadiodensityFactor(other.RadiodensityFactor),
         Center(other.Center) {}
-RingArtifact::RingArtifact(RingArtifact&&) = default;
-auto RingArtifact::operator= (RingArtifact&&) -> RingArtifact& = default;
+RingArtifact::RingArtifact(RingArtifact&&) noexcept = default;
+auto RingArtifact::operator= (RingArtifact&&) noexcept -> RingArtifact& = default;
 
 RingArtifact::~RingArtifact() = default;
 
 auto RingArtifact::UpdateFilterParameters() -> void {
-    Filter->SetBrightRingWidth(BrightRingWidth);
-    Filter->SetDarkRingWidth(DarkRingWidth);
-
-    Filter->SetBrightIntensityValue(BrightIntensityValue);
-    Filter->SetDarkIntensityValue(DarkIntensityValue);
+    Filter->SetInnerRadius(InnerRadius);
+    Filter->SetRingWidth(RingWidth);
+    Filter->SetRadiodensityFactor(RadiodensityFactor);
 
     Filter->SetCenterPoint(Center);
 }
@@ -35,22 +32,43 @@ auto RingArtifact::GetFilter() -> vtkImageAlgorithm& {
     return *Filter;
 }
 
-auto RingArtifactData::PopulateFromArtifact(const RingArtifact& artifact) noexcept -> void {
-    BrightRingWidth = artifact.BrightRingWidth;
-    DarkRingWidth = artifact.DarkRingWidth;
+auto RingArtifact::GetProperties() noexcept -> PipelineParameterProperties {
+    PipelineParameterProperties properties;
+    properties.Add(FloatObjectProperty("Inner Radius",
+                                       [this] { return InnerRadius; },
+                                       [this](float radius) { this->SetInnerRadius(radius);
+                                           this->UpdateFilterParameters(); },
+                                       FloatObjectProperty::PropertyRange{ 0.0, 100.0 }));
+    properties.Add(FloatObjectProperty("Ring Width",
+                                       [this] { return RingWidth; },
+                                       [this](float width) { this->SetRingWidth(width);
+                                                                    this->UpdateFilterParameters(); },
+                                       FloatObjectProperty::PropertyRange{ 0.0, 100.0 }));
+    properties.Add(FloatObjectProperty("Radiodensity Factor",
+                                       [this] { return RadiodensityFactor; },
+                                       [this](float factor) { this->SetRadiodensityFactor(factor);
+                                           this->UpdateFilterParameters(); },
+                                       FloatObjectProperty::PropertyRange{ 0.0, 100.0 }));
+    properties.Add(FloatPointObjectProperty("Center",
+                                            [this] { return Center; },
+                                            [this](FloatPoint center) { this->SetCenter(center);
+                                                this->UpdateFilterParameters(); },
+                                            {}));
+    return properties;
+}
 
-    BrightIntensityValue = artifact.BrightIntensityValue;
-    DarkIntensityValue = artifact.DarkIntensityValue;
+auto RingArtifactData::PopulateFromArtifact(const RingArtifact& artifact) noexcept -> void {
+    InnerRadius = artifact.InnerRadius;
+    RingWidth = artifact.RingWidth;
+    RadiodensityFactor = artifact.RadiodensityFactor;
 
     Center = artifact.Center;
 }
 
 auto RingArtifactData::PopulateArtifact(RingArtifact& artifact) const noexcept -> void {
-    artifact.BrightRingWidth = BrightRingWidth;
-    artifact.DarkRingWidth = DarkRingWidth;
-
-    artifact.BrightIntensityValue = BrightIntensityValue;
-    artifact.DarkIntensityValue = DarkIntensityValue;
+    artifact.InnerRadius = InnerRadius;
+    artifact.RingWidth = RingWidth;
+    artifact.RadiodensityFactor = RadiodensityFactor;
 
     artifact.Center = Center;
 
@@ -58,60 +76,47 @@ auto RingArtifactData::PopulateArtifact(RingArtifact& artifact) const noexcept -
 }
 
 RingArtifactWidget::RingArtifactWidget() :
-        BrightRingWidthSpinBox(new QDoubleSpinBox()),
-        DarkRingWidthSpinBox  (new QDoubleSpinBox()),
-        BrightIntensityValueSpinBox(new QDoubleSpinBox()),
-        DarkIntensityValueSpinBox (new QDoubleSpinBox()),
-        CenterPointWidget(new DoubleCoordinateRowWidget({ -100.0, 100.0, 1.0, 0.0 }, "Center")) {
+        InnerRadiusSpinBox([]() {
+            auto* spinBox = new QDoubleSpinBox();
+            spinBox->setRange(0.0, 100.0);
+            spinBox->setSingleStep(1.0);
+            return spinBox;
+        }()),
+        RingWidthSpinBox([]() {
+            auto* spinBox = new QDoubleSpinBox();
+            spinBox->setRange(0.0, 100.0);
+            spinBox->setSingleStep(1.0);
+            return spinBox;
+        }()),
+        RadiodensityFactorSpinBox([]() {
+            auto* spinBox = new QDoubleSpinBox();
+            spinBox->setRange(0.0, 100.0);
+            spinBox->setSingleStep(0.1);
+            return spinBox;
+        }()),
+        CenterPointWidget(new DoubleCoordinateRowWidget({ -100.0, 100.0, 1.0, 0.0 },
+                                                        "Center")) {
 
-    auto* gLayout = new QGridLayout(this);
-    gLayout->setHorizontalSpacing(15);
+    auto* fLayout = new QFormLayout(this);
+    fLayout->setHorizontalSpacing(15);
 
-    std::vector<QString> labels { "Bright", "Dark" };
-    std::vector<QDoubleSpinBox*> widthSpinBoxes { BrightRingWidthSpinBox, DarkRingWidthSpinBox };
-    std::vector<QDoubleSpinBox*> intensitySpinBoxes { BrightIntensityValueSpinBox, DarkIntensityValueSpinBox };
-    std::vector<double> ranges { 0.0, 1000.0, -1000.0, 0.0 };
-
-    for (int i = 0; i < 2; i++) {
-        auto* label = new QLabel(labels.at(i));
-        gLayout->addWidget(label, i, 0);
-
-        auto* amountLabel = new QLabel("Width");
-        amountLabel->setMinimumWidth(15);
-        amountLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        gLayout->addWidget(amountLabel, i, 1);
-
-        widthSpinBoxes[i]->setRange(0.0, 100.0);
-        widthSpinBoxes[i]->setSingleStep(1.0);
-        gLayout->addWidget(widthSpinBoxes[i], i, 2);
-
-        auto* intensityLabel = new QLabel("Intensity");
-        intensityLabel->setMinimumWidth(15);
-        intensityLabel->setAlignment(Qt::AlignRight | Qt::AlignVCenter);
-        gLayout->addWidget(intensityLabel, i, 3);
-
-        intensitySpinBoxes[i]->setRange(ranges[2 * i], ranges[2 * i + 1]);
-        intensitySpinBoxes[i]->setSingleStep(10.0);
-        gLayout->addWidget(intensitySpinBoxes[i], i, 4);
-    }
-
-    gLayout->addWidget(CenterPointWidget, 2, 0, 1, 5);
+    fLayout->addRow("Inner Radius", InnerRadiusSpinBox);
+    fLayout->addRow("Ring Width", RingWidthSpinBox);
+    fLayout->addRow("Radiodensity Factor", RadiodensityFactorSpinBox);
+    fLayout->addRow(RadiodensityFactorSpinBox);
 }
 
 auto RingArtifactWidget::GetData() noexcept -> RingArtifactData {
-    return { static_cast<float>(BrightRingWidthSpinBox->value()),
-             static_cast<float>(DarkRingWidthSpinBox->value()),
-             static_cast<float>(BrightIntensityValueSpinBox->value()),
-             static_cast<float>(DarkIntensityValueSpinBox->value()),
+    return { static_cast<float>(InnerRadiusSpinBox->value()),
+             static_cast<float>(RingWidthSpinBox->value()),
+             static_cast<float>(RadiodensityFactorSpinBox->value()),
              CenterPointWidget->GetRowData(0).ToFloatArray() };
 }
 
 auto RingArtifactWidget::Populate(const RingArtifactData& data) noexcept -> void {
-    BrightRingWidthSpinBox->setValue(data.BrightRingWidth);
-    DarkRingWidthSpinBox->setValue(data.DarkRingWidth);
-
-    BrightIntensityValueSpinBox->setValue(data.BrightIntensityValue);
-    DarkIntensityValueSpinBox->setValue(data.DarkIntensityValue);
+    InnerRadiusSpinBox->setValue(data.InnerRadius);
+    RingWidthSpinBox->setValue(data.RingWidth);
+    RadiodensityFactorSpinBox->setValue(data.RadiodensityFactor);
 
     CenterPointWidget->SetRowData(0, DoubleCoordinateRowWidget::RowData(data.Center));
 }

@@ -179,9 +179,9 @@ auto DefaultSceneInitializer::operator()() -> void {
     imageArtifactConcatenationA.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(saltPepperArtifact) } });
 
     RingArtifact ringArtifact;
-    ringArtifact.SetBrightIntensity(500.0);
-    ringArtifact.SetBrightRingWidth(15.0);
-    ringArtifact.SetDarkRingWidth(5.0);
+    ringArtifact.SetRingWidth(5.0);
+    ringArtifact.SetInnerRadius(10.0);
+    ringArtifact.SetRadiodensityFactor(1.75);
     imageArtifactConcatenationA.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(ringArtifact) } });
 
     WindMillArtifact windMillArtifact;
@@ -276,7 +276,7 @@ auto DebugSceneInitializer::operator()() -> void {
 
     static Range<float> const meanRange = { -25.0,  25.0, 5.0 };
 
-    auto& pipeline = Pipelines.AddPipeline();
+    auto& pipeline = Pipelines.Get(0);
 
     ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 
@@ -425,7 +425,7 @@ auto SimpleSceneInitializer::InitializeGaussian() noexcept -> void {
     static Range<float> const meanRange = { -70.0,  70.0, 10.0 };
     static Range<float> const sdRange   = {   0.0, 200.0, 25.0 };
 
-    auto& pipeline = Pipelines.AddPipeline();
+    auto& pipeline = Pipelines.Get(0);
 
     ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 
@@ -502,7 +502,7 @@ auto SimpleSceneInitializer::InitializeCupping() noexcept -> void {
 }
 
 auto SimpleSceneInitializer::InitializeRing() noexcept -> void {
-    static Range<float> const darkRingIntensityRange = { -100.0, 0.0, 10.0 };
+    static Range<float> const radiodensityFactorRange = { 0.25, 1.75, 0.125 };
     static Range<FloatPoint> const centerRange = { { -50.0, -50.0, -50.0 },
                                                    { 50.0, 50.0, 50.0 },
                                                    { 10.0, 10.0, 10.0 } };
@@ -512,10 +512,9 @@ auto SimpleSceneInitializer::InitializeRing() noexcept -> void {
     ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 
     RingArtifact ringArtifact {};
-    ringArtifact.SetBrightRingWidth(5.0F);
-    ringArtifact.SetDarkRingWidth(2.0F);
-    ringArtifact.SetDarkIntensity(darkRingIntensityRange.GetCenter());
-    ringArtifact.SetBrightIntensity(0.0F);
+    ringArtifact.SetInnerRadius(5.0F);
+    ringArtifact.SetRingWidth(2.0F);
+    ringArtifact.SetRadiodensityFactor(radiodensityFactorRange.GetCenter());
     ringArtifact.SetCenter(centerRange.GetCenter());
 
     BasicImageArtifact ringBasicArtifact { std::move(ringArtifact) };
@@ -526,14 +525,14 @@ auto SimpleSceneInitializer::InitializeRing() noexcept -> void {
 
     auto ringProperties = ring.GetProperties();
 
-    auto& darkRingIntensityProperty = ringProperties.GetPropertyByName<float>("Dark Ring Intensity");
-    ParameterSpan<float> darkIntensitySpan {
+    auto& radiodensityFactorProperty = ringProperties.GetPropertyByName<float>("Radiodensity Factor");
+    ParameterSpan<float> radiodensityFactorSpan {
             ArtifactVariantPointer(&ring),
-            darkRingIntensityProperty,
-            { darkRingIntensityRange.Min, darkRingIntensityRange.Max, darkRingIntensityRange.Step },
-            "Dark Ring Intensity Span"
+            radiodensityFactorProperty,
+            { radiodensityFactorRange.Min, radiodensityFactorRange.Max, radiodensityFactorRange.Step },
+            "Radiodensity Factor Span"
     };
-    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&ring), std::move(darkIntensitySpan));
+    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&ring), std::move(radiodensityFactorSpan));
 
     auto& centerProperty = ringProperties.GetPropertyByName<FloatPoint>("Center");
     ParameterSpan<FloatPoint> centerSpan {
@@ -712,10 +711,14 @@ auto MethodologySceneInitializer::operator()() -> void {
 
     auto& dataSource = App_.GetCtDataSource();
     dataSource.SetVolumeDataPhysicalDimensions({ 40.0, 40.0, 40.0 });
+#ifdef BUILD_TYPE_DEBUG
+    dataSource.SetVolumeNumberOfVoxels({ 64, 64, 32 });
+#else
+    dataSource.SetVolumeNumberOfVoxels({ 256, 256, 128 });
+#endif
 
     auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
-    thresholdFilter.ThresholdBetween(cancellousBoneTissue.CtNumber * 0.95,
-                                     cancellousBoneTissue.CtNumber * 1.05);
+    thresholdFilter.ThresholdBetween(-1500.0, 900.0);
 
     Cylinder spineCylinder {};
     spineCylinder.SetFunctionData({ 3.0, 37.5 });
@@ -750,8 +753,7 @@ auto MethodologySceneInitializer::operator()() -> void {
 
 
     Box rightLung {};
-    rightLung.SetFunctionData({ Point {   2.0, -12.0, -7.0 },
-                                Point { 12.0, 16.0, 7.0 }});
+    rightLung.SetFunctionData({ Point { 2.0, -12.0, -7.0 }, Point { 12.0, 16.0, 7.0 } });
     BasicStructure rightLungStructure { std::move(rightLung) };
     rightLungStructure.SetTissueType(lungTissue);
     rightLungStructure.SetEvaluationBias(-100.0F);
@@ -761,8 +763,7 @@ auto MethodologySceneInitializer::operator()() -> void {
     CtDataTree.AddBasicStructure(std::move(rightLungStructure), chestStructure);
 
     Box leftLung {};
-    leftLung.SetFunctionData({ Point { -12.0, -12.0, -7.0 },
-                               Point { -2.0, 16.0, 7.0 }});
+    leftLung.SetFunctionData({ Point { -12.0, -12.0, -7.0 }, Point { -2.0, 16.0, 7.0 } });
     BasicStructure leftLungStructure { std::move(leftLung) };
     leftLungStructure.SetTissueType(lungTissue);
     leftLungStructure.SetEvaluationBias(-100.0F);
@@ -779,7 +780,7 @@ auto MethodologySceneInitializer::operator()() -> void {
     heartSphereStructure.SetTissueType(muscleTissue);
     heartSphereStructure.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.3F, 0.9F });
     heartSphereStructure.SetEvaluationBias(-200.0F);
-    heartSphereStructure.SetName("Left");
+    heartSphereStructure.SetName("Heart");
 
     chestStructure = &std::get<CombinedStructure>(CtDataTree.GetRoot());
     CtDataTree.AddBasicStructure(std::move(heartSphereStructure), chestStructure);
@@ -787,7 +788,7 @@ auto MethodologySceneInitializer::operator()() -> void {
 
     static Range<float> const meanRange = { -25.0,  25.0, 5.0 };
 
-    auto& pipeline = Pipelines.AddPipeline();
+    auto& pipeline = Pipelines.Get(0);
 
     ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 

@@ -17,7 +17,6 @@ public:
     using BeforeRemoveArtifactCallback = std::function<void(ImageArtifact&)>;
 
     explicit ImageArtifactConcatenation(BeforeRemoveArtifactCallback callback = [](ImageArtifact&){}) noexcept;
-//    ImageArtifactConcatenation(ImageArtifactConcatenation const& other);
     ~ImageArtifactConcatenation();
 
     [[nodiscard]] auto
@@ -61,9 +60,6 @@ private:
 
     auto
     EmitEvent() -> void;
-
-    auto
-    EmitRemoveEvent(ImageArtifact* artifact) -> void;
 
     BeforeRemoveArtifactCallback BeforeRemoveCallback;
     std::unique_ptr<ImageArtifact> Start; // Composite

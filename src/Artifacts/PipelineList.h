@@ -11,7 +11,8 @@ struct CtStructureTreeEvent;
 
 
 enum struct PipelineEventType : uint8_t {
-    PRE_REMOVE
+    PRE_REMOVE,
+    POST_ADD
 };
 
 struct PipelineEvent {

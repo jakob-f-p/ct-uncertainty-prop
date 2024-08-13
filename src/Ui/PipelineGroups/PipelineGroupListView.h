@@ -15,6 +15,9 @@ public:
     [[nodiscard]] auto
     model() const noexcept -> PipelineGroupListModel*;
 
+protected:
+    void showEvent(QShowEvent* event) override;
+
 private:
     PipelineGroupListModel* GroupListModel;
 };
@@ -38,6 +41,9 @@ public:
 
     [[nodiscard]] auto
     data(const QModelIndex& index, int role) const -> QVariant override;
+
+    auto
+    Reset() -> void;
 
     [[nodiscard]] auto
     AddPipelineGroup(Pipeline const& basePipeline, std::string name = "") -> QModelIndex;

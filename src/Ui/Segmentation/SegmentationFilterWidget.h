@@ -22,6 +22,9 @@ public:
     [[nodiscard]] auto
     GetFilter() const -> vtkImageAlgorithm&;
 
+protected:
+    void showEvent(QShowEvent* event) override;
+
 private:
     QVBoxLayout* VLayout;
     ThresholdFilterWidget* FilterWidget;
