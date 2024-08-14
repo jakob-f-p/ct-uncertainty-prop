@@ -41,6 +41,9 @@ public:
     [[nodiscard]] auto
     GetTransformedPoint(Point point) const noexcept -> Point { return Transform.TransformPoint(point); }
 
+    [[nodiscard]] auto
+    GetInverselyTransformedPoint(Point point) const noexcept -> Point { return Transform.InverseTransformPoint(point); }
+
     auto
     SetTransformData(SimpleTransformData const& transformData) noexcept -> void { Transform.SetData(transformData); }
 

@@ -198,7 +198,7 @@ struct EvaluateImplicitStructures {
 
     auto operator() (const BasicStructure& basicStructure) const noexcept -> ModelingResult {
         return { basicStructure.FunctionValue(basicStructure.GetTransformedPoint(point)),
-                 basicStructure.Tissue.CtNumber,
+                 basicStructure.Tissue.Radiodensity,
                  basicStructure.Id };
     }
 
@@ -213,8 +213,8 @@ struct EvaluateImplicitStructures {
                                           structures[childIdx]));
         }
 
-        static auto compareModelingResults
-                = [](const ModelingResult& a, const ModelingResult& b) {
+        static constexpr auto compareModelingResults
+                = [](ModelingResult const& a, ModelingResult const& b) {
             return a.FunctionValue < b.FunctionValue;
         };
 
@@ -246,12 +246,12 @@ struct EvaluateImplicitStructures {
         }
     }
 
-    const std::vector<CtStructureTree::StructureVariant>& structures;
+    const std::vector<CtStructureVariant>& structures;
     const Point& point;
 };
 
 auto CtStructureTree::FunctionValueAndRadiodensity(Point point,
-                                                   StructureVariant const* const structure) const -> ModelingResult {
+                                                   CtStructureVariant const* structure) const -> ModelingResult {
     if (!HasRoot() || (structure && !std::visit([&](auto const& s) { return CtStructureExists(s); }, *structure)))
         throw std::runtime_error("TreeArtifacts does not contain structure. Cannot evaluate");
 
@@ -292,21 +292,90 @@ struct EvaluateFunctionValue {
         }
     }
 
-    const std::vector<CtStructureTree::StructureVariant>& structures;
+    const std::vector<CtStructureVariant>& structures;
     const Point& point;
 };
 
-auto CtStructureTree::FunctionValue(Point point, StructureVariant const& structure) const -> float {
+auto CtStructureTree::FunctionValue(Point point, CtStructureVariant const& structure) const -> float {
     point = TransformPointUntilStructure(point, structure);
 
     return std::visit(EvaluateFunctionValue{Structures, point}, structure);
+}
+
+struct FindClosestPointOnXYPlane {
+    auto operator() (BasicStructure const& basicStructure) const noexcept -> std::optional<DoublePoint> {
+        auto point = basicStructure.ClosestPointOnXYPlane(basicStructure.GetTransformedPoint(Point_));
+        return point
+                ? std::optional<DoublePoint> { basicStructure.GetInverselyTransformedPoint(*point) }
+                : std::nullopt;
+    }
+
+    auto operator() (CombinedStructure const& combinedStructure) const noexcept -> std::optional<DoublePoint> {
+        const Point transformedPoint = combinedStructure.GetTransformedPoint(Point_);
+
+        std::vector<DoublePoint> points;
+        std::vector<uidx_t> const& childIndices = combinedStructure.GetChildIndices();
+        points.reserve(childIndices.size());
+        for (const auto childIdx : childIndices) {
+            auto const& closestPoint = std::visit(FindClosestPointOnXYPlane { Structures, transformedPoint },
+                                                  Structures[childIdx]);
+            if (closestPoint)
+                points.emplace_back(std::move(*closestPoint));
+        }
+
+        if (points.empty())
+            return std::nullopt;
+
+        std::transform(points.cbegin(), points.cend(),
+                       points.begin(),
+                       [&](DoublePoint const& point) { return combinedStructure.GetInverselyTransformedPoint(point); });
+
+        static const auto compareDistances = [this](DoublePoint const& a, DoublePoint const& b) {
+            return VectorDistance(a, Point_) < VectorDistance(b, Point_);
+        };
+
+        auto const it = [&]() {
+            switch (combinedStructure.Operator) {
+                case CombinedStructure::OperatorType::UNION:
+                    return std::min_element(points.begin(), points.end(), compareDistances);
+
+                case CombinedStructure::OperatorType::INTERSECTION:
+                    return std::max_element(points.begin(), points.end(), compareDistances);
+
+                case CombinedStructure::OperatorType::DIFFERENCE_:
+                    qWarning("todo");
+                    return std::min_element(points.begin(), points.end(), compareDistances);
+
+                default:
+                    return points.end();
+            }
+        }();
+
+        return it == points.end()
+                ? std::nullopt
+                : std::optional<DoublePoint> { *it };
+    }
+
+    const std::vector<CtStructureVariant>& Structures;
+    const Point& Point_;
+};
+
+auto CtStructureTree::ClosestPointOnXYPlane(Point const& point,
+                                            CtStructureVariant const& structure) const -> std::optional<DoublePoint> {
+    Point const& transformedPoint = TransformPointUntilStructure(point, structure);
+
+    auto const& closestPoint = std::visit(FindClosestPointOnXYPlane { Structures, transformedPoint }, structure);
+
+    return closestPoint
+            ? std::optional<DoublePoint> { TransformPointFromStructure(*closestPoint, structure) }
+            : std::nullopt;
 }
 
 void CtStructureTree::SetData(uidx_t structureIdx, const QVariant& data) {
     if (!StructureIdxExists(structureIdx))
         throw std::runtime_error("Cannot set data. Given structure idx does not exist.");
 
-    StructureVariant& structureVariant = Structures[structureIdx];
+    CtStructureVariant& structureVariant = Structures[structureIdx];
 
     if (data.canConvert<CombinedStructureData>()) {
         auto combinedData = data.value<CombinedStructureData>();
@@ -323,25 +392,25 @@ auto CtStructureTree::HasRoot() const noexcept -> bool {
     return static_cast<bool>(RootIdx);
 }
 
-auto CtStructureTree::GetRoot() const -> StructureVariant const& {
+auto CtStructureTree::GetRoot() const -> CtStructureVariant const& {
     if (!HasRoot())
         throw std::runtime_error("Cannot get root. No root is present.");
 
     return Structures[*RootIdx];
 }
 
-auto CtStructureTree::GetRoot() -> StructureVariant& {
+auto CtStructureTree::GetRoot() -> CtStructureVariant& {
     if (!HasRoot())
         throw std::runtime_error("Cannot get root. No root is present.");
 
     return Structures[*RootIdx];
 }
 
-auto CtStructureTree::GetStructureAt(uidx_t idx) const -> const StructureVariant& {
+auto CtStructureTree::GetStructureAt(uidx_t idx) const -> const CtStructureVariant& {
     return Structures.at(idx);
 }
 
-auto CtStructureTree::GetStructureAt(uidx_t idx) -> StructureVariant& {
+auto CtStructureTree::GetStructureAt(uidx_t idx) -> CtStructureVariant& {
     return Structures.at(idx);
 }
 
@@ -374,15 +443,45 @@ struct AddBasicStructureIndices {
     }
 
     std::vector<StructureId>& StructureIds;
-    std::vector<CtStructureTree::StructureVariant> const& Structures;
+    std::vector<CtStructureVariant> const& Structures;
 };
 
-auto CtStructureTree::GetBasicStructureIdsOfStructureAt(uidx_t idx) const noexcept -> std::vector<StructureId> {
+auto CtStructureTree::GetBasicStructureIdsOfStructureAt(uidx_t idx) const -> std::vector<StructureId> {
+    return GetBasicStructureIds(Structures.at(idx));
+}
+
+auto
+CtStructureTree::GetBasicStructureIds(CtStructureVariant const& structure) const -> std::vector<StructureId> {
+    if (auto it = std::find(Structures.cbegin(), Structures.cend(), structure);
+        it == Structures.cend())
+        throw std::runtime_error("Structure does not exist");
+
     std::vector<StructureId> structureIds {};
 
-    std::visit(AddBasicStructureIndices { structureIds, Structures }, Structures.at(idx));
+    std::visit(AddBasicStructureIndices { structureIds, Structures }, structure);
 
     return structureIds;
+}
+struct MaxTissueValueAlgorithm {
+    auto operator() (BasicStructure const& basicStructure) const noexcept -> float {
+        return basicStructure.GetTissueValue();
+    }
+
+    auto operator() (CombinedStructure const& combinedStructure) const noexcept -> float {
+        std::vector<float> tissueValues {};
+        for (const auto childIdx : combinedStructure.ChildStructureIndices) {
+            float const value = std::visit(MaxTissueValueAlgorithm { Structures }, Structures[childIdx]);
+            tissueValues.emplace_back(value);
+        }
+
+        return *std::max_element(tissueValues.begin(), tissueValues.end());
+    }
+
+    std::vector<CtStructureVariant> const& Structures;
+};
+
+auto CtStructureTree::GetMaxTissueValue(CtStructureVariant const& structure) const -> float {
+    return std::visit(MaxTissueValueAlgorithm { Structures }, structure);
 }
 
 auto CtStructureTree::StructureCount() const noexcept -> uidx_t {
@@ -433,7 +532,9 @@ auto CtStructureTree::IncrementParentAndChildIndices(uidx_t startIdx) -> void {
     for (auto& structureVariant : Structures) {
         std::visit(incrementParentIndicesGreaterThanOrEqualToStart, structureVariant);
         std::visit(Overload {
-            [=](CombinedStructure& combinedStructure) { combinedStructure.UpdateChildIndicesGreaterThanOrEqualToBy(startIdx, +1); },
+            [=](CombinedStructure& combinedStructure) {
+                combinedStructure.UpdateChildIndicesGreaterThanOrEqualToBy(startIdx, +1);
+                },
             [](BasicStructure&) {},
         }, structureVariant);
     }

@@ -142,7 +142,7 @@ auto DefaultSceneInitializer::operator()() -> void {
     ImageArtifactConcatenation& imageArtifactConcatenationB = pipelineB.GetImageArtifactConcatenation();
 
     MotionArtifact motionArtifact {};
-    motionArtifact.SetCtNumberFactor(5.0);
+    motionArtifact.SetRadiodensityFactor(5.0);
     motionArtifact.SetTransform({ 1.0, 0.0, 0.0,
                                   0.0, 0.0, 0.0,
                                   1.0, 1.0, 1.0 });
@@ -199,7 +199,7 @@ auto DefaultSceneInitializer::operator()() -> void {
     imageArtifactConcatenationA.AddImageArtifact(ImageArtifact { BasicImageArtifact { std::move(stairStepArtifact) } });
 
     MotionArtifact motionArtifactB {};
-    motionArtifactB.SetCtNumberFactor(5.0);
+    motionArtifactB.SetRadiodensityFactor(5.0);
     motionArtifactB.SetTransform({ 1.0, 0.0, 0.0,
                                    0.0, 0.0, 0.0,
                                    1.0, 1.0, 1.0 });
@@ -265,8 +265,8 @@ auto DebugSceneInitializer::operator()() -> void {
     auto cancellousBoneTissueType = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
 
     auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
-    thresholdFilter.ThresholdBetween(cancellousBoneTissueType.CtNumber * 0.95,
-                                     cancellousBoneTissueType.CtNumber * 1.05);
+    thresholdFilter.ThresholdBetween(cancellousBoneTissueType.Radiodensity * 0.95,
+                                     cancellousBoneTissueType.Radiodensity * 1.05);
 
     BasicStructure sphere(Sphere{});
     sphere.SetTissueType(cancellousBoneTissueType);
@@ -321,7 +321,7 @@ auto DebugSingleSceneInitializer::operator()() -> void {
     auto cancellousBoneTissueType = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
 
     auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
-    thresholdFilter.ThresholdByUpper(cancellousBoneTissueType.CtNumber * 0.95);
+    thresholdFilter.ThresholdByUpper(cancellousBoneTissueType.Radiodensity * 0.95);
 
     BasicStructure sphere(Sphere{});
     sphere.SetTissueType(cancellousBoneTissueType);
@@ -403,8 +403,8 @@ auto SimpleSceneInitializer::operator()() -> void {
     auto cancellousBoneTissueType = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
 
     auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
-    thresholdFilter.ThresholdBetween(cancellousBoneTissueType.CtNumber * 0.95,
-                                     cancellousBoneTissueType.CtNumber * 1.05);
+    thresholdFilter.ThresholdBetween(cancellousBoneTissueType.Radiodensity * 0.95,
+                                     cancellousBoneTissueType.Radiodensity * 1.05);
 
     BasicStructure sphere(Sphere{});
     sphere.SetTissueType(cancellousBoneTissueType);
@@ -593,7 +593,7 @@ auto SimpleSceneInitializer::InitializeStairStep() noexcept -> void {
     ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 
     StairStepArtifact stairStepArtifact {};
-    stairStepArtifact.SetRelativeZAxisSamplingRate(zSamplingRate.Min);
+    stairStepArtifact.SetRelativeZAxisSamplingRate(zSamplingRate.GetCenter());
 
     BasicImageArtifact stairStepBasicArtifact { std::move(stairStepArtifact) };
     stairStepBasicArtifact.SetName("stair step");
@@ -672,7 +672,7 @@ auto SimpleSceneInitializer::InitializeMotion() noexcept -> void {
     auto& structureArtifacts = pipeline.GetStructureArtifactList(0);
 
     MotionArtifact motionArtifact {};
-    motionArtifact.SetCtNumberFactor(ctNumberFactorRange.GetCenter());
+    motionArtifact.SetRadiodensityFactor(ctNumberFactorRange.GetCenter());
     motionArtifact.SetTransform({ 3.0, -3.0, -3.0,
                                   0.0, 0.0, 0.0,
                                   1.1, 1.0, 1.0 });
@@ -685,14 +685,14 @@ auto SimpleSceneInitializer::InitializeMotion() noexcept -> void {
 
     auto motionProperties = motion.GetProperties();
 
-    auto& ctNumberFactorProperty = motionProperties.GetPropertyByName<float>("Ct Number Factor");
-    ParameterSpan<float> ctNumberFactorSpan {
+    auto& radiodensityFactorProperty = motionProperties.GetPropertyByName<float>("Radiodensity Factor");
+    ParameterSpan<float> radiodensityFactorSpan {
             ArtifactVariantPointer(&motion),
-            ctNumberFactorProperty,
+            radiodensityFactorProperty,
             { ctNumberFactorRange.Min, ctNumberFactorRange.Max, ctNumberFactorRange.Step },
-            "Ct Number Factor Span"
+            "Radiodensity Factor Span"
     };
-    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&motion), std::move(ctNumberFactorSpan));
+    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&motion), std::move(radiodensityFactorSpan));
 }
 
 
@@ -707,7 +707,7 @@ auto MethodologySceneInitializer::operator()() -> void {
     auto cancellousBoneTissue = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
     auto corticalBoneTissue   = BasicStructureDetails::GetTissueTypeByName("Cortical Bone");
 
-    CtRenderWidget::SetWindowWidth({ 0.0, corticalBoneTissue.CtNumber });
+    CtRenderWidget::SetWindowWidth({ 0.0, corticalBoneTissue.Radiodensity });
 
     auto& dataSource = App_.GetCtDataSource();
     dataSource.SetVolumeDataPhysicalDimensions({ 40.0, 40.0, 40.0 });

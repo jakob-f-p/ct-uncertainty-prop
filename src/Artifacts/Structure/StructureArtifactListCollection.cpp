@@ -3,6 +3,9 @@
 #include "StructureArtifactsFilter.h"
 #include "../../Modeling/CtStructureTree.h"
 
+#include <ranges>
+
+
 auto StructureArtifactList::GetMTime() const noexcept -> vtkMTimeType {
     if (Artifacts.empty())
         return 0;
@@ -92,6 +95,7 @@ TreeStructureArtifactListCollection::TreeStructureArtifactListCollection(
 
         BeforeRemoveCallback(removeCallback),
         StructureTree(ctStructureTree) {
+    Filter->SetCtStructureTree(ctStructureTree);
     Filter->SetStructureArtifactCollection(this);
 };
 
@@ -118,45 +122,18 @@ void TreeStructureArtifactListCollection::AddStructureArtifactList(uidx_t insert
     if (insertionIdx > ArtifactLists.size())
         throw std::runtime_error("Cannot add structure wrapper. Given index is  larger then the current size.");
 
-    auto basicStructureIdProvider = [&](StructureArtifactList const& artifactList) {
+    auto structureProvider = [&](StructureArtifactList const& artifactList) -> CtStructureVariant const& {
         auto it = std::find(ArtifactLists.cbegin(), ArtifactLists.cend(), artifactList);
         if (it == ArtifactLists.cend())
             throw std::runtime_error("Artifact list must exist");
 
         uidx_t const artifactListIdx = std::distance(ArtifactLists.cbegin(), it);
 
-        return StructureTree.GetBasicStructureIdsOfStructureAt(artifactListIdx);
-    };
-
-    auto structureEvaluatorProvider = [&](StructureArtifactList const& artifactList) {
-        auto it = std::find(ArtifactLists.cbegin(), ArtifactLists.cend(), artifactList);
-        if (it == ArtifactLists.cend())
-            throw std::runtime_error("Artifact list must exist");
-
-        uidx_t const artifactListIdx = std::distance(ArtifactLists.cbegin(), it);
-
-        auto const& structure = StructureTree.GetStructureAt(artifactListIdx);
-
-        return [&](DoublePoint point) { return StructureTree.FunctionValue(point, structure); };
-    };
-
-    auto tissueValueProvider = [&](StructureArtifactList const& artifactList) {
-        auto it = std::find(ArtifactLists.cbegin(), ArtifactLists.cend(), artifactList);
-        if (it == ArtifactLists.cend())
-            throw std::runtime_error("Artifact list must exist");
-
-        uidx_t const artifactListIdx = std::distance(ArtifactLists.cbegin(), it);
-
-        auto const& structure = StructureTree.GetStructureAt(artifactListIdx);
-
-        return [&](DoublePoint point) {
-            return StructureTree.FunctionValueAndRadiodensity(point, &structure).Radiodensity;
-        };
+        return StructureTree.GetStructureAt(artifactListIdx);
     };
 
     ArtifactLists.emplace(std::next(ArtifactLists.cbegin(), insertionIdx),
-                          BeforeRemoveCallback, basicStructureIdProvider,
-                          tissueValueProvider, structureEvaluatorProvider);
+                          BeforeRemoveCallback, structureProvider);
 }
 
 void TreeStructureArtifactListCollection::RemoveStructureArtifactList(uidx_t removeIdx) {

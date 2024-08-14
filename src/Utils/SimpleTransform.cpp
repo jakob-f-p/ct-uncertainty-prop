@@ -15,7 +15,8 @@ SimpleTransform::SimpleTransform(SimpleTransform const& other) :
         TranslationValues(other.TranslationValues),
         RotationAngles(other.RotationAngles),
         ScaleFactors(other.ScaleFactors),
-        Matrix(other.Matrix) {}
+        Matrix(other.Matrix),
+        InverseMatrix(other.Matrix) {}
 
 auto SimpleTransform::GetMTime() const noexcept -> vtkMTimeType {
     return Transform->GetMTime();
@@ -34,21 +35,76 @@ auto SimpleTransform::SetData(const SimpleTransformData& transformData) noexcept
     RotationAngles =    transformData[1];
     ScaleFactors =      transformData[2];
 
-    Transform->Identity();
-    Transform->Translate(TranslationValues.data());
-    Transform->RotateX(RotationAngles[0]);
-    Transform->RotateY(RotationAngles[1]);
-    Transform->RotateZ(RotationAngles[2]);
-    Transform->Scale(ScaleFactors.data());
+    InverseTransform->Identity();
+    InverseTransform->Translate(TranslationValues.data());
+    InverseTransform->RotateX(RotationAngles[0]);
+    InverseTransform->RotateY(RotationAngles[1]);
+    InverseTransform->RotateZ(RotationAngles[2]);
+    InverseTransform->Scale(ScaleFactors.data());
+
+    Transform->DeepCopy(InverseTransform);
     Transform->Inverse();
 
+    InverseTransform->Update();
     Transform->Update();
 
     vtkNew<vtkMatrix4x4> vtkMatrix;
+    InverseTransform->GetMatrix(vtkMatrix);
+    double const* doubleMatrix = vtkMatrix->GetData();
+    std::copy(doubleMatrix, std::next(doubleMatrix, 12), InverseMatrix.data());
     Transform->GetMatrix(vtkMatrix);
-
-    const double* doubleMatrix = vtkMatrix->GetData();
+    doubleMatrix = vtkMatrix->GetData();
     std::copy(doubleMatrix, std::next(doubleMatrix, 12), Matrix.data());
+}
+
+auto SimpleTransform::LeftMultiply(SimpleTransform const& other) const noexcept -> SimpleTransform {
+    SimpleTransform transform {};
+
+    transform.Transform->Identity();
+    transform.Transform->PreMultiply();
+    transform.Transform->Concatenate(Transform);
+    transform.Transform->Concatenate(other.Transform);
+
+    transform.InverseTransform->DeepCopy(transform.Transform);
+    transform.InverseTransform->Inverse();
+
+    Transform->Update();
+    InverseTransform->Update();
+
+    vtkNew<vtkMatrix4x4> vtkMatrix;
+    Transform->GetMatrix(vtkMatrix);
+    double const* doubleMatrix = vtkMatrix->GetData();
+    std::copy(doubleMatrix, std::next(doubleMatrix, 12), transform.Matrix.data());
+    InverseTransform->GetMatrix(vtkMatrix);
+    doubleMatrix = vtkMatrix->GetData();
+    std::copy(doubleMatrix, std::next(doubleMatrix, 12), transform.InverseMatrix.data());
+
+    return transform;
+}
+
+auto SimpleTransform::RightMultiply(SimpleTransform const& other) const noexcept -> SimpleTransform {
+    SimpleTransform transform {};
+
+    transform.Transform->Identity();
+    transform.Transform->PostMultiply();
+    transform.Transform->Concatenate(Transform);
+    transform.Transform->Concatenate(other.Transform);
+
+    transform.InverseTransform->DeepCopy(transform.Transform);
+    transform.InverseTransform->Inverse();
+
+    Transform->Update();
+    InverseTransform->Update();
+
+    vtkNew<vtkMatrix4x4> vtkMatrix;
+    Transform->GetMatrix(vtkMatrix);
+    const double* doubleMatrix = vtkMatrix->GetData();
+    std::copy(doubleMatrix, std::next(doubleMatrix, 12), transform.Matrix.data());
+    InverseTransform->GetMatrix(vtkMatrix);
+    doubleMatrix = vtkMatrix->GetData();
+    std::copy(doubleMatrix, std::next(doubleMatrix, 12), transform.InverseMatrix.data());
+
+    return transform;
 }
 
 

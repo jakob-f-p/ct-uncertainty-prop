@@ -60,6 +60,15 @@ public:
     [[nodiscard]] inline auto
     TransformPoint(Point point) const noexcept -> Point;
 
+    [[nodiscard]] inline auto
+    InverseTransformPoint(Point point) const noexcept -> Point;
+
+    [[nodiscard]] auto
+    LeftMultiply(SimpleTransform const& other) const noexcept -> SimpleTransform;
+
+    [[nodiscard]] auto
+    RightMultiply(SimpleTransform const& other) const noexcept -> SimpleTransform;
+
 private:
     std::array<double, 3> TranslationValues {};
     std::array<double, 3> RotationAngles {};
@@ -67,6 +76,9 @@ private:
 
     vtkNew<vtkTransform> Transform;
     RowMajor4x3Matrix Matrix;
+
+    vtkNew<vtkTransform> InverseTransform;
+    RowMajor4x3Matrix InverseMatrix;
 };
 
 auto SimpleTransform::TransformPoint(Point point) const noexcept -> Point {
@@ -74,6 +86,13 @@ auto SimpleTransform::TransformPoint(Point point) const noexcept -> Point {
              Matrix(1, 0) * point[0] + Matrix(1, 1) * point[1] + Matrix(1, 2) * point[2] + Matrix(1, 3),
              Matrix(2, 0) * point[0] + Matrix(2, 1) * point[1] + Matrix(2, 2) * point[2] + Matrix(2, 3) };
 }
+
+auto SimpleTransform::InverseTransformPoint(Point point) const noexcept -> Point {
+    return { InverseMatrix(0, 0) * point[0] + InverseMatrix(0, 1) * point[1] + InverseMatrix(0, 2) * point[2] + InverseMatrix(0, 3),
+             InverseMatrix(1, 0) * point[0] + InverseMatrix(1, 1) * point[1] + InverseMatrix(1, 2) * point[2] + InverseMatrix(1, 3),
+             InverseMatrix(2, 0) * point[0] + InverseMatrix(2, 1) * point[1] + InverseMatrix(2, 2) * point[2] + InverseMatrix(2, 3) };
+}
+
 
 
 class SimpleTransformWidget : public QWidget {

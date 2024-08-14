@@ -22,24 +22,26 @@ auto StructureArtifact::GetSubType() const noexcept -> StructureArtifact::SubTyp
 }
 
 auto
-StructureArtifact::GetSubType(const StructureArtifactVariant& artifactVariant) noexcept -> StructureArtifact::SubType {
+StructureArtifact::GetSubType(StructureArtifactVariant const& artifactVariant) noexcept -> StructureArtifact::SubType {
     return std::visit(Overload {
             [](MotionArtifact const&)  { return SubType::MOTION; },
+            [](MetalArtifact const&)   { return SubType::METAL; },
             [](auto const&) { qWarning("Todo"); return SubType::MOTION; }
     }, artifactVariant);
 }
 
-StructureArtifact::StructureArtifact(const StructureArtifactData& data) :
+StructureArtifact::StructureArtifact(StructureArtifactData const& data) :
         Artifact([&]() -> StructureArtifactVariant {
-            return std::visit([](auto& data) { return ArtifactTypeT<decltype(data)>(); }, data.Data);
+            return std::visit([](auto& data) -> StructureArtifactVariant { return ArtifactTypeT<decltype(data)>(); },
+                              data.Data);
         }()) {
     data.PopulateArtifact(*this);
 }
 
 
-auto StructureArtifactData::PopulateFromArtifact(const StructureArtifact& artifact) noexcept -> void {
+auto StructureArtifactData::PopulateFromArtifact(StructureArtifact const& artifact) noexcept -> void {
     Name = QString::fromStdString(artifact.GetName());
-    Data = std::visit([&](auto& artifact) {
+    Data = std::visit([&](auto& artifact) -> StructureArtifactDataVariant {
         DataTypeT<decltype(artifact)> data {};
         data.PopulateFromArtifact(artifact);
         return data;
@@ -89,7 +91,7 @@ auto StructureArtifactWidget::GetData() const noexcept -> StructureArtifactData 
     return data;
 }
 
-auto StructureArtifactWidget::Populate(const StructureArtifactData& data) noexcept -> void {
+auto StructureArtifactWidget::Populate(StructureArtifactData const& data) noexcept -> void {
     NameEdit->SetText(data.Name);
 
     StructureArtifact::SubType const subType = std::visit([&](const auto& data) {
@@ -111,6 +113,7 @@ auto StructureArtifactWidget::UpdateSubTypeWidget() noexcept -> void {
     StructureArtifactWidgetVariant newWidgetVariant = [subType]() -> StructureArtifactWidgetVariant {
         switch (subType) {
             case StructureArtifact::SubType::MOTION: return new MotionArtifactWidget();
+            case StructureArtifact::SubType::METAL:  return new MetalArtifactWidget();
             default: throw std::runtime_error("Todo");
         }
     }();

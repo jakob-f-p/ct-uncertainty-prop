@@ -10,9 +10,13 @@
 
 #include <array>
 
+class CtStructureTree;
+class CtStructureVariant;
+
 struct MotionArtifactData;
 
 class QFormLayout;
+class QSpinBox;
 
 
 class MotionArtifact {
@@ -26,41 +30,33 @@ public:
     auto operator= (MotionArtifact&&) -> MotionArtifact& = default;
 
     [[nodiscard]] auto
-    GetCtNumberFactor() const noexcept -> float { return CtNumberFactor; }
+    GetRadiodensityFactor() const noexcept -> float { return RadiodensityFactor; }
 
     auto
-    SetCtNumberFactor(float factor) noexcept -> void { CtNumberFactor = factor; Modified(); }
+    SetRadiodensityFactor(float factor) noexcept -> void;
 
     auto
-    SetTransform(SimpleTransformData const& data) noexcept -> void { Transform.SetData(data); Modified(); }
+    SetBlurKernelRadius(uint16_t kernelRadius) noexcept -> void;
+
+    [[nodiscard]] auto
+    GetBlurKernelStandardDeviation() const noexcept -> float { return KernelSd; }
+
+    auto
+    SetBlurKernelStandardDeviation(float sd) noexcept -> void;
+
+    auto
+    SetTransform(SimpleTransformData const& data) noexcept -> void;
 
     [[nodiscard]] auto
     EvaluateAtPosition(DoublePoint const& point,
+                       float maxRadiodensity,
                        bool pointOccupiedByStructure,
-                       float tissueValue,
-                       std::function<float(DoublePoint)> const& functionValueEvaluator) const noexcept -> float {
-        if (pointOccupiedByStructure)
-            return 0.0F;
-
-        DoublePoint const transformedPoint = Transform.TransformPoint(point);
-
-        float const functionValue = functionValueEvaluator(transformedPoint);
-
-        return functionValue < 0.0F
-                ? tissueValue * CtNumberFactor + 1000.0F
-                : 0.0F;
-    }
+                       CtStructureTree const& structureTree,
+                       CtStructureVariant const& structure,
+                       std::array<double, 3> spacing) const noexcept -> float;
 
     [[nodiscard]] auto
-    GetProperties() noexcept -> PipelineParameterProperties {
-        PipelineParameterProperties properties;
-        properties.Add(
-                FloatObjectProperty("Ct Number Factor",
-                                    [this] { return GetCtNumberFactor(); },
-                                    [this](float ctNumberFactor) { this->SetCtNumberFactor(ctNumberFactor); },
-                                    { 0.01, 10.00, 0.01, 2 }));
-        return properties;
-    }
+    GetProperties() noexcept -> PipelineParameterProperties;
 
     [[nodiscard]] auto
     GetMTime() const noexcept -> vtkMTimeType { return MTime; }
@@ -71,8 +67,15 @@ public:
 private:
     friend struct MotionArtifactData;
 
+    auto
+    UpdateKernel() noexcept -> void;
+
+    float RadiodensityFactor = 0.0F;
+    uint16_t KernelRadius = 0;
+    float KernelSd = 1.0F;
     SimpleTransform Transform;
-    float CtNumberFactor = 0.0F;
+    std::vector<float> Kernel2D;
+
     vtkTimeStamp MTime;
 };
 
@@ -80,8 +83,10 @@ private:
 struct MotionArtifactData {
     using Artifact = MotionArtifact;
 
+    float RadiodensityFactor = 0.0F;
+    uint16_t KernelRadius = 0;
+    float KernelSd = 1.0F;
     SimpleTransformData Transform {};
-    float CtNumberFactor = 0.0F;
 
     auto
     PopulateFromArtifact(MotionArtifact const& artifact) noexcept -> void;
@@ -105,6 +110,8 @@ public:
 
 private:
     QFormLayout* Layout;
-    QDoubleSpinBox* CtNumberFactorSpinBox;
+    QDoubleSpinBox* RadiodensitySpinBox;
+    QSpinBox* KernelRadiusSpinBox;
+    QDoubleSpinBox* KernelSdSpinBox;
     SimpleTransformWidget* TransformWidget;
 };

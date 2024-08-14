@@ -36,13 +36,13 @@ namespace BasicStructureDetails {
 
     struct TissueType {
         std::string Name;
-        float CtNumber = 0.0; // value on the Hounsfield scale
+        float Radiodensity = 0.0; // value on the Hounsfield scale
 
         auto
-        operator==(const TissueType& other) const noexcept -> bool { return Name == other.Name && CtNumber == other.CtNumber; }
+        operator==(const TissueType& other) const noexcept -> bool { return Name == other.Name && Radiodensity == other.Radiodensity; }
 
         friend auto operator<<(std::ostream& stream, const TissueType& type) -> std::ostream& {
-            return stream << type.Name << ": ('" << type.CtNumber << "')";
+            return stream << type.Name << ": ('" << type.Radiodensity << "')";
         }
     };
 
@@ -143,11 +143,17 @@ public:
     auto
     SetTissueType(TissueType tissueType) noexcept -> void;
 
+    [[nodiscard]] auto
+    GetTissueValue() const noexcept -> float;
+
     auto
     SetEvaluationBias(float evaluationBias) noexcept -> void;
 
     [[nodiscard]] inline auto
     FunctionValue(Point point) const -> float;
+
+    [[nodiscard]] inline auto
+    ClosestPointOnXYPlane(Point point) const -> std::optional<DoublePoint>;
 
     [[nodiscard]] auto
     GetId() const noexcept -> StructureId { return Id; }
@@ -174,4 +180,9 @@ auto BasicStructure::FunctionValue(Point point) const -> float {
                                 : val,
                         0.0F);
     }, Shape);
+}
+
+auto BasicStructure::ClosestPointOnXYPlane(Point point) const -> std::optional<DoublePoint> {
+    return std::visit([&point](const auto& shape) { return shape.ClosestPointOnXYPlane(point); },
+                      Shape);
 }

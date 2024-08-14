@@ -19,6 +19,8 @@ void CuppingArtifactFilter::PrintSelf(ostream &os, vtkIndent indent) {
     Superclass::PrintSelf(os, indent);
 
     os << indent << "Minimum Radiodensity Factor" << MinRadiodensityFactor << ")\n";
+    os << indent << std::format("Center: ({}, {}, {})",
+                                Center[0], Center[1], Center[2]) << ")\n";
 }
 
 auto CuppingArtifactFilter::RequestInformation(vtkInformation* request,
@@ -148,8 +150,9 @@ void CuppingArtifactFilter::Algorithm::operator()(vtkIdType pointId, vtkIdType e
 
                 float const relativeDistance = xyDistance / xyMaxDistance;
                 float const factor = relativeDistance * RadiodensityFactorRange + MinRadiodensityFactor;
+                float const delta = Radiodensities[pointId] * (factor - 1.0F);
 
-                ArtifactValues[pointId] = Radiodensities[pointId] * (factor - 1.0F);
+                ArtifactValues[pointId] = std::min(delta, 0.0F);
 
                 pointId++;
 

@@ -100,6 +100,8 @@ private:
     friend struct EvaluateImplicitStructures;
     friend struct EvaluateFunctionValue;
     friend struct AddBasicStructureIndices;
+    friend struct MaxTissueValueAlgorithm;
+    friend struct FindClosestPointOnXYPlane;
     friend struct CombinedStructureDetails::CombinedStructureDataImpl;
     friend class CtStructureTree;
     friend class CtStructureTreeModel;

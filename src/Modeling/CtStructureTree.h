@@ -27,9 +27,10 @@ struct CtStructureTreeEvent {
 
 using StructureDataVariant = std::variant<BasicStructureData, CombinedStructureData>;
 
+class CtStructureVariant : public std::variant<BasicStructure, CombinedStructure> {};
+
 class CtStructureTree {
 public:
-    using StructureVariant = std::variant<BasicStructure, CombinedStructure>;
 
     [[nodiscard]] auto
     GetMTime() const -> vtkMTimeType;
@@ -66,16 +67,16 @@ public:
     HasRoot() const noexcept -> bool;
 
     [[nodiscard]] auto
-    GetRoot() const -> StructureVariant const&;
+    GetRoot() const -> CtStructureVariant const&;
 
     [[nodiscard]] auto
-    GetRoot() -> StructureVariant&;
+    GetRoot() -> CtStructureVariant&;
 
     [[nodiscard]] auto
-    GetStructureAt(uidx_t idx) const -> StructureVariant const&;
+    GetStructureAt(uidx_t idx) const -> CtStructureVariant const&;
 
     [[nodiscard]] auto
-    GetStructureAt(uidx_t idx) -> StructureVariant&;
+    GetStructureAt(uidx_t idx) -> CtStructureVariant&;
 
     [[nodiscard]] auto
     StructureCount() const noexcept -> uidx_t;
@@ -87,10 +88,13 @@ public:
     };
 
     [[nodiscard]] auto
-    FunctionValueAndRadiodensity(Point point, StructureVariant const* = nullptr) const -> ModelingResult;
+    FunctionValueAndRadiodensity(Point point, CtStructureVariant const* = nullptr) const -> ModelingResult;
 
     [[nodiscard]] auto
-    FunctionValue(Point point, StructureVariant const& structure) const -> float;
+    FunctionValue(Point point, CtStructureVariant const& structure) const -> float;
+
+    [[nodiscard]] auto
+    ClosestPointOnXYPlane(Point const& point, CtStructureVariant const& structure) const -> std::optional<DoublePoint>;
 
     void SetData(uidx_t structureIdx, const QVariant& data);
 
@@ -101,7 +105,13 @@ public:
     GetRootIdx() const noexcept -> idx_t;
 
     [[nodiscard]] auto
-    GetBasicStructureIdsOfStructureAt(uidx_t idx) const noexcept -> std::vector<StructureId>;
+    GetBasicStructureIdsOfStructureAt(uidx_t idx) const -> std::vector<StructureId>;
+
+    [[nodiscard]] auto
+    GetBasicStructureIds(CtStructureVariant const& structure) const -> std::vector<StructureId>;
+
+    [[nodiscard]] auto
+    GetMaxTissueValue(CtStructureVariant const& structure) const -> float;
 
 private:
     [[nodiscard]] auto
@@ -126,8 +136,8 @@ private:
     DecrementParentAndChildIndices(uidx_t startIdx) -> void;
 
     [[nodiscard]] auto
-    TransformPointUntilStructure(Point point, StructureVariant const& structure) const -> Point {
-        std::vector<StructureVariant const*> ancestors;
+    TransformPointUntilStructure(Point point, CtStructureVariant const& structure) const -> Point {
+        std::vector<CtStructureVariant const*> ancestors;
         uidx_t const structureIdx = std::visit([&](auto const& s) { return FindIndexOf(s); }, structure);
 
         idx_t ancestorIdx = std::visit([](auto const& s) { return s.ParentIdx; }, structure);
@@ -139,13 +149,32 @@ private:
         }
 
         return std::accumulate(ancestors.crbegin(), ancestors.crend(), point,
-                        [](Point point, StructureVariant const* ancestor) {
+                        [](Point point, CtStructureVariant const* ancestor) {
             return std::visit([&](auto const& s) { return s.GetTransformedPoint(point); }, *ancestor);
         });
     }
 
+    [[nodiscard]] auto
+    TransformPointFromStructure(Point point, CtStructureVariant const& structure) const -> Point {
+        std::vector<CtStructureVariant const*> ancestors;
+        uidx_t const structureIdx = std::visit([&](auto const& s) { return FindIndexOf(s); }, structure);
+
+        idx_t ancestorIdx = std::visit([](auto const& s) { return s.ParentIdx; }, structure);
+        while (ancestorIdx) {
+            auto const& ancestor = GetStructureAt(*ancestorIdx);
+            ancestors.push_back(&ancestor);
+
+            ancestorIdx = std::visit([](auto const& s) { return s.ParentIdx; }, ancestor);
+        }
+
+        return std::accumulate(ancestors.cbegin(), ancestors.cend(), point,
+                               [](Point point, CtStructureVariant const* ancestor) {
+            return std::visit([&](auto const& s) { return s.GetInverselyTransformedPoint(point); }, *ancestor);
+        });
+    }
+
     vtkTimeStamp MTime;
-    std::vector<StructureVariant> Structures;
+    std::vector<CtStructureVariant> Structures;
     std::vector<TreeEventCallback> TreeEventCallbacks;
     idx_t RootIdx;
 };

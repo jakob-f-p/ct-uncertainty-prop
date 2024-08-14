@@ -85,21 +85,30 @@ void StructureArtifactsWidgetDialog::AddArtifact() {
 }
 
 void StructureArtifactsWidgetDialog::RemoveArtifact() {
-    QModelIndex const index = SelectionModel->currentIndex();
+    QModelIndex const index = SelectionModel->selection().indexes().at(0);
+    assert(SelectionModel->selection().indexes().size() == 1);
+
     Model->RemoveStructureArtifact(index);
+
     SelectionModel->clearSelection();
 }
 
 void StructureArtifactsWidgetDialog::MoveUp() {
-    QModelIndex const index = SelectionModel->currentIndex();
+    QModelIndex const index = SelectionModel->selection().indexes().at(0);
+    assert(SelectionModel->selection().indexes().size() == 1);
+
     QModelIndex const newIndex = Model->MoveUp(index);
+
     SelectionModel->clearSelection();
     SelectionModel->select(newIndex, QItemSelectionModel::SelectionFlag::Select);
 }
 
 void StructureArtifactsWidgetDialog::MoveDown() {
-    QModelIndex const index = SelectionModel->currentIndex();
+    QModelIndex const index = SelectionModel->selection().indexes().at(0);
+    assert(SelectionModel->selection().indexes().size() == 1);
+
     QModelIndex const newIndex = Model->MoveDown(index);
+
     SelectionModel->clearSelection();
     SelectionModel->select(newIndex, QItemSelectionModel::SelectionFlag::Select);
 }

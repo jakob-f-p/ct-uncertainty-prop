@@ -6,27 +6,23 @@
 #include <vtkNew.h>
 
 #include <memory>
+#include <ranges>
 #include <vector>
 
 class CtStructureTree;
+class CtStructureVariant;
 class StructureArtifactsFilter;
 class vtkImageAlgorithm;
 
 class StructureArtifactList {
 public:
     using BeforeRemoveArtifactCallback = std::function<void(StructureArtifact&)>;
-    using BasicStructureIdProvider = std::function<std::vector<StructureId>(StructureArtifactList const&)>;
-    using TissueValueProvider = std::function<StructureArtifact::StructureEvaluator(StructureArtifactList const&)>;
-    using StructureEvaluatorProvider = std::function<StructureArtifact::StructureEvaluator(StructureArtifactList const&)>;
+    using StructureProvider = std::function<CtStructureVariant const&(StructureArtifactList const&)>;
 
     StructureArtifactList(BeforeRemoveArtifactCallback removeCallback,
-                          BasicStructureIdProvider&& basicStructureIdProvider,
-                          TissueValueProvider&& tissueValueProvider,
-                          StructureEvaluatorProvider&& structureEvaluatorProvider):
+                          StructureProvider&& structureEvaluatorProvider):
             BeforeRemoveCallback(std::move(removeCallback)),
-            BasicStructureIdProv(std::move(basicStructureIdProvider)),
-            TissueValueProv(std::move(tissueValueProvider)),
-            StructureEvaluatorProv(std::move(structureEvaluatorProvider)) {};
+            StructureProv(std::move(structureEvaluatorProvider)) {};
     StructureArtifactList(StructureArtifactList const&) = default;
     StructureArtifactList(StructureArtifactList&&) = default;
     auto operator= (StructureArtifactList const&) -> StructureArtifactList& = default;
@@ -82,25 +78,15 @@ public:
         std::array<float, StructureArtifactDetails::GetNumberOfSubTypeValues()> ArtifactValues {};
     };
 
-    auto
-    UpdateBasicStructureIds() noexcept -> void { BasicStructureIds = BasicStructureIdProv(*this); }
+    template<StructureArtifact::SubType ArtifactType>
+    [[nodiscard]] auto
+    GetStructureArtifacts() const -> std::vector<std::reference_wrapper<StructureArtifact const>> {
+        auto filteredArtifacts = Artifacts | std::ranges::views::filter(
+                [](StructureArtifact const& artifact) { return artifact.GetSubType() == ArtifactType; });
 
-    template<typename Calculate>
-    auto
-    ArtifactValue(Calculate calculate) const noexcept -> void {
-        auto const basicStructureIds = BasicStructureIdProv(*this);
-        auto tissueValueEvaluator = TissueValueProv(*this);
-        auto functionValueEvaluator = StructureEvaluatorProv(*this);
+        std::vector<std::reference_wrapper<StructureArtifact const>> result { filteredArtifacts.begin(), filteredArtifacts.end() };
 
-        for (const auto& artifact : Artifacts)
-            calculate(artifact.GetSubType(),
-                      basicStructureIds,
-                      [&](DoublePoint point, bool pointOccupiedByStructure) {
-                              return artifact.EvaluateAtPosition(point, pointOccupiedByStructure,
-                                                                 tissueValueEvaluator(point),
-                                                                 functionValueEvaluator);
-                      }
-            );
+        return result;
     }
 
 private:
@@ -110,15 +96,7 @@ private:
 
     BeforeRemoveArtifactCallback BeforeRemoveCallback;
 
-    // Basic structure ids associated with this artifact list
-    // If artifact refers to basic structure, then this vector contains one element. For composite structures it
-    // contains multiple IDs.
-    BasicStructureIdProvider BasicStructureIdProv;
-    std::vector<StructureId> BasicStructureIds;
-
-    TissueValueProvider TissueValueProv;
-
-    StructureEvaluatorProvider StructureEvaluatorProv;
+    StructureProvider StructureProv;
 };
 
 
@@ -143,18 +121,34 @@ public:
     auto
     RemoveStructureArtifactList(uidx_t removeIdx) -> void;
 
-    template<typename Calculate>
-    auto
-    ArtifactValue(Calculate&& calculate) const noexcept -> void {
-        for (const auto& artifactList : ArtifactLists)
-            artifactList.ArtifactValue(std::forward<Calculate>(calculate));
-    }
-
     [[nodiscard]] auto
     GetFilter() const -> vtkImageAlgorithm&;
 
     [[nodiscard]] auto
     GetStructureArtifactList(StructureArtifact const& structureArtifact) const -> StructureArtifactList const&;
+
+    constexpr static auto const StructureHash = [](CtStructureVariant const& structure) {
+        return std::hash<CtStructureVariant const*>{}(&structure);
+    };
+    constexpr static auto const StructureEqual = [](CtStructureVariant const& left, CtStructureVariant const& right) {
+        return &left == &right;
+    };
+    using StructureArtifactsMap = std::unordered_map<std::reference_wrapper<CtStructureVariant const>,
+                                                    std::vector<std::reference_wrapper<StructureArtifact const>>,
+                                                    decltype(StructureHash), decltype(StructureEqual)>;
+    template<StructureArtifact::SubType ArtifactType>
+    [[nodiscard]] auto
+    GetStructureArtifacts() const -> StructureArtifactsMap {
+        StructureArtifactsMap structureArtifactsMap;
+
+        for (auto const& artifactList : ArtifactLists) {
+            auto const& structure = artifactList.StructureProv(artifactList);
+            auto structureArtifacts = artifactList.GetStructureArtifacts<ArtifactType>();
+            structureArtifactsMap.emplace(structure, structureArtifacts);
+        }
+
+        return structureArtifactsMap;
+    }
 
     [[nodiscard]] auto
     GetIdx(StructureArtifactList const& structureArtifactList) const -> uidx_t;

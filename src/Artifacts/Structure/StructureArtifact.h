@@ -1,6 +1,7 @@
 #pragma once
 
 #include "MotionArtifact.h"
+#include "MetalArtifact.h"
 #include "../../Utils/Enum.h"
 #include "../../Utils/LinearAlgebraTypes.h"
 
@@ -10,6 +11,9 @@
 
 #include <string>
 #include <variant>
+
+class CtStructureTree;
+class CtStructureVariant;
 
 class NameLineEdit;
 
@@ -25,8 +29,8 @@ namespace StructureArtifactDetails {
 
     enum struct SubType : uint8_t {
         MOTION = 0,
-        STREAKING,
-        METALLIC
+        METAL,
+        STREAKING
     };
     Q_ENUM_NS(SubType);
 
@@ -34,8 +38,8 @@ namespace StructureArtifactDetails {
     SubTypeToString(SubType subType) noexcept -> std::string {
         switch (subType) {
             case SubType::MOTION:    return "Motion";
+            case SubType::METAL:     return "Metal";
             case SubType::STREAKING: return "Streaking";
-            case SubType::METALLIC:  return "Metallic";
         }
 
         return "";
@@ -61,14 +65,14 @@ class StructureArtifact;
 
 struct StructureArtifactData {
 public:
-    using StructureArtifactDataVariant = std::variant<MotionArtifactData>;
+    using StructureArtifactDataVariant = std::variant<MotionArtifactData, MetalArtifactData>;
 
     QString Name;
     QString ViewName;
     StructureArtifactDataVariant Data;
 
     auto
-    PopulateFromArtifact(const StructureArtifact& artifact) noexcept -> void;
+    PopulateFromArtifact(StructureArtifact const& artifact) noexcept -> void;
 
     auto
     PopulateArtifact(StructureArtifact& artifact) const noexcept -> void;
@@ -77,7 +81,7 @@ public:
 
 class StructureArtifact {
 public:
-    using StructureArtifactVariant = std::variant<MotionArtifact>;
+    using StructureArtifactVariant = std::variant<MotionArtifact, MetalArtifact>;
     using SubType = StructureArtifactDetails::SubType;
 
     StructureArtifact() = default;
@@ -87,6 +91,8 @@ public:
     auto operator= (StructureArtifact&&) -> StructureArtifact& = default;
     explicit StructureArtifact(StructureArtifactData const& data);
     explicit StructureArtifact(MotionArtifact&& structureArtifactSubType)
+            : Artifact(std::move(structureArtifactSubType)) {}
+    explicit StructureArtifact(MetalArtifact&& structureArtifactSubType)
             : Artifact(std::move(structureArtifactSubType)) {}
 
     [[nodiscard]] auto
@@ -113,14 +119,18 @@ public:
 
     [[nodiscard]] auto
     EvaluateAtPosition(DoublePoint const& point,
+                       float maxRadiodensity,
                        bool pointOccupiedByStructure,
-                       float tissueValue,
-                       StructureEvaluator const& structureEvaluator) const noexcept -> float {
+                       CtStructureTree const& structureTree,
+                       CtStructureVariant const& structure,
+                       std::array<double, 3> spacing) const noexcept -> float {
         return std::visit([&](auto const& artifact)
                                   { return artifact.EvaluateAtPosition(point,
+                                                                       maxRadiodensity,
                                                                        pointOccupiedByStructure,
-                                                                       tissueValue,
-                                                                       structureEvaluator); },
+                                                                       structureTree,
+                                                                       structure,
+                                                                       spacing); },
                           Artifact);
     }
 
@@ -146,7 +156,7 @@ class StructureArtifactWidget : public QWidget {
     Q_OBJECT
 
     using DataVariant = StructureArtifactData::StructureArtifactDataVariant;
-    using StructureArtifactWidgetVariant = std::variant<MotionArtifactWidget*>;
+    using StructureArtifactWidgetVariant = std::variant<MotionArtifactWidget*, MetalArtifactWidget*>;
 
 public:
     StructureArtifactWidget();
@@ -155,7 +165,7 @@ public:
     GetData() const noexcept -> StructureArtifactData;
 
     auto
-    Populate(const StructureArtifactData& data) noexcept -> void;
+    Populate(StructureArtifactData const& data) noexcept -> void;
 
 private:
     auto

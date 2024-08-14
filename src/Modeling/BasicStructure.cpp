@@ -62,6 +62,10 @@ auto BasicStructure::SetTissueType(TissueType tissueType) noexcept -> void {
 }
 
 
+auto BasicStructure::GetTissueValue() const noexcept -> float {
+    return Tissue.Radiodensity;
+}
+
 auto BasicStructure::SetEvaluationBias(float evaluationBias) noexcept -> void {
     if (evaluationBias > 0.0)
         return;
@@ -72,6 +76,7 @@ auto BasicStructure::SetEvaluationBias(float evaluationBias) noexcept -> void {
 }
 
 std::atomic<StructureId> BasicStructure::GlobalBasicStructureId = 0;
+
 
 BasicStructureDetails::BasicStructureWidgetImpl::BasicStructureWidgetImpl() :
         Layout(new QFormLayout(this)),

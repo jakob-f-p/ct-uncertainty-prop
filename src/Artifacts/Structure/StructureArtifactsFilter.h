@@ -6,7 +6,9 @@
 #include <vtkImageAlgorithm.h>
 
 class CtStructureTree;
+class CtStructureVariant;
 class TreeStructureArtifactListCollection;
+
 
 class StructureArtifactsFilter : public vtkImageAlgorithm {
 public:
@@ -17,6 +19,9 @@ public:
     vtkTypeMacro(StructureArtifactsFilter, vtkImageAlgorithm)
 
     auto
+    SetCtStructureTree(CtStructureTree const& ctStructureTree) -> void;
+
+    auto
     SetStructureArtifactCollection(TreeStructureArtifactListCollection* structureArtifactListCollection) -> void;
 
     [[nodiscard]] auto
@@ -24,21 +29,27 @@ public:
 
     struct Algorithm {
         StructureArtifactsFilter* Self;
+        CtStructureTree const* StructureTree;
         vtkImageData* VolumeData;
+        CtStructureVariant const* StructureVariant;
+        float MaxStructureRadiodensity;
+        StructureArtifact const* StructureArtifact_;
         std::array<double, 3> Spacing;
         std::array<int, 3> UpdateDims;
         DoublePoint StartPoint;
-        TreeStructureArtifactListCollection* TreeArtifacts;
         float* Radiodensities;
         StructureId const* BasicStructureIds;
-        std::array<float* const, 3> StructureArtifactValues;
+        std::vector<StructureId> StructureArtifactIds;
+        float* const ArtifactValues;
 
         Algorithm(StructureArtifactsFilter* self,
+                  CtStructureTree const* structureTree,
                   vtkImageData* volumeData,
-                  TreeStructureArtifactListCollection* treeArtifacts,
+                  CtStructureVariant const* structureVariant,
+                  StructureArtifact const* structureArtifact,
                   float* radiodensities,
                   StructureId const* basicStructureIds,
-                  std::array<float* const, 3> structureArtifactValues);
+                  float* const artifactValues);
 
         void operator()(vtkIdType pointId, vtkIdType endPointId) const;
     };
@@ -68,5 +79,5 @@ private:
     GetArrayName(SubType subType) noexcept -> std::string;
 
     TreeStructureArtifactListCollection* StructureArtifactCollection = nullptr;
-    CtStructureTree* StructureTree = nullptr;
+    CtStructureTree const* StructureTree = nullptr;
 };
