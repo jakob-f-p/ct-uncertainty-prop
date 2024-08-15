@@ -103,4 +103,11 @@ auto ImageArtifactConcatenation::IndexOf(ImageArtifact const& imageArtifact) con
 
 auto ImageArtifactConcatenation::EmitEvent() -> void {
     UpdateArtifactFilter();
+
+    for (auto& callback : Callbacks)
+        callback();
+}
+
+auto ImageArtifactConcatenation::AddConcatenationEventCallback(ConcatenationEventCallback&& callback) -> void {
+    Callbacks.emplace_back(std::move(callback));
 }

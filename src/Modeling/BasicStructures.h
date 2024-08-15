@@ -102,8 +102,11 @@ struct Sphere {
 
         double const radius2d = sqrt(radius2dSquared);
 
-        double const distanceCenter2d = sqrt(point[0] * point[0] + point[1] * point[1]);
-        std::array<double, 2> const normalizedDifference2d { point[0] / distanceCenter2d, point[1] / distanceCenter2d };
+        double* center = Function->GetCenter();
+        std::array<double, 2> const diffCenter { point[0] - center[0], point[1] - center[1] };
+        double const distanceCenter2d = sqrt(diffCenter[0] * diffCenter[0] + diffCenter[1] * diffCenter[1]);
+        std::array<double, 2> const normalizedDifference2d { diffCenter[0] / distanceCenter2d,
+                                                             diffCenter[1] / distanceCenter2d };
 
         std::array<double, 2> const closestPoint2d { normalizedDifference2d[0] * radius2d,
                                                      normalizedDifference2d[1] * radius2d };

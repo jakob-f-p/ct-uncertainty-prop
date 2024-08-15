@@ -18,18 +18,15 @@ public:
         DEFAULT,
         DEBUG,
         DEBUG_SINGLE,
-        SPHERE,
         SIMPLE_SCENE,
-        METHODOLOGY
+        METHODOLOGY,
+        METHODOLOGY_ARTIFACTS,
     };
 
     auto
     operator()(Config config) -> void;
 
 private:
-    auto
-    InitializeSpherical() noexcept -> void;
-
     App& App_;
     CtStructureTree& CtDataTree;
     PipelineList& Pipelines;
@@ -129,6 +126,15 @@ private:
 class MethodologySceneInitializer : public SceneInitializer {
 public:
     explicit MethodologySceneInitializer(App& app);
+
+    auto
+    operator()() -> void;
+};
+
+
+class MethodologyArtifactsSceneInitializer : public SceneInitializer {
+public:
+    explicit MethodologyArtifactsSceneInitializer(App& app);
 
     auto
     operator()() -> void;

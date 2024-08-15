@@ -8,12 +8,14 @@
 
 auto StructureArtifactList::GetMTime() const noexcept -> vtkMTimeType {
     if (Artifacts.empty())
-        return 0;
+        return TimeStamp.GetMTime();
 
     std::vector<vtkMTimeType> artifactMTimes(Artifacts.size());
     std::transform(Artifacts.begin(), Artifacts.end(), std::back_inserter(artifactMTimes),
                    [](auto& artifact) { return artifact.GetMTime(); });
-    return *std::max_element(artifactMTimes.begin(), artifactMTimes.end());
+    auto const maxArtifactTime = *std::max_element(artifactMTimes.begin(), artifactMTimes.end());
+
+    return std::max(maxArtifactTime, TimeStamp.GetMTime());
 }
 
 
@@ -52,6 +54,8 @@ void StructureArtifactList::AddStructureArtifact(StructureArtifact&& structureAr
 //        throw std::runtime_error("inserted artifact not found");
 //
 //    return *structureArtifact;
+
+    TimeStamp.Modified();
 }
 
 void StructureArtifactList::RemoveStructureArtifact(StructureArtifact const& structureArtifact) {
@@ -63,6 +67,8 @@ void StructureArtifactList::RemoveStructureArtifact(StructureArtifact const& str
     BeforeRemoveCallback(*it);
 
     Artifacts.erase(it);
+
+    TimeStamp.Modified();
 }
 
 void StructureArtifactList::MoveStructureArtifact(StructureArtifact const& artifact, int newIdx) {
@@ -83,6 +89,8 @@ void StructureArtifactList::MoveStructureArtifact(StructureArtifact const& artif
         std::rotate(previousIt, std::next(previousIt), std::next(newIt));
     else
         std::rotate(newIt, std::next(newIt), std::next(previousIt));
+
+    TimeStamp.Modified();
 }
 
 StructureArtifactList::~StructureArtifactList() = default;

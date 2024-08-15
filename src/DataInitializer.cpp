@@ -41,10 +41,6 @@ auto DataInitializer::operator()(DataInitializer::Config config) -> void {
             DebugSingleSceneInitializer{ App_ }();
             break;
 
-        case Config::SPHERE:
-            InitializeSpherical();
-            break;
-
         case Config::SIMPLE_SCENE:
             SimpleSceneInitializer{ App_ }();
             break;
@@ -53,54 +49,12 @@ auto DataInitializer::operator()(DataInitializer::Config config) -> void {
             MethodologySceneInitializer{ App_ }();
             break;
 
+        case Config::METHODOLOGY_ARTIFACTS:
+            MethodologyArtifactsSceneInitializer{ App_ }();
+            break;
+
         default: throw std::runtime_error("invalid config");
     }
-}
-
-auto DataInitializer::InitializeSpherical() noexcept -> void {
-    BasicStructure sphere(Sphere{});
-    sphere.SetTissueType(BasicStructureDetails::GetTissueTypeByName("Cancellous Bone"));
-    sphere.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 2.0F, 2.0F, 2.0F });
-
-    CtDataTree.AddBasicStructure(std::move(sphere));
-
-    auto& pipelineGaussian = Pipelines.AddPipeline();
-
-    ImageArtifactConcatenation& imageArtifactConcatenationGaussian
-            = pipelineGaussian.GetImageArtifactConcatenation();
-
-    BasicImageArtifact gaussianArtifact(GaussianArtifact{});
-    gaussianArtifact.SetName("sequential gaussian");
-    auto& gaussian = imageArtifactConcatenationGaussian.AddImageArtifact(std::move(gaussianArtifact));
-
-    CompositeImageArtifact compositeImageArtifact;
-    compositeImageArtifact.SetCompositionType(CompositeImageArtifactDetails::CompositionType::PARALLEL);
-    auto& composite = imageArtifactConcatenationGaussian.AddImageArtifact(std::move(compositeImageArtifact));
-
-    CompositeImageArtifact compositeImageArtifact1;
-    compositeImageArtifact1.SetCompositionType(CompositeImageArtifactDetails::CompositionType::SEQUENTIAL);
-    auto& composite1 = imageArtifactConcatenationGaussian.AddImageArtifact(std::move(compositeImageArtifact1),
-                                                                           &composite);
-    BasicImageArtifact gaussianArtifact2(GaussianArtifact{});
-    BasicImageArtifact gaussianArtifact3(GaussianArtifact{});
-    imageArtifactConcatenationGaussian.AddImageArtifact(std::move(gaussianArtifact2), &composite1);
-    imageArtifactConcatenationGaussian.AddImageArtifact(std::move(gaussianArtifact3), &composite1);
-
-    BasicImageArtifact gaussianArtifact1(GaussianArtifact{});
-    imageArtifactConcatenationGaussian.AddImageArtifact(std::move(gaussianArtifact1), &composite);
-
-    BasicImageArtifact gaussianArtifact4(GaussianArtifact{});
-    imageArtifactConcatenationGaussian.AddImageArtifact(std::move(gaussianArtifact4));
-
-    PipelineGroup& pipelineGroupA = PipelineGroups.AddPipelineGroup(pipelineGaussian, "PipelineGroup A");
-
-    auto gaussianProperties = gaussian.GetProperties();
-    auto& gaussianMeanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
-    ParameterSpan<float> gaussianMeanSpan (ArtifactVariantPointer(&gaussian),
-                                           gaussianMeanProperty,
-                                           { gaussianMeanProperty.Get(), gaussianMeanProperty.Get() + 250, 50.0 },
-                                           "My Mean Property");
-    pipelineGroupA.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(gaussianMeanSpan));
 }
 
 
@@ -812,4 +766,104 @@ auto MethodologySceneInitializer::operator()() -> void {
             "Mean Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(meanSpan));
+}
+
+
+
+MethodologyArtifactsSceneInitializer::MethodologyArtifactsSceneInitializer(App& app) :
+        SceneInitializer(app) {}
+
+auto MethodologyArtifactsSceneInitializer::operator()() -> void {
+    auto softTissue = BasicStructureDetails::GetTissueTypeByName("Soft Tissue");
+    auto cancellousBoneTissue = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
+
+    CtRenderWidget::SetWindowWidth({ -100.0, cancellousBoneTissue.Radiodensity + 100.0 });
+
+    auto& dataSource = App_.GetCtDataSource();
+#ifdef BUILD_TYPE_DEBUG
+    dataSource.SetVolumeNumberOfVoxels({ 32, 32, 16 });
+#else
+    dataSource.SetVolumeNumberOfVoxels({ 128, 128,  64 });
+#endif
+
+    auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
+    thresholdFilter.ThresholdByUpper(cancellousBoneTissue.Radiodensity - 100.0F);
+
+
+    Sphere sphere {};
+    sphere.SetFunctionData({ 25.0, { -15.0, 10.0, 10.0 } });
+    BasicStructure sphereStructure { std::move(sphere) };
+    sphereStructure.SetTissueType(softTissue);
+    sphereStructure.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    CtDataTree.AddBasicStructure(std::move(sphereStructure));
+
+    Box box {};
+    box.SetFunctionData({ { -5.0, -20.0, -20.0 }, { 35.0, 20.0, 20.0 } });
+    BasicStructure boxStructure { std::move(box) };
+    boxStructure.SetTissueType(cancellousBoneTissue);
+    boxStructure.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+
+    CombinedStructure sphereBoxUnion { CombinedStructure::OperatorType::UNION };
+    sphereBoxUnion.SetTransformData({ 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    CtDataTree.CombineWithBasicStructure(std::move(boxStructure), std::move(sphereBoxUnion));
+
+
+    auto& pipeline = Pipelines.Get(0);
+
+    MotionArtifact unionMotionArtifact {};
+    unionMotionArtifact.SetRadiodensityFactor(0.7);
+    unionMotionArtifact.SetBlurKernelStandardDeviation(1.0);
+    unionMotionArtifact.SetBlurKernelRadius(2);
+#ifdef BUILD_TYPE_DEBUG
+    unionMotionArtifact.SetBlurKernelRadius(2);
+#else
+    unionMotionArtifact.SetBlurKernelRadius(4);
+#endif
+    unionMotionArtifact.SetTransform({ 4.0F, 4.0F, 4.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    StructureArtifact unionMotionStructureArtifact { std::move(unionMotionArtifact) };
+    auto& unionStructureArtifacts = pipeline.GetStructureArtifactList(0);
+    unionStructureArtifacts.AddStructureArtifact(std::move(unionMotionStructureArtifact));
+
+    MotionArtifact boxMotionArtifact {};
+    boxMotionArtifact.SetRadiodensityFactor(0.8);
+    boxMotionArtifact.SetBlurKernelStandardDeviation(1.0);
+    boxMotionArtifact.SetBlurKernelRadius(0);
+    boxMotionArtifact.SetTransform({ -6.0F, -4.0F, -4.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    StructureArtifact boxMotionStructureArtifact { std::move(boxMotionArtifact) };
+    auto& boxStructureArtifacts = pipeline.GetStructureArtifactList(2);
+    boxStructureArtifacts.AddStructureArtifact(std::move(boxMotionStructureArtifact));
+
+
+    ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
+
+    CompositeImageArtifact parallelCompositeArtifact;
+    parallelCompositeArtifact.SetCompositionType(CompositeImageArtifactDetails::CompositionType::PARALLEL);
+    parallelCompositeArtifact.SetName("sequential");
+    auto& compositeArtifact = concatenation.AddImageArtifact(std::move(parallelCompositeArtifact));
+
+    GaussianArtifact gaussianArtifact {};
+    gaussianArtifact.SetMean(10.0);
+    gaussianArtifact.SetStandardDeviation(30.0);
+    BasicImageArtifact gaussianBasicArtifact(std::move(gaussianArtifact));
+    gaussianBasicArtifact.SetName("parallel");
+    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact), &compositeArtifact);
+
+    RingArtifact ringArtifact {};
+    ringArtifact.SetRadiodensityFactor(0.3);
+    ringArtifact.SetInnerRadius(10.0);
+    ringArtifact.SetRingWidth(3.0);
+    BasicImageArtifact ringBasicArtifact(std::move(ringArtifact));
+    ringBasicArtifact.SetName("parallel");
+    auto& ring = concatenation.AddImageArtifact(std::move(ringBasicArtifact), &compositeArtifact);
+
+    SaltPepperArtifact saltPepperArtifact {};
+#ifdef BUILD_TYPE_DEBUG
+    saltPepperArtifact.SetSaltAmount(0.02);
+#else
+    saltPepperArtifact.SetSaltAmount(0.07);
+#endif
+    saltPepperArtifact.SetSaltIntensity(450);
+    BasicImageArtifact saltPepperBasicArtifact(std::move(saltPepperArtifact));
+    saltPepperBasicArtifact.SetName("sequential");
+    auto& saltPepper = concatenation.AddImageArtifact(std::move(saltPepperBasicArtifact));
 }

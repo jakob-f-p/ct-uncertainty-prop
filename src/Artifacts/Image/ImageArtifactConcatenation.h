@@ -45,6 +45,10 @@ public:
     [[nodiscard]] auto
     GetEndFilter() const -> vtkImageAlgorithm&;
 
+    using ConcatenationEventCallback = std::function<void()>;
+    auto
+    AddConcatenationEventCallback(ConcatenationEventCallback&& callback) -> void;
+
 private:
     friend class ImageArtifactsModel;
     friend class ImageArtifactsReadOnlyModel1;
@@ -62,6 +66,8 @@ private:
     EmitEvent() -> void;
 
     BeforeRemoveArtifactCallback BeforeRemoveCallback;
+    std::vector<ConcatenationEventCallback> Callbacks;
+
     std::unique_ptr<ImageArtifact> Start; // Composite
     vtkNew<PassThroughImageArtifactFilter> StartFilter;
     vtkNew<PassThroughImageArtifactFilter> EndFilter;

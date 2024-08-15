@@ -61,6 +61,7 @@ CompositeImageArtifact::CompositeImageArtifact(CompositeImageArtifactData const&
 }
 
 CompositeImageArtifact::CompositeImageArtifact(CompositeImageArtifact const& other) :
+        ImageArtifactBaseDetails::ImageArtifactBase(other),
         ImageArtifacts([&other]() {
             std::vector<std::unique_ptr<ImageArtifact>> imageArtifacts;
             imageArtifacts.reserve(other.ImageArtifacts.size());

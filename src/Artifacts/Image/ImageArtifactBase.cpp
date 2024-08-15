@@ -11,14 +11,16 @@ template struct ImageArtifactBaseDetails::ImageArtifactBaseData<BasicImageArtifa
 template struct ImageArtifactBaseDetails::ImageArtifactBaseData<CompositeImageArtifactDetails::CompositeImageArtifactData>;
 
 template<ImageArtifactBaseDetails::TArtifactData ArtifactData>
-auto ImageArtifactBaseDetails::ImageArtifactBaseData<ArtifactData>::PopulateFromArtifact(const Artifact& artifact) noexcept -> void {
+auto ImageArtifactBaseDetails::ImageArtifactBaseData<ArtifactData>::PopulateFromArtifact(
+        Artifact const& artifact) noexcept -> void {
     Name = QString::fromStdString(artifact.GetName());
     ViewName = QString::fromStdString(artifact.GetViewName());
     Data.PopulateFromArtifact(artifact);
 }
 
 template<ImageArtifactBaseDetails::TArtifactData ArtifactData>
-auto ImageArtifactBaseDetails::ImageArtifactBaseData<ArtifactData>::PopulateArtifact(Artifact& artifact) const noexcept -> void {
+auto ImageArtifactBaseDetails::ImageArtifactBaseData<ArtifactData>::PopulateArtifact(
+        Artifact& artifact) const noexcept -> void {
     artifact.Name = Name.toStdString();
     Data.PopulateArtifact(artifact);
 }

@@ -169,7 +169,7 @@ auto StructureArtifactsFilter::RequestData(vtkInformation* request, vtkInformati
             float const delta = motionValues[pointId] + metallicValues[pointId] + windmillValues[pointId];
             radiodensities[pointId] += delta;
 
-            if (motionValues[pointId] > 0.0F)
+            if (motionValues[pointId] > 0.0F && radiodensities[pointId] < -500.0F)
                 radiodensities[pointId] += 1000.0F;
         }
     };

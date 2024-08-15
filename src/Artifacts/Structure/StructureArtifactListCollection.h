@@ -98,6 +98,8 @@ private:
     BeforeRemoveArtifactCallback BeforeRemoveCallback;
 
     StructureProvider StructureProv;
+
+    vtkTimeStamp TimeStamp;
 };
 
 

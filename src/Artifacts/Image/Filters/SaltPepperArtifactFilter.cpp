@@ -58,13 +58,14 @@ struct FillWithRandomIndices {
 
 struct AddNoise {
     std::vector<vtkIdType> const& Indices;
+    float const* Radiodensities;
     float* SaltPepperNoiseValues;
     float NoiseValue;
 
     void operator()(vtkIdType indicesIdx, vtkIdType endIndicesIdx) const {
 
         for (; indicesIdx < endIndicesIdx; indicesIdx++)
-            SaltPepperNoiseValues[Indices[indicesIdx]] = NoiseValue;
+            SaltPepperNoiseValues[Indices[indicesIdx]] = NoiseValue - Radiodensities[Indices[indicesIdx]];
     }
 };
 
@@ -90,12 +91,14 @@ void SaltPepperArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* inp
     newNoiseValueArray->FillValue(0.0F);
     float* newNoiseValues = newNoiseValueArray->WritePointer(0, numberOfPoints);
 
-    vtkSMPTools::For(0, numberOfSaltIndices,   AddNoise { saltIndices,   newNoiseValues, SaltIntensityValue });
-    vtkSMPTools::For(0, numberOfPepperIndices, AddNoise { pepperIndices, newNoiseValues, PepperIntensityValue });
-
-
     vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);
     float* radiodensities = radioDensityArray->WritePointer(0, numberOfPoints);
+
+    vtkSMPTools::For(0, numberOfSaltIndices,   AddNoise { saltIndices,   radiodensities,
+                                                          newNoiseValues, SaltIntensityValue });
+    vtkSMPTools::For(0, numberOfPepperIndices, AddNoise { pepperIndices, radiodensities,
+                                                          newNoiseValues, PepperIntensityValue });
+
 
     vtkFloatArray* saltPepperNoiseArray = GetDeepCopiedArtifactArray(input, output, SubType::SALT_PEPPER);
     float* saltPepperNoiseValues = saltPepperNoiseArray->WritePointer(0, numberOfPoints);
