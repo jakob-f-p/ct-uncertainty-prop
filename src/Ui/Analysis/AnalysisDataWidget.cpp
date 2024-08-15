@@ -19,12 +19,12 @@
 
 
 AnalysisDataWidget::AnalysisDataWidget(AnalysisSampleDataWidget* sampleDataWidget) :
-        VLayout(new QVBoxLayout(this)),
+        QSplitter(Qt::Orientation::Vertical),
         SampleDataWidget(new OptionalWidget<AnalysisSampleDataWidget>("Please select a sample point",
                                                                       sampleDataWidget)) {
 
-    VLayout->addWidget(SampleDataWidget);
-    VLayout->setContentsMargins({});
+    setContentsMargins({});
+    addWidget(SampleDataWidget);
 }
 
 auto AnalysisDataWidget::UpdateData(PipelineBatchListData const* batchData) -> void {
@@ -47,12 +47,7 @@ PcaDataWidget::PcaDataWidget() :
         AnalysisDataWidget(new PcaSampleDataWidget()),
         PcaAnalysisChartWidget(new OptionalWidget<PcaAnalysisDataWidget>("Please generate the data first",
                                                                          new PcaAnalysisDataWidget())) {
-    auto* separator = new QFrame();
-    separator->setFrameShape(QFrame::HLine);
-
-    VLayout->addWidget(separator);
-
-    VLayout->addWidget(PcaAnalysisChartWidget);
+    addWidget(PcaAnalysisChartWidget);
 }
 
 auto PcaDataWidget::UpdateDataDerived(PipelineBatchListData const* batchData) -> void {
@@ -188,17 +183,17 @@ TsneSampleDataWidget::GetXYData(ParameterSpaceStateData const& spaceStateData) c
 }
 
 PcaAnalysisDataWidget::PcaAnalysisDataWidget() :
+        QSplitter(Qt::Orientation::Vertical),
         BatchData(nullptr),
         ExplainedVarianceChartView(new QChartView()),
         PrincipalAxesChartView(new OptionalWidget<PcaFeaturesChartView>("Please select a principal component",
                                                                         new PcaFeaturesChartView())) {
 
-    ExplainedVarianceChartView->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Preferred);
+//    ExplainedVarianceChartView->setSizePolicy(QSizePolicy::Policy::Preferred, QSizePolicy::Policy::Preferred);
 
-    auto* vLayout = new QVBoxLayout(this);
-    vLayout->setContentsMargins({});
-    vLayout->addWidget(ExplainedVarianceChartView);
-    vLayout->addWidget(PrincipalAxesChartView);
+    setContentsMargins({});
+    addWidget(ExplainedVarianceChartView);
+    addWidget(PrincipalAxesChartView);
 }
 
 auto PcaAnalysisDataWidget::UpdateData(PipelineBatchListData const* batchData) -> void {
@@ -225,9 +220,9 @@ auto PcaAnalysisDataWidget::UpdateExplainedVarianceChart() -> void {
     chart->legend()->hide();
     chart->setTheme(QChart::ChartTheme::ChartThemeDark);
     chart->setBackgroundBrush(Qt::BrushStyle::NoBrush);
-    chart->setMaximumWidth(450);
-    chart->setMaximumHeight(150);
-    chart->setMinimumHeight(150);
+//    chart->setMaximumWidth(450);
+//    chart->setMaximumHeight(150);
+//    chart->setMinimumHeight(150);
     chart->setContentsMargins(QMargins { 0, 0, 0, -20 });
 
     QStringList pcNames {};
@@ -323,16 +318,19 @@ auto PcaFeaturesChartView::UpdateData(PcaAnalysisDataWidget* parentWidget, int b
     chart->legend()->hide();
     chart->setTheme(QChart::ChartTheme::ChartThemeDark);
     chart->setBackgroundBrush(Qt::BrushStyle::NoBrush);
-    chart->setMaximumWidth(450);
-    chart->setMaximumHeight(300);
-    chart->setContentsMargins(QMargins { 0, 0, 0, -20 });
-    chart->setMargins({ 10, 5, 5, 20 });
+//    chart->setMaximumWidth(450);
+//    chart->setMaximumHeight(300);
+    chart->setContentsMargins(QMargins { 0, 0, 0, 0 });
+    chart->setMargins({ 10, 5, 5, 30 });
 
     auto* xAxis = new QBarCategoryAxis();
-    std::for_each(featureData.begin(), featureData.end(),
-                  [=](auto const& feature) { xAxis->append(QString::fromStdString(feature.Name)); });
+    for (auto& feature : featureData)
+        xAxis->append(feature.Name.get().empty() ? "###" : QString::fromStdString(feature.Name));
+
     xAxis->setTitleText(title);
     xAxis->setLabelsAngle(-90);
+    xAxis->setRange(QString::fromStdString(featureData.front().Name),
+                    QString::fromStdString(featureData.back().Name));
     chart->addAxis(xAxis, Qt::AlignBottom);
     barSeries->attachAxis(xAxis);
 
@@ -342,8 +340,8 @@ auto PcaFeaturesChartView::UpdateData(PcaAnalysisDataWidget* parentWidget, int b
     barSeries->attachAxis(yAxis);
     yAxis->applyNiceNumbers();
 
-    if (Chart)
-        delete Chart;
+
+    delete Chart;
 
     Chart = chart;
 

@@ -19,8 +19,10 @@ public:
         DEBUG,
         DEBUG_SINGLE,
         SIMPLE_SCENE,
-        METHODOLOGY,
+        METHODOLOGY_ACQUISITION,
         METHODOLOGY_ARTIFACTS,
+        METHODOLOGY_SEGMENTATION,
+        METHODOLOGY_ANALYSIS,
     };
 
     auto
@@ -123,9 +125,9 @@ private:
 
 
 
-class MethodologySceneInitializer : public SceneInitializer {
+class MethodologyAcquisitionSceneInitializer : public SceneInitializer {
 public:
-    explicit MethodologySceneInitializer(App& app);
+    explicit MethodologyAcquisitionSceneInitializer(App& app);
 
     auto
     operator()() -> void;
@@ -135,6 +137,22 @@ public:
 class MethodologyArtifactsSceneInitializer : public SceneInitializer {
 public:
     explicit MethodologyArtifactsSceneInitializer(App& app);
+
+    auto
+    operator()() -> void;
+};
+
+class MethodologySegmentationSceneInitializer : public SceneInitializer {
+public:
+    explicit MethodologySegmentationSceneInitializer(App& app);
+
+    auto
+    operator()() -> void;
+};
+
+class MethodologyAnalysisSceneInitializer : public SceneInitializer {
+public:
+    explicit MethodologyAnalysisSceneInitializer(App& app);
 
     auto
     operator()() -> void;

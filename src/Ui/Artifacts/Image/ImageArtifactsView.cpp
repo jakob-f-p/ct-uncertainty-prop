@@ -31,12 +31,14 @@ void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, cons
     QStyleOptionViewItem opt;
     initViewItemOption(&opt);
 
-    QPoint const oldBrushOrigin = painter->brushOrigin();
     QStyle::State extraFlags = QStyle::State_None;
     if (isEnabled())
         extraFlags |= QStyle::State_Enabled;
     if (hasFocus())
         extraFlags |= QStyle::State_Active;
+
+    QPoint const oldBrushOrigin = painter->brushOrigin();
+
     if (verticalScrollMode() == QAbstractItemView::ScrollPerPixel)
         painter->setBrushOrigin(QPoint(0, verticalOffset()));
     if (selectionModel()->isSelected(index))
@@ -49,7 +51,7 @@ void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, cons
         const bool expanded = isExpanded(index);
         const bool children = index.model()->hasChildren(index);
         QModelIndex const successorIndex = index.model()->sibling(index.row() + 1, 0, index);
-        bool moreSiblings = successorIndex.isValid();
+        bool const moreSiblings = successorIndex.isValid();
 
         opt.state = QStyle::State_Item | extraFlags
                     | (moreSiblings ? QStyle::State_Sibling : QStyle::State_None)
@@ -139,16 +141,11 @@ int ImageArtifactsView::getLevel(const QModelIndex& index) {
 
 
 ImageArtifactsReadOnlyView::ImageArtifactsReadOnlyView(Pipeline const& pipeline, QWidget* parent) :
-        ImageArtifactsView(const_cast<Pipeline*>(&pipeline), parent),
-        ArtifactsModel(new ImageArtifactsReadOnlyModel(pipeline.GetImageArtifactConcatenation(), this)) {}
-
-auto ImageArtifactsReadOnlyView::model() const noexcept -> ImageArtifactsReadOnlyModel* {
-    return ArtifactsModel;
-}
+        ImageArtifactsView(const_cast<Pipeline*>(&pipeline), parent) {}
 
 auto ImageArtifactsReadOnlyView::Select(ImageArtifact const& imageArtifact) -> void {
     auto imageArtifactPointer = const_cast<ImageArtifact*>(&imageArtifact);
-    auto match = Search(*ArtifactsModel, ImageArtifactsModel::Roles::POINTER,
+    auto match = Search(*model(), ImageArtifactsModel::Roles::POINTER,
                         QVariant::fromValue(imageArtifactPointer), rootIndex());
 
     if (match == QModelIndex{})
@@ -161,6 +158,7 @@ auto ImageArtifactsReadOnlyView::Select(ImageArtifact const& imageArtifact) -> v
     collapseAll();
     for (auto const& ancestorIndex : ancestorIndices)
         expand(ancestorIndex);
+    expandAll();
 
     selectionModel()->clearSelection();
     selectionModel()->select(match, QItemSelectionModel::SelectionFlag::Select);

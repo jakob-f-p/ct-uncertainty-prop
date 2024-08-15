@@ -522,11 +522,10 @@ auto PipelineGroupList::ImportFeatures(std::filesystem::path const& importFilePa
     for (auto& jsonGroupFeatures : jsonObject) {
         FeatureData featureData {};
 
-        for (auto& jsonSampleFeatures : jsonGroupFeatures.at(0)) {
-            for (auto const& jsonSampleFeature : jsonSampleFeatures.items()) {
-                std::string const& featureName = jsonSampleFeature.key();
-                featureData.Names.emplace_back(featureName);
-            }
+        auto& jsonFirstSampleFeatures = jsonGroupFeatures.at(0);
+        for (auto const& jsonSampleFeature : jsonFirstSampleFeatures.items()) {
+            std::string const& featureName = jsonSampleFeature.key();
+            featureData.Names.emplace_back(featureName);
         }
 
         for (auto& jsonSampleFeatures : jsonGroupFeatures) {

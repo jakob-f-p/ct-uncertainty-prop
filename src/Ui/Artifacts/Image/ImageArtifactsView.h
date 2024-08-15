@@ -3,7 +3,7 @@
 #include <QTreeView>
 
 class ImageArtifact;
-class ImageArtifactsReadOnlyModel;
+//class ImageArtifactsReadOnlyModel;
 class Pipeline;
 
 
@@ -30,9 +30,6 @@ class ImageArtifactsReadOnlyView : public ImageArtifactsView {
 public:
     explicit ImageArtifactsReadOnlyView(Pipeline const& pipeline, QWidget* parent = nullptr);
 
-    [[nodiscard]] auto
-    model() const noexcept -> ImageArtifactsReadOnlyModel*;
-
     auto
     Select(ImageArtifact const& imageArtifact) -> void;
 
@@ -41,7 +38,4 @@ Q_SIGNALS:
 
 protected:
     void selectionChanged(QItemSelection const& selected, QItemSelection const& deselected) override;
-
-private:
-    ImageArtifactsReadOnlyModel* ArtifactsModel;
 };

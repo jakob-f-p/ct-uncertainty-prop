@@ -4,6 +4,7 @@
 #include "../../PipelineGroups/Types.h"
 
 #include <QGraphicsView>
+#include <QSplitter>
 #include <QWidget>
 
 class AnalysisSampleDataWidget;
@@ -23,7 +24,7 @@ class QSpinBox;
 class QVBoxLayout;
 
 
-class AnalysisDataWidget : public QWidget {
+class AnalysisDataWidget : public QSplitter {
     Q_OBJECT
 
 public:
@@ -39,8 +40,6 @@ public Q_SLOTS:
 protected:
     virtual auto
     UpdateDataDerived(PipelineBatchListData const* batchData) -> void;
-
-    QVBoxLayout* VLayout;
 
 private:
     OptionalWidget<AnalysisSampleDataWidget>* SampleDataWidget;
@@ -120,7 +119,7 @@ protected:
 
 
 
-class PcaAnalysisDataWidget : public QWidget {
+class PcaAnalysisDataWidget : public QSplitter {
     Q_OBJECT
 
 public:

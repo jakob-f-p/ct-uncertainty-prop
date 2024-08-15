@@ -38,14 +38,14 @@ auto ImageArtifactsModel::parent(const QModelIndex& childModelIndex) const -> QM
     ImageArtifact const& childArtifact = Concatenation.Get(static_cast<uidx_t>(childModelIndex.internalId()));
 
     ImageArtifact* parentArtifact = childArtifact.GetParent();
-    if (!parentArtifact)
+    assert(parentArtifact);
+    if (&Concatenation.GetStart() == parentArtifact)
         return {};
 
     uidx_t const parentIdx = Concatenation.IndexOf(*parentArtifact);
 
     ImageArtifact* grandparentArtifact = parentArtifact->GetParent();
-    if (!grandparentArtifact)
-        return createIndex(0, 0, parentIdx);
+    assert(grandparentArtifact);
 
     uidx_t const rowIdx = grandparentArtifact->ToComposite().GetChildIdx(*parentArtifact);
     return createIndex(rowIdx, 0, parentIdx);
