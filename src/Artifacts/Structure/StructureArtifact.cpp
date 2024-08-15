@@ -8,6 +8,9 @@
 #include <QFormLayout>
 #include <QGroupBox>
 
+#include <stdexcept>
+
+
 auto StructureArtifact::GetViewName() const noexcept -> std::string {
     std::string const viewName = SubTypeToString(GetSubType()) + (Name.empty() ? "" : (" (" + Name + ")"));
     return viewName;
@@ -22,11 +25,12 @@ auto StructureArtifact::GetSubType() const noexcept -> StructureArtifact::SubTyp
 }
 
 auto
-StructureArtifact::GetSubType(StructureArtifactVariant const& artifactVariant) noexcept -> StructureArtifact::SubType {
+StructureArtifact::GetSubType(StructureArtifactVariant const& artifactVariant) -> StructureArtifact::SubType {
     return std::visit(Overload {
-            [](MotionArtifact const&)  { return SubType::MOTION; },
-            [](MetalArtifact const&)   { return SubType::METAL; },
-            [](auto const&) { qWarning("Todo"); return SubType::MOTION; }
+            [](MotionArtifact const&)   { return SubType::MOTION; },
+            [](MetalArtifact const&)    { return SubType::METAL; },
+            [](WindmillArtifact const&) { return SubType::WINDMILL; },
+            [](auto const&) { throw std::runtime_error("invalid artifact type"); }
     }, artifactVariant);
 }
 
@@ -112,9 +116,10 @@ auto StructureArtifactWidget::UpdateSubTypeWidget() noexcept -> void {
 
     StructureArtifactWidgetVariant newWidgetVariant = [subType]() -> StructureArtifactWidgetVariant {
         switch (subType) {
-            case StructureArtifact::SubType::MOTION: return new MotionArtifactWidget();
-            case StructureArtifact::SubType::METAL:  return new MetalArtifactWidget();
-            default: throw std::runtime_error("Todo");
+            case StructureArtifact::SubType::MOTION:   return new MotionArtifactWidget();
+            case StructureArtifact::SubType::METAL:    return new MetalArtifactWidget();
+            case StructureArtifact::SubType::WINDMILL: return new WindmillArtifactWidget();
+            default: throw std::runtime_error("Invalid artifact type");
         }
     }();
 

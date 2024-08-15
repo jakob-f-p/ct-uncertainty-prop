@@ -1,6 +1,8 @@
 #include "CtStructureTreeModel.h"
 
 #include "../../Modeling/CtStructureTree.h"
+#include "../../Artifacts/Pipeline.h"
+#include "../../Artifacts/Structure/StructureArtifactListCollection.h"
 #include "../../Utils/Overload.h"
 
 CtStructureTreeModel::CtStructureTreeModel(CtStructureTree& ctStructureTree, QObject* parent) :
@@ -190,4 +192,35 @@ CtStructureTreeReadOnlyModel::CtStructureTreeReadOnlyModel(CtStructureTree const
 
 auto CtStructureTreeReadOnlyModel::flags(QModelIndex const& index) const -> Qt::ItemFlags {
     return QAbstractItemModel::flags(index);
+}
+
+CtStructureArtifactsModel::CtStructureArtifactsModel(CtStructureTree& ctStructureTree,
+                                                     Pipeline& pipeline,
+                                                     QObject* parent) :
+        CtStructureTreeModel(ctStructureTree),
+        Pipeline_(pipeline) {}
+
+auto CtStructureArtifactsModel::data(QModelIndex const& index, int role) const -> QVariant {
+    if (!index.isValid() || role != Qt::DisplayRole)
+        return CtStructureTreeModel::data(index, role);
+
+    uidx_t const structureIdx = index.internalId();
+
+    auto const& structureVariant = Tree.GetStructureAt(structureIdx);
+    auto const viewName = std::visit([](const auto& structure) { return structure.GetViewName(); },
+                                     structureVariant);
+
+    auto const& structureArtifacts = Pipeline_.GetStructureArtifactList(structureIdx);
+    std::vector<std::string> artifactNames {};
+    for (auto const& artifact : structureArtifacts.Artifacts)
+        artifactNames.emplace_back(artifact.GetViewName());
+
+    std::stringstream structureArtifactNamesStream;
+    for (auto const& name : artifactNames)
+        structureArtifactNamesStream << name << ", ";
+    std::string structureArtifactNames = structureArtifactNamesStream.str();
+    if (!structureArtifactNames.empty())
+        structureArtifactNames.erase(structureArtifactNames.size() - 2);
+
+    return QString::fromStdString(std::format("{} {{ {} }}", viewName, structureArtifactNames));
 }

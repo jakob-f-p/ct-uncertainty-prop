@@ -72,3 +72,15 @@ public:
     flags(QModelIndex const& index) const -> Qt::ItemFlags override;
 };
 
+
+class CtStructureArtifactsModel : public CtStructureTreeModel {
+public:
+    explicit CtStructureArtifactsModel(CtStructureTree& ctStructureTree, Pipeline& pipeline, QObject* parent = nullptr);
+
+    [[nodiscard]] auto
+    data(const QModelIndex& index, int role) const -> QVariant override;
+
+private:
+    Pipeline& Pipeline_;
+};
+

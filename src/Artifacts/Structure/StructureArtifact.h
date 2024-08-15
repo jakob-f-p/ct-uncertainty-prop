@@ -2,6 +2,7 @@
 
 #include "MotionArtifact.h"
 #include "MetalArtifact.h"
+#include "WindmillArtifact.h"
 #include "../../Utils/Enum.h"
 #include "../../Utils/LinearAlgebraTypes.h"
 
@@ -30,16 +31,16 @@ namespace StructureArtifactDetails {
     enum struct SubType : uint8_t {
         MOTION = 0,
         METAL,
-        STREAKING
+        WINDMILL
     };
     Q_ENUM_NS(SubType);
 
     [[nodiscard]] static auto
     SubTypeToString(SubType subType) noexcept -> std::string {
         switch (subType) {
-            case SubType::MOTION:    return "Motion";
-            case SubType::METAL:     return "Metal";
-            case SubType::STREAKING: return "Streaking";
+            case SubType::MOTION:   return "Motion";
+            case SubType::METAL:    return "Metal";
+            case SubType::WINDMILL: return "Windmill";
         }
 
         return "";
@@ -65,7 +66,7 @@ class StructureArtifact;
 
 struct StructureArtifactData {
 public:
-    using StructureArtifactDataVariant = std::variant<MotionArtifactData, MetalArtifactData>;
+    using StructureArtifactDataVariant = std::variant<MotionArtifactData, MetalArtifactData, WindmillArtifactData>;
 
     QString Name;
     QString ViewName;
@@ -81,7 +82,7 @@ public:
 
 class StructureArtifact {
 public:
-    using StructureArtifactVariant = std::variant<MotionArtifact, MetalArtifact>;
+    using StructureArtifactVariant = std::variant<MotionArtifact, MetalArtifact, WindmillArtifact>;
     using SubType = StructureArtifactDetails::SubType;
 
     StructureArtifact() = default;
@@ -145,7 +146,7 @@ private:
     friend class StructureArtifactWidget;
 
     [[nodiscard]] auto static
-    GetSubType(StructureArtifactVariant const& artifactVariant) noexcept -> SubType;
+    GetSubType(StructureArtifactVariant const& artifactVariant) -> SubType;
 
     std::string Name;
     StructureArtifactVariant Artifact;
@@ -156,7 +157,9 @@ class StructureArtifactWidget : public QWidget {
     Q_OBJECT
 
     using DataVariant = StructureArtifactData::StructureArtifactDataVariant;
-    using StructureArtifactWidgetVariant = std::variant<MotionArtifactWidget*, MetalArtifactWidget*>;
+    using StructureArtifactWidgetVariant = std::variant<MotionArtifactWidget*,
+                                                        MetalArtifactWidget*,
+                                                        WindmillArtifactWidget*>;
 
 public:
     StructureArtifactWidget();

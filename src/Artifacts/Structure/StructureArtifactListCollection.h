@@ -91,6 +91,7 @@ public:
 
 private:
     friend class TreeStructureArtifactListCollection;
+    friend class CtStructureArtifactsModel;
 
     std::vector<StructureArtifact> Artifacts;
 

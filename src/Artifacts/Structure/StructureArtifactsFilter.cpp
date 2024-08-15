@@ -128,22 +128,22 @@ auto StructureArtifactsFilter::RequestData(vtkInformation* request, vtkInformati
     metallicArtifactArray->FillValue(0.0F);
     output->GetPointData()->AddArray(metallicArtifactArray);
 
-    vtkNew<vtkFloatArray> streakingArtifactArray;
-    streakingArtifactArray->SetNumberOfComponents(1);
-    streakingArtifactArray->SetName(GetArrayName(SubType::STREAKING).data());
-    streakingArtifactArray->SetNumberOfTuples(numberOfPoints);
-    streakingArtifactArray->FillValue(0.0F);
-    output->GetPointData()->AddArray(streakingArtifactArray);
+    vtkNew<vtkFloatArray> windmillArtifactArray;
+    windmillArtifactArray->SetNumberOfComponents(1);
+    windmillArtifactArray->SetName(GetArrayName(SubType::WINDMILL).data());
+    windmillArtifactArray->SetNumberOfTuples(numberOfPoints);
+    windmillArtifactArray->FillValue(0.0F);
+    output->GetPointData()->AddArray(windmillArtifactArray);
 
     StructureId const* const structureIds = structureIdArray->WritePointer(0, numberOfPoints);
     float* const radiodensities = radiodensityArray->WritePointer(0, numberOfPoints);
     float* const motionValues = motionArtifactArray->WritePointer(0, numberOfPoints);
     float* const metallicValues = metallicArtifactArray->WritePointer(0, numberOfPoints);
-    float* const streakingValues = streakingArtifactArray->WritePointer(0, numberOfPoints);
+    float* const windmillValues = windmillArtifactArray->WritePointer(0, numberOfPoints);
     std::array<float* const,
                StructureArtifactDetails::GetNumberOfSubTypeValues()> const artifactArrays { motionValues,
                                                                                             metallicValues,
-                                                                                            streakingValues };
+                                                                                            windmillValues };
     for_<StructureArtifactDetails::GetNumberOfSubTypeValues()>([this, output, radiodensities,
                                                                 structureIds, artifactArrays,
                                                                 numberOfPoints](auto iCounter) {
@@ -166,7 +166,7 @@ auto StructureArtifactsFilter::RequestData(vtkInformation* request, vtkInformati
 
     auto addArtifactValues = [=](vtkIdType pointId, vtkIdType endPointId) {
         for (; pointId < endPointId; pointId++) {
-            float const delta = motionValues[pointId] + metallicValues[pointId] + streakingValues[pointId];
+            float const delta = motionValues[pointId] + metallicValues[pointId] + windmillValues[pointId];
             radiodensities[pointId] += delta;
 
             if (motionValues[pointId] > 0.0F)
