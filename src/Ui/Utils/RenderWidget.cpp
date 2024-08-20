@@ -25,7 +25,7 @@
 
 
 RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls, QWidget* parent) :
-        VtkRenderWidget(nullptr) {
+        VtkRenderWidget(new CtRenderWidget(this, imageAlgorithm, parent)) {
 
     setFrameShape(QFrame::Shape::StyledPanel);
     setFrameShadow(QFrame::Shadow::Sunken);
@@ -33,39 +33,62 @@ RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls,
     if (!controls)
         return;
 
-    auto* controlBarWidget = new QWidget();
-    auto* controlBarHLayout = new QHBoxLayout(controlBarWidget);
+    auto* topControlBar = new QWidget();
+    auto* topControlBarHLayout = new QHBoxLayout(topControlBar);
+    topControlBarHLayout->setContentsMargins({});
+
+    auto* bottomControlBar = new QWidget();
+    auto* bottomControlBarHLayout = new QHBoxLayout(bottomControlBar);
+    bottomControlBarHLayout->setContentsMargins({});
 
     if (controls.Render) {
         RenderButton = new QPushButton("Render");
-        controlBarHLayout->addWidget(RenderButton);
+        bottomControlBarHLayout->addWidget(RenderButton);
     }
 
     if (controls.Render) {
         ResetCameraButton = new QPushButton("Reset Camera");
-        controlBarHLayout->addWidget(ResetCameraButton);
+        bottomControlBarHLayout->addWidget(ResetCameraButton);
     }
 
-    controlBarHLayout->addStretch();
+    bottomControlBarHLayout->addStretch();
 
-    if (controls.RangeSlider) {
+    if (controls.WindowWidthSlider != WindowWidthSliderMode::NONE) {
         Slider = new LabeledRangeSlider("Window Width [HU]", { -1500, 3500, 1 });
-        controlBarHLayout->addWidget(Slider);
-        controlBarHLayout->addStretch();
+
+        switch (controls.WindowWidthSlider) {
+            case WindowWidthSliderMode::INLINE:
+                bottomControlBarHLayout->addWidget(Slider);
+                bottomControlBarHLayout->addStretch();
+                break;
+
+            case WindowWidthSliderMode::ABOVE:
+                bottomControlBarHLayout->addStretch();
+                topControlBarHLayout->addWidget(Slider);
+                bottomControlBarHLayout->addStretch();
+                break;
+
+            default:
+                throw std::runtime_error("invalid window width slider mode");
+        }
     }
 
     if (controls.Export) {
         ExportButton = new QPushButton("Export");
-        controlBarHLayout->addWidget(ExportButton);
+        bottomControlBarHLayout->addWidget(ExportButton);
     }
 
 
     auto* vLayout = new QVBoxLayout(this);
 
-    VtkRenderWidget = new CtRenderWidget(this, imageAlgorithm, parent);
     vLayout->addWidget(VtkRenderWidget);
 
-    vLayout->addWidget(controlBarWidget);
+    if (controls.WindowWidthSlider == WindowWidthSliderMode::ABOVE)
+        vLayout->addWidget(topControlBar);
+    else
+        delete topControlBar;
+
+    vLayout->addWidget(bottomControlBar);
 
 
     if (RenderButton)
@@ -78,10 +101,6 @@ RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls,
         connect(Slider, &LabeledRangeSlider::ValueChanged, this, [this](RangeSlider::Range range) {
             VtkRenderWidget->UpdateWindowWidth({ static_cast<double>(range.Min), static_cast<double>(range.Max) });
         });
-
-//        connect(VtkRenderWidget, &CtRenderWidget::RequestSliderUpdate, this, [this](CtRenderWidget::Range<int> range) {
-//            Slider->SetValue({ range.Min, range.Max });
-//        });
     }
 
     if (ExportButton)

@@ -2,6 +2,7 @@
 
 #include "AnalysisDataWidget.h"
 #include "ChartWidget.h"
+#include "MainChartWidget.h"
 #include "../../Modeling/CtDataSource.h"
 #include "../../PipelineGroups/PipelineGroupList.h"
 #include "../../App.h"
@@ -19,7 +20,7 @@
 
 AnalysisMainWidget::AnalysisMainWidget(PipelineGroupList const& pipelineGroups,
                                        ChartWidget* chartWidget,
-                                       AnalysisDataWidget* dataWidget) :
+                                       AnalysisSampleDataWidget* dataWidget) :
         GroupList(pipelineGroups),
         BatchData([&pipelineGroups]() {
             auto batchData = pipelineGroups.GetBatchData();
@@ -29,7 +30,7 @@ AnalysisMainWidget::AnalysisMainWidget(PipelineGroupList const& pipelineGroups,
         }()),
         ChartWidget_(new OptionalWidget<ChartWidget>("Please generate the data first", chartWidget)),
         RenderWidget(new ParameterSpaceStateRenderWidget()),
-        DataWidget(dataWidget) {
+        DataWidget(new OptionalWidget<AnalysisSampleDataWidget>("Please select a sample point", dataWidget)) {
 
     auto* dockWidget = new QDockWidget();
     dockWidget->setFeatures(
@@ -52,9 +53,14 @@ AnalysisMainWidget::AnalysisMainWidget(PipelineGroupList const& pipelineGroups,
             RenderWidget, &ParameterSpaceStateRenderWidget::UpdateSample);
 
     connect(&ChartWidget_->Widget(), &ChartWidget::SamplePointChanged,
-            DataWidget, &AnalysisDataWidget::UpdateSample);
+            this, [this](std::optional<SampleId> sampleId) {
+        DataWidget->Widget().UpdateSample(sampleId);
 
-//    UpdateData();
+        if (sampleId)
+            DataWidget->ShowWidget();
+        else
+            DataWidget->HideWidget();
+    });
 }
 
 AnalysisMainWidget::~AnalysisMainWidget() = default;
@@ -68,7 +74,7 @@ auto AnalysisMainWidget::UpdateData() -> void {
     PipelineBatchListData const* data = BatchData.get();
     RenderWidget->UpdateData(data);
     ChartWidget_->Widget().UpdateData(data);
-    DataWidget->UpdateData(data);
+    DataWidget->Widget().UpdateData(data);
 
     if (data)
         ChartWidget_->ShowWidget();
@@ -79,11 +85,11 @@ auto AnalysisMainWidget::UpdateData() -> void {
 }
 
 PcaMainWidget::PcaMainWidget(PipelineGroupList const& pipelineGroups) :
-        AnalysisMainWidget(pipelineGroups, new PcaChartWidget(), new PcaDataWidget()) {
-    auto* pcaChartWidget = findChild<PcaChartWidget*>();
-    auto* pcaDataWidget = findChild<PcaDataWidget*>();
+        AnalysisMainWidget(pipelineGroups, new PcaChartWidget(), new PcaSampleDataWidget()) {
+    auto* pcaChartWidget = findChild<PcaMainChartWidget*>();
+    auto* pcaDataWidget = findChild<PcaSampleDataWidget*>();
 
-    connect(pcaChartWidget, &PcaChartWidget::PcaDataChanged, pcaDataWidget, &PcaDataWidget::UpdateData);
+    connect(pcaChartWidget, &PcaMainChartWidget::PcaDataChanged, pcaDataWidget, &PcaSampleDataWidget::UpdateData);
 }
 
 PcaMainWidget::~PcaMainWidget() = default;
@@ -93,7 +99,7 @@ void PcaMainWidget::SelectPcaPoints(QString const& pointSetName, QList<QPointF> 
 }
 
 TsneMainWidget::TsneMainWidget(PipelineGroupList const& pipelineGroups) :
-        AnalysisMainWidget(pipelineGroups, new TsneChartWidget(), new TsneDataWidget()) {
+        AnalysisMainWidget(pipelineGroups, new TsneChartWidget(), new TsneSampleDataWidget()) {
 
     connect(&dynamic_cast<TsneChartWidget&>(ChartWidget_->Widget()), &TsneChartWidget::PcaPointsSelected,
             this, &TsneMainWidget::PcaPointsSelected);
@@ -103,6 +109,7 @@ TsneMainWidget::~TsneMainWidget() = default;
 
 
 ParameterSpaceStateRenderWidget::ParameterSpaceStateRenderWidget() :
+        RenderWidget(nullptr, { true, true, RenderWidget::WindowWidthSliderMode::ABOVE, true }),
         DataSource(nullptr),
         BatchListData(nullptr) {}
 

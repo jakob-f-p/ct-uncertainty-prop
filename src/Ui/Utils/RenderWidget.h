@@ -25,17 +25,25 @@ class RenderWidget : public QFrame {
     Q_OBJECT
 
 public:
+    enum struct WindowWidthSliderMode : uint8_t {
+        NONE = 0,
+        INLINE,
+        ABOVE
+    };
+
     struct Controls {
         bool Render;
         bool ResetCamera;
-        bool RangeSlider;
+        WindowWidthSliderMode WindowWidthSlider;
         bool Export;
 
-        explicit operator bool() const noexcept { return Render || ResetCamera || RangeSlider || Export; }
+        explicit operator bool() const noexcept {
+            return Render || ResetCamera || WindowWidthSlider != WindowWidthSliderMode::NONE || Export;
+        }
     };
 
     explicit RenderWidget(vtkImageAlgorithm* imageAlgorithm = nullptr,
-                          Controls controls = { true, true, true, true },
+                          Controls controls = { true, true, WindowWidthSliderMode::INLINE, true },
                           QWidget* parent = nullptr);
 
 public Q_SLOTS:

@@ -11,10 +11,12 @@
 ChartTooltip::ChartTooltip(QChart& parentChart,
                            QPointF anchorPoint,
                            QString text,
-                           PenBrushPair const& foregroundBackgroundColors) :
+                           PenBrushPair const& foregroundBackgroundColors,
+                           bool isChartPositionAnchor) :
         QGraphicsItem(&parentChart),
         Chart(&parentChart),
         Anchor(anchorPoint),
+        IsChartPositionAnchor(isChartPositionAnchor),
         Text(std::move(text)),
         Font(QFontDatabase::systemFont(QFontDatabase::FixedFont)),
         TextPen(foregroundBackgroundColors.Pen),
@@ -31,7 +33,10 @@ ChartTooltip::ChartTooltip(QChart& parentChart,
 }
 
 auto ChartTooltip::boundingRect() const -> QRectF {
-    QPointF const anchor = mapFromParent(Chart->mapToPosition(Anchor));
+    QPointF const chartPositionAnchor = IsChartPositionAnchor
+                                                ? Anchor
+                                                : Chart->mapToPosition(Anchor);
+    QPointF const anchor = mapFromParent(chartPositionAnchor);
 
     return QRectF { QPointF { qMin(Rectangle.left(), anchor.x()), qMin(Rectangle.top(), anchor.y()) },
                     QPointF { qMax(Rectangle.right(), anchor.x()), qMax(Rectangle.bottom(), anchor.y()) } };
@@ -57,8 +62,11 @@ auto ChartTooltip::GetTooltipPath() const -> QPainterPath {
     QPainterPath path;
     path.addRoundedRect(Rectangle, 5, 5);
 
-    QPointF const anchor = mapFromParent(Chart->mapToPosition(Anchor));
-    if (!Rectangle.contains(anchor) && !Anchor.isNull()) {
+    QPointF const chartPositionAnchor = IsChartPositionAnchor
+                                        ? Anchor
+                                        : Chart->mapToPosition(Anchor);
+    QPointF const anchor = mapFromParent(chartPositionAnchor);
+    if (!Rectangle.contains(anchor) && !chartPositionAnchor.isNull()) {
         // establish the position of the anchor point in relation to rectangle
         bool const above = anchor.y() <= Rectangle.top();
         bool const aboveCenter = anchor.y() > Rectangle.top() && anchor.y() <= Rectangle.center().y();
@@ -99,20 +107,24 @@ auto ChartTooltip::GetTooltipPath() const -> QPainterPath {
 
 auto ChartTooltip::AdjustPosition() noexcept -> void {
     prepareGeometryChange();
-    setPos(Chart->mapToPosition(Anchor) + QPoint(10, -50));
+
+    QPointF const chartPositionAnchor = IsChartPositionAnchor
+                                        ? Anchor
+                                        : Chart->mapToPosition(Anchor);
+    setPos(chartPositionAnchor + QPoint(10, -50));
 
     auto rect = mapRectToParent(boundingRect());
     auto parentRect = parentItem()->boundingRect();
 
     if (!parentRect.contains(rect)) {
         if (parentRect.top() > rect.top())
-            moveBy(0, rect.top() - parentRect.top());
+            moveBy(0, parentRect.top() - rect.top());
 
         if (parentRect.bottom() < rect.bottom())
             moveBy(0, parentRect.bottom() - rect.bottom());
 
         if (parentRect.left() > rect.left())
-            moveBy(rect.left() - parentRect.left(), 0);
+            moveBy(parentRect.left() - rect.left(), 0);
 
         if (parentRect.right() < rect.right())
             moveBy(parentRect.right() - rect.right(), 0);

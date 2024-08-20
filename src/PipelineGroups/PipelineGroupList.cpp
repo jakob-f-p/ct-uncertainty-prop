@@ -211,8 +211,6 @@ auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
 
     PipelineBatchListData batchListData { subsetData.GroupList,
                                           subsetData.FeatureNames,
-                                          pcaData.ExplainedVarianceRatios,
-                                          pcaData.PrincipalAxes,
                                           subsetData.Data,
                                           subsetData.Time };
     for (int i = 0, k = 0; i < batchListData.Data.size(); i++) {
@@ -223,6 +221,9 @@ auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
 
             stateData.PcaCoordinates = pcaData.Values.at(k);
         }
+
+        batchData.PcaExplainedVarianceRatios = pcaData.ExplainedVarianceRatios;
+        batchData.PcaPrincipalAxes = pcaData.PrincipalAxes;
     }
 
     auto const endTime = std::chrono::high_resolution_clock::now();
@@ -318,24 +319,25 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
     stateDataLists.reserve(PipelineGroups.size());
 
     for (int i = 0; i < imageDataVectors.size(); i++) {
-        std::vector<std::reference_wrapper<PipelineParameterSpaceState>> const& spaceStateVector = spaceStateVectors[i];
-        std::vector<HdfImageReadHandle> const& imageDataVector = *imageDataVectors[i];
-        FeatureData const& featureData = *featureDataVector[i];
-        PcaData const& pcaData = *pcaDataVector[i];
-        SampleCoordinateData const& tsneData = *tsneDataVector[i];
+        std::vector<std::reference_wrapper<PipelineParameterSpaceState>> const& spaceStateVector
+                = spaceStateVectors.at(i);
+        std::vector<HdfImageReadHandle> const& imageDataVector = *imageDataVectors.at(i);
+        FeatureData const& featureData = *featureDataVector.at(i);
+        PcaData const& pcaData = *pcaDataVector.at(i);
+        SampleCoordinateData const& tsneData = *tsneDataVector.at(i);
 
         std::vector<ParameterSpaceStateData> stateDataList;
-        stateDataList.reserve(imageDataVectors[0]->size());
-        for (int j = 0; j < imageDataVectors[i]->size(); j++)
-            stateDataList.emplace_back(spaceStateVector[j], imageDataVector[j],
-                                       featureData.Values[j], pcaData.Values[j], tsneData[j]);
+        stateDataList.reserve(imageDataVectors.at(0)->size());
+        for (int j = 0; j < imageDataVectors.at(i)->size(); j++)
+            stateDataList.emplace_back(spaceStateVector.at(j), imageDataVector.at(j),
+                                       featureData.Values.at(j), pcaData.Values.at(j), tsneData.at(j));
 
-        stateDataLists.emplace_back(*PipelineGroups[i], std::move(stateDataList));
+        stateDataLists.emplace_back(*PipelineGroups.at(i),
+                                    pcaData.ExplainedVarianceRatios, pcaData.PrincipalAxes,
+                                    std::move(stateDataList));
     }
 
     std::vector<std::string> const& featureNames = featureDataVector.at(0)->Names;
-    Vector2DDouble const& principalAxes = pcaDataVector.at(0)->PrincipalAxes;
-    std::vector<double> const& explainedVarianceRatios = pcaDataVector.at(0)->ExplainedVarianceRatios;
 
     vtkMTimeType const imageMTime   = *std::max_element(imageMTimes.cbegin(), imageMTimes.cend());  // max
     vtkMTimeType const featureMTime = *std::min_element(featureMTimes.cbegin(), featureMTimes.cend());
@@ -345,8 +347,6 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
 
     return PipelineBatchListData { *this,
                                    featureNames,
-                                   explainedVarianceRatios,
-                                   principalAxes,
                                    stateDataLists,
                                    { imageMTime, featureMTime, pcaMTime, tsneMTime, totalMTime }};
 }

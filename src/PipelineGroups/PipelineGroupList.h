@@ -28,17 +28,13 @@ struct ParameterSpaceStateData {
 
 struct PipelineBatchData {
     PipelineGroup const& Group;
+    std::vector<double> PcaExplainedVarianceRatios;
+    Vector2DDouble PcaPrincipalAxes;
     std::vector<ParameterSpaceStateData> StateDataList;
 };
 
 struct PipelineBatchListData {
     using StateDataLists = std::vector<PipelineBatchData>;
-
-    [[nodiscard]] auto
-    GetBatchData(uint16_t groupId) -> PipelineBatchData& { return Data.at(groupId); };
-
-    [[nodiscard]] auto
-    GetBatchData(uint16_t groupId) const -> PipelineBatchData const& { return Data.at(groupId); };
 
     [[nodiscard]] auto
     TrimTo(uint16_t groupId) const -> PipelineBatchListData {
@@ -47,8 +43,11 @@ struct PipelineBatchListData {
         for (int i = 0; i < batchListData.Data.size(); i++) {
             auto& batchData = batchListData.Data.at(i);
 
-            if (i != groupId)
+            if (i != groupId) {
+                batchData.PcaExplainedVarianceRatios.clear();
+                batchData.PcaPrincipalAxes.clear();
                 batchData.StateDataList.clear();
+            }
         }
 
         return batchListData;
@@ -58,12 +57,10 @@ struct PipelineBatchListData {
 
     [[nodiscard]] auto
     TrimTo(QList<QPointF> const& pointsToKeep, AnalysisType analysisType) const -> PipelineBatchListData {
-        PipelineBatchListData batchListData { GroupList, FeatureNames,
-                                              PcaExplainedVarianceRatios, PcaPrincipalAxes,
-                                              {}, Time };
+        PipelineBatchListData batchListData { GroupList, FeatureNames, {}, Time };
 
         for (auto const& batchData : Data) {
-            PipelineBatchData trimmedBatchData { batchData.Group, {} };
+            PipelineBatchData trimmedBatchData { batchData.Group, {}, {}, {} };
 
             std::copy_if(batchData.StateDataList.begin(), batchData.StateDataList.end(),
                          std::back_inserter(trimmedBatchData.StateDataList),
@@ -97,6 +94,13 @@ struct PipelineBatchListData {
         return Data.at(sampleId.GroupIdx).StateDataList.at(sampleId.StateIdx);
     };
 
+    [[nodiscard]] auto
+    GetBatchWithPcaData() const -> PipelineBatchData const& {
+        return *std::find_if(Data.begin(), Data.end(), [](PipelineBatchData const& data) {
+            return !data.PcaExplainedVarianceRatios.empty() && !data.PcaPrincipalAxes.empty();
+        });
+    };
+
     struct MTimes {
         vtkMTimeType Image, Feature, Pca, Tsne;
         vtkMTimeType Total;
@@ -107,8 +111,6 @@ struct PipelineBatchListData {
 
     PipelineGroupList const& GroupList;
     std::vector<std::string> const& FeatureNames;
-    std::vector<double> PcaExplainedVarianceRatios;
-    Vector2DDouble PcaPrincipalAxes;
     StateDataLists Data;
     MTimes Time;
 };

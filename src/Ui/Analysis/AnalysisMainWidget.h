@@ -9,7 +9,7 @@
 #include <memory>
 
 
-class AnalysisDataWidget;
+class AnalysisSampleDataWidget;
 class ChartWidget;
 class CtDataSource;
 class ParameterSpaceStateRenderWidget;
@@ -22,7 +22,7 @@ class AnalysisMainWidget : public QMainWindow {
 public:
     AnalysisMainWidget(PipelineGroupList const& pipelineGroups,
                        ChartWidget* chartWidget,
-                       AnalysisDataWidget* dataWidget);
+                       AnalysisSampleDataWidget* dataWidget);
     ~AnalysisMainWidget() override;
 
     auto
@@ -37,7 +37,7 @@ protected:
 
 private:
     ParameterSpaceStateRenderWidget* RenderWidget;
-    AnalysisDataWidget* DataWidget;
+    OptionalWidget<AnalysisSampleDataWidget>* DataWidget;
 };
 
 class PcaMainWidget : public AnalysisMainWidget {

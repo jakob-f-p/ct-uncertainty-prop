@@ -15,7 +15,8 @@ public:
     explicit ChartTooltip(QChart& parentChart,
                           QPointF anchorPoint,
                           QString text,
-                          PenBrushPair const& foregroundBackgroundColors);
+                          PenBrushPair const& foregroundBackgroundColors,
+                          bool isChartPositionAnchor = false);
 
     [[nodiscard]] auto
     boundingRect() const -> QRectF override;
@@ -37,6 +38,7 @@ private:
     QChart* Chart;
 
     QPointF Anchor;
+    bool IsChartPositionAnchor;
 
     QString Text;
     QRectF TextRectangle;

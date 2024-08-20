@@ -51,7 +51,9 @@ auto HdfImageWriter::WriteData() -> void {
     if (InputImages.empty())
         throw std::runtime_error("input images must not be empty");
 
-    unsigned int const openFlags = TruncateFileBeforeWrite ? HighFive::File::Truncate : HighFive::File::ReadWrite;
+    HighFive::File::AccessMode const openFlags = TruncateFileBeforeWrite
+                                                         ? HighFive::File::Truncate
+                                                         : HighFive::File::ReadWrite;
     auto file = HighFive::File(Filename.string(), openFlags);
 
     if (TruncateFileBeforeWrite)

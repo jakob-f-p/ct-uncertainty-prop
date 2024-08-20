@@ -32,7 +32,7 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, QWidget* parent
         QMainWindow(parent),
         CurrentDataSource(nullptr),
         RenderingWidget(new RenderWidget()),
-        PhysicalDimensionsSpinBoxes(new DoubleCoordinateRowWidget({ 1.0, 100.0, 1.0, 1.0  }, "Physical Dimensions")),
+        PhysicalDimensionsSpinBoxes(new DoubleCoordinateRowWidget({ 1.0, 100.0, 1.0, 1.0  }, "Physical\nDimensions")),
         ResolutionSpinBoxes(new IntegerCoordinateRowWidget({ 16, 512, 1, 16 }, "Resolution")) {
 
     ctStructureTree.AddTreeEventCallback([&](CtStructureTreeEvent const&) { RenderingWidget->Render(); });
