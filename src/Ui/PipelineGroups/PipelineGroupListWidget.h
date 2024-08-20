@@ -1,7 +1,7 @@
 #pragma once
 
 #include <QDialog>
-#include <QWidget>
+#include <QFrame>
 
 class Pipeline;
 class PipelineGroup;
@@ -16,7 +16,7 @@ class QPushButton;
 class QSpinBox;
 
 
-class PipelineGroupListWidget : public QWidget {
+class PipelineGroupListWidget : public QFrame {
     Q_OBJECT
 
 public:

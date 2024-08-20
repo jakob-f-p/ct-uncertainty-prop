@@ -23,9 +23,11 @@ SegmentationWidget::SegmentationWidget(ThresholdFilter& thresholdFilter) :
     dockWidget->setAllowedAreas(
             Qt::DockWidgetArea::LeftDockWidgetArea | Qt::DockWidgetArea::RightDockWidgetArea);
     dockWidget->setMinimumWidth(250);
+    dockWidget->setContentsMargins({});
 
     auto* dockWidgetContent = new QWidget();
     auto* vLayout = new QVBoxLayout(dockWidgetContent);
+    vLayout->setContentsMargins({ 10, 0, 10, 10 });
 
     vLayout->addWidget(FilterWidget);
     FilterWidget->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);

@@ -51,7 +51,7 @@ MainChartWidget::MainChartWidget(ChartView* chartView) :
         ExportButton(new QPushButton("Export")) {
 
     VLayout->setSpacing(20);
-    VLayout->setContentsMargins(10, 10, 5, 10);
+    VLayout->setContentsMargins({});
 
     VLayout->addWidget(View);
 
@@ -310,7 +310,17 @@ auto ChartView::UpdateTheme(Theme theme) -> void {
         default: throw std::runtime_error("invalid theme");
     }
 
-    static auto const titlePointSize = static_cast<int>(static_cast<double>(Chart->titleFont().pointSize()) * 1.5);
+    auto seriesList = Chart->series();
+    for (auto* series : seriesList) {
+        auto* scatterSeries = qobject_cast<QScatterSeries*>(series);
+        scatterSeries->setMarkerSize(scatterSeries->markerSize() * 0.75);
+
+        auto thinnerPen = scatterSeries->pen();
+        thinnerPen.setWidthF(thinnerPen.widthF() * 0.5);
+        scatterSeries->setPen(thinnerPen);
+    }
+
+    static auto const titlePointSize = static_cast<int>(static_cast<double>(Chart->titleFont().pointSize()) * 1.3);
     auto titleFont = Chart->titleFont();
     titleFont.setPointSize(titlePointSize);
     Chart->setTitleFont(titleFont);
@@ -418,11 +428,17 @@ auto ChartView::ConnectScatterSeries(std::map<uint16_t, QScatterSeries*> const& 
 
                     auto idx = static_cast<uint16_t>(std::distance(points.cbegin(), it));
 
+                    bool const pointIsAlreadySelected = scatterSeries->isPointSelected(idx);
+
                     for (auto* series : std::views::values(indexScatterSeriesMap))
                         series->deselectAllPoints();
-                    scatterSeries->selectPoint(idx);
 
-                    Q_EMIT SamplePointChanged(SampleId { static_cast<uint16_t>(groupIdx), idx });
+                    if (pointIsAlreadySelected)
+                        Q_EMIT SamplePointChanged({});
+                    else {
+                        scatterSeries->selectPoint(idx);
+                        Q_EMIT SamplePointChanged(SampleId { static_cast<uint16_t>(groupIdx), idx });
+                    }
                 });
     }
 }

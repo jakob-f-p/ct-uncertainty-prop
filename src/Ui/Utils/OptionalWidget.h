@@ -13,6 +13,7 @@ public:
                 auto* widget = new QWidget();
                 auto* vLayout = new QVBoxLayout(widget);
                 auto* textLabel = new QLabel(placeholderText);
+                textLabel->setAlignment(Qt::AlignmentFlag::AlignVCenter | Qt::AlignmentFlag::AlignHCenter);
                 vLayout->addWidget(textLabel);
                 return widget;
             }()),
@@ -23,6 +24,8 @@ public:
             addWidget(MainWidget);
 
         setCurrentWidget(PlaceholderWidget);
+
+        setContentsMargins({});
     }
 
 public Q_SLOTS:

@@ -25,10 +25,11 @@ ArtifactsWidget::ArtifactsWidget(PipelineList& pipelines) :
     dockWidget->setAllowedAreas(
             Qt::DockWidgetArea::LeftDockWidgetArea | Qt::DockWidgetArea::RightDockWidgetArea);
     dockWidget->setMinimumWidth(250);
+    dockWidget->setContentsMargins({});
 
     auto* dockWidgetContent = new QWidget();
-
     auto* verticalLayout = new QVBoxLayout(dockWidgetContent);
+    verticalLayout->setContentsMargins({ 10, 0, 10, 10 });
 
     connect(PipelineWidget, &PipelinesWidget::PipelineViewUpdated,
             RenderWidget, &ArtifactRenderWidget::UpdateImageArtifactFiltersOnPipelineChange);

@@ -25,6 +25,9 @@ PcaChartWidget::PcaChartWidget(QWidget* parent) noexcept :
 
     addWidget(PcaMainWidget);
     addWidget(PcaSecondaryWidget);
+
+    PcaMainWidget->setContentsMargins(0, 0, 5, 0);
+    PcaSecondaryWidget->setContentsMargins(5, 0, 0, 0);
 }
 
 auto PcaChartWidget::UpdateData(PipelineBatchListData const* batchListData) -> void {

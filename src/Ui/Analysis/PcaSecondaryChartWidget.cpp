@@ -23,13 +23,13 @@ PcaSecondaryChartWidget::PcaSecondaryChartWidget() :
         PrincipalAxesChartView(new OptionalWidget<PcaFeaturesChartView>("Please select a\nprincipal component",
                                                                         new PcaFeaturesChartView())) {
 
-    setContentsMargins(0, 10, 0, 10);
+    setContentsMargins({});
 
     addWidget(ExplainedVarianceChartView);
     addWidget(PrincipalAxesChartView);
 
-    ExplainedVarianceChartView->setContentsMargins(0, 0, 0, 5);
-    PrincipalAxesChartView->setContentsMargins(0, 5, 0, 0);
+    ExplainedVarianceChartView->setContentsMargins(0, 0, 0, 10);
+    PrincipalAxesChartView->setContentsMargins(0, 10, 0, 0);
 
     moveSplitter(ExplainedVarianceChartView->sizeHint().height() * 0.7, 1);
 
@@ -198,20 +198,16 @@ auto PcaFeaturesChartView::UpdateData(PipelineBatchListData const* batchListData
     if (!batchListData)
         return;
 
-    QString const title = QString("Most important features for %1").arg(pcName);
+    PcName = pcName;
 
     std::vector<double> const& featureCoefficients = batchListData->GetBatchWithPcaData().PcaPrincipalAxes.at(pcIdx);
     std::vector<std::string> const& featureNames = batchListData->FeatureNames;
 
-    struct FeatureData {
-        double Coefficient;
-        std::reference_wrapper<std::string const> Name;
-    };
-
-    std::vector<FeatureData> featureData {};
+    Features.clear();
     for (size_t i = 0; i < featureNames.size(); i++)
-        featureData.emplace_back(featureCoefficients.at(i), featureNames.at(i));
-    std::sort(featureData.begin(), featureData.end(),
+        Features.emplace_back(featureCoefficients.at(i), featureNames.at(i));
+
+    std::sort(Features.begin(), Features.end(),
               [](auto const& a, auto const& b) {
         bool const absoluteLessThan = std::abs(a.Coefficient) < std::abs(b.Coefficient);
         bool const absoluteEqual = std::abs(a.Coefficient) == std::abs(b.Coefficient);
@@ -220,71 +216,11 @@ auto PcaFeaturesChartView::UpdateData(PipelineBatchListData const* batchListData
         return absoluteLessThan || (absoluteEqual && lessThan);
     });
 
-    auto* barSet = new QBarSet(title);
-    for (int i = 0; i < featureData.size(); ++i) {
-        double const feature = featureData.at(i).Coefficient;
-
-        barSet->append(std::abs(feature));
-
-        if (feature < 0.0)
-            barSet->setBarSelected(i, true);
-    }
-
-    auto* barSeries = new QHorizontalBarSeries();
-    barSeries->append(barSet);
-
-    auto* chart = new ScrollAwareChart();
-    chart->addSeries(barSeries);
-    chart->setTitle(title);
-    chart->legend()->hide();
-    chart->layout()->setContentsMargins(0, 0, 0, 0);
-    chart->setMargins({ 0, 0, 0, 0 });
-    chart->setBackgroundRoundness(0.0);
-    chart->setTheme(QChart::ChartTheme::ChartThemeDark);
-    chart->setBackgroundBrush(Qt::BrushStyle::NoBrush);
-    barSet->setSelectedColor(barSet->color().darker());
-
-    auto* yAxis = new QBarCategoryAxis();
-    for (auto& feature : featureData) {
-        if (feature.Name.get().empty())
-            throw std::runtime_error("invalid feature name");
-
-        yAxis->append(QString::fromStdString(feature.Name));
-    }
     static const int rangeSize = 10;
-    QStringList yCategories = yAxis->categories();
-    auto const rangeBeginIt = yCategories.size() > rangeSize
-                                      ? std::prev(yCategories.end(), rangeSize)
-                                      : yCategories.begin();
-    yAxis->setRange(*rangeBeginIt, yCategories.back());
-
-    auto labelFont = yAxis->labelsFont();
-    labelFont.setPointSize(labelFont.pointSize() * 0.7);
-    yAxis->setLabelsFont(labelFont);
-    yAxis->setGridLineVisible(false);
-    yAxis->setLineVisible(false);
-    chart->addAxis(yAxis, Qt::AlignLeft);
-    barSeries->attachAxis(yAxis);
-
-    auto* xAxis = new QValueAxis();
-    xAxis->setTitleText("Absolute Coefficients");
-    chart->addAxis(xAxis, Qt::AlignBottom);
-    barSeries->attachAxis(xAxis);
-    xAxis->applyNiceNumbers();
-    xAxis->setRange(0.0, xAxis->max());
-
-
-    delete Chart;
-
-    Chart = chart;
-
-    GraphicsScene->addItem(Chart);
-
-    Chart->resize(size());
-
-    connect(barSet, &QBarSet::hovered, this, &PcaFeaturesChartView::ToggleTooltip);
-
-    connect(Chart, &ScrollAwareChart::wheelRotated, this, &PcaFeaturesChartView::MoveRange);
+    auto const rangeBeginIt = Features.size() > rangeSize
+                                      ? std::prev(Features.end(), rangeSize)
+                                      : Features.begin();
+    UpdateChart({ rangeBeginIt, Features.end() });
 }
 
 auto PcaFeaturesChartView::resizeEvent(QResizeEvent* event) -> void {
@@ -321,19 +257,21 @@ auto PcaFeaturesChartView::ToggleTooltip(bool entered, int barIdx) -> void {
 
 auto PcaFeaturesChartView::MoveRange(int numberOfSteps) -> void {
     auto* categoryAxis = dynamic_cast<QBarCategoryAxis*>(Chart->axes(Qt::Orientation::Vertical).front());
-    QStringList const categories = categoryAxis->categories();
 
-    auto const minIt = std::find(categories.begin(), categories.end(), categoryAxis->min());
-    auto const maxIt = std::find(categories.begin(), categories.end(), categoryAxis->max());
-
-    int const minIdx = static_cast<int>(categories.indexOf(categoryAxis->min()));
-    int const maxIdx = static_cast<int>(categories.indexOf(categoryAxis->max()));
-    if (minIdx == -1 || maxIdx == -1)
+    static constexpr auto findFeatureName = [](QString const& featureNameToFind) {
+        return [name = featureNameToFind.toStdString()](Feature const& feature) { return feature.Name.get() == name; };
+    };
+    auto const minIt = std::find_if(Features.begin(), Features.end(), findFeatureName(categoryAxis->min()));
+    auto const maxIt = std::find_if(Features.begin(), Features.end(), findFeatureName(categoryAxis->max()));
+    if (minIt == Features.end() || maxIt == Features.end())
         throw std::runtime_error("category not found");
+
+    int const minIdx = static_cast<int>(std::distance(Features.begin(), minIt));
+    int const maxIdx = static_cast<int>(std::distance(Features.begin(), maxIt));
 
     int const offset = std::clamp(numberOfSteps,
                                   -minIdx,
-                                  static_cast<int>(categories.size()) - 1 - maxIdx);
+                                  static_cast<int>(Features.size()) - 1 - maxIdx);
 
     if (offset == 0)
         return;
@@ -343,5 +281,90 @@ auto PcaFeaturesChartView::MoveRange(int numberOfSteps) -> void {
     auto const newMinIt = std::next(minIt, offset);
     auto const newMaxIt = std::next(maxIt, offset);
 
-    categoryAxis->setRange(*newMinIt, *newMaxIt);
+    UpdateChart({ newMinIt, std::next(newMaxIt) });
+}
+
+auto PcaFeaturesChartView::UpdateChart(std::span<Feature> visibleFeatures) -> void {
+    QString const title = QString("Most important features for %1").arg(PcName);
+
+    bool const containsLargest
+            = std::find_if(visibleFeatures.begin(), visibleFeatures.end(),
+                           [this](Feature const feature) { return feature.Name.get() == Features.back().Name.get(); })
+                    != visibleFeatures.end();
+
+    auto* barSet = new QBarSet(title);
+    QList<int> negativeBarsIndices;
+    for (int i = 0; i < visibleFeatures.size(); ++i) {
+        double const& featureValue = visibleFeatures[i].Coefficient;
+
+        barSet->append(std::abs(featureValue));
+
+        if (featureValue < 0.0)
+            negativeBarsIndices.emplace_back(i);
+    }
+    if (!containsLargest)
+        barSet->append(Features.back().Coefficient);
+
+    barSet->selectBars(negativeBarsIndices);
+
+    auto* barSeries = new QHorizontalBarSeries();
+    barSeries->append(barSet);
+
+    auto* chart = new ScrollAwareChart();
+    chart->addSeries(barSeries);
+    chart->legend()->hide();
+    chart->layout()->setContentsMargins(0, 0, 0, 0);
+    chart->setMargins({ 0, 0, 0, 0 });
+    chart->setBackgroundRoundness(0.0);
+    chart->setTheme(QChart::ChartTheme::ChartThemeDark);
+    chart->setBackgroundBrush(Qt::BrushStyle::NoBrush);
+    barSet->setSelectedColor(barSet->color().darker());
+
+    auto* yAxis = new QBarCategoryAxis();
+    for (auto& feature : visibleFeatures) {
+        if (feature.Name.get().empty())
+            throw std::runtime_error("invalid feature name");
+
+        yAxis->append(QString::fromStdString(feature.Name));
+    }
+    if (!containsLargest)
+        yAxis->append(QString::fromStdString(Features.back().Name.get()));
+
+    auto labelFont = yAxis->labelsFont();
+    labelFont.setPointSize(labelFont.pointSize() * 0.7);
+    yAxis->setLabelsFont(labelFont);
+    yAxis->setGridLineVisible(false);
+    yAxis->setLineVisible(false);
+    chart->addAxis(yAxis, Qt::AlignLeft);
+    barSeries->attachAxis(yAxis);
+
+    auto* xAxis = new QValueAxis();
+    xAxis->setTitleText("Absolute Feature Coefficients");
+    auto titleFont = chart->titleFont();
+    static auto const titlePointSize = static_cast<int>(static_cast<double>(titleFont.pointSize()) * 0.9);
+    titleFont.setPointSize(titlePointSize);
+    titleFont.setWeight(QFont::Weight::Normal);
+    chart->setTitleFont(titleFont);
+    xAxis->titleFont();
+    chart->addAxis(xAxis, Qt::AlignBottom);
+    barSeries->attachAxis(xAxis);
+
+    xAxis->applyNiceNumbers();
+    if (!containsLargest) {
+        barSet->remove(barSet->count() - 1);
+        yAxis->remove(QString::fromStdString(Features.back().Name.get()));
+    }
+
+
+    delete Chart;
+
+    Chart = chart;
+
+    GraphicsScene->addItem(Chart);
+
+    Chart->resize(size());
+
+    connect(barSet, &QBarSet::hovered, this, &PcaFeaturesChartView::ToggleTooltip);
+
+    connect(Chart, &ScrollAwareChart::wheelRotated, this, &PcaFeaturesChartView::MoveRange);
 }

@@ -37,17 +37,19 @@ AnalysisMainWidget::AnalysisMainWidget(PipelineGroupList const& pipelineGroups,
             QDockWidget::DockWidgetFeature::DockWidgetMovable | QDockWidget::DockWidgetFeature::DockWidgetFloatable);
     dockWidget->setAllowedAreas(Qt::DockWidgetArea::LeftDockWidgetArea | Qt::DockWidgetArea::RightDockWidgetArea);
     dockWidget->setMinimumWidth(250);
+    dockWidget->setContentsMargins({});
+    DataWidget->setContentsMargins({ 10, 0, 10, 10 });
     dockWidget->setWidget(DataWidget);
-    auto margins = dockWidget->contentsMargins();
-    margins.setTop(0);
-    dockWidget->setContentsMargins(margins);
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dockWidget);
 
     auto* splitter = new QSplitter();
+    splitter->setContentsMargins({});
     splitter->addWidget(ChartWidget_);
     splitter->addWidget(RenderWidget);
     splitter->setSizes({ std::numeric_limits<int>::max(), std::numeric_limits<int>::max() });
     setCentralWidget(splitter);
+
+    ChartWidget_->setContentsMargins({ 15, 15, 15, 15 });
 
     connect(&ChartWidget_->Widget(), &ChartWidget::SamplePointChanged,
             RenderWidget, &ParameterSpaceStateRenderWidget::UpdateSample);

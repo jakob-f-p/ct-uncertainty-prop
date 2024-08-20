@@ -45,25 +45,29 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, QWidget* parent
     dockWidget->setAllowedAreas(
             Qt::DockWidgetArea::LeftDockWidgetArea | Qt::DockWidgetArea::RightDockWidgetArea);
     dockWidget->setMinimumWidth(250);
+    dockWidget->setContentsMargins({});
 
     auto* dockWidgetContent = new QWidget();
     auto* verticalLayout = new QVBoxLayout(dockWidgetContent);
+    verticalLayout->setContentsMargins({ 10, 0, 10, 10 });
 
     auto* volumeLabel = new QLabel("Volume settings");
     volumeLabel->setStyleSheet(GetHeader1StyleSheet());
-    verticalLayout->addSpacing(10);
     verticalLayout->addWidget(volumeLabel);
+    verticalLayout->addSpacing(10);
     verticalLayout->addWidget(PhysicalDimensionsSpinBoxes);
     verticalLayout->addWidget(ResolutionSpinBoxes);
 
     auto* separator = new QFrame();
     separator->setFrameShape(QFrame::Shape::HLine);
-    verticalLayout->addSpacing(15);
+    verticalLayout->addSpacing(20);
     verticalLayout->addWidget(separator);
-    verticalLayout->addSpacing(25);
+    verticalLayout->addSpacing(20);
 
     auto* dataSourceWidget = new DataSourceWidget(ctStructureTree);
     verticalLayout->addWidget(dataSourceWidget);
+
+    verticalLayout->addStretch();
 
     dockWidget->setWidget(dockWidgetContent);
 
@@ -131,6 +135,7 @@ DataSourceWidget::DataSourceWidget(CtStructureTree& ctStructureTree, QWidget* pa
         }()),
         StackedWidget([&ctStructureTree]() {
             auto* stackedWidget = new QStackedWidget();
+            stackedWidget->setContentsMargins({});
             stackedWidget->addWidget(new CtStructureTreeWidget(ctStructureTree));
             stackedWidget->addWidget(new CtDataImportWidget());
             stackedWidget->setCurrentIndex(1);
@@ -139,13 +144,14 @@ DataSourceWidget::DataSourceWidget(CtStructureTree& ctStructureTree, QWidget* pa
 
     auto* vLayout = new QVBoxLayout(this);
     vLayout->setContentsMargins({});
-    vLayout->setSpacing(15);
+    vLayout->setSpacing(10);
 
     auto* titleLabel = new QLabel("Image Source");
     titleLabel->setStyleSheet(GetHeader1StyleSheet());
     vLayout->addWidget(titleLabel);
 
     auto* buttonsHLayout = new QHBoxLayout();
+    buttonsHLayout->setContentsMargins({});
     buttonsHLayout->setSpacing(15);
     buttonsHLayout->addStretch();
     buttonsHLayout->addWidget(ImplicitButton);

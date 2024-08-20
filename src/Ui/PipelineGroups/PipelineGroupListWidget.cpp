@@ -46,7 +46,6 @@ PipelineGroupListWidget::PipelineGroupListWidget(PipelineGroupList& pipelineGrou
 
     fLayout->addRow("Number of pipelines", NumberOfPipelinesSpinBox);
 
-//    fLayout->addRow("Filter by pipeline", BasePipelineFilterComboBox);
     UpdateBasePipelineFilterComboBoxItems();
 
     auto* buttonBar = new QWidget();

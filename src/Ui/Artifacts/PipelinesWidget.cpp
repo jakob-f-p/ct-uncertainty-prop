@@ -24,6 +24,7 @@ PipelinesWidget::PipelinesWidget(PipelineList& pipelines, QWidget* parent) :
         ImageArtifactModelingWidget(new ImageArtifactsWidget()) {
 
     auto* vLayout = new QVBoxLayout(this);
+    vLayout->setContentsMargins({});
     vLayout->setSpacing(10);
 
     auto* pipelineTitleBarWidget = new QWidget();

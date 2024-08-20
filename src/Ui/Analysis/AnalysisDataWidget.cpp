@@ -18,51 +18,6 @@
 #include <QBarSeries>
 
 
-//AnalysisDataWidget::AnalysisDataWidget(AnalysisSampleDataWidget* sampleDataWidget) :
-//        QSplitter(Qt::Orientation::Vertical),
-//        SampleDataWidget(new OptionalWidget<AnalysisSampleDataWidget>("Please select a sample point",
-//                                                                      sampleDataWidget)) {
-//
-//    setContentsMargins({});
-//    addWidget(SampleDataWidget);
-//}
-//
-//auto AnalysisDataWidget::UpdateData(PipelineBatchListData const* batchData) -> void {
-//    SampleDataWidget->Widget().UpdateData(batchData);
-//
-//    UpdateDataDerived(batchData);
-//}
-//
-//auto AnalysisDataWidget::UpdateSample(std::optional<SampleId> sampleId) -> void {
-//    SampleDataWidget->Widget().UpdateSample(sampleId);
-//    if (sampleId)
-//        SampleDataWidget->ShowWidget();
-//    else
-//        SampleDataWidget->HideWidget();
-//}
-//
-//auto AnalysisDataWidget::UpdateDataDerived(PipelineBatchListData const* batchData) -> void {}
-//
-//PcaDataWidget::PcaDataWidget() :
-//        AnalysisDataWidget(new PcaSampleDataWidget()),
-//        PcaAnalysisChartWidget(new OptionalWidget<PcaAnalysisDataWidget>("Please generate the data first",
-//                                                                         new PcaAnalysisDataWidget())) {
-//    addWidget(PcaAnalysisChartWidget);
-//}
-//
-//auto PcaDataWidget::UpdateDataDerived(PipelineBatchListData const* batchData) -> void {
-//    PcaAnalysisChartWidget->Widget().UpdateData(batchData);
-//    if (batchData)
-//        PcaAnalysisChartWidget->ShowWidget();
-//    else
-//        PcaAnalysisChartWidget->HideWidget();
-//}
-//
-//TsneDataWidget::TsneDataWidget() :
-//        AnalysisDataWidget(new TsneSampleDataWidget()) {}
-
-
-
 AnalysisSampleDataWidget::AnalysisSampleDataWidget(QString const& analysisName) :
         AnalysisName(analysisName),
         BatchListData(nullptr),
@@ -95,9 +50,7 @@ AnalysisSampleDataWidget::AnalysisSampleDataWidget(QString const& analysisName) 
         ParameterSpaceStateView(new OptionalWidget<PipelineParameterSpaceStateView>("")) {
 
     auto* fLayout = new QFormLayout(this);
-    auto margins = fLayout->contentsMargins();
-    margins.setTop(0);
-    fLayout->setContentsMargins(margins);
+    fLayout->setContentsMargins({});
 
     auto* title = new QLabel("Selected Pipeline");
     title->setStyleSheet(GetHeader1StyleSheet());

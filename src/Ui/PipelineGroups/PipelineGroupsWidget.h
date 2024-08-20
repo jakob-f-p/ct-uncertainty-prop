@@ -2,7 +2,7 @@
 
 #include "../Utils/OptionalWidget.h"
 
-#include <QMainWindow>
+#include <QSplitter>
 
 class PipelineGroup;
 class PipelineGroupList;
@@ -15,7 +15,7 @@ class QPushButton;
 class QProgressBar;
 
 
-class PipelineGroupsWidget : public QMainWindow {
+class PipelineGroupsWidget : public QSplitter {
 public:
     explicit PipelineGroupsWidget(PipelineGroupList& pipelineGroups);
 

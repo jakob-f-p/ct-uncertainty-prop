@@ -35,11 +35,11 @@ RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls,
 
     auto* topControlBar = new QWidget();
     auto* topControlBarHLayout = new QHBoxLayout(topControlBar);
-    topControlBarHLayout->setContentsMargins({});
+    topControlBarHLayout->setContentsMargins({ 10, 5, 10, 10 });
 
     auto* bottomControlBar = new QWidget();
     auto* bottomControlBarHLayout = new QHBoxLayout(bottomControlBar);
-    bottomControlBarHLayout->setContentsMargins({});
+    bottomControlBarHLayout->setContentsMargins({ 10, 0, 10, 10 });
 
     if (controls.Render) {
         RenderButton = new QPushButton("Render");
@@ -55,6 +55,7 @@ RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls,
 
     if (controls.WindowWidthSlider != WindowWidthSliderMode::NONE) {
         Slider = new LabeledRangeSlider("Window Width [HU]", { -1500, 3500, 1 });
+        Slider->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Preferred);
 
         switch (controls.WindowWidthSlider) {
             case WindowWidthSliderMode::INLINE:
@@ -80,6 +81,7 @@ RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls,
 
 
     auto* vLayout = new QVBoxLayout(this);
+    vLayout->setContentsMargins({});
 
     vLayout->addWidget(VtkRenderWidget);
 

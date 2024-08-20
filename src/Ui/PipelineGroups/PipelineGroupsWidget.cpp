@@ -7,29 +7,47 @@
 #include "../../PipelineGroups/PipelineGroup.h"
 #include "../../PipelineGroups/PipelineParameterSpace.h"
 
+#include <QApplication>
 #include <QHBoxLayout>
+
 
 PipelineGroupsWidget::PipelineGroupsWidget(PipelineGroupList& pipelineGroups) :
         GroupListWidget(new PipelineGroupListWidget(pipelineGroups)),
         GroupWidget(new OptionalWidget<PipelineGroupWidget>("Select a pipeline group")),
         ParameterSpanWidget(new OptionalWidget<PipelineParameterSpanWidget>("Select a parameter span")) {
 
-    auto* splitter = new QSplitter();
-    splitter->addWidget(GroupListWidget);
-    splitter->addWidget(GroupWidget);
-    splitter->addWidget(ParameterSpanWidget);
+    setContentsMargins(10, 10, 10, 10);
+
+    setHandleWidth(10);
+
+    addWidget(GroupListWidget);
+    addWidget(GroupWidget);
+    addWidget(ParameterSpanWidget);
+
+    auto modifiedPalette = QApplication::palette();
+    auto const darkerBackgroundColor = modifiedPalette.color(QPalette::ColorRole::Window).darker();
+    modifiedPalette.setColor(QPalette::ColorRole::Window, darkerBackgroundColor);
+    modifiedPalette.setColor(QPalette::ColorRole::Base, darkerBackgroundColor);
+    modifiedPalette.setColor(QPalette::ColorRole::ToolTipBase, darkerBackgroundColor);
+    setPalette(modifiedPalette);
+    setBackgroundRole(QPalette::ColorRole::Shadow);
+    setAutoFillBackground(true);
+
+    for (int i = 0; i < count(); ++i) {
+        auto* frame = dynamic_cast<QFrame*>(widget(i));
+        frame->setFrameShape(QFrame::Shape::StyledPanel);
+        frame->setFrameShadow(QFrame::Shadow::Sunken);
+        frame->setBackgroundRole(QPalette::ColorRole::Window);
+        frame->setAutoFillBackground(true);
+    }
 
     QList<int> const widths = { GroupListWidget->sizeHint().width(),
                                 GroupWidget->sizeHint().width(),
                                 ParameterSpanWidget->sizeHint().width() };
     int const maxWidth = *std::max_element(widths.begin(), widths.end());
-//    QList<int> const equalWidths { 3, maxWidth };
-//    splitter->setSizes(equalWidths);
 
     GroupWidget->setBaseSize(maxWidth, GroupWidget->baseSize().height());
     ParameterSpanWidget->setBaseSize(maxWidth, ParameterSpanWidget->baseSize().height());
-
-    setCentralWidget(splitter);
 
     connect(GroupListWidget, &PipelineGroupListWidget::PipelineGroupChanged,
             this, [&](PipelineGroup* pipelineGroup) { OnPipelineGroupChanged(pipelineGroup); });

@@ -5,6 +5,9 @@
 #include <QGraphicsView>
 #include <QSplitter>
 
+#include <span>
+
+
 class ChartTooltip;
 class ScrollAwareChart;
 class PcaExplainedVariancePieChartView;
@@ -87,7 +90,20 @@ private Q_SLOTS:
     MoveRange(int numberOfSteps) -> void;
 
 private:
+    struct Feature {
+        double Coefficient;
+        std::reference_wrapper<std::string const> Name;
+    };
+
+    auto
+    UpdateChart(std::span<Feature> visibleFeatures) -> void;
+
     QGraphicsScene* GraphicsScene;
     ScrollAwareChart* Chart;
     ChartTooltip* Tooltip;
+
+    std::vector<Feature> Features;
+    QString PcName;
+//    std::vector<std::string> FeatureNames;
+//    std::vector<double> FeatureCoefficients;
 };

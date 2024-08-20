@@ -12,6 +12,8 @@ SegmentationFilterWidget::SegmentationFilterWidget(ThresholdFilter& thresholdFil
         FilterWidget(new ThresholdFilterWidget()),
         SegmentationFilter(&thresholdFilter) {
 
+    VLayout->setContentsMargins({});
+
     auto* titleLabel = new QLabel("Segmentation Filter");
     titleLabel->setStyleSheet(GetHeader1StyleSheet());
     titleLabel->setContentsMargins(0, 0, 0, 11);

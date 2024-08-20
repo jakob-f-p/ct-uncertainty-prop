@@ -24,6 +24,8 @@ RangeSlider::RangeSlider(SliderSettings sliderSettings, QWidget* parent) :
     setMinimum(sliderSettings.Min);
     setMaximum(sliderSettings.Max);
     setSingleStep(sliderSettings.Step);
+
+    setContentsMargins({});
 }
 
 auto RangeSlider::GetValue() const noexcept -> RangeSlider::Range { return Range_; }
@@ -198,6 +200,7 @@ LabeledRangeSlider::LabeledRangeSlider(QString const& labelText,
         TextLabel(new QLabel(labelText)) {
 
     auto* labelHLayout = new QHBoxLayout();
+    labelHLayout->setContentsMargins({});
     labelHLayout->setSpacing(20);
     labelHLayout->addWidget(LowLabel);
     labelHLayout->addStretch();
@@ -206,6 +209,8 @@ LabeledRangeSlider::LabeledRangeSlider(QString const& labelText,
     labelHLayout->addWidget(HighLabel);
 
     auto* vLayout = new QVBoxLayout(this);
+    vLayout->setContentsMargins({});
+    vLayout->setSpacing(5);
     vLayout->addWidget(Slider);
     vLayout->addLayout(labelHLayout);
 

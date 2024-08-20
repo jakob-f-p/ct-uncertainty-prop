@@ -40,6 +40,7 @@ PipelineGroupWidget::PipelineGroupWidget(PipelineGroup& pipelineGroup, QWidget* 
 
     auto* buttonBar = new QWidget();
     auto* buttonBarHLayout = new QHBoxLayout(buttonBar);
+    buttonBarHLayout->setContentsMargins({});
     buttonBarHLayout->addStretch();
     buttonBarHLayout->addWidget(AddParameterSpanButton);
     buttonBarHLayout->addWidget(RemoveParameterSpanButton);
