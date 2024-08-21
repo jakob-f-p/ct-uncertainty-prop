@@ -221,6 +221,7 @@ auto ChartView::UpdateData(PipelineBatchListData const* batchListData) -> void {
         return;
 
     auto const indexScatterSeriesMap = CreateScatterSeries();
+
     ConnectScatterSeries(indexScatterSeriesMap);
 
     auto* chart = new QChart();
@@ -243,6 +244,8 @@ auto ChartView::UpdateData(PipelineBatchListData const* batchListData) -> void {
         yAxis->setTickType(QValueAxis::TickType::TicksDynamic);
         xAxis->setTickInterval(GetAxisTickInterval(xAxis));
         yAxis->setTickInterval(GetAxisTickInterval(yAxis));
+//        xAxis->applyNiceNumbers();
+//        yAxis->applyNiceNumbers();
         EditAxes(xAxis, yAxis);
     }
 
@@ -290,7 +293,8 @@ auto ChartView::UpdateTheme(Theme theme) -> void {
             auto seriesList = Chart->series();
             for (auto* series : seriesList) {
                 auto* scatterSeries = qobject_cast<QScatterSeries*>(series);
-                scatterSeries->setSelectedColor(scatterSeries->color().darker());
+                scatterSeries->setSelectedColor(scatterSeries->color().lighter());
+                scatterSeries->setBorderColor(QColor { "black" });
             }
             break;
         }
@@ -302,7 +306,8 @@ auto ChartView::UpdateTheme(Theme theme) -> void {
             auto seriesList = Chart->series();
             for (auto* series : seriesList) {
                 auto* scatterSeries = qobject_cast<QScatterSeries*>(series);
-                scatterSeries->setSelectedColor(scatterSeries->color().lighter());
+                scatterSeries->setSelectedColor(scatterSeries->color().darker());
+                scatterSeries->setBorderColor(QColor { "white" });
             }
             break;
         }
@@ -313,10 +318,13 @@ auto ChartView::UpdateTheme(Theme theme) -> void {
     auto seriesList = Chart->series();
     for (auto* series : seriesList) {
         auto* scatterSeries = qobject_cast<QScatterSeries*>(series);
-        scatterSeries->setMarkerSize(scatterSeries->markerSize() * 0.75);
 
+        static const qreal markerSize = scatterSeries->markerSize() * 0.35;
+        scatterSeries->setMarkerSize(markerSize);
+
+        static const qreal penSize = scatterSeries->pen().widthF() * 0.25;
         auto thinnerPen = scatterSeries->pen();
-        thinnerPen.setWidthF(thinnerPen.widthF() * 0.5);
+        thinnerPen.setWidthF(penSize);
         scatterSeries->setPen(thinnerPen);
     }
 
@@ -457,7 +465,6 @@ auto PcaChartView::CreateScatterSeries() noexcept -> std::map<uint16_t, QScatter
 
         auto* scatterSeries = new QScatterSeries();
         scatterSeries->setName(QString::fromStdString(batchData.Group.GetName()));
-        scatterSeries->setMarkerSize(scatterSeries->markerSize() * 0.5);
 
         QList<QPointF> points;
         std::transform(batchData.StateDataList.cbegin(), batchData.StateDataList.cend(),
@@ -493,7 +500,6 @@ auto TsneChartView::CreateScatterSeries() noexcept -> std::map<uint16_t, QScatte
 
         auto* scatterSeries = new QScatterSeries();
         scatterSeries->setName(QString::fromStdString(batchData.Group.GetName()));
-        scatterSeries->setMarkerSize(scatterSeries->markerSize() * 0.5);
 
         QList<QPointF> points;
         std::transform(batchData.StateDataList.cbegin(), batchData.StateDataList.cend(),

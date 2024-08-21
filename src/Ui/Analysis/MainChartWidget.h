@@ -170,8 +170,8 @@ class TsneChartView : public ChartView {
 public:
     explicit TsneChartView();
 
-    Q_SIGNALS:
-            void PointsSelected(QList<QPointF> const& points);
+Q_SIGNALS:
+    void PointsSelected(QList<QPointF> const& points);
 
 protected:
     [[nodiscard]] auto

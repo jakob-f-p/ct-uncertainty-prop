@@ -4,6 +4,7 @@
 #include "../Utils/ScrollAwareChart.h"
 #include "../../PipelineGroups/PipelineGroupList.h"
 
+#include <QApplication>
 #include <QBarCategoryAxis>
 #include <QBarSeries>
 #include <QBarSet>
@@ -31,7 +32,7 @@ PcaSecondaryChartWidget::PcaSecondaryChartWidget() :
     ExplainedVarianceChartView->setContentsMargins(0, 0, 0, 10);
     PrincipalAxesChartView->setContentsMargins(0, 10, 0, 0);
 
-    moveSplitter(ExplainedVarianceChartView->sizeHint().height() * 0.7, 1);
+    setBaseSize(200, sizeHint().height());
 
     connect(ExplainedVarianceChartView, &PcaExplainedVariancePieChartView::PrincipalComponentSelected,
             this, [this](QString const& pcName, size_t pcIdx) {
@@ -56,6 +57,11 @@ auto PcaSecondaryChartWidget::UpdateData(PipelineBatchListData const* batchData)
         ExplainedVarianceChartView->UpdateData(BatchData);
 }
 
+auto PcaSecondaryChartWidget::showEvent(QShowEvent* event) -> void {
+    QSplitter::showEvent(event);
+
+    moveSplitter(ExplainedVarianceChartView->sizeHint().height() * 0.35, 1);
+}
 
 
 PcaExplainedVariancePieChartView::PcaExplainedVariancePieChartView() :
@@ -122,9 +128,9 @@ auto PcaExplainedVariancePieChartView::UpdateData(PipelineBatchListData const* b
 
     connect(pieSeries, &QPieSeries::hovered, this, [this](QPieSlice* /*slice*/, bool entered) {
         if (entered)
-            setCursor(QCursor(Qt::PointingHandCursor));
+            QApplication::setOverrideCursor(QCursor { Qt::CursorShape::PointingHandCursor });
         else
-            setCursor(QCursor(Qt::ArrowCursor));
+            QApplication::restoreOverrideCursor();
     });
 
     connect(pieSeries, &QPieSeries::hovered, this, &PcaExplainedVariancePieChartView::ToggleTooltip);
@@ -140,6 +146,7 @@ auto PcaExplainedVariancePieChartView::UpdateData(PipelineBatchListData const* b
 
 auto PcaExplainedVariancePieChartView::resizeEvent(QResizeEvent* event) -> void {
     GraphicsScene->setSceneRect(QRect(QPoint(0, 0), event->size()));
+
     if (Chart)
         Chart->resize(event->size());
 }
@@ -224,9 +231,12 @@ auto PcaFeaturesChartView::UpdateData(PipelineBatchListData const* batchListData
 }
 
 auto PcaFeaturesChartView::resizeEvent(QResizeEvent* event) -> void {
+    QGraphicsView::resizeEvent(event);
+
     GraphicsScene->setSceneRect(QRect(QPoint(0, 0), event->size()));
+
     if (Chart)
-        Chart->resize(event->size());
+        ResizeChart(event->size());
 }
 
 auto PcaFeaturesChartView::ToggleTooltip(bool entered, int barIdx) -> void {
@@ -340,12 +350,11 @@ auto PcaFeaturesChartView::UpdateChart(std::span<Feature> visibleFeatures) -> vo
 
     auto* xAxis = new QValueAxis();
     xAxis->setTitleText("Absolute Feature Coefficients");
-    auto titleFont = chart->titleFont();
+    auto titleFont = xAxis->titleFont();
     static auto const titlePointSize = static_cast<int>(static_cast<double>(titleFont.pointSize()) * 0.9);
     titleFont.setPointSize(titlePointSize);
     titleFont.setWeight(QFont::Weight::Normal);
-    chart->setTitleFont(titleFont);
-    xAxis->titleFont();
+    xAxis->setTitleFont(titleFont);
     chart->addAxis(xAxis, Qt::AlignBottom);
     barSeries->attachAxis(xAxis);
 
@@ -362,9 +371,26 @@ auto PcaFeaturesChartView::UpdateChart(std::span<Feature> visibleFeatures) -> vo
 
     GraphicsScene->addItem(Chart);
 
-    Chart->resize(size());
+    ResizeChart(size());
 
     connect(barSet, &QBarSet::hovered, this, &PcaFeaturesChartView::ToggleTooltip);
 
     connect(Chart, &ScrollAwareChart::wheelRotated, this, &PcaFeaturesChartView::MoveRange);
+}
+
+auto PcaFeaturesChartView::ResizeChart(QSize size) -> void {
+    static constexpr qreal plotAreaFraction = 0.7;
+
+    qreal const leftMargin = size.width() * (1 - plotAreaFraction);
+    qreal const bottomMargin = 50.0;
+    qreal const newPlotAreaWidth = size.width() * plotAreaFraction - 15.0;
+    qreal const height = size.height() - bottomMargin;
+    Chart->setPlotArea({ leftMargin + 0.5, 0.5, newPlotAreaWidth, height });
+    Chart->setMargins({ static_cast<int>(leftMargin), 0, 0, static_cast<int>(bottomMargin) });
+
+    Chart->resize(size);
+
+    auto* categoryAxis = dynamic_cast<QBarCategoryAxis*>(Chart->axes(Qt::Orientation::Vertical).at(0));
+    categoryAxis->append("VeryVeryVeryVeryVeryVeryLongLabelToInvalidateAxisGeometry");
+    categoryAxis->remove("VeryVeryVeryVeryVeryVeryLongLabelToInvalidateAxisGeometry");
 }

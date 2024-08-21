@@ -30,6 +30,10 @@ public Q_SLOTS:
     auto
     UpdateData(PipelineBatchListData const* batchData) -> void;
 
+protected:
+    auto
+    showEvent(QShowEvent* event) -> void override;
+
 private:
     PipelineBatchListData const* BatchData;
 
@@ -80,7 +84,7 @@ public:
 
 protected:
     auto
-    resizeEvent(QResizeEvent *event) -> void override;
+    resizeEvent(QResizeEvent* event) -> void override;
 
 private Q_SLOTS:
     auto
@@ -91,12 +95,15 @@ private Q_SLOTS:
 
 private:
     struct Feature {
-        double Coefficient;
+        double Coefficient = 0.0;
         std::reference_wrapper<std::string const> Name;
     };
 
     auto
     UpdateChart(std::span<Feature> visibleFeatures) -> void;
+
+    auto
+    ResizeChart(QSize size) -> void;
 
     QGraphicsScene* GraphicsScene;
     ScrollAwareChart* Chart;
@@ -104,6 +111,4 @@ private:
 
     std::vector<Feature> Features;
     QString PcName;
-//    std::vector<std::string> FeatureNames;
-//    std::vector<double> FeatureCoefficients;
 };

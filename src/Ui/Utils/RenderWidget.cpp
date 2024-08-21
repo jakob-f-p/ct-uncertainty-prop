@@ -27,19 +27,22 @@
 RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls, QWidget* parent) :
         VtkRenderWidget(new CtRenderWidget(this, imageAlgorithm, parent)) {
 
-    setFrameShape(QFrame::Shape::StyledPanel);
+    setFrameShape(QFrame::Shape::Box);
     setFrameShadow(QFrame::Shadow::Sunken);
+    setLineWidth(1);
+    setMidLineWidth(1);
 
     if (!controls)
         return;
 
-    auto* topControlBar = new QWidget();
-    auto* topControlBarHLayout = new QHBoxLayout(topControlBar);
-    topControlBarHLayout->setContentsMargins({ 10, 5, 10, 10 });
+    auto* controlBar = new QFrame();
+    auto* controlBarVLayout = new QVBoxLayout(controlBar);
+    controlBarVLayout->setContentsMargins({ 10, 10, 10, 10 });
+    controlBarVLayout->setSpacing(5);
 
-    auto* bottomControlBar = new QWidget();
-    auto* bottomControlBarHLayout = new QHBoxLayout(bottomControlBar);
-    bottomControlBarHLayout->setContentsMargins({ 10, 0, 10, 10 });
+    auto* bottomControlBarHLayout = new QHBoxLayout();
+    bottomControlBarHLayout->setContentsMargins({});
+    controlBarVLayout->addLayout(bottomControlBarHLayout);
 
     if (controls.Render) {
         RenderButton = new QPushButton("Render");
@@ -58,16 +61,21 @@ RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls,
         Slider->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Preferred);
 
         switch (controls.WindowWidthSlider) {
-            case WindowWidthSliderMode::INLINE:
+            case WindowWidthSliderMode::INLINE: {
                 bottomControlBarHLayout->addWidget(Slider);
                 bottomControlBarHLayout->addStretch();
                 break;
+            }
 
-            case WindowWidthSliderMode::ABOVE:
-                bottomControlBarHLayout->addStretch();
+            case WindowWidthSliderMode::ABOVE: {
+                auto* topControlBarHLayout = new QHBoxLayout();
+                topControlBarHLayout->setContentsMargins({});
+                topControlBarHLayout->addStretch();
                 topControlBarHLayout->addWidget(Slider);
-                bottomControlBarHLayout->addStretch();
+                topControlBarHLayout->addStretch();
+                controlBarVLayout->insertLayout(0, topControlBarHLayout);
                 break;
+            }
 
             default:
                 throw std::runtime_error("invalid window width slider mode");
@@ -82,15 +90,9 @@ RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls,
 
     auto* vLayout = new QVBoxLayout(this);
     vLayout->setContentsMargins({});
-
+    vLayout->setSpacing(0);
     vLayout->addWidget(VtkRenderWidget);
-
-    if (controls.WindowWidthSlider == WindowWidthSliderMode::ABOVE)
-        vLayout->addWidget(topControlBar);
-    else
-        delete topControlBar;
-
-    vLayout->addWidget(bottomControlBar);
+    vLayout->addWidget(controlBar);
 
 
     if (RenderButton)
@@ -151,6 +153,8 @@ CtRenderWidget::CtRenderWidget(RenderWidget* renderWidget, vtkImageAlgorithm* im
 
             return trivialImageSource;
         }()) {
+
+    setContentsMargins({});
 
     setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Expanding);
 

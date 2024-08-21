@@ -118,16 +118,16 @@ auto ChartTooltip::AdjustPosition() noexcept -> void {
 
     if (!parentRect.contains(rect)) {
         if (parentRect.top() > rect.top())
-            moveBy(0, parentRect.top() - rect.top());
+            moveBy(0, parentRect.top() - rect.top() + 1);
 
         if (parentRect.bottom() < rect.bottom())
-            moveBy(0, parentRect.bottom() - rect.bottom());
+            moveBy(0, parentRect.bottom() - rect.bottom() - 1);
 
         if (parentRect.left() > rect.left())
-            moveBy(parentRect.left() - rect.left(), 0);
+            moveBy(parentRect.left() - rect.left() + 1, 0);
 
         if (parentRect.right() < rect.right())
-            moveBy(parentRect.right() - rect.right(), 0);
+            moveBy(parentRect.right() - rect.right() - 1, 0);
     }
 
     auto newRect = mapRectToParent(boundingRect());
