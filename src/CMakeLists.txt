@@ -83,6 +83,7 @@ set(VTK_COMPONENTS
         GUISupportQt
         InteractionStyle
         IOLegacy
+        ImagingStatistics
         RenderingAnnotation
         RenderingCore
         RenderingQt

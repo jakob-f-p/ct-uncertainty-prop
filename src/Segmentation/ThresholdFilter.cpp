@@ -192,8 +192,8 @@ auto ThresholdFilterWidget::Populate(ThresholdFilter& thresholdFilter) -> void {
         throw std::runtime_error("must have at least one bound");
 
     FilterMode const mode = hasLower
-                                ? (hasUpper ? FilterMode::BETWEEN : FilterMode::BELOW)
-                                : FilterMode::ABOVE;
+                                ? (hasUpper ? FilterMode::BETWEEN : FilterMode::ABOVE)
+                                : FilterMode::BELOW;
     int const modeIdx = ModeComboBox->findData(QVariant::fromValue(mode));
     if (modeIdx == -1)
         throw std::runtime_error("mode must be present");

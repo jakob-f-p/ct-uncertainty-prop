@@ -9,6 +9,7 @@ class CtStructureTree;
 class PipelineGroupList;
 class PipelineList;
 
+class vtkImageData;
 
 class DataInitializer {
 public:
@@ -197,7 +198,10 @@ public:
     auto
     operator()() -> void;
 
-//private:
+private:
+    static auto
+    CalculateOtsuThreshold(vtkImageData& image) -> double;
+
 //    auto
 //    InitializeSaltPepper() noexcept -> void;
 //

@@ -18,6 +18,13 @@
 #include "Segmentation/ThresholdFilter.h"
 
 #include "Ui/Utils/RenderWidget.h"
+#include "Utils/Statistics.h"
+
+#include <vtkFloatArray.h>
+#include <vtkIdTypeArray.h>
+#include <vtkImageAccumulate.h>
+#include <vtkImageData.h>
+#include <vtkPointData.h>
 
 #include <stdexcept>
 #include <numbers>
@@ -1493,16 +1500,14 @@ ScenarioImportedInitializer::ScenarioImportedInitializer(App& app) :
         SceneInitializer(app) {}
 
 auto ScenarioImportedInitializer::operator()() -> void {
-    CtRenderWidget::SetWindowWidth({ 0.0, 200.0 });
-
     vtkNew<NrrdCtDataSource> dataSource;
-    dataSource->SetVolumeDataPhysicalDimensions({ 40.0, 40.0, 40.0 });
+    dataSource->SetVolumeDataPhysicalDimensions({ 100.0, 100.0, 100.0 });
 #ifdef BUILD_TYPE_DEBUG
-    //    dataSource->SetVolumeNumberOfVoxels({ 64, 64, 32 });
-    dataSource->SetVolumeNumberOfVoxels({ 16, 16, 16 });
+    dataSource->SetVolumeNumberOfVoxels({ 64, 64, 64 });
+//    dataSource->SetVolumeNumberOfVoxels({ 16, 16, 16 });
 #else
-//    dataSource->SetVolumeNumberOfVoxels({ 256, 256, 128 });
-    dataSource->SetVolumeNumberOfVoxels({ 128, 128, 64 });
+    dataSource->SetVolumeNumberOfVoxels({ 255, 255, 255 });
+//    dataSource->SetVolumeNumberOfVoxels({ 128, 128, 128 });
 #endif
     auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
     if (homeLocations.empty() || homeLocations.at(0).isEmpty())
@@ -1513,8 +1518,18 @@ auto ScenarioImportedInitializer::operator()() -> void {
     dataSource->SetFilepath(abs_filepath);
     App_.SetCtDataSource(*dataSource);
 
+    App_.GetCtDataSource().Update();
+    vtkImageData& inputImage = *App_.GetCtDataSource().GetOutput();
+
+    auto* radiodensityArray = vtkFloatArray::SafeDownCast(inputImage.GetPointData()->GetScalars());
+    float* radiodensities = radiodensityArray->WritePointer(0, inputImage.GetNumberOfPoints());
+    std::span<float> const radiodensitySpan { radiodensities, static_cast<size_t>(inputImage.GetNumberOfPoints()) };
+    auto const [ imageMinIt, imageMaxIt ] = std::minmax_element(radiodensitySpan.begin(), radiodensitySpan.end());
+    CtRenderWidget::SetWindowWidth({ *imageMinIt, *imageMaxIt });
+
+    double const threshold = CalculateOtsuThreshold(*App_.GetCtDataSource().GetOutput());
     auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
-//    thresholdFilter.ThresholdBetween(organ1Tissue.Radiodensity - 15.0F, organ1Tissue.Radiodensity + 15.0F);
+    thresholdFilter.ThresholdByUpper(threshold);
 
     Cylinder waterCylinder {};
     waterCylinder.SetFunctionData({ 15.0, 20.0 });
@@ -1563,4 +1578,77 @@ auto ScenarioImportedInitializer::operator()() -> void {
 //    InitializeMetal();
 //    InitializeWindmill();
 //    InitializeMotion();
+}
+
+auto ScenarioImportedInitializer::CalculateOtsuThreshold(vtkImageData& image) -> double {
+    size_t const numberOfValues = image.GetNumberOfPoints();
+
+    auto* radiodensityArray = vtkFloatArray::SafeDownCast(image.GetPointData()->GetScalars());
+    float* radiodensities = radiodensityArray->WritePointer(0, numberOfValues);
+    std::span<float> const radiodensitySpan { radiodensities, numberOfValues };
+
+    auto const [ imageMinIt, imageMaxIt ] = std::minmax_element(radiodensitySpan.begin(), radiodensitySpan.end());
+    double const min = std::max(floor(static_cast<double>(*imageMinIt)), -1000.0);
+    double const max = std::min(ceil(static_cast<double>(*imageMaxIt)),  3000.0);
+    int const numberOfBins = max - min + 1;
+
+    vtkNew<vtkImageAccumulate> histogramFilter;
+    histogramFilter->SetComponentSpacing(1.0, 0.0, 0.0);
+    histogramFilter->SetComponentOrigin(min, 0.0, 0.0);
+    histogramFilter->SetComponentExtent(0, numberOfBins - 1, 0, 0, 0, 0);
+    histogramFilter->SetInputData(&image);
+    histogramFilter->Update();
+    auto* histogramImage = histogramFilter->GetOutput();
+
+    auto* histogramArray = vtkIdTypeArray::SafeDownCast(histogramImage->GetPointData()->GetScalars());
+    vtkIdType* histogramValues = histogramArray->WritePointer(0, histogramImage->GetNumberOfPoints());
+    std::span<vtkIdType> const histogramSpan { histogramValues,
+                                                  static_cast<size_t>(histogramImage->GetNumberOfPoints()) };
+    int const absoluteSum = std::reduce(histogramSpan.begin(), histogramSpan.end());
+
+    std::vector<double> relativeHistogramVector { histogramSpan.size(), std::allocator<double> {} };
+    std::transform(histogramSpan.begin(), histogramSpan.end(),
+                   relativeHistogramVector.begin(),
+                   [numberOfValues](vtkIdType const& val) {
+        return static_cast<double>(val) / static_cast<double>(numberOfValues);
+    });
+    double const relativeSum = std::reduce(relativeHistogramVector.begin(), relativeHistogramVector.end());
+
+    std::vector<double> const cdfVector = Stats::CumulativeSum(relativeHistogramVector);
+
+    auto SumOfProducts = [](std::span<double> const& relativeHistogram, double initialValue) -> double {
+        double sum = 0.0;
+        double value = initialValue;
+
+        for (double const& p : relativeHistogram) {
+            sum += p * value;
+            ++value;
+        }
+
+        return sum;
+    };
+
+    auto CalculateInterClassVariance = [](double p0, double mu0, double p1, double mu1) -> double {
+        double const& meanDifference = mu1 - mu0;
+        return p0 * p1 * meanDifference * meanDifference;
+    };
+
+    int optimalThreshold = 0;
+    double maxInterClassVariance = -1.0;
+    for (int i = 1, threshold = min + 1.0; i < numberOfBins; ++i, ++threshold) {
+        auto const cutoffIt = std::next(relativeHistogramVector.begin(), i);
+        std::span<double> const class1 { relativeHistogramVector.begin(), cutoffIt };
+        std::span<double> const class2 { cutoffIt, relativeHistogramVector.end() };
+        double const interClassVariance = CalculateInterClassVariance(
+                cdfVector[i], SumOfProducts(class1, min) / cdfVector[i],
+                1.0 - cdfVector[i], SumOfProducts(class2, threshold) / (1.0 - cdfVector[i])
+        );
+
+        if (interClassVariance > maxInterClassVariance) {
+            maxInterClassVariance = interClassVariance;
+            optimalThreshold = threshold;
+        }
+    }
+
+    return optimalThreshold;
 }
