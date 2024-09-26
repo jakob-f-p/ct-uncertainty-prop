@@ -23,7 +23,8 @@ public:
         METHODOLOGY_ARTIFACTS,
         METHODOLOGY_SEGMENTATION,
         METHODOLOGY_ANALYSIS,
-        RESULTS_SIMPLE,
+        SCENARIO_IMPLICIT,
+        SCENARIO_IMPORTED
     };
 
     auto
@@ -159,9 +160,9 @@ public:
     operator()() -> void;
 };
 
-class ResultsSimpleSceneInitializer : public SceneInitializer {
+class ScenarioImplicitInitializer : public SceneInitializer {
 public:
-    explicit ResultsSimpleSceneInitializer(App& app);
+    explicit ScenarioImplicitInitializer(App& app);
 
     auto
     operator()() -> void;
@@ -187,4 +188,34 @@ private:
 
     auto
     InitializeMotion() noexcept -> void;
+};
+
+class ScenarioImportedInitializer : public SceneInitializer {
+public:
+    explicit ScenarioImportedInitializer(App& app);
+
+    auto
+    operator()() -> void;
+
+//private:
+//    auto
+//    InitializeSaltPepper() noexcept -> void;
+//
+//    auto
+//    InitializeGaussian() noexcept -> void;
+//
+//    auto
+//    InitializeCupping() noexcept -> void;
+//
+//    auto
+//    InitializeRing() noexcept -> void;
+//
+//    auto
+//    InitializeMetal() noexcept -> void;
+//
+//    auto
+//    InitializeWindmill() noexcept -> void;
+//
+//    auto
+//    InitializeMotion() noexcept -> void;
 };

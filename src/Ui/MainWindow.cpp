@@ -44,46 +44,36 @@ MainWindow::MainWindow(CtStructureTree& ctStructureTree,
                                       .arg(windowColor.green())
                                       .arg(windowColor.blue()));
 
-    auto* modelingWidget = new ModelingWidget(ctStructureTree);
-    auto* artifactsWidget = new ArtifactsWidget(pipelineList);
-    auto* segmentationWidget = new SegmentationWidget(thresholdFilter);
+    ModelingWidget_ = new ModelingWidget(ctStructureTree);
+    ArtifactsWidget_ = new ArtifactsWidget(pipelineList);
+    SegmentationWidget_ = new SegmentationWidget(thresholdFilter);
     auto* pipelineGroupsWidget = new PipelineGroupsWidget(pipelineGroups);
-    auto* dataGenerationWidget = new DataGenerationWidget(pipelineGroups, thresholdFilter);
+    DataGenerationWidget_ = new DataGenerationWidget(pipelineGroups, thresholdFilter);
     auto* analysisWidget = new AnalysisWidget(pipelineGroups);
 
-    tabWidget->addTab(modelingWidget, "Acquisition");
-    tabWidget->addTab(artifactsWidget, "Artifacts");
-    tabWidget->addTab(segmentationWidget, "Segmentation");
+    tabWidget->addTab(ModelingWidget_, "Acquisition");
+    tabWidget->addTab(ArtifactsWidget_, "Artifacts");
+    tabWidget->addTab(SegmentationWidget_, "Segmentation");
     tabWidget->addTab(pipelineGroupsWidget, "Pipeline Groups");
-    tabWidget->addTab(dataGenerationWidget, "Data");
+    tabWidget->addTab(DataGenerationWidget_, "Data");
     tabWidget->addTab(analysisWidget, "Analysis");
 
     setCentralWidget(tabWidget);
 
-    auto updateWidgets = [=](int idx) {
-        if (idx == tabWidget->indexOf(segmentationWidget))
-            segmentationWidget->UpdateDataSourceOnPipelineChange(artifactsWidget->GetCurrentPipeline());
+    auto updateWidgets = [this, tabWidget, pipelineGroupsWidget, analysisWidget](int idx) {
+        if (idx == tabWidget->indexOf(SegmentationWidget_))
+            SegmentationWidget_->UpdateDataSourceOnPipelineChange(ArtifactsWidget_->GetCurrentPipeline());
 
         if (idx == tabWidget->indexOf(pipelineGroupsWidget))
             pipelineGroupsWidget->UpdatePipelineList();
 
-        if (idx == tabWidget->indexOf(dataGenerationWidget))
-            dataGenerationWidget->UpdateRowStatuses();
+        if (idx == tabWidget->indexOf(DataGenerationWidget_))
+            DataGenerationWidget_->UpdateRowStatuses();
 
         if (idx == tabWidget->indexOf(analysisWidget))
             analysisWidget->UpdateData();
     };
     connect(tabWidget, &QTabWidget::currentChanged, this, updateWidgets);
-
-    auto updateDataSources = [=]() {
-        artifactsWidget->UpdateDataSource();
-        segmentationWidget->UpdateDataSourceOnDataSourceChange();
-        dataGenerationWidget->UpdateRowStatuses();
-//        analysisWidget->UpdateDataSource();
-    };
-    connect(modelingWidget, &ModelingWidget::DataSourceUpdated, this, updateDataSources);
-
-    Q_EMIT modelingWidget->DataSourceUpdated();
 }
 
 
@@ -102,4 +92,12 @@ auto MainWindow::keyPressEvent(QKeyEvent* event) -> void {
     QString const caption = QString("Save screenshot");
     QString const fileName = QFileDialog::getSaveFileName(this, caption, homePath, fileFilter);
     grab().save(fileName);
+}
+
+auto MainWindow::UpdateDataSource(CtDataSource& dataSource) noexcept -> void {
+    ModelingWidget_->UpdateDataSource(dataSource);
+    ArtifactsWidget_->UpdateDataSource();
+    SegmentationWidget_->UpdateDataSourceOnDataSourceChange();
+    DataGenerationWidget_->UpdateRowStatuses();
+//        analysisWidget->UpdateDataSource();
 }

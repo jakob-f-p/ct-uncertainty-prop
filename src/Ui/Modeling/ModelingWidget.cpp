@@ -30,8 +30,9 @@
 
 ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, QWidget* parent) :
         QMainWindow(parent),
-        CurrentDataSource(nullptr),
+        CurrentDataSource(&App::GetInstance().GetCtDataSource()),
         RenderingWidget(new RenderWidget()),
+        DataSourceWidget_(new DataSourceWidget(ctStructureTree, *CurrentDataSource)),
         PhysicalDimensionsSpinBoxes(new DoubleCoordinateRowWidget({ 1.0, 100.0, 1.0, 1.0  }, "Physical\nDimensions")),
         ResolutionSpinBoxes(new IntegerCoordinateRowWidget({ 16, 512, 1, 16 }, "Resolution")) {
 
@@ -64,8 +65,7 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, QWidget* parent
     verticalLayout->addWidget(separator);
     verticalLayout->addSpacing(20);
 
-    auto* dataSourceWidget = new DataSourceWidget(ctStructureTree);
-    verticalLayout->addWidget(dataSourceWidget);
+    verticalLayout->addWidget(DataSourceWidget_);
 
     verticalLayout->addStretch();
 
@@ -81,20 +81,16 @@ ModelingWidget::ModelingWidget(CtStructureTree& ctStructureTree, QWidget* parent
         CurrentDataSource->SetVolumeNumberOfVoxels(ResolutionSpinBoxes->GetRowData(0).ToArray());
     });
 
-    connect(dataSourceWidget, &DataSourceWidget::DataSourceUpdated,
-            this, [this](CtDataSource& ctDataSource, uint8_t dataSourceType) {
-        auto const ctDataSourceType = static_cast<App::CtDataSourceType>(dataSourceType);
+    UpdateDataSource(*CurrentDataSource);
+}
 
-        CurrentDataSource = &ctDataSource;
-        RenderingWidget->UpdateImageAlgorithm(*CurrentDataSource);
-        App::GetInstance().SetCtDataSource(*CurrentDataSource, ctDataSourceType);
+auto ModelingWidget::UpdateDataSource(CtDataSource& dataSource) -> void {
+    CurrentDataSource = &dataSource;
+    DataSourceWidget_->UpdateDataSource(dataSource);
 
-        SyncSpinBoxes();
+    RenderingWidget->UpdateImageAlgorithm(*CurrentDataSource);
 
-        Q_EMIT DataSourceUpdated();
-    });
-
-    dataSourceWidget->EmitInitial();
+    SyncSpinBoxes();
 }
 
 void ModelingWidget::showEvent(QShowEvent* event) {
@@ -111,7 +107,7 @@ auto ModelingWidget::SyncSpinBoxes() -> void {
 }
 
 
-DataSourceWidget::DataSourceWidget(CtStructureTree& ctStructureTree, QWidget* parent) :
+DataSourceWidget::DataSourceWidget(CtStructureTree& ctStructureTree, CtDataSource& dataSource, QWidget* parent) :
         QWidget(parent),
         ImplicitButton([]() {
             auto* button = new QPushButton("Implicit Modeling");
@@ -138,7 +134,6 @@ DataSourceWidget::DataSourceWidget(CtStructureTree& ctStructureTree, QWidget* pa
             stackedWidget->setContentsMargins({});
             stackedWidget->addWidget(new CtStructureTreeWidget(ctStructureTree));
             stackedWidget->addWidget(new CtDataImportWidget());
-            stackedWidget->setCurrentIndex(1);
             return stackedWidget;
         }()) {
 
@@ -188,29 +183,51 @@ DataSourceWidget::DataSourceWidget(CtStructureTree& ctStructureTree, QWidget* pa
                 return;
         }
 
-        auto& ctDataSource = std::visit([this](auto* widget) -> CtDataSource& {
-            StackedWidget->setCurrentWidget(widget);
-            return widget->GetCtDataSource();
-        }, newWidgetVariant);
+        auto& newDataSource = std::visit([](auto* widget) -> CtDataSource& { return widget->GetCtDataSource(); },
+                                         newWidgetVariant);
 
-        ImplicitButton->setChecked(std::holds_alternative<CtStructureTreeWidget*>(newWidgetVariant));
-        NrrdButton->setChecked(std::holds_alternative<CtDataImportWidget*>(newWidgetVariant));
-
-        App::CtDataSourceType const dataSourceType = std::visit(Overload {
-            [](CtStructureTreeWidget*) { return App::CtDataSourceType::IMPLICIT; },
-            [](CtDataImportWidget*)    { return App::CtDataSourceType::IMPORTED; },
-        }, newWidgetVariant);
-
-        Q_EMIT DataSourceUpdated(ctDataSource, static_cast<uint8_t>(dataSourceType));
+        App::GetInstance().SetCtDataSource(newDataSource);
     });
+
+
+    bool isImplicit = dynamic_cast<ImplicitCtDataSource*>(&dataSource);
+    if (!isImplicit && !dynamic_cast<NrrdCtDataSource*>(&dataSource))
+        throw std::runtime_error("invalid data source type");
+
+    if (isImplicit)
+        ImplicitButton->click();
+    else
+        NrrdButton->click();
 }
 
-auto DataSourceWidget::EmitInitial() const noexcept -> void {
-    Q_EMIT ImplicitButton->click();
+auto DataSourceWidget::UpdateDataSource(CtDataSource& dataSource) -> void {
+    bool isImplicit = dynamic_cast<ImplicitCtDataSource*>(&dataSource);
+    if (!isImplicit && !dynamic_cast<NrrdCtDataSource*>(&dataSource))
+        throw std::runtime_error("invalid data source type");
+
+    if (isImplicit) {
+        auto& source = dynamic_cast<ImplicitCtDataSource&>(dataSource);
+        auto* widget = dynamic_cast<CtStructureTreeWidget*>(StackedWidget->widget(0));
+        widget->UpdateDataSource(source);
+        StackedWidget->setCurrentWidget(widget);
+    } else {
+        auto& source = dynamic_cast<NrrdCtDataSource&>(dataSource);
+        auto* widget = dynamic_cast<CtDataImportWidget*>(StackedWidget->widget(1));
+        widget->UpdateDataSource(source);
+        StackedWidget->setCurrentWidget(widget);
+    }
+
+    ImplicitButton->setChecked(isImplicit);
+    NrrdButton->setChecked(!isImplicit);
 }
 
 CtStructureTreeWidget::CtStructureTreeWidget(CtStructureTree& ctStructureTree, QWidget* parent) :
         QWidget(parent),
+        DataSource([&ctStructureTree]() {
+            vtkNew<ImplicitCtDataSource> dataSource;
+            dataSource->SetDataTree(&ctStructureTree);
+            return dataSource;
+        }()),
         AddStructureButton(new QPushButton(GenerateIcon("Plus"), " Sibling")),
         CombineWithStructureButton(new QPushButton(GenerateIcon("Plus"), " Combine")),
         RefineWithStructureButton(new QPushButton(GenerateIcon("Plus"), " Refine")),
@@ -223,8 +240,6 @@ CtStructureTreeWidget::CtStructureTreeWidget(CtStructureTree& ctStructureTree, Q
         TreeModel(dynamic_cast<CtStructureTreeModel*>(TreeView->model())),
         SelectionModel(TreeView->selectionModel()),
         CtStructureCreateDialog(nullptr) {
-
-    DataSource->SetDataTree(&ctStructureTree);
 
     auto* vLayout = new QVBoxLayout(this);
     vLayout->setContentsMargins({});
@@ -284,6 +299,8 @@ CtStructureTreeWidget::CtStructureTreeWidget(CtStructureTree& ctStructureTree, Q
             this, &CtStructureTreeWidget::UpdateButtonStates);
 }
 
+CtStructureTreeWidget::~CtStructureTreeWidget() = default;
+
 void CtStructureTreeWidget::DisableButtons() {
     for (auto const& button: CtStructureButtons)
         button->setEnabled(false);
@@ -322,13 +339,16 @@ void CtStructureTreeWidget::UpdateButtonStates(QItemSelection const& selected, Q
     RemoveStructureButton->setEnabled(isBasicStructure);
 }
 
-CtStructureTreeWidget::~CtStructureTreeWidget() = default;
-
 auto CtStructureTreeWidget::GetCtDataSource() -> CtDataSource& { return *DataSource; }
+
+auto CtStructureTreeWidget::UpdateDataSource(ImplicitCtDataSource& dataSource) -> void {
+    DataSource = &dataSource;
+}
 
 
 CtDataImportWidget::CtDataImportWidget(QWidget* parent) :
         QWidget(parent),
+        DataSource(NrrdCtDataSource::New()),
         ImportNotice(new QLabel("...")) {
 
     auto* vLayout = new QVBoxLayout(this);
@@ -360,4 +380,9 @@ auto CtDataImportWidget::Prepare() -> bool {
     ImportNotice->setText(filePath.string().c_str());
 
     return true;
+}
+
+auto CtDataImportWidget::UpdateDataSource(NrrdCtDataSource& dataSource) -> void {
+    DataSource = &dataSource;
+    ImportNotice->setText(DataSource->GetFilepath().string().c_str());
 }

@@ -4,6 +4,7 @@
 #include "DataInitializer.h"
 #include "Modeling/ImplicitCtDataSource.h"
 #include "Modeling/CtStructureTree.h"
+#include "Modeling/NrrdCtDataSource.h"
 #include "PipelineGroups/PipelineGroupList.h"
 #include "PipelineGroups/PipelineParameterSpan.h"
 #include "Segmentation/ThresholdFilter.h"
@@ -25,8 +26,11 @@ App::App(int argc, char* argv[]) :
         Argv(argv),
         QApp(std::make_unique<QApplication>(Argc, Argv)),
         CtDataTree(new CtStructureTree()),
-        DataSource(nullptr),
-        DataSourceType(CtDataSourceType::IMPLICIT),
+        DataSource([this](){
+            vtkNew<ImplicitCtDataSource> dataSource;
+            dataSource->SetDataTree(CtDataTree.get());
+            return dataSource;
+        }()),
         Pipelines(new PipelineList(*CtDataTree)),
         PipelineGroups([&pipelines = *Pipelines]() {
             auto* const pipelineGroupList = new PipelineGroupList(pipelines);
@@ -84,7 +88,9 @@ auto App::Run() -> int {
     spdlog::debug("Creating Ui...");
 
     auto const mode = MainWindow::Mode::PRESENTATION;
-    MainWindow mainWindow(*CtDataTree, *ThresholdFilterAlgorithm, *Pipelines, *PipelineGroups, mode);
+    MainWindow_ = std::make_unique<MainWindow>(*CtDataTree, *ThresholdFilterAlgorithm,
+                                               *Pipelines, *PipelineGroups, mode);
+//    MainWindow mainWindow(*CtDataTree, *ThresholdFilterAlgorithm, *Pipelines, *PipelineGroups, mode);
 
     spdlog::debug("Initializing with test data...");
 
@@ -92,7 +98,7 @@ auto App::Run() -> int {
 
     spdlog::info("Application running...");
 
-    mainWindow.show();
+    MainWindow_->show();
 
     return QApplication::exec();
 }
@@ -114,13 +120,21 @@ auto App::GetCtDataSource() const -> CtDataSource& {
     return *DataSource;
 }
 
-auto App::SetCtDataSource(CtDataSource& ctDataSource, CtDataSourceType type) -> void {
+auto App::SetCtDataSource(CtDataSource& ctDataSource) -> void {
     ctDataSource.Modified();
     DataSource = &ctDataSource;
-    DataSourceType = type;
+    MainWindow_->UpdateDataSource(ctDataSource);
 }
 
-auto App::GetCtDataSourceType() const noexcept -> App::CtDataSourceType { return DataSourceType; }
+auto App::GetCtDataSourceType() const -> App::CtDataSourceType {
+    if (auto* implicitSource = dynamic_cast<ImplicitCtDataSource*>(DataSource.Get()))
+        return CtDataSourceType::IMPLICIT;
+
+    if (auto* importedSource = dynamic_cast<NrrdCtDataSource*>(DataSource.Get()))
+        return CtDataSourceType::IMPORTED;
+
+    throw std::runtime_error("Invalid data source type");
+}
 
 auto App::GetImageDimensions() const -> std::array<uint32_t, 3> {
     if (!DataSource)
@@ -153,7 +167,7 @@ auto App::GetPythonInterpreter() -> PythonInterpreter& {
 }
 
 void App::InitializeWithTestData() {
-    static constexpr DataInitializer::Config config = DataInitializer::Config::RESULTS_SIMPLE;
+    static constexpr DataInitializer::Config config = DataInitializer::Config::SCENARIO_IMPORTED;
 
     DataInitializer initializer { *this };
     initializer(config);

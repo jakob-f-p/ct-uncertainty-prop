@@ -4,10 +4,14 @@
 
 #include <vtkNew.h>
 
+class ArtifactsWidget;
 class CtDataSource;
 class CtStructureTree;
+class DataGenerationWidget;
+class ModelingWidget;
 class PipelineList;
 class PipelineGroupList;
+class SegmentationWidget;
 class ThresholdFilter;
 
 class MainWindow : public QMainWindow {
@@ -20,7 +24,16 @@ public:
                         PipelineGroupList& pipelineGroups,
                         Mode mode = Mode::NORMAL);
 
+    auto
+    UpdateDataSource(CtDataSource& dataSource) noexcept -> void;
+
 protected:
     auto
     keyPressEvent(QKeyEvent* event) -> void override;
+
+private:
+    ModelingWidget* ModelingWidget_;
+    ArtifactsWidget* ArtifactsWidget_;
+    SegmentationWidget* SegmentationWidget_;
+    DataGenerationWidget* DataGenerationWidget_;
 };

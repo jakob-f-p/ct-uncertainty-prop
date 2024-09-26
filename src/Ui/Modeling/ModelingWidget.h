@@ -2,7 +2,7 @@
 
 #include <QMainWindow>
 
-#include <vtkNew.h>
+#include <vtkSmartPointer.h>
 
 class BasicStructureData;
 class CombinedStructureData;
@@ -11,6 +11,7 @@ class CtStructureTreeModel;
 class CtStructureDialog;
 class CtStructureTree;
 class CtStructureView;
+class DataSourceWidget;
 class DoubleCoordinateRowWidget;
 class ImplicitCtDataSource;
 class IntegerCoordinateRowWidget;
@@ -31,9 +32,8 @@ class ModelingWidget : public QMainWindow {
 public:
     explicit ModelingWidget(CtStructureTree& ctStructureTree, QWidget* parent = nullptr);
 
-Q_SIGNALS:
     auto
-    DataSourceUpdated() -> void;
+    UpdateDataSource(CtDataSource& dataSource) -> void;
 
 protected:
     void showEvent(QShowEvent* event) override;
@@ -45,6 +45,7 @@ private:
     CtDataSource* CurrentDataSource;
 
     RenderWidget* const RenderingWidget;
+    DataSourceWidget* const DataSourceWidget_;
 
     DoubleCoordinateRowWidget* PhysicalDimensionsSpinBoxes;
     IntegerCoordinateRowWidget* ResolutionSpinBoxes;
@@ -55,14 +56,10 @@ class DataSourceWidget : public QWidget {
     Q_OBJECT
 
 public:
-    explicit DataSourceWidget(CtStructureTree& ctStructureTree, QWidget* parent = nullptr);
+    explicit DataSourceWidget(CtStructureTree& ctStructureTree, CtDataSource& dataSource, QWidget* parent = nullptr);
 
     auto
-    EmitInitial() const noexcept -> void;
-
-Q_SIGNALS:
-    auto
-    DataSourceUpdated(CtDataSource& dataSource, uint8_t dataSourceType) -> void;
+    UpdateDataSource(CtDataSource& dataSource) -> void;
 
 private:
     QPushButton* ImplicitButton;
@@ -94,8 +91,11 @@ public:
     auto
     GetCtDataSource() -> CtDataSource&;
 
+    auto
+    UpdateDataSource(ImplicitCtDataSource& dataSource) -> void;
+
 private:
-    vtkNew<ImplicitCtDataSource> DataSource;
+    vtkSmartPointer<ImplicitCtDataSource> DataSource;
 
     QPushButton* const AddStructureButton;
     QPushButton* const CombineWithStructureButton;
@@ -123,8 +123,11 @@ public:
     auto
     GetCtDataSource() -> CtDataSource&;
 
+    auto
+    UpdateDataSource(NrrdCtDataSource& dataSource) -> void;
+
 private:
-    vtkNew<NrrdCtDataSource> DataSource;
+    vtkSmartPointer<NrrdCtDataSource> DataSource;
 
     QLabel* const ImportNotice;
 };

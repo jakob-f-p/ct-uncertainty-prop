@@ -11,6 +11,7 @@
 #include "Modeling/CombinedStructure.h"
 #include "Modeling/CtDataSource.h"
 #include "Modeling/CtStructureTree.h"
+#include "Modeling/NrrdCtDataSource.h"
 #include "PipelineGroups/PipelineGroup.h"
 #include "PipelineGroups/PipelineGroupList.h"
 #include "PipelineGroups/PipelineParameterSpan.h"
@@ -20,6 +21,7 @@
 
 #include <stdexcept>
 #include <numbers>
+#include <QStandardPaths>
 
 
 DataInitializer::DataInitializer(App& app) :
@@ -62,8 +64,12 @@ auto DataInitializer::operator()(DataInitializer::Config config) -> void {
             MethodologyAnalysisSceneInitializer{ App_ }();
             break;
 
-        case Config::RESULTS_SIMPLE:
-            ResultsSimpleSceneInitializer{ App_ }();
+        case Config::SCENARIO_IMPLICIT:
+            ScenarioImplicitInitializer{ App_ }();
+            break;
+
+        case Config::SCENARIO_IMPORTED:
+            ScenarioImportedInitializer{ App_ }();
             break;
 
         default: throw std::runtime_error("invalid config");
@@ -1140,10 +1146,10 @@ auto MethodologyAnalysisSceneInitializer::operator()() -> void {
     }
 }
 
-ResultsSimpleSceneInitializer::ResultsSimpleSceneInitializer(App& app) :
+ScenarioImplicitInitializer::ScenarioImplicitInitializer(App& app) :
         SceneInitializer(app) {}
 
-auto ResultsSimpleSceneInitializer::operator()() -> void {
+auto ScenarioImplicitInitializer::operator()() -> void {
     auto waterTissue = BasicStructureDetails::GetTissueTypeByName("Water");
     auto organ1Tissue = BasicStructureDetails::GetTissueTypeByName("Organ1");
     auto organ2Tissue = BasicStructureDetails::GetTissueTypeByName("Organ2");
@@ -1213,7 +1219,7 @@ auto ResultsSimpleSceneInitializer::operator()() -> void {
     InitializeMotion();
 }
 
-auto ResultsSimpleSceneInitializer::InitializeSaltPepper() noexcept -> void {
+auto ScenarioImplicitInitializer::InitializeSaltPepper() noexcept -> void {
     static Range<float> const saltAmountRange = { 0.005, 0.05, 0.005 };
     static Range<float> const pepperAmountRange = { 0.005, 0.05, 0.005 };
 
@@ -1253,7 +1259,7 @@ auto ResultsSimpleSceneInitializer::InitializeSaltPepper() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(pepperAmountSpan));
 }
 
-auto ResultsSimpleSceneInitializer::InitializeGaussian() noexcept -> void {
+auto ScenarioImplicitInitializer::InitializeGaussian() noexcept -> void {
     static Range<float> const sdRange   = { 0.0, 20.0, 0.2 };
 
     auto& pipeline = Pipelines.AddPipeline();
@@ -1281,7 +1287,7 @@ auto ResultsSimpleSceneInitializer::InitializeGaussian() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(sdSpan));
 }
 
-auto ResultsSimpleSceneInitializer::InitializeCupping() noexcept -> void {
+auto ScenarioImplicitInitializer::InitializeCupping() noexcept -> void {
     static Range<float> const minRadiodensityFactorRange = { 0.5, 0.95, 0.05 };
     static Range<FloatPoint> const centerRange = { { -10.0, -10.0, -10.0 },
                                                    { 10.0, 10.0, 10.0 },
@@ -1321,7 +1327,7 @@ auto ResultsSimpleSceneInitializer::InitializeCupping() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&cupping), std::move(centerSpan));
 }
 
-auto ResultsSimpleSceneInitializer::InitializeRing() noexcept -> void {
+auto ScenarioImplicitInitializer::InitializeRing() noexcept -> void {
     static Range<float> const radiodensityFactorRange = { 0.0, 2.0, 0.20 };
     static Range<float> const innerRadiusRange = { 0.0, 10.0, 1.0 };
 
@@ -1361,7 +1367,7 @@ auto ResultsSimpleSceneInitializer::InitializeRing() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&ring), std::move(innerRadiusSpan));
 }
 
-auto ResultsSimpleSceneInitializer::InitializeMetal() noexcept -> void {
+auto ScenarioImplicitInitializer::InitializeMetal() noexcept -> void {
     static Range<float> const attenuationFactorRange = { 0.0, 0.9, 0.1 };
     static Range<float> const lengthRange = { 1.0, 10.0, 1.0 };
 
@@ -1400,7 +1406,7 @@ auto ResultsSimpleSceneInitializer::InitializeMetal() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&metal), std::move(lengthSpan));
 }
 
-auto ResultsSimpleSceneInitializer::InitializeWindmill() noexcept -> void {
+auto ScenarioImplicitInitializer::InitializeWindmill() noexcept -> void {
     static Range<float> const angularWidthRange = { 30.0, 90.0, 6.0 };
     static Range<float> const lengthRange = { 1.0, 10.0, 1.0 };
 
@@ -1440,7 +1446,7 @@ auto ResultsSimpleSceneInitializer::InitializeWindmill() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&metal), std::move(lengthSpan));
 }
 
-auto ResultsSimpleSceneInitializer::InitializeMotion() noexcept -> void {
+auto ScenarioImplicitInitializer::InitializeMotion() noexcept -> void {
     static Range<float> const radiodensityFactorRange = { 0.9, 1.1, 0.02 };
     static Range<float> const blurSdRange = { 0.1, 10.0, 1.0 };
     auto& pipeline = Pipelines.AddPipeline();
@@ -1479,4 +1485,82 @@ auto ResultsSimpleSceneInitializer::InitializeMotion() noexcept -> void {
             "Blur Standard Deviation Span"
     };
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&motion), std::move(blurSdSpan));
+}
+
+
+
+ScenarioImportedInitializer::ScenarioImportedInitializer(App& app) :
+        SceneInitializer(app) {}
+
+auto ScenarioImportedInitializer::operator()() -> void {
+    CtRenderWidget::SetWindowWidth({ 0.0, 200.0 });
+
+    vtkNew<NrrdCtDataSource> dataSource;
+    dataSource->SetVolumeDataPhysicalDimensions({ 40.0, 40.0, 40.0 });
+#ifdef BUILD_TYPE_DEBUG
+    //    dataSource->SetVolumeNumberOfVoxels({ 64, 64, 32 });
+    dataSource->SetVolumeNumberOfVoxels({ 16, 16, 16 });
+#else
+//    dataSource->SetVolumeNumberOfVoxels({ 256, 256, 128 });
+    dataSource->SetVolumeNumberOfVoxels({ 128, 128, 64 });
+#endif
+    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
+    if (homeLocations.empty() || homeLocations.at(0).isEmpty())
+        throw std::runtime_error("home path must not be empty");
+    std::filesystem::path const& homePath { homeLocations.at(0).toStdString() };
+    std::filesystem::path const& filename = homePath / "Downloads/aneurism.nhdr";
+    std::filesystem::path const& abs_filepath = absolute(filename);
+    dataSource->SetFilepath(abs_filepath);
+    App_.SetCtDataSource(*dataSource);
+
+    auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
+//    thresholdFilter.ThresholdBetween(organ1Tissue.Radiodensity - 15.0F, organ1Tissue.Radiodensity + 15.0F);
+
+    Cylinder waterCylinder {};
+    waterCylinder.SetFunctionData({ 15.0, 20.0 });
+    BasicStructure waterCylinderStructure { std::move(waterCylinder) };
+//    waterCylinderStructure.SetTissueType(waterTissue);
+    waterCylinderStructure.SetTransformData({ 0.0F, 0.0F, -10.0F, 0.0F, 0.0F, 0.0F, 1.3F, 1.0F, 1.0F });
+    waterCylinderStructure.SetName("Water");
+    CtDataTree.AddBasicStructure(std::move(waterCylinderStructure));
+
+    CombinedStructure sceneUnion { CombinedStructure::OperatorType::UNION };
+    sceneUnion.SetName("Scene");
+
+    Sphere organSphere {};
+    organSphere.SetFunctionData({ 10.0, {} });
+    BasicStructure organSphereStructure { std::move(organSphere) };
+//    organSphereStructure.SetTissueType(organ1Tissue);
+    organSphereStructure.SetTransformData({ -5.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    organSphereStructure.SetName("Organ1");
+    organSphereStructure.SetEvaluationBias(-2000.0F);
+    CtDataTree.CombineWithBasicStructure(std::move(organSphereStructure), std::move(sceneUnion));
+
+    Box organBox {};
+    organBox.SetFunctionData({ { 0.0F, 0.0F, 0.0F }, { 15.0F, 15.0F, 15.0F } });
+    BasicStructure organBoxStructure { std::move(organBox) };
+//    organBoxStructure.SetTissueType(organ2Tissue);
+    organBoxStructure.SetTransformData({ -2.5F, -10.0F, -7.5F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    organBoxStructure.SetName("Organ2");
+    organBoxStructure.SetEvaluationBias(-1000.0F);
+    auto* sceneRoot = &std::get<CombinedStructure>(CtDataTree.GetRoot());
+    CtDataTree.AddBasicStructure(std::move(organBoxStructure), sceneRoot);
+
+    Sphere metalSphere {};
+    metalSphere.SetFunctionData({ 3.0, {} });
+    BasicStructure metalSphereStructure { std::move(metalSphere) };
+//    metalSphereStructure.SetTissueType(metalTissue);
+    metalSphereStructure.SetTransformData({ 4.0F, 5.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    metalSphereStructure.SetName("Metal");
+    metalSphereStructure.SetEvaluationBias(-3000.0F);
+    sceneRoot = &std::get<CombinedStructure>(CtDataTree.GetRoot());
+    CtDataTree.AddBasicStructure(std::move(metalSphereStructure), sceneRoot);
+
+//    InitializeSaltPepper();
+//    InitializeGaussian();
+//    InitializeCupping();
+//    InitializeRing();
+//    InitializeMetal();
+//    InitializeWindmill();
+//    InitializeMotion();
 }

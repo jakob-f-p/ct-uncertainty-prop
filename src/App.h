@@ -7,6 +7,7 @@
 
 class CtDataSource;
 class CtStructureTree;
+class MainWindow;
 class PipelineList;
 class PipelineGroupList;
 class PythonInterpreter;
@@ -44,10 +45,10 @@ public:
     GetCtDataSource() const -> CtDataSource&;
 
     auto
-    SetCtDataSource(CtDataSource& ctDataSource, CtDataSourceType type) -> void;
+    SetCtDataSource(CtDataSource& ctDataSource) -> void;
 
     [[nodiscard]] auto
-    GetCtDataSourceType() const noexcept -> CtDataSourceType;
+    GetCtDataSourceType() const -> CtDataSourceType;
 
     [[nodiscard]] auto
     GetImageDimensions() const -> std::array<uint32_t, 3>;
@@ -78,9 +79,9 @@ private:
     std::unique_ptr<QApplication> QApp;
     std::unique_ptr<CtStructureTree> CtDataTree;
     vtkSmartPointer<CtDataSource> DataSource;
-    CtDataSourceType DataSourceType;
     vtkNew<ThresholdFilter> ThresholdFilterAlgorithm;
     std::unique_ptr<PipelineList> Pipelines;
     std::unique_ptr<PipelineGroupList> PipelineGroups;
     std::unique_ptr<PythonInterpreter> PyInterpreter;
+    std::unique_ptr<MainWindow> MainWindow_;
 };
