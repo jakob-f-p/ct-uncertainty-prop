@@ -365,13 +365,17 @@ auto CtStructureTree::ClosestPointOnXYPlane(Point const& point,
     Point const& transformedPoint = TransformPointUntilStructure(point, structure);
 
     auto const& closestPoint = std::visit(FindClosestPointOnXYPlane { Structures, transformedPoint }, structure);
+//    auto const& closestPoint = std::visit(FindClosestPointOnXYPlane { Structures, point }, structure);
 
     return closestPoint
             ? std::optional<DoublePoint> { TransformPointFromStructure(*closestPoint, structure) }
             : std::nullopt;
+//    return closestPoint
+//           ? std::optional<DoublePoint> { closestPoint }
+//           : std::nullopt;
 }
 
-void CtStructureTree::SetData(uidx_t structureIdx, const QVariant& data) {
+void CtStructureTree::SetData(uidx_t structureIdx, QVariant const& data) {
     if (!StructureIdxExists(structureIdx))
         throw std::runtime_error("Cannot set data. Given structure idx does not exist.");
 

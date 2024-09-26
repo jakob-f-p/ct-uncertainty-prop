@@ -91,9 +91,11 @@ public:
     StructureArtifact(StructureArtifact&&) = default;
     auto operator= (StructureArtifact&&) -> StructureArtifact& = default;
     explicit StructureArtifact(StructureArtifactData const& data);
-    explicit StructureArtifact(MotionArtifact&& structureArtifactSubType)
-            : Artifact(std::move(structureArtifactSubType)) {}
     explicit StructureArtifact(MetalArtifact&& structureArtifactSubType)
+            : Artifact(std::move(structureArtifactSubType)) {}
+    explicit StructureArtifact(WindmillArtifact&& structureArtifactSubType)
+            : Artifact(std::move(structureArtifactSubType)) {}
+    explicit StructureArtifact(MotionArtifact&& structureArtifactSubType)
             : Artifact(std::move(structureArtifactSubType)) {}
 
     [[nodiscard]] auto

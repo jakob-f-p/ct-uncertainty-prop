@@ -57,7 +57,7 @@ RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls,
     bottomControlBarHLayout->addStretch();
 
     if (controls.WindowWidthSlider != WindowWidthSliderMode::NONE) {
-        Slider = new LabeledRangeSlider("Window Width [HU]", { -1500, 3500, 1 });
+        Slider = new LabeledRangeSlider("Window Width [HU]", { -1500, 4500, 1 });
         Slider->setSizePolicy(QSizePolicy::Policy::Expanding, QSizePolicy::Policy::Preferred);
 
         switch (controls.WindowWidthSlider) {
@@ -165,7 +165,7 @@ CtRenderWidget::CtRenderWidget(RenderWidget* renderWidget, vtkImageAlgorithm* im
     vtkNew<vtkVolumeProperty> volumeProperty;
     volumeProperty->SetColor(ColorTransferFunction.GetPointer());
     volumeProperty->SetScalarOpacity(OpacityMappingFunction.GetPointer());
-    volumeProperty->ShadeOn();
+    volumeProperty->ShadeOff();
     volumeProperty->SetInterpolationTypeToLinear();
     volumeProperty->SetAmbient(0.3);
 
@@ -266,15 +266,20 @@ auto CtRenderWidget::UpdateColorMappingFunctions() -> void {
     double const belowLow = std::max(WindowWidth.Min - std::abs(0.25 * WindowWidth.Min), -1500.0);
     double const low = std::max(static_cast<double>(WindowWidth.Min), -1500.0);
     double const high = std::min(static_cast<double>(WindowWidth.Max), 3500.0);
-    OpacityMappingFunction->AddPoint(-1500.0, 0.003, 0.5, 0.5);
-    OpacityMappingFunction->AddPoint(belowLow, 0.003, 0.0, 0.0);
-    OpacityMappingFunction->AddPoint(low, 0.005, 0.5, 0.0);
-    OpacityMappingFunction->AddPoint(high, 0.07, 0.0, 0.0);
-    OpacityMappingFunction->AddPoint(high + 1.0, 0.000);
+    double const aboveHigh = std::min(WindowWidth.Max + std::abs(0.25 * WindowWidth.Max), 3500.0);
+//    OpacityMappingFunction->AddPoint(-1500.0, 0.003, 0.5, 0.5);
+//    OpacityMappingFunction->AddPoint(belowLow, 0.003, 0.0, 0.0);
+//    OpacityMappingFunction->AddPoint(low, 0.005, 0.5, 0.0);
+//    OpacityMappingFunction->AddPoint(high, 0.07, 0.0, 0.0);
+//    OpacityMappingFunction->AddPoint(high + 1.0, 0.000);
+    OpacityMappingFunction->AddPoint(belowLow, 0.005, 1.0, 1.0);
+    OpacityMappingFunction->AddPoint(low, 0.03, 0.5, 0.0);
+    OpacityMappingFunction->AddPoint(high, 0.03, 0.0, 0.0);
+    OpacityMappingFunction->AddPoint(aboveHigh, 0.005, 0.0, 0.0);
 
-    ColorTransferFunction->AddRGBPoint(-1500.0, 0.0, 0.0, 0.0, 0.5, 0.5);
-    ColorTransferFunction->AddRGBPoint(belowLow, 0.1, 0.1, 0.1, 0.0, 0.0);
-    ColorTransferFunction->AddRGBPoint(low, 0.7, 0.7, 0.7, 0.5, 0.0);
+//    ColorTransferFunction->AddRGBPoint(-1500.0, 0.0, 0.0, 0.0, 0.5, 0.5);
+//    ColorTransferFunction->AddRGBPoint(belowLow, 0.1, 0.1, 0.1, 0.0, 0.0);
+    ColorTransferFunction->AddRGBPoint(low, 0.0, 0.0, 0.0, 0.5, 0.0);
     ColorTransferFunction->AddRGBPoint(high, 1.0, 1.0, 1.0, 0.0, 0.0);
 }
 

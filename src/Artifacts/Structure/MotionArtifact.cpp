@@ -150,7 +150,7 @@ auto MotionArtifact::EvaluateAtPosition(DoublePoint const& point,
                 auto const kernelResult = structureTree.FunctionValueAndRadiodensity(pointBlur, &structure);
                 size_t const idx = iOther * kernel1DSize + iBlur;
                 convolvedValues[idx] = kernelResult.FunctionValue < 0.0F
-                                               ? kernelResult.Radiodensity
+                                               ? kernelResult.Radiodensity * RadiodensityFactor
                                                : 0.0F;
                 convolvedValues[idx] *= Kernel2D[idx];
 

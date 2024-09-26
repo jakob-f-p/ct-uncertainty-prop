@@ -10,6 +10,8 @@
 #include <vtkSMPTools.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
 
+#include <span>
+
 vtkStandardNewMacro(GaussianArtifactFilter)
 
 void GaussianArtifactFilter::PrintSelf(ostream &os, vtkIndent indent) {
@@ -39,17 +41,11 @@ void GaussianArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input
     newNoiseValueArray->SetNumberOfTuples(output->GetNumberOfPoints());
     newNoiseValueArray->FillValue(0.0F);
     float* newNoiseValues = newNoiseValueArray->WritePointer(0, numberOfPoints);
+    std::span<float> const newNoiseValueSpan { newNoiseValues, static_cast<size_t>(numberOfPoints) };
 
-    auto generateGaussianNoiseValues = [mean = Mean,
-            sd = Sd,
-            newNoiseValues = newNoiseValues](vtkIdType pointId, vtkIdType endPointId) {
-        vtkNew<vtkBoxMuellerRandomSequence> gaussianSequence;
-
-        for (; pointId < endPointId; pointId++)
-            newNoiseValues[pointId] = static_cast<float>(gaussianSequence->GetNextScaledValue(mean, sd));
-    };
-    vtkSMPTools::For(0, numberOfPoints, generateGaussianNoiseValues);
-
+    vtkNew<vtkBoxMuellerRandomSequence> gaussianSequence;
+    for (auto& noiseValue : newNoiseValueSpan)
+        noiseValue = static_cast<float>(gaussianSequence->GetNextScaledValue(Mean, Sd));
 
 
     vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);

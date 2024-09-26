@@ -143,9 +143,8 @@ auto WindmillArtifact::EvaluateAtPosition(DoublePoint const& point,
     float const distance = std::sqrt(difference.SquaredNorm());
     float const distanceFactor = std::max(1.0F - (distance / Length), 0.0F);
 
-
     float const omega = std::numbers::pi / AngularWidth;
-    float const angle = std::atan2(difference[0], difference[1]);
+    float const angle = std::atan2(difference[1], difference[0]);
     static constexpr float startOffset = 0.75 * std::numbers::pi;
     float const zOffset = (point[2] / spacing[2]) * RotationPerSlice;
     float const cosine = cos(omega * angle + startOffset + zOffset);

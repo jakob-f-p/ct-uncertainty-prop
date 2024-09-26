@@ -1,10 +1,10 @@
 #pragma once
 
 #include "CtStructure.h"
+#include "ImplicitCone.h"
 #include "../Artifacts/Types.h"
 
 #include <vtkBox.h>
-#include <vtkCone.h>
 #include <vtkCylinder.h>
 #include <vtkImplicitBoolean.h>
 #include <vtkNew.h>
@@ -277,7 +277,7 @@ struct Cone {
     [[nodiscard]] auto
     operator==(Cone const& other) const noexcept -> bool { return ConeFunction == other.ConeFunction; }
 private:
-    vtkNew<vtkCone> UnboundedCone;
+    vtkNew<ImplicitCone> UnboundedCone;
     vtkNew<vtkPlane> TipPlane;
     vtkNew<vtkPlane> BasePlane;
     vtkNew<vtkImplicitBoolean> ConeFunction;

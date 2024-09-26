@@ -41,12 +41,7 @@ SphereWidget::SphereWidget() :
 }
 
 auto SphereWidget::GetData() noexcept -> SphereData {
-    SphereData data;
-
-    data.Radius = RadiusSpinBox->value();
-    data.Center = CenterCoordinateRow->GetRowData(0).ToArray();
-
-    return data;
+    return { RadiusSpinBox->value(), CenterCoordinateRow->GetRowData(0).ToArray() };
 }
 
 auto SphereWidget::Populate(const SphereData& data) noexcept -> void {
@@ -92,12 +87,8 @@ BoxWidget::BoxWidget() :
 }
 
 auto BoxWidget::GetData() noexcept -> BoxData {
-    BoxData data {};
-
-    data.MinPoint = MinMaxPointWidget->GetRowData(0).ToArray();
-    data.MaxPoint = MinMaxPointWidget->GetRowData(1).ToArray();
-
-    return data;
+    return { MinMaxPointWidget->GetRowData(0).ToArray(),
+             MinMaxPointWidget->GetRowData(1).ToArray() };
 }
 
 auto BoxWidget::Populate(const BoxData& data) noexcept -> void {
@@ -134,12 +125,7 @@ ConeWidget::ConeWidget() :
 }
 
 auto ConeWidget::GetData() noexcept -> ConeData {
-    ConeData data {};
-
-    data.Radius = RadiusSpinBox->value();
-    data.Height = HeightSpinBox->value();
-
-    return data;
+    return { RadiusSpinBox->value(), HeightSpinBox->value() };
 }
 
 auto ConeWidget::Populate(ConeData const& data) noexcept -> void {
@@ -153,10 +139,10 @@ Cone::Cone() {
     double static const defaultAngleDeg = vtkMath::DegreesFromRadians(atan(defaultRadius / defaultHeight));
 
     UnboundedCone->SetAngle(defaultAngleDeg);
-    TipPlane->SetNormal(-1.0, 0.0, 0.0);
+    TipPlane->SetNormal(0.0, 0.0, -1.0);
     TipPlane->SetOrigin(0.0, 0.0, 0.0);
-    BasePlane->SetNormal(1.0, 0.0, 0.0);
-    BasePlane->SetOrigin(defaultHeight, 0.0, 0.0);
+    BasePlane->SetNormal(0.0, 0.0, 1.0);
+    BasePlane->SetOrigin(0.0, 0.0, defaultHeight);
 
     ConeFunction->SetOperationTypeToIntersection();
     ConeFunction->AddFunction(UnboundedCone);
@@ -166,7 +152,7 @@ Cone::Cone() {
 
 auto Cone::AddFunctionData(Cone::Data& data) const noexcept -> void {
     double const angleRad = vtkMath::RadiansFromDegrees(UnboundedCone->GetAngle());
-    double const height = BasePlane->GetOrigin()[0];
+    double const height = BasePlane->GetOrigin()[2];
 
     data.Radius = height * tan(angleRad);
     data.Height = height;
@@ -176,7 +162,7 @@ auto Cone::SetFunctionData(Cone::Data const& data) noexcept -> void {
     double const angleRad = vtkMath::DegreesFromRadians(atan(data.Radius / data.Height));
 
     UnboundedCone->SetAngle(angleRad);
-    BasePlane->SetOrigin(data.Height, 0.0, 0.0);
+    BasePlane->SetOrigin(0.0, 0.0, data.Height);
 }
 
 
@@ -208,12 +194,7 @@ CylinderWidget::CylinderWidget() :
 }
 
 auto CylinderWidget::GetData() noexcept -> CylinderData {
-    CylinderData data {};
-
-    data.Radius = RadiusSpinBox->value();
-    data.Height = HeightSpinBox->value();
-
-    return data;
+    return { RadiusSpinBox->value(), HeightSpinBox->value() };
 }
 
 
@@ -228,11 +209,12 @@ Cylinder::Cylinder() {
     double static constexpr defaultRadius = 5.0;
     double static constexpr defaultHeight = 10.0;
 
+    UnboundedCylinder->SetAxis(0.0, 0.0, 1.0);
     UnboundedCylinder->SetRadius(defaultRadius);
-    BottomPlane->SetNormal(0.0, -1.0, 0.0);
+    BottomPlane->SetNormal(0.0, 0.0, -1.0);
     BottomPlane->SetOrigin(0.0, 0.0, 0.0);
-    TopPlane->SetNormal(0.0, 1.0, 0.0);
-    TopPlane->SetOrigin(0.0, defaultHeight, 0.0);
+    TopPlane->SetNormal(0.0, 0.0, 1.0);
+    TopPlane->SetOrigin(0.0, 0.0, defaultHeight);
 
     CylinderFunction->SetOperationTypeToIntersection();
     CylinderFunction->AddFunction(UnboundedCylinder);
@@ -242,10 +224,10 @@ Cylinder::Cylinder() {
 
 auto Cylinder::AddFunctionData(Cylinder::Data& data) const noexcept -> void {
     data.Radius = UnboundedCylinder->GetRadius();
-    data.Height = TopPlane->GetOrigin()[1];
+    data.Height = TopPlane->GetOrigin()[2];
 }
 
 auto Cylinder::SetFunctionData(Cylinder::Data const& data) noexcept -> void {
     UnboundedCylinder->SetRadius(data.Radius);
-    TopPlane->GetOrigin()[1] = data.Height;
+    TopPlane->GetOrigin()[2] = data.Height;
 }

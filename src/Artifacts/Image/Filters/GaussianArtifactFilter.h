@@ -26,7 +26,9 @@ protected:
                            vtkInformationVector *outputVector) override;
 
     auto
-    ExecuteDataWithImageInformation(vtkImageData* input, vtkImageData* output, vtkInformation* outInfo) -> void override;
+    ExecuteDataWithImageInformation(vtkImageData* input,
+                                    vtkImageData* output,
+                                    vtkInformation* outInfo) -> void override;
 
     double Mean;
     double Sd;

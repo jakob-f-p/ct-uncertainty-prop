@@ -23,6 +23,7 @@ public:
         METHODOLOGY_ARTIFACTS,
         METHODOLOGY_SEGMENTATION,
         METHODOLOGY_ANALYSIS,
+        RESULTS_SIMPLE,
     };
 
     auto
@@ -156,4 +157,34 @@ public:
 
     auto
     operator()() -> void;
+};
+
+class ResultsSimpleSceneInitializer : public SceneInitializer {
+public:
+    explicit ResultsSimpleSceneInitializer(App& app);
+
+    auto
+    operator()() -> void;
+
+private:
+    auto
+    InitializeSaltPepper() noexcept -> void;
+
+    auto
+    InitializeGaussian() noexcept -> void;
+
+    auto
+    InitializeCupping() noexcept -> void;
+
+    auto
+    InitializeRing() noexcept -> void;
+
+    auto
+    InitializeMetal() noexcept -> void;
+
+    auto
+    InitializeWindmill() noexcept -> void;
+
+    auto
+    InitializeMotion() noexcept -> void;
 };

@@ -286,16 +286,26 @@ auto ChartView::UpdateTheme(Theme theme) -> void {
         throw std::runtime_error("chart must not be nullptr");
 
     CurrentTheme = theme;
+    static const std::array<QColor, 12> colors {
+        QColor { "#a6cee3" }, QColor { "#1f78b4" }, QColor { "#b2df8a" }, QColor { "#33a02c" },
+        QColor { "#fb9a99" }, QColor { "#e31a1c" }, QColor { "#fdbf6f" }, QColor { "#ff7f00" },
+        QColor { "#cab2d6" }, QColor { "#6a3d9a" }, QColor { "#ffff99" }, QColor { "#b15928" },
+    };
     switch (CurrentTheme) {
         case Theme::LIGHT: {
             Chart->setTheme(QChart::ChartTheme::ChartThemeLight);
 
             auto seriesList = Chart->series();
+            int colorIdx = 0;
             for (auto* series : seriesList) {
                 auto* scatterSeries = qobject_cast<QScatterSeries*>(series);
+                scatterSeries->setColor(colors.at(colorIdx));
                 scatterSeries->setSelectedColor(scatterSeries->color().lighter());
                 scatterSeries->setBorderColor(QColor { "black" });
+
+                colorIdx = (++colorIdx) % colors.size();
             }
+
             break;
         }
 
@@ -304,10 +314,14 @@ auto ChartView::UpdateTheme(Theme theme) -> void {
             Chart->setBackgroundBrush(Qt::BrushStyle::NoBrush);
 
             auto seriesList = Chart->series();
+            int colorIdx = 0;
             for (auto* series : seriesList) {
                 auto* scatterSeries = qobject_cast<QScatterSeries*>(series);
+                scatterSeries->setColor(colors.at(colorIdx));
                 scatterSeries->setSelectedColor(scatterSeries->color().darker());
                 scatterSeries->setBorderColor(QColor { "white" });
+
+                colorIdx = (++colorIdx) % colors.size();
             }
             break;
         }
