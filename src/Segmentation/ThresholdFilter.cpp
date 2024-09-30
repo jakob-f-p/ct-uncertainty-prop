@@ -139,13 +139,13 @@ ThresholdFilterWidget::ThresholdFilterWidget() :
                               QVariant::fromValue(mode));
     }
 
-    LowerThresholdSpinBox->setRange(-1000.0, 2000.0);
+    LowerThresholdSpinBox->setRange(-1000.0, 3000.0);
     LowerThresholdSpinBox->setSingleStep(10.0);
     LowerThresholdSpinBox->setValue(-1000.0);
 
-    UpperThresholdSpinBox->setRange(-1000.0, 2000.0);
+    UpperThresholdSpinBox->setRange(-1000.0, 3000.0);
     UpperThresholdSpinBox->setSingleStep(10.0);
-    UpperThresholdSpinBox->setValue(2000.0);
+    UpperThresholdSpinBox->setValue(3000.0);
 
     FLayout->addRow("Threshold Mode", ModeComboBox);
     FLayout->addRow("Lower Threshold", LowerThresholdSpinBox);

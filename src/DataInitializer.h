@@ -3,9 +3,13 @@
 #include "Utils/LinearAlgebraTypes.h"
 
 #include <cstdint>
+#include <memory>
 
 class App;
+class BasicImageArtifact;
 class CtStructureTree;
+class ImageArtifact;
+class PipelineGroup;
 class PipelineGroupList;
 class PipelineList;
 
@@ -199,6 +203,26 @@ public:
     operator()() -> void;
 
 private:
+    struct BasicImageArtifacts {
+        std::unique_ptr<BasicImageArtifact> SaltPepper;
+        std::unique_ptr<BasicImageArtifact> Gaussian;
+        std::unique_ptr<BasicImageArtifact> Cupping;
+        std::unique_ptr<BasicImageArtifact> Ring;
+    };
+
+    struct ImageArtifacts {
+        ImageArtifact& SaltPepper;
+        ImageArtifact& Gaussian;
+        ImageArtifact& Cupping;
+        ImageArtifact& Ring;
+    };
+
+    [[nodiscard]] static auto
+    CreateBasicImageArtifacts() -> BasicImageArtifacts;
+
+    static auto
+    AddParameterSpans(PipelineGroup& pipelineGroup, ImageArtifacts& artifacts) -> void;
+
     static auto
     CalculateOtsuThreshold(vtkImageData& image) -> double;
 
@@ -222,4 +246,11 @@ private:
 //
 //    auto
 //    InitializeMotion() noexcept -> void;
+
+    constexpr static Range<float> GaussianSdRange { 0.0, 30.0, 10.0 };
+    constexpr static Range<float> CuppingMinRdFactorRange { 0.7, 1.0, 0.1 };
+    constexpr static Range<float> RingInnerRadiusRange { 0.0, 15.0, 5.0 };
+    constexpr static Range<float> SaltAmountRange { 0.00, 0.01, 0.01 };
+    constexpr static Range<float> PepperAmountRange { 0.00, 0.01, 0.01 };
+
 };

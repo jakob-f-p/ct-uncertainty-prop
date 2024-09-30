@@ -8,10 +8,10 @@ public:
     vtkTypeMacro(GaussianArtifactFilter, ImageArtifactFilter);
     void PrintSelf(ostream& os, vtkIndent indent) override;
 
-    vtkSetClampMacro(Mean, double, -2000.0, 2000.0);
+    vtkSetClampMacro(Mean, double, -1000.0, 3000.0);
     vtkGetMacro(Mean, double);
 
-    vtkSetClampMacro(Sd, double, 0.0, 2000.0);
+    vtkSetClampMacro(Sd, double, 0.0, 1000.0);
     vtkGetMacro(Sd, double);
 
     GaussianArtifactFilter(const GaussianArtifactFilter&) = delete;

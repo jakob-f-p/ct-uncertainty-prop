@@ -90,7 +90,6 @@ auto App::Run() -> int {
     auto const mode = MainWindow::Mode::PRESENTATION;
     MainWindow_ = std::make_unique<MainWindow>(*CtDataTree, *ThresholdFilterAlgorithm,
                                                *Pipelines, *PipelineGroups, mode);
-//    MainWindow mainWindow(*CtDataTree, *ThresholdFilterAlgorithm, *Pipelines, *PipelineGroups, mode);
 
     spdlog::debug("Initializing with test data...");
 

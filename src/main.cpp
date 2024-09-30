@@ -16,7 +16,7 @@ auto main(int argc, char* argv[]) -> int {
     logger->flush_on(spdlog::level::trace);
 #else
     logger->set_level(spdlog::level::debug);
-    logger->flush_on(spdlog::level::info);
+    logger->flush_on(spdlog::level::debug);
 #endif
 
     std::unique_ptr<App> const app { App::CreateInstance(argc, argv) };

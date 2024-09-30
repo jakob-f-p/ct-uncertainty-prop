@@ -61,7 +61,7 @@ SaltPepperArtifactWidget::SaltPepperArtifactWidget() :
     std::vector<QString> labels { "Salt", "Pepper" };
     std::vector<QDoubleSpinBox*> amountSpinBoxes { SaltAmountSpinBox, PepperAmountSpinBox };
     std::vector<QDoubleSpinBox*> intensitySpinBoxes { SaltIntensityValueSpinBox, PepperIntensityValueSpinBox };
-    std::vector<double> ranges { 0.0, 2000.0, -2000.0, 0.0 };
+    std::vector<double> ranges { 0.0, 3000.0, -1000.0, 0.0 };
 
     for (int i = 0; i < 2; i++) {
         auto* label = new QLabel(labels.at(i));

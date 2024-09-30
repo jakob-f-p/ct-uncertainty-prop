@@ -1,6 +1,5 @@
 #include "SaltPepperArtifactFilter.h"
 
-#include <vtkMinimalStandardRandomSequence.h>
 #include <vtkFloatArray.h>
 #include <vtkImageData.h>
 #include <vtkInformation.h>
@@ -9,6 +8,8 @@
 #include <vtkPointData.h>
 #include <vtkSMPTools.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
+
+#include <random>
 
 vtkStandardNewMacro(SaltPepperArtifactFilter)
 
@@ -38,21 +39,19 @@ struct FillWithRandomIndices {
     vtkIdType NumberOfPoints;
 
     auto operator() () noexcept -> void {
-        vtkNew<vtkMinimalStandardRandomSequence> random;
+        static unsigned int seed = 0;
 
-        static int Seed = 0;
-        random->SetSeed(++Seed);
+        std::uniform_int_distribution<vtkIdType> uniformDistribution { 0, NumberOfPoints - 1 };
+        std::minstd_rand engine { ++seed };
 
-        Indices.reserve(NumberOfIndices);
+        Indices.resize(NumberOfIndices, std::numeric_limits<vtkIdType>::max());
 
-        while (Indices.size() != NumberOfIndices) {
-            vtkIdType const idx = vtkMath::Floor(random->GetNextRangeValue(0.0, NumberOfPoints));
-
-            if (std::find(Indices.begin(), Indices.end(), idx) == Indices.end())
-                Indices.push_back(idx);
+        for (auto IdxsEndIt = Indices.begin(); IdxsEndIt != Indices.end();) {
+            std::generate(IdxsEndIt, Indices.end(),
+                          [&]() { return uniformDistribution(engine); });
+            std::sort(Indices.begin(), Indices.end());
+            IdxsEndIt = std::unique(Indices.begin(), Indices.end());
         }
-
-        std::sort(Indices.begin(), Indices.end());
     }
 };
 

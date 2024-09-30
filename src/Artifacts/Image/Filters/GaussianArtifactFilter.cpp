@@ -1,6 +1,5 @@
 #include "GaussianArtifactFilter.h"
 
-#include <vtkBoxMuellerRandomSequence.h>
 #include <vtkFloatArray.h>
 #include <vtkImageData.h>
 #include <vtkInformation.h>
@@ -10,6 +9,7 @@
 #include <vtkSMPTools.h>
 #include <vtkStreamingDemandDrivenPipeline.h>
 
+#include <random>
 #include <span>
 
 vtkStandardNewMacro(GaussianArtifactFilter)
@@ -43,10 +43,13 @@ void GaussianArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input
     float* newNoiseValues = newNoiseValueArray->WritePointer(0, numberOfPoints);
     std::span<float> const newNoiseValueSpan { newNoiseValues, static_cast<size_t>(numberOfPoints) };
 
-    vtkNew<vtkBoxMuellerRandomSequence> gaussianSequence;
-    for (auto& noiseValue : newNoiseValueSpan)
-        noiseValue = static_cast<float>(gaussianSequence->GetNextScaledValue(Mean, Sd));
+    static unsigned int seed = 0;
+    std::normal_distribution<float> normalDistribution { static_cast<float>(Mean),
+                                                         static_cast<float>(Sd) };
+    std::mt19937 engine { ++seed };
 
+    std::generate(newNoiseValueSpan.begin(), newNoiseValueSpan.end(),
+                  [&]() { return normalDistribution(engine); });
 
     vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);
     float* radiodensities = radioDensityArray->WritePointer(0, numberOfPoints);

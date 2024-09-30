@@ -50,12 +50,12 @@ public:
                                            [this] { return GetMean(); },
                                            [this](float mean) { this->SetMean(mean);
                                                                         this->UpdateFilterParameters();  },
-                                           { -2000.0, 2000.0 }));
+                                           { -1000.0, 3000.0 }));
         properties.Add(FloatObjectProperty("Standard Deviation",
                                            [this] { return GetStandardDeviation(); },
                                            [this](float sd) { this->SetStandardDeviation(sd);
                                                               this->UpdateFilterParameters(); },
-                                           { 0.0, 2000.0 }));
+                                           { 0.0, 1000.0 }));
         return properties;
     };
 

@@ -50,7 +50,7 @@ FloatParameterSpanWidget::FloatParameterSpanWidget(FloatObjectProperty const& pr
         spinBox->setDecimals(property.GetRange().Decimals);
     }
 
-    Step->setRange(0, 2000.0);
+    Step->setRange(0, 3000.0);
     Step->setSingleStep(property.GetRange().Step);
     Step->setDecimals(property.GetRange().Decimals);
 
