@@ -275,6 +275,8 @@ auto CtRenderWidget::UpdateColorMappingFunctions() -> void {
     OpacityMappingFunction->AddPoint(belowLow, 0.005, 1.0, 1.0);
     OpacityMappingFunction->AddPoint(low, 0.03, 0.5, 0.0);
     OpacityMappingFunction->AddPoint(high, 0.03, 0.0, 0.0);
+//    OpacityMappingFunction->AddPoint(low, 0.07, 0.5, 0.0);  // fine structures
+//    OpacityMappingFunction->AddPoint(high, 0.07, 0.0, 0.0); // fine structures
     OpacityMappingFunction->AddPoint(aboveHigh, 0.005, 0.0, 0.0);
 
 //    ColorTransferFunction->AddRGBPoint(-1500.0, 0.0, 0.0, 0.0, 0.5, 0.5);

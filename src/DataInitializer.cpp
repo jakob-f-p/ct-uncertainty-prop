@@ -79,6 +79,10 @@ auto DataInitializer::operator()(DataInitializer::Config config) -> void {
             ScenarioImportedInitializer{ App_ }();
             break;
 
+        case Config::WORKFLOW_FIGURE:
+            WorkflowFigureInitializer{ App_ }();
+            break;
+
         default: throw std::runtime_error("invalid config");
     }
 }
@@ -1526,6 +1530,7 @@ auto ScenarioImportedInitializer::operator()() -> void {
     std::span<float> const radiodensitySpan { radiodensities, static_cast<size_t>(inputImage.GetNumberOfPoints()) };
     auto const [ imageMinIt, imageMaxIt ] = std::minmax_element(radiodensitySpan.begin(), radiodensitySpan.end());
     CtRenderWidget::SetWindowWidth({ *imageMinIt - 30.0, *imageMaxIt });
+//    CtRenderWidget::SetWindowWidth({ *imageMinIt - 300.0, (*imageMaxIt)*2.0 }); // brighter
 
     double const threshold = CalculateOtsuThreshold(*App_.GetCtDataSource().GetOutput());
     auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
@@ -1758,4 +1763,162 @@ auto ScenarioImportedInitializer::CalculateOtsuThreshold(vtkImageData& image) ->
     }
 
     return optimalThreshold;
+}
+
+WorkflowFigureInitializer::WorkflowFigureInitializer(App& app)
+        : SceneInitializer(app) {}
+
+auto WorkflowFigureInitializer::operator()() -> void {
+    auto waterTissue = BasicStructureDetails::GetTissueTypeByName("Water");
+    auto organ1Tissue = BasicStructureDetails::GetTissueTypeByName("Organ1");
+    auto organ2Tissue = BasicStructureDetails::GetTissueTypeByName("Organ2");
+    auto metalTissue   = BasicStructureDetails::GetTissueTypeByName("Metal");
+
+    CtRenderWidget::SetWindowWidth({ waterTissue.Radiodensity - 25.0F, organ2Tissue.Radiodensity + 25.0F });
+
+    auto& dataSource = App_.GetCtDataSource();
+    dataSource.SetVolumeDataPhysicalDimensions({ 40.0, 40.0, 20.0 });
+#ifdef BUILD_TYPE_DEBUG
+    //    dataSource.SetVolumeNumberOfVoxels({ 64, 64, 32 });
+    dataSource.SetVolumeNumberOfVoxels({ 16, 16, 16 });
+#else
+    dataSource.SetVolumeNumberOfVoxels({ 256, 256, 128 });
+//    dataSource.SetVolumeNumberOfVoxels({ 128, 128, 64 });
+#endif
+
+    auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
+    thresholdFilter.ThresholdBetween(organ1Tissue.Radiodensity - 15.0F, organ1Tissue.Radiodensity + 15.0F);
+
+    Cylinder waterCylinder {};
+    waterCylinder.SetFunctionData({ 15.0, 20.0 });
+    BasicStructure waterCylinderStructure { std::move(waterCylinder) };
+    waterCylinderStructure.SetTissueType(waterTissue);
+    waterCylinderStructure.SetTransformData({ 0.0F, 0.0F, -10.0F, 0.0F, 0.0F, 0.0F, 1.3F, 1.0F, 1.0F });
+    waterCylinderStructure.SetName("Water");
+    CtDataTree.AddBasicStructure(std::move(waterCylinderStructure));
+
+    CombinedStructure sceneUnion { CombinedStructure::OperatorType::UNION };
+    sceneUnion.SetName("Scene");
+
+    Sphere organSphere {};
+    organSphere.SetFunctionData({ 10.0, {} });
+    BasicStructure organSphereStructure { std::move(organSphere) };
+    organSphereStructure.SetTissueType(organ1Tissue);
+    organSphereStructure.SetTransformData({ -5.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    organSphereStructure.SetName("Organ1");
+    organSphereStructure.SetEvaluationBias(-2000.0F);
+    CtDataTree.CombineWithBasicStructure(std::move(organSphereStructure), std::move(sceneUnion));
+
+    Box organBox {};
+    organBox.SetFunctionData({ { 0.0F, 0.0F, 0.0F }, { 15.0F, 15.0F, 15.0F } });
+    BasicStructure organBoxStructure { std::move(organBox) };
+    organBoxStructure.SetTissueType(organ2Tissue);
+    organBoxStructure.SetTransformData({ -2.5F, -10.0F, -7.5F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    organBoxStructure.SetName("Organ2");
+    organBoxStructure.SetEvaluationBias(-1000.0F);
+    auto* sceneRoot = &std::get<CombinedStructure>(CtDataTree.GetRoot());
+    CtDataTree.AddBasicStructure(std::move(organBoxStructure), sceneRoot);
+
+    Sphere metalSphere {};
+    metalSphere.SetFunctionData({ 3.0, {} });
+    BasicStructure metalSphereStructure { std::move(metalSphere) };
+    metalSphereStructure.SetTissueType(metalTissue);
+    metalSphereStructure.SetTransformData({ 4.0F, 5.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
+    metalSphereStructure.SetName("Metal");
+    metalSphereStructure.SetEvaluationBias(-3000.0F);
+    sceneRoot = &std::get<CombinedStructure>(CtDataTree.GetRoot());
+    CtDataTree.AddBasicStructure(std::move(metalSphereStructure), sceneRoot);
+
+    InitializeSaltPepper();
+    InitializeRing();
+}
+
+auto WorkflowFigureInitializer::InitializeSaltPepper() noexcept -> void {
+    static Range<float> const saltAmountRange = { 0.00, 0.10, 0.02 };
+    static Range<float> const pepperAmountRange = { 0.00, 0.10, 0.02 };
+
+    auto& pipeline = Pipelines.Get(0);
+
+    ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
+
+    SaltPepperArtifact saltPepperArtifact {};
+    saltPepperArtifact.SetSaltIntensity(1500.0F);
+    saltPepperArtifact.SetPepperIntensity(-900.0F);
+    saltPepperArtifact.SetSaltAmount(saltAmountRange.GetCenter());
+    saltPepperArtifact.SetPepperAmount(pepperAmountRange.GetCenter());
+
+    BasicImageArtifact saltPepperBasicArtifact { std::move(saltPepperArtifact) };
+    auto& saltPepper = concatenation.AddImageArtifact(std::move(saltPepperBasicArtifact));
+
+    PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Salt Pepper Pipelines");
+
+    auto saltPepperProperties = saltPepper.GetProperties();
+
+    auto& saltAmountProperty = saltPepperProperties.GetPropertyByName<float>("Salt Amount");
+    ParameterSpan<float> saltAmountSpan {
+            ArtifactVariantPointer(&saltPepper),
+            saltAmountProperty,
+            { saltAmountRange.Min, saltAmountRange.Max, saltAmountRange.Step },
+            "Salt Amount Span"
+    };
+    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(saltAmountSpan));
+
+    auto& pepperAmountProperty = saltPepperProperties.GetPropertyByName<float>("Pepper Amount");
+    ParameterSpan<float> pepperAmountSpan {
+            ArtifactVariantPointer(&saltPepper),
+            pepperAmountProperty,
+            { pepperAmountRange.Min, pepperAmountRange.Max, pepperAmountRange.Step },
+            "Pepper Amount Span"
+    };
+    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(pepperAmountSpan));
+}
+
+auto WorkflowFigureInitializer::InitializeRing() noexcept -> void {
+    static Range<float> const innerRadiusRange = { 0.0, 10.0, 0.5 };
+    static Range<float> const rdFactorRange = { 0.0, 1.0, 0.05 };
+    static Range<FloatPoint> const centerRange = { { -10.0, 0.0, 0.0 }, { 10.0, 0.0, 0.0 }, { 1.0, 0.0, 0.0 } };
+
+    auto& pipeline = Pipelines.AddPipeline();
+
+    ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
+
+    RingArtifact ringArtifact {};
+    ringArtifact.SetInnerRadius(innerRadiusRange.GetCenter());
+    ringArtifact.SetRingWidth(2.0F);
+    ringArtifact.SetRadiodensityFactor(0.5F);
+    ringArtifact.SetCenter({});
+
+    BasicImageArtifact ringBasicArtifact { std::move(ringArtifact) };
+    auto& ring = concatenation.AddImageArtifact(std::move(ringBasicArtifact));
+
+    PipelineGroup& radiusPipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Ring Radius Pipelines");
+    auto ringProperties = ring.GetProperties();
+    auto& innerRadiusProperty = ringProperties.GetPropertyByName<float>("Inner Radius");
+    ParameterSpan<float> innerRadiusSpan {
+            ArtifactVariantPointer(&ring),
+            innerRadiusProperty,
+            { innerRadiusRange.Min, innerRadiusRange.Max, innerRadiusRange.Step },
+            "Inner Radius Span"
+    };
+    radiusPipelineGroup.AddParameterSpan(ArtifactVariantPointer(&ring), std::move(innerRadiusSpan));
+
+    PipelineGroup& rdPipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Ring Radiodensity Factor Pipelines");
+    auto& rdProperty = ringProperties.GetPropertyByName<float>("Radiodensity Factor");
+    ParameterSpan<float> rdSpan {
+            ArtifactVariantPointer(&ring),
+            rdProperty,
+            { rdFactorRange.Min, rdFactorRange.Max, rdFactorRange.Step },
+            "Radiodensity Factor Span"
+    };
+    rdPipelineGroup.AddParameterSpan(ArtifactVariantPointer(&ring), std::move(rdSpan));
+
+//    PipelineGroup& centerPipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Ring Center Pipelines");
+//    auto& centerProperty = ringProperties.GetPropertyByName<FloatPoint>("Center");
+//    ParameterSpan<FloatPoint> centerSpan {
+//            ArtifactVariantPointer(&ring),
+//            centerProperty,
+//            { centerRange.Min, centerRange.Max, centerRange.Step },
+//            "Center Span"
+//    };
+//    centerPipelineGroup.AddParameterSpan(ArtifactVariantPointer(&ring), std::move(centerSpan));
 }

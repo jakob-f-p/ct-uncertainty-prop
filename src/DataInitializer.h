@@ -29,7 +29,8 @@ public:
         METHODOLOGY_SEGMENTATION,
         METHODOLOGY_ANALYSIS,
         SCENARIO_IMPLICIT,
-        SCENARIO_IMPORTED
+        SCENARIO_IMPORTED,
+        WORKFLOW_FIGURE
     };
 
     auto
@@ -226,31 +227,25 @@ private:
     static auto
     CalculateOtsuThreshold(vtkImageData& image) -> double;
 
-//    auto
-//    InitializeSaltPepper() noexcept -> void;
-//
-//    auto
-//    InitializeGaussian() noexcept -> void;
-//
-//    auto
-//    InitializeCupping() noexcept -> void;
-//
-//    auto
-//    InitializeRing() noexcept -> void;
-//
-//    auto
-//    InitializeMetal() noexcept -> void;
-//
-//    auto
-//    InitializeWindmill() noexcept -> void;
-//
-//    auto
-//    InitializeMotion() noexcept -> void;
-
     constexpr static Range<float> GaussianSdRange { 0.0, 30.0, 10.0 };
     constexpr static Range<float> CuppingMinRdFactorRange { 0.7, 1.0, 0.1 };
     constexpr static Range<float> RingInnerRadiusRange { 0.0, 15.0, 5.0 };
     constexpr static Range<float> SaltAmountRange { 0.00, 0.01, 0.01 };
     constexpr static Range<float> PepperAmountRange { 0.00, 0.01, 0.01 };
+};
 
+
+class WorkflowFigureInitializer : public SceneInitializer {
+public:
+    explicit WorkflowFigureInitializer(App& app);
+
+    auto
+    operator()() -> void;
+
+private:
+    auto
+    InitializeSaltPepper() noexcept -> void;
+
+    auto
+    InitializeRing() noexcept -> void;
 };
