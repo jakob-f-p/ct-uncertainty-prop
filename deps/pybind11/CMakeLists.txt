@@ -24,9 +24,6 @@ if (_importedConfigurationsLength EQUAL 2
     get_target_property(_importedImpLibRelease Python::Python IMPORTED_IMPLIB_RELEASE)
     set_target_properties(Python::Python PROPERTIES IMPORTED_LOCATION_DEBUG ${_importedLocationRelease})
     set_target_properties(Python::Python PROPERTIES IMPORTED_IMPLIB_DEBUG ${_importedImpLibRelease})
-
-#    message(WARNING "Location=${_importedLocationRelease}")
-#    message(WARNING "IMPLIB=${_importedImpLibRelease}")
 endif ()
 
 target_link_libraries(uncertainty_propagation PRIVATE pybind11::embed)

@@ -50,7 +50,7 @@ GaussianArtifactWidget::GaussianArtifactWidget() :
     fLayout->addRow("Mean", MeanSpinBox);
 
     SdSpinBox->setSizePolicy(QSizePolicy::Policy::Fixed, QSizePolicy::Policy::Minimum);
-    SdSpinBox->setRange(0.0, 1000.0);
+    SdSpinBox->setRange(0.0000001, 1000.0);
     SdSpinBox->setSingleStep(1.0);
     fLayout->addRow("SD", SdSpinBox);
 }

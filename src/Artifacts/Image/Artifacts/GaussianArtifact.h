@@ -55,7 +55,7 @@ public:
                                            [this] { return GetStandardDeviation(); },
                                            [this](float sd) { this->SetStandardDeviation(sd);
                                                               this->UpdateFilterParameters(); },
-                                           { 0.0, 1000.0 }));
+                                           { 0.0000001, 1000.0 }));
         return properties;
     };
 

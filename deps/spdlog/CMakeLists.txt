@@ -1,8 +1,6 @@
 include(FetchContent)
 
 set(SPDLOG_USE_STD_FORMAT ON)
-#set(SPDLOG_ENABLE_PCH ON)
-#set(SPDLOG_BUILD_SHARED ON)
 
 FetchContent_Declare (
         spdlog

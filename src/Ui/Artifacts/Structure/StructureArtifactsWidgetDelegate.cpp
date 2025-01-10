@@ -4,8 +4,6 @@
 #include "../../../Artifacts/Pipeline.h"
 #include "../../../Utils/IndexTypes.h"
 
-#include <tracy/Tracy.hpp>
-
 StructureArtifactsWidgetDelegate::StructureArtifactsWidgetDelegate(Pipeline const& pipeline, QWidget* parent) :
         QStyledItemDelegate(parent),
         APipeline(pipeline) {

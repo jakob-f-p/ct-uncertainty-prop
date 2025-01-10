@@ -11,7 +11,7 @@ public:
     vtkSetClampMacro(Mean, double, -1000.0, 3000.0);
     vtkGetMacro(Mean, double);
 
-    vtkSetClampMacro(Sd, double, 0.0, 1000.0);
+    vtkSetClampMacro(Sd, double, 0.0000001, 1000.0);
     vtkGetMacro(Sd, double);
 
     GaussianArtifactFilter(const GaussianArtifactFilter&) = delete;
@@ -30,6 +30,6 @@ protected:
                                     vtkImageData* output,
                                     vtkInformation* outInfo) -> void override;
 
-    double Mean;
-    double Sd;
+    double Mean = 0.0;
+    double Sd = 1.0;
 };
