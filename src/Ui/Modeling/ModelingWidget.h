@@ -4,8 +4,8 @@
 
 #include <vtkSmartPointer.h>
 
-class BasicStructureData;
-class CombinedStructureData;
+struct BasicStructureData;
+struct CombinedStructureData;
 class CtDataSource;
 class CtStructureTreeModel;
 class CtStructureDialog;
@@ -40,7 +40,7 @@ protected:
 
 private:
     auto
-    SyncSpinBoxes() -> void;
+    SyncSpinBoxes() const -> void;
 
     CtDataSource* CurrentDataSource;
 
@@ -59,7 +59,7 @@ public:
     explicit DataSourceWidget(CtStructureTree& ctStructureTree, CtDataSource& dataSource, QWidget* parent = nullptr);
 
     auto
-    UpdateDataSource(CtDataSource& dataSource) -> void;
+    UpdateDataSource(CtDataSource& dataSource) const -> void;
 
 private:
     QPushButton* ImplicitButton;
@@ -78,7 +78,7 @@ public:
     ~CtStructureTreeWidget() override;
 
     auto
-    DisableButtons() -> void;
+    DisableButtons() const -> void;
 
     using OnAcceptedFunction = std::function<void(BasicStructureData const&, CombinedStructureData const&)>;
 
@@ -86,10 +86,10 @@ public:
     OpenBasicAndCombinedStructureCreateDialog(OnAcceptedFunction const& onAccepted) -> void;
 
     auto
-    UpdateButtonStates(QItemSelection const& selected, QItemSelection const&) -> void;
+    UpdateButtonStates(QItemSelection const& selected, QItemSelection const&) const -> void;
 
     auto
-    GetCtDataSource() -> CtDataSource&;
+    GetCtDataSource() const -> CtDataSource&;
 
     auto
     UpdateDataSource(ImplicitCtDataSource& dataSource) -> void;
@@ -121,7 +121,7 @@ public:
     Prepare() -> bool;
 
     auto
-    GetCtDataSource() -> CtDataSource&;
+    GetCtDataSource() const -> CtDataSource&;
 
     auto
     UpdateDataSource(NrrdCtDataSource& dataSource) -> void;

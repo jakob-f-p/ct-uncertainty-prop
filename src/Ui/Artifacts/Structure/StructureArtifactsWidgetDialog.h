@@ -13,18 +13,18 @@ class QListView;
 class StructureArtifactsWidgetDialog : public QDialog {
 public:
     explicit StructureArtifactsWidgetDialog(StructureArtifactList& structureWrapper,
-                                            std::string& title,
+                                            std::string const& title,
                                             QWidget* parent = nullptr);
 
 protected Q_SLOTS:
     void AddArtifact();
-    void RemoveArtifact();
-    void MoveUp();
-    void MoveDown();
-    void UpdateButtonStatesOnSelectionChange(const QItemSelection& selected, const QItemSelection& deselected);
+    void RemoveArtifact() const;
+    void MoveUp() const;
+    void MoveDown() const;
+    void UpdateButtonStatesOnSelectionChange(const QItemSelection& selected, const QItemSelection& deselected) const;
 
 private:
-    void DisableButtons();
+    void DisableButtons() const;
 
     ArtifactsDialog* CreateDialog;
 

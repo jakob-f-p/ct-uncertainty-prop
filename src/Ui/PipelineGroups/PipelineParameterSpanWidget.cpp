@@ -1,22 +1,18 @@
 #include "PipelineParameterSpanWidget.h"
 
 #include "ObjectPropertyWidget.h"
-#include "../Modeling/CtStructureTreeModel.h"
 #include "../Modeling/CtStructureView.h"
 #include "../Artifacts/Image/ImageArtifactsView.h"
 #include "../Artifacts/Structure/StructureArtifactsView.h"
-#include "../Utils/CoordinateRowWidget.h"
 #include "../Utils/NameLineEdit.h"
 #include "../../Artifacts/Pipeline.h"
 #include "../../Artifacts/Structure/StructureArtifactListCollection.h"
 #include "../../Modeling/CtStructureTree.h"
-#include "../../Utils/LinearAlgebraTypes.h"
 #include "../../Utils/Overload.h"
 
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
-#include <QLabel>
 #include <QSpinBox>
 
 
@@ -24,7 +20,7 @@ PipelineParameterSpanWidget::PipelineParameterSpanWidget(Pipeline const& pipelin
         QWidget(parent),
         FLayout(new QFormLayout(this)),
         NameEdit(new NameLineEdit()),
-        NumberOfPipelinesSpinBox([]() {
+        NumberOfPipelinesSpinBox([] {
             auto* spinBox = new QSpinBox();
             spinBox->setRange(0, 10000);
             return spinBox;
@@ -58,7 +54,7 @@ PipelineParameterSpanWidget::PipelineParameterSpanWidget(Pipeline const& pipelin
 
         connect(propertyGroup, &ObjectPropertyGroup::ValueChanged,
                 this, [this, propertyGroup]() -> void {
-            auto numberOfPipelines = propertyGroup->GetParameterSpan({}, "").GetNumberOfPipelines();
+            auto const numberOfPipelines = propertyGroup->GetParameterSpan({}, "").GetNumberOfPipelines();
             NumberOfPipelinesSpinBox->setValue(static_cast<int>(numberOfPipelines));
         });
     });
@@ -66,7 +62,7 @@ PipelineParameterSpanWidget::PipelineParameterSpanWidget(Pipeline const& pipelin
 
 PipelineParameterSpanCreateWidget::PipelineParameterSpanCreateWidget(Pipeline const& pipeline, QWidget* parent) :
         PipelineParameterSpanWidget(pipeline, parent),
-        DialogButtonBox([]() {
+        DialogButtonBox([] {
             auto* dialogButtonBar = new QDialogButtonBox();
             dialogButtonBar->setOrientation(Qt::Horizontal);
             dialogButtonBar->setStandardButtons(QDialogButtonBox::Cancel | QDialogButtonBox::Ok);
@@ -85,7 +81,7 @@ auto PipelineParameterSpanCreateWidget::GetPipelineParameterSpan() const -> Pipe
 
 
 PipelineParameterSpanReadOnlyWidget::PipelineParameterSpanReadOnlyWidget(Pipeline const& pipeline,
-                                                                         PipelineParameterSpan& parameterSpan,
+                                                                         PipelineParameterSpan const& parameterSpan,
                                                                          QWidget* parent) :
         PipelineParameterSpanWidget(pipeline, parent) {
 
@@ -99,16 +95,16 @@ PipelineParameterSpanReadOnlyWidget::PipelineParameterSpanReadOnlyWidget(Pipelin
     objectPropertyGroup->SetParameterSpan(parameterSpan);
     PropertyGroup->UpdateWidget(objectPropertyGroup);
 
-    auto numberOfPipelines = PropertyGroup->Widget().GetParameterSpan({}, "").GetNumberOfPipelines();
+    auto const numberOfPipelines = PropertyGroup->Widget().GetParameterSpan({}, "").GetNumberOfPipelines();
     NumberOfPipelinesSpinBox->setValue(static_cast<int>(numberOfPipelines));
 }
 
 
 PipelineArtifactsView::PipelineArtifactsView(Pipeline const& pipeline) :
-        SelectViewComboBox([]() {
+        SelectViewComboBox([] {
             auto* comboBox = new QComboBox();
-            comboBox->addItem("Image Artifacts", PipelineArtifactsView::View::IMAGE_ARTIFACTS);
-            comboBox->addItem("Structure Artifacts", PipelineArtifactsView::View::STRUCTURE_ARTIFACTS);
+            comboBox->addItem("Image Artifacts", IMAGE_ARTIFACTS);
+            comboBox->addItem("Structure Artifacts", STRUCTURE_ARTIFACTS);
             comboBox->setCurrentIndex(0);
             return comboBox;
         }()),
@@ -136,7 +132,7 @@ PipelineArtifactsView::PipelineArtifactsView(Pipeline const& pipeline) :
     });
 
     connect(SelectViewComboBox, &QComboBox::currentIndexChanged,
-            this, [this, stackedView]() {
+            this, [this, stackedView] {
         switch (SelectViewComboBox->currentData().value<View>()) {
             case IMAGE_ARTIFACTS:     stackedView->setCurrentWidget(ImageArtifactsView);     break;
             case STRUCTURE_ARTIFACTS: stackedView->setCurrentWidget(StructureArtifactsView); break;
@@ -146,18 +142,18 @@ PipelineArtifactsView::PipelineArtifactsView(Pipeline const& pipeline) :
     });
 }
 
-auto PipelineArtifactsView::SelectArtifact(ArtifactVariantPointer artifactPointer) -> void {
+auto PipelineArtifactsView::SelectArtifact(ArtifactVariantPointer artifactPointer) const -> void {
     if (artifactPointer.IsNullptr())
         throw std::runtime_error("Artifact pointer must not be nullptr");
 
     std::visit(Overload {
         [this](ImageArtifact const* artifact) -> void {
             SelectViewComboBox->setCurrentIndex(
-                    SelectViewComboBox->findData(QVariant::fromValue(View::IMAGE_ARTIFACTS)));
+                    SelectViewComboBox->findData(QVariant::fromValue(IMAGE_ARTIFACTS)));
             ImageArtifactsView->Select(*artifact); },
         [this](StructureArtifact const* artifact) -> void {
             SelectViewComboBox->setCurrentIndex(
-                    SelectViewComboBox->findData(QVariant::fromValue(View::STRUCTURE_ARTIFACTS)));
+                    SelectViewComboBox->findData(QVariant::fromValue(STRUCTURE_ARTIFACTS)));
             StructureArtifactsView->Select(*artifact); }
     }, artifactPointer.GetVariant());
 }
@@ -177,7 +173,7 @@ PipelineStructureArtifactsView::PipelineStructureArtifactsView(Pipeline const& p
             return;
         }
 
-        auto& structureArtifactList = APipeline.GetStructureArtifactList(*structureIdx);
+        auto const& structureArtifactList = APipeline.GetStructureArtifactList(*structureIdx);
         auto* artifactsView = new StructureArtifactsReadOnlyView(structureArtifactList);
         artifactsView->setSizeAdjustPolicy(QAbstractScrollArea::SizeAdjustPolicy::AdjustToContentsOnFirstShow);
         ArtifactsView->UpdateWidget(artifactsView);
@@ -194,7 +190,7 @@ auto PipelineStructureArtifactsView::Select(StructureArtifact const& structureAr
 
     auto const& structureArtifactList = structureArtifactCollection.GetStructureArtifactList(structureArtifact);
 
-    auto ctStructureIdx = structureArtifactCollection.GetIdx(structureArtifactList);
+    auto const ctStructureIdx = structureArtifactCollection.GetIdx(structureArtifactList);
 
     auto const& structureVariant = APipeline.GetCtStructureTree().GetStructureAt(ctStructureIdx);
 

@@ -16,11 +16,11 @@
 vtkStandardNewMacro(HdfImageWriter);
 
 HdfImageWriter::HdfImageWriter() {
-    SetNumberOfInputPorts(0);
-    SetNumberOfOutputPorts(0);
+    vtkAlgorithm::SetNumberOfInputPorts(0);
+    vtkAlgorithm::SetNumberOfOutputPorts(0);
 }
 
-auto HdfImageWriter::SetBatch(HdfImageWriter::BatchImages&& images) noexcept -> void {
+auto HdfImageWriter::SetBatch(BatchImages&& images) noexcept -> void {
     if (Batch == images)
         return;
 
@@ -29,8 +29,8 @@ auto HdfImageWriter::SetBatch(HdfImageWriter::BatchImages&& images) noexcept -> 
     MaxSampleId = std::ranges::max_element(Batch, {}, &BatchImage::Id)->Id;
 
     InputImages.clear();
-    for (auto& batchImage : Batch)
-        InputImages.emplace_back(batchImage.ImageData);
+    for (auto& [id, image] : Batch)
+        InputImages.emplace_back(image);
 
     Modified();
 }
@@ -62,7 +62,7 @@ auto HdfImageWriter::WriteData() -> void {
     WriteImageBatch(file);
 }
 
-auto HdfImageWriter::InitializeFile(HighFive::File& file) -> void {
+auto HdfImageWriter::InitializeFile(HighFive::File& file) const -> void {
     using HighFive::AtomicType;
     using HighFive::CompoundType;
 
@@ -77,7 +77,7 @@ auto HdfImageWriter::InitializeFile(HighFive::File& file) -> void {
         if (!pointData)
             throw std::runtime_error("point data must not be null");
 
-        auto* abstractArray = pointData->GetAbstractArray(arrayName.data());
+        auto const* abstractArray = pointData->GetAbstractArray(arrayName.data());
         if (!abstractArray)
             throw std::runtime_error("abstract array must not be null");
 
@@ -116,21 +116,21 @@ auto HdfImageWriter::InitializeFile(HighFive::File& file) -> void {
     file.createAttribute("number of images", TotalNumberOfImages);
 }
 
-auto HdfImageWriter::WriteImageBatch(HighFive::File& file) -> void {
+auto HdfImageWriter::WriteImageBatch(HighFive::File const& file) -> void {
     auto sampleIdsAttribute = file.getAttribute("sample ids");
     std::vector<SampleId> sampleIdsBuffer { sampleIdsAttribute.getSpace().getElementCount() };
     sampleIdsAttribute.read_raw<SampleId>(sampleIdsBuffer.data(), GetSampleIdDataType());
     auto batchSampleIds = std::views::transform(Batch, &BatchImage::Id);
-    std::copy(batchSampleIds.begin(), batchSampleIds.end(),
-              std::next(sampleIdsBuffer.begin(), NumberOfProcessedImages));
-    std::span<SampleId> const sampleIds { sampleIdsBuffer.begin(),
+    std::ranges::copy(batchSampleIds,
+                      std::next(sampleIdsBuffer.begin(), NumberOfProcessedImages));
+    std::span const sampleIds { sampleIdsBuffer.begin(),
                                           std::next(sampleIdsBuffer.begin(),
                                                     NumberOfProcessedImages + InputImages.size()) };
 
     std::vector<SampleId> sortedSampleIds { sampleIds.begin(), sampleIds.end() };
-    std::sort(sortedSampleIds.begin(), sortedSampleIds.end());
-    auto adjacentIt = std::adjacent_find(sortedSampleIds.begin(), sortedSampleIds.end());
-    if (adjacentIt != sortedSampleIds.end())
+    std::ranges::sort(sortedSampleIds);
+    if (auto const adjacentIt = std::ranges::adjacent_find(sortedSampleIds);
+        adjacentIt != sortedSampleIds.end())
         throw std::runtime_error("duplicate sample ids");
 
     sampleIdsAttribute.write_raw(sampleIdsBuffer.data(), GetSampleIdDataType());
@@ -138,57 +138,57 @@ auto HdfImageWriter::WriteImageBatch(HighFive::File& file) -> void {
     using ImageDataVectors = std::variant<std::vector<std::vector<float>>, std::vector<std::vector<short>>>;
     using ImagesDataVectors = std::vector<ImageDataVectors>;
     ImagesDataVectors imagesDataVectors { ArrayNames.size() };
-    std::transform(ArrayNames.cbegin(), ArrayNames.cend(),
-                   imagesDataVectors.begin(),
-                   [this](std::string const& arrayName) -> ImageDataVectors {
-        auto* pointData = InputImages.at(0).get().GetPointData();
-        if (!pointData)
-            throw std::runtime_error("point data must not be null");
+    std::ranges::transform(std::as_const(ArrayNames),
+                           imagesDataVectors.begin(),
+                           [this](std::string const& arrayName) -> ImageDataVectors {
+                               auto* pointData = InputImages.at(0).get().GetPointData();
+                               if (!pointData)
+                                   throw std::runtime_error("point data must not be null");
 
-        auto* abstractArray = pointData->GetAbstractArray(arrayName.data());
-        if (!abstractArray)
-            throw std::runtime_error("abstract array must not be null");
+                               auto* abstractArray = pointData->GetAbstractArray(arrayName.data());
+                               if (!abstractArray)
+                                   throw std::runtime_error("abstract array must not be null");
 
-        int const vtkDataType = abstractArray->GetDataType();
-        std::variant<vtkFloatArray*, vtkTypeInt16Array*> arrayPointerVariant
-        = [vtkDataType, abstractArray]() -> std::variant<vtkFloatArray*, vtkTypeInt16Array*> {
+                               int const vtkDataType = abstractArray->GetDataType();
+                               std::variant<vtkFloatArray*, vtkTypeInt16Array*> arrayPointerVariant
+                                       = [vtkDataType, abstractArray]() -> std::variant<vtkFloatArray*, vtkTypeInt16Array*> {
 
-            switch (vtkDataType) {
-                case VTK_FLOAT: return vtkFloatArray::SafeDownCast(abstractArray);
-                case VTK_SHORT: return vtkTypeInt16Array::SafeDownCast(abstractArray);
-                default: throw std::runtime_error("vtk data type not supported");
-            }
-        }();
+                                           switch (vtkDataType) {
+                                               case VTK_FLOAT: return vtkFloatArray::SafeDownCast(abstractArray);
+                                               case VTK_SHORT: return vtkTypeInt16Array::SafeDownCast(abstractArray);
+                                               default: throw std::runtime_error("vtk data type not supported");
+                                           }
+                                       }();
 
-        size_t const numberOfTuples = std::visit([](auto* firstArray) { return firstArray->GetNumberOfTuples(); },
-                                                 arrayPointerVariant);
+                               size_t const numberOfTuples = std::visit([](auto* firstArray) { return firstArray->GetNumberOfTuples(); },
+                                                                        arrayPointerVariant);
 
-        return std::visit([this, numberOfTuples, &arrayName](auto* firstArray) -> ImageDataVectors {
-            using ArrayType = std::remove_pointer_t<decltype(firstArray)>;
-            using ValueType = ArrayType::ValueType;
+                               return std::visit([this, numberOfTuples, &arrayName](auto* firstArray) -> ImageDataVectors {
+                                   using ArrayType = std::remove_pointer_t<decltype(firstArray)>;
+                                   using ValueType = typename ArrayType::ValueType;
 
-            std::vector<std::vector<ValueType>> imageDataVectors { InputImages.size() };
-            std::ranges::transform(InputImages | std::views::transform(&std::reference_wrapper<vtkImageData>::get),
-                                   imageDataVectors.begin(),
-                                   [numberOfTuples, &arrayName](vtkImageData& image) -> std::vector<ValueType> {
+                                   std::vector<std::vector<ValueType>> imageDataVectors { InputImages.size() };
+                                   std::ranges::transform(InputImages | std::views::transform(&std::reference_wrapper<vtkImageData>::get),
+                                                          imageDataVectors.begin(),
+                                                          [numberOfTuples, &arrayName](vtkImageData& image) -> std::vector<ValueType> {
 
-                auto* pointData = image.GetPointData();
-                if (!pointData)
-                    throw std::runtime_error("point data must not be null");
+                                                              auto* pointData = image.GetPointData();
+                                                              if (!pointData)
+                                                                  throw std::runtime_error("point data must not be null");
 
-                auto* abstractArray = pointData->GetAbstractArray(arrayName.data());
-                if (!abstractArray)
-                    throw std::runtime_error("abstract array must not be null");
+                                                              auto* abstractArray = pointData->GetAbstractArray(arrayName.data());
+                                                              if (!abstractArray)
+                                                                  throw std::runtime_error("abstract array must not be null");
 
-                auto* array = ArrayType::SafeDownCast(abstractArray);
+                                                              auto* array = ArrayType::SafeDownCast(abstractArray);
 
-                auto* beginPointer = array->WritePointer(0, numberOfTuples);
+                                                              auto* beginPointer = array->WritePointer(0, numberOfTuples);
 
-                return std::vector<ValueType> { beginPointer, std::next(beginPointer, numberOfTuples) };
-            });
-            return imageDataVectors;
-        }, arrayPointerVariant);
-    });
+                                                              return std::vector<ValueType> { beginPointer, std::next(beginPointer, numberOfTuples) };
+                                                          });
+                                   return imageDataVectors;
+                               }, arrayPointerVariant);
+                           });
 
     for (size_t i = 0; i < ArrayNames.size(); i++) {
         auto& arrayName = ArrayNames.at(i);
@@ -199,7 +199,7 @@ auto HdfImageWriter::WriteImageBatch(HighFive::File& file) -> void {
         auto const firstIdx = NumberOfProcessedImages;
         auto const numberOfImages = InputImages.size();
         std::vector<size_t> const offset { firstIdx, 0 };
-        std::vector<size_t> const counts { numberOfImages, dataSpaceDimensions.at(1) };
+        std::vector const counts { numberOfImages, dataSpaceDimensions.at(1) };
 
         std::visit([&dataSet, &offset, &counts](auto& data) {
             auto selection = dataSet.select(offset, counts);
@@ -217,7 +217,7 @@ auto HdfImageWriter::GetSampleIdDataType() noexcept -> HighFive::DataType const&
     using HighFive::CompoundType;
 
     static const CompoundType sampleIdType {
-            std::vector<CompoundType::member_def> {
+            std::vector {
                     CompoundType::member_def { "group id" , AtomicType<uint16_t>{}, 0 },
                     CompoundType::member_def { "state id" , AtomicType<uint16_t>{}, sizeof(uint16_t) }
             },

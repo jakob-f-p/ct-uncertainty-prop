@@ -58,10 +58,10 @@ namespace CompositeImageArtifactDetails {
         CompositeImageArtifactWidgetImpl();
 
         [[nodiscard]] auto
-        GetData() noexcept -> CompositeImageArtifactData;
+        GetData() const noexcept -> CompositeImageArtifactData;
 
         auto
-        Populate(const CompositeImageArtifactData& data) noexcept -> void;
+        Populate(const CompositeImageArtifactData& data) const noexcept -> void;
 
     private:
         QComboBox* CompositionTypeComboBox;
@@ -69,10 +69,10 @@ namespace CompositeImageArtifactDetails {
 }
 
 struct CompositeImageArtifactData :
-        public ImageArtifactBaseDetails::ImageArtifactBaseData<CompositeImageArtifactDetails::CompositeImageArtifactData> {};
+        ImageArtifactBaseDetails::ImageArtifactBaseData<CompositeImageArtifactDetails::CompositeImageArtifactData> {};
 
 struct CompositeImageArtifactWidget :
-        public ImageArtifactBaseDetails::ImageArtifactBaseWidget<CompositeImageArtifactDetails::CompositeImageArtifactWidgetImpl,
+        ImageArtifactBaseDetails::ImageArtifactBaseWidget<CompositeImageArtifactDetails::CompositeImageArtifactWidgetImpl,
                                                                  CompositeImageArtifactData> {
     Q_OBJECT
 };
@@ -87,22 +87,22 @@ public:
     explicit CompositeImageArtifact(CompositeImageArtifactData const& data);
     explicit CompositeImageArtifact(CompositionType compositionType = CompositionType::SEQUENTIAL);
     CompositeImageArtifact(CompositeImageArtifact const& other);
-    CompositeImageArtifact(CompositeImageArtifact&&);
+    CompositeImageArtifact(CompositeImageArtifact&&) noexcept;
     auto operator= (CompositeImageArtifact const&) -> CompositeImageArtifact& = delete;
-    auto operator= (CompositeImageArtifact&&) -> CompositeImageArtifact&;
+    auto operator= (CompositeImageArtifact&&) noexcept -> CompositeImageArtifact&;
     ~CompositeImageArtifact();
 
     [[nodiscard]] auto
     GetViewName() const noexcept -> std::string;
 
-    [[nodiscard]] auto
+    [[nodiscard]] static auto
     GetProperties() noexcept -> PipelineParameterProperties;
 
     auto
     SetCompositionType(CompositionType compositionType) noexcept -> void { CompType = compositionType; }
 
     [[nodiscard]] auto
-    GetCompositionType() const noexcept -> CompositionType { return CompType; };
+    GetCompositionType() const noexcept -> CompositionType { return CompType; }
 
     [[nodiscard]] auto
     ContainsImageArtifact(const ImageArtifact& imageArtifact) const noexcept -> bool;
@@ -124,12 +124,12 @@ public:
     GetChildIdx(const ImageArtifact& imageArtifact) const -> uint8_t;
 
     [[nodiscard]] auto
-    Get(uint16_t targetIdx, uint16_t& currentIdx) -> ImageArtifact*;
+    Get(uint16_t targetIdx, uint16_t& currentIdx) const -> ImageArtifact*;
 
     [[nodiscard]] auto
     IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> int32_t;
 
-    auto AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm&;
+    auto AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) const -> vtkImageAlgorithm&;
 
 private:
     friend struct CompositeImageArtifactDetails::CompositeImageArtifactData;

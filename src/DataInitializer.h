@@ -34,7 +34,7 @@ public:
     };
 
     auto
-    operator()(Config config) -> void;
+    operator()(Config config) const -> void;
 
 private:
     App& App_;
@@ -80,7 +80,7 @@ public:
     explicit DefaultSceneInitializer(App& app);
 
     auto
-    operator()() -> void;
+    operator()() const -> void;
 };
 
 
@@ -89,7 +89,7 @@ public:
     explicit DebugSceneInitializer(App& app);
 
     auto
-    operator()() -> void;
+    operator()() const -> void;
 };
 
 class DebugSingleSceneInitializer : public SceneInitializer {
@@ -97,7 +97,7 @@ public:
     explicit DebugSingleSceneInitializer(App& app);
 
     auto
-    operator()() -> void;
+    operator()() const -> void;
 };
 
 
@@ -106,29 +106,29 @@ public:
     explicit SimpleSceneInitializer(App& app);
 
     auto
-    operator()() -> void;
+    operator()() const -> void;
 
 private:
     auto
-    InitializeGaussian() noexcept -> void;
+    InitializeGaussian() const noexcept -> void;
 
     auto
-    InitializeCupping() noexcept -> void;
+    InitializeCupping() const noexcept -> void;
 
     auto
-    InitializeRing() noexcept -> void;
+    InitializeRing() const noexcept -> void;
 
     auto
-    InitializeSaltPepper() noexcept -> void;
+    InitializeSaltPepper() const noexcept -> void;
 
     auto
-    InitializeStairStep() noexcept -> void;
+    InitializeStairStep() const noexcept -> void;
 
     auto
-    InitializeWindMill() noexcept -> void;
+    InitializeWindMill() const noexcept -> void;
 
     auto
-    InitializeMotion() noexcept -> void;
+    InitializeMotion() const noexcept -> void;
 };
 
 
@@ -138,7 +138,7 @@ public:
     explicit MethodologyAcquisitionSceneInitializer(App& app);
 
     auto
-    operator()() -> void;
+    operator()() const -> void;
 };
 
 
@@ -147,7 +147,7 @@ public:
     explicit MethodologyArtifactsSceneInitializer(App& app);
 
     auto
-    operator()() -> void;
+    operator()() const -> void;
 };
 
 class MethodologySegmentationSceneInitializer : public SceneInitializer {
@@ -155,7 +155,7 @@ public:
     explicit MethodologySegmentationSceneInitializer(App& app);
 
     auto
-    operator()() -> void;
+    operator()() const -> void;
 };
 
 class MethodologyAnalysisSceneInitializer : public SceneInitializer {
@@ -163,7 +163,7 @@ public:
     explicit MethodologyAnalysisSceneInitializer(App& app);
 
     auto
-    operator()() -> void;
+    operator()() const -> void;
 };
 
 class ScenarioImplicitInitializer : public SceneInitializer {
@@ -171,29 +171,29 @@ public:
     explicit ScenarioImplicitInitializer(App& app);
 
     auto
-    operator()() -> void;
+    operator()() const -> void;
 
 private:
     auto
-    InitializeSaltPepper() noexcept -> void;
+    InitializeSaltPepper() const noexcept -> void;
 
     auto
-    InitializeGaussian() noexcept -> void;
+    InitializeGaussian() const noexcept -> void;
 
     auto
-    InitializeCupping() noexcept -> void;
+    InitializeCupping() const noexcept -> void;
 
     auto
-    InitializeRing() noexcept -> void;
+    InitializeRing() const noexcept -> void;
 
     auto
-    InitializeMetal() noexcept -> void;
+    InitializeMetal() const noexcept -> void;
 
     auto
-    InitializeWindmill() noexcept -> void;
+    InitializeWindmill() const noexcept -> void;
 
     auto
-    InitializeMotion() noexcept -> void;
+    InitializeMotion() const noexcept -> void;
 };
 
 class ScenarioImportedInitializer : public SceneInitializer {
@@ -201,7 +201,7 @@ public:
     explicit ScenarioImportedInitializer(App& app);
 
     auto
-    operator()() -> void;
+    operator()() const -> void;
 
 private:
     struct BasicImageArtifacts {
@@ -240,12 +240,12 @@ public:
     explicit WorkflowFigureInitializer(App& app);
 
     auto
-    operator()() -> void;
+    operator()() const -> void;
 
 private:
     auto
-    InitializeSaltPepper() noexcept -> void;
+    InitializeSaltPepper() const noexcept -> void;
 
     auto
-    InitializeRing() noexcept -> void;
+    InitializeRing() const noexcept -> void;
 };

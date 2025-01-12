@@ -11,16 +11,16 @@ auto StructureArtifactList::GetMTime() const noexcept -> vtkMTimeType {
         return TimeStamp.GetMTime();
 
     std::vector<vtkMTimeType> artifactMTimes(Artifacts.size());
-    std::transform(Artifacts.begin(), Artifacts.end(), std::back_inserter(artifactMTimes),
-                   [](auto& artifact) { return artifact.GetMTime(); });
-    auto const maxArtifactTime = *std::max_element(artifactMTimes.begin(), artifactMTimes.end());
+    std::ranges::transform(Artifacts, std::back_inserter(artifactMTimes),
+                           [](auto& artifact) { return artifact.GetMTime(); });
+    auto const maxArtifactTime = *std::ranges::max_element(artifactMTimes);
 
     return std::max(maxArtifactTime, TimeStamp.GetMTime());
 }
 
 
 auto StructureArtifactList::Contains(StructureArtifact const& structureArtifact) const noexcept -> bool {
-    auto it = std::find(Artifacts.cbegin(), Artifacts.cend(), structureArtifact);
+    auto const it = std::ranges::find(Artifacts, structureArtifact);
 
     return it != Artifacts.cend();
 }
@@ -45,8 +45,8 @@ void StructureArtifactList::AddStructureArtifact(StructureArtifact&& structureAr
 //    auto insertIt = Artifacts.emplace(std::next(Artifacts.begin(), insertionIdx), std::move(structureArtifact));
 //    auto const mTime = insertIt->GetMTime();
 
-    std::sort(Artifacts.begin(), Artifacts.end(),
-              [](auto const& a, auto const& b) { return a.GetSubType() < b.GetSubType(); });
+    std::ranges::sort(Artifacts,
+                      [](auto const& a, auto const& b) { return a.GetSubType() < b.GetSubType(); });
 //
 //    auto findIt = std::find_if(Artifacts.begin(), Artifacts.end(),
 //                               [mTime](auto const& artifact) { return artifact.GetMTime() == mTime; });
@@ -59,7 +59,7 @@ void StructureArtifactList::AddStructureArtifact(StructureArtifact&& structureAr
 }
 
 void StructureArtifactList::RemoveStructureArtifact(StructureArtifact const& structureArtifact) {
-    auto it = std::find(Artifacts.begin(), Artifacts.end(), structureArtifact);
+    auto const it = std::ranges::find(Artifacts, structureArtifact);
 
     if (it == Artifacts.end())
         throw std::runtime_error("Cannot remove structure artifact. Given artifact not contained in this list");
@@ -75,16 +75,16 @@ void StructureArtifactList::MoveStructureArtifact(StructureArtifact const& artif
     if (newIdx < 0 || newIdx >= Artifacts.size())
         throw std::runtime_error("Cannot move given image artifact to index");
 
-    auto previousIt = std::find(Artifacts.begin(), Artifacts.end(), artifact);
+    auto const previousIt = std::ranges::find(Artifacts, artifact);
     if (previousIt == Artifacts.end())
         throw std::runtime_error("Cannot move given image artifact to index");
 
-    auto currentIdx = std::distance(Artifacts.begin(), previousIt);
+    auto const currentIdx = std::distance(Artifacts.begin(), previousIt);
 
     if (currentIdx == newIdx)
         return;
 
-    auto newIt = std::next(Artifacts.begin(), newIdx);
+    auto const newIt = std::next(Artifacts.begin(), newIdx);
     if (currentIdx < newIdx)
         std::rotate(previousIt, std::next(previousIt), std::next(newIt));
     else
@@ -101,11 +101,11 @@ TreeStructureArtifactListCollection::TreeStructureArtifactListCollection(
         CtStructureTree const& ctStructureTree,
         BeforeRemoveArtifactCallback&& removeCallback) :
 
-        BeforeRemoveCallback(removeCallback),
-        StructureTree(ctStructureTree) {
+        StructureTree(ctStructureTree),
+        BeforeRemoveCallback(removeCallback) {
     Filter->SetCtStructureTree(ctStructureTree);
     Filter->SetStructureArtifactCollection(this);
-};
+}
 
 TreeStructureArtifactListCollection::~TreeStructureArtifactListCollection() = default;
 
@@ -114,9 +114,9 @@ auto TreeStructureArtifactListCollection::GetMTime() -> vtkMTimeType {
         return 0;
 
     std::vector<vtkMTimeType> artifactMTimes(ArtifactLists.size());
-    std::transform(ArtifactLists.begin(), ArtifactLists.end(), std::back_inserter(artifactMTimes),
-                   [](const auto& wrapper) { return wrapper.GetMTime(); });
-    return *std::max_element(artifactMTimes.begin(), artifactMTimes.end());
+    std::ranges::transform(ArtifactLists, std::back_inserter(artifactMTimes),
+                           [](const auto& wrapper) { return wrapper.GetMTime(); });
+    return *std::ranges::max_element(artifactMTimes);
 }
 
 auto TreeStructureArtifactListCollection::GetForCtStructureIdx(uidx_t structureIdx) -> StructureArtifactList& {
@@ -131,7 +131,7 @@ void TreeStructureArtifactListCollection::AddStructureArtifactList(uidx_t insert
         throw std::runtime_error("Cannot add structure wrapper. Given index is  larger then the current size.");
 
     auto structureProvider = [&](StructureArtifactList const& artifactList) -> CtStructureVariant const& {
-        auto it = std::find(ArtifactLists.cbegin(), ArtifactLists.cend(), artifactList);
+        auto const it = std::ranges::find(std::as_const(ArtifactLists), artifactList);
         if (it == ArtifactLists.cend())
             throw std::runtime_error("Artifact list must exist");
 
@@ -158,8 +158,8 @@ auto TreeStructureArtifactListCollection::GetFilter() const -> vtkImageAlgorithm
 auto TreeStructureArtifactListCollection::GetStructureArtifactList(StructureArtifact const& structureArtifact) const
         -> StructureArtifactList const& {
 
-    auto it = std::find_if(ArtifactLists.begin(), ArtifactLists.end(),
-                           [&structureArtifact](auto const& list) { return list.Contains(structureArtifact); });
+    auto const it = std::ranges::find_if(ArtifactLists,
+                                   [&structureArtifact](auto const& list) { return list.Contains(structureArtifact); });
 
     if (it == ArtifactLists.cend())
         throw std::runtime_error("Could not find the list for given structure artifact");
@@ -168,8 +168,8 @@ auto TreeStructureArtifactListCollection::GetStructureArtifactList(StructureArti
 }
 
 auto TreeStructureArtifactListCollection::GetIdx(StructureArtifactList const& structureArtifactList) const -> uidx_t {
-    auto it = std::find_if(ArtifactLists.cbegin(), ArtifactLists.cend(),
-                           [&structureArtifactList](auto const& list) { return &list == &structureArtifactList; });
+    auto const it = std::ranges::find_if(ArtifactLists,
+                                   [&structureArtifactList](auto const& list) { return &list == &structureArtifactList; });
 
     if (it == ArtifactLists.cend())
         throw std::runtime_error("Could not find given list");

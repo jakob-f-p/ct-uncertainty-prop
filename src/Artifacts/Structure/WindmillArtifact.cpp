@@ -4,7 +4,6 @@
 
 #include <QDoubleSpinBox>
 #include <QFormLayout>
-#include <QGroupBox>
 
 #include <vtkVector.h>
 
@@ -27,7 +26,7 @@ auto WindmillArtifactData::PopulateArtifact(WindmillArtifact& artifact) const no
 
 WindmillArtifactWidget::WindmillArtifactWidget() :
         Layout(new QFormLayout(this)),
-        RadiodensityFactorSpinBox([]() {
+        RadiodensityFactorSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(0.01, 10.0);
             spinBox->setValue(1.0);
@@ -35,7 +34,7 @@ WindmillArtifactWidget::WindmillArtifactWidget() :
             spinBox->setDecimals(2);
             return spinBox;
         }()),
-        AngularWidthSpinBox([]() {
+        AngularWidthSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(0.0, 360.0);
             spinBox->setValue(0.0);
@@ -44,7 +43,7 @@ WindmillArtifactWidget::WindmillArtifactWidget() :
             spinBox->setSuffix("°");
             return spinBox;
         }()),
-        RotationPerSliceSpinBox([]() {
+        RotationPerSliceSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(0.0, 360.0);
             spinBox->setValue(0.0);
@@ -53,7 +52,7 @@ WindmillArtifactWidget::WindmillArtifactWidget() :
             spinBox->setSuffix("°");
             return spinBox;
         }()),
-        LengthSpinBox([]() {
+        LengthSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(0.0, 500.0);
             spinBox->setValue(0.0);
@@ -71,7 +70,7 @@ WindmillArtifactWidget::WindmillArtifactWidget() :
     Layout->addRow("Length", LengthSpinBox);
 }
 
-auto WindmillArtifactWidget::GetData() noexcept -> WindmillArtifactWidget::Data {
+auto WindmillArtifactWidget::GetData() const noexcept -> Data {
     Data data {};
 
     data.RadiodensityFactor = static_cast<float>(RadiodensityFactorSpinBox->value());
@@ -82,7 +81,7 @@ auto WindmillArtifactWidget::GetData() noexcept -> WindmillArtifactWidget::Data 
     return data;
 }
 
-auto WindmillArtifactWidget::Populate(WindmillArtifactWidget::Data const& data) noexcept -> void {
+auto WindmillArtifactWidget::Populate(Data const& data) const noexcept -> void {
     RadiodensityFactorSpinBox->setValue(data.RadiodensityFactor);
     AngularWidthSpinBox->setValue(vtkMath::DegreesFromRadians(data.AngularWidth));
     RotationPerSliceSpinBox->setValue(vtkMath::DegreesFromRadians(data.RotationPerSlice));
@@ -122,11 +121,11 @@ auto WindmillArtifact::SetLength(float length) noexcept -> void {
 }
 
 auto WindmillArtifact::EvaluateAtPosition(DoublePoint const& point,
-                                          float maxRadiodensity,
-                                          bool pointOccupiedByStructure,
+                                          float const maxRadiodensity,
+                                          bool const pointOccupiedByStructure,
                                           CtStructureTree const& structureTree,
                                           CtStructureVariant const& structure,
-                                          std::array<double, 3> spacing) const noexcept -> float {
+                                          std::array<double, 3> const& spacing) const noexcept -> float {
     if (pointOccupiedByStructure || maxRadiodensity < 0.0F)
         return 0.0F;
 
@@ -134,19 +133,19 @@ auto WindmillArtifact::EvaluateAtPosition(DoublePoint const& point,
     if (!closestXYPoint || point == *closestXYPoint)
         return 0.0F;
 
-    auto const radiodensity = structureTree.FunctionValueAndRadiodensity(point, &structure).Radiodensity;
-    if (radiodensity <= 0.0F)
+    if (auto const radiodensity = structureTree.FunctionValueAndRadiodensity(point, &structure).Radiodensity;
+        radiodensity <= 0.0F)
         return 0.0F;
 
-    vtkVector2<float> const difference { static_cast<float>((*closestXYPoint)[0] - point[0]),
+    vtkVector2 const difference { static_cast<float>((*closestXYPoint)[0] - point[0]),
                                          static_cast<float>((*closestXYPoint)[1] - point[1]) };
     float const distance = std::sqrt(difference.SquaredNorm());
-    float const distanceFactor = std::max(1.0F - (distance / Length), 0.0F);
+    float const distanceFactor = std::max(1.0F - distance / Length, 0.0F);
 
     float const omega = std::numbers::pi / AngularWidth;
     float const angle = std::atan2(difference[1], difference[0]);
     static constexpr float startOffset = 0.75 * std::numbers::pi;
-    float const zOffset = (point[2] / spacing[2]) * RotationPerSlice;
+    float const zOffset = point[2] / spacing[2] * RotationPerSlice;
     float const cosine = cos(omega * angle + startOffset + zOffset);
     float const directionFactor = cosine * cosine;
 

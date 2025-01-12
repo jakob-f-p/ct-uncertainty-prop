@@ -9,12 +9,12 @@
 vtkStandardNewMacro(ImplicitCylinder);
 
 ImplicitCylinder::ImplicitCylinder() :
+        Radius(1.0),
         Center({ 0.0, 0.0, 0.0 }),
-        Axis({ 0.0, 0.0, 1.0 }),
-        Radius(1.0) {}
+        Axis({ 0.0, 0.0, 1.0 }) {}
 
 auto ImplicitCylinder::EvaluateFunction(double x[3]) -> double {
-    std::array<double, 3> const xCenterDiff { x[0] - Center[0],
+    std::array const xCenterDiff { x[0] - Center[0],
                                               x[1] - Center[1],
                                               x[2] - Center[2] };
 
@@ -22,7 +22,7 @@ auto ImplicitCylinder::EvaluateFunction(double x[3]) -> double {
     double const proj = vtkMath::Dot(Axis, xCenterDiff);
 
     // return distance^2 - R^2
-    return (vtkMath::Dot(xCenterDiff, xCenterDiff) - proj * proj) - Radius * Radius;
+    return vtkMath::Dot(xCenterDiff, xCenterDiff) - proj * proj - Radius * Radius;
 }
 
 void ImplicitCylinder::EvaluateGradient(double x[3], double g[3]) {
@@ -34,7 +34,7 @@ void ImplicitCylinder::EvaluateGradient(double x[3], double g[3]) {
             + Axis[2] * (x[2] - Center[2]);
 
     // Compute closest point
-    std::array<double, 3> const cp { Center[0] + t * Axis[0],
+    std::array const cp { Center[0] + t * Axis[0],
                                      Center[1] + t * Axis[1],
                                      Center[2] + t * Axis[2] };
 

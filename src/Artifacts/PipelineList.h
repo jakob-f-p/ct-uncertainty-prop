@@ -5,8 +5,8 @@
 #include <functional>
 #include <vector>
 
-struct CtDataSource;
-struct CtStructureTree;
+class CtDataSource;
+class CtStructureTree;
 struct CtStructureTreeEvent;
 
 
@@ -46,7 +46,7 @@ public:
     void AddTreeEventCallback(TreeEventCallback&& treeEventCallback);
 
     auto
-    ProcessCtStructureTreeEvent(CtStructureTreeEvent const& event) -> void;
+    ProcessCtStructureTreeEvent(CtStructureTreeEvent const& event) const -> void;
 
     using PipelineEventCallback = std::function<void(PipelineEvent const&)>;
     void AddPipelineEventCallback(PipelineEventCallback&& pipelineEventCallback);

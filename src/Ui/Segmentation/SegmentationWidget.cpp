@@ -6,7 +6,6 @@
 #include "../../App.h"
 
 #include <QDockWidget>
-#include <QFrame>
 #include <QPushButton>
 #include <QVBoxLayout>
 
@@ -42,34 +41,34 @@ auto SegmentationWidget::UpdateDataSourceOnPipelineChange(Pipeline& pipeline) ->
 
     auto& app = App::GetInstance();
     auto& ctDataSource = app.GetCtDataSource();
-    auto artifactsPipeline = [&app, &pipeline]() {
+    auto const [in, out] = [&app, &pipeline] {
         switch (app.GetCtDataSourceType()) {
             case App::CtDataSourceType::IMPLICIT: return pipeline.GetArtifactsAlgorithm();
             case App::CtDataSourceType::IMPORTED: return pipeline.GetImageArtifactsAlgorithm();
             default: throw std::runtime_error("invalid data source type");
         }
     }();
-    artifactsPipeline.In.SetInputConnection(ctDataSource.GetOutputPort());
+    in.SetInputConnection(ctDataSource.GetOutputPort());
 
-    RenderWidget->UpdateDataSource(artifactsPipeline.Out);
+    RenderWidget->UpdateDataSource(out);
 }
 
-auto SegmentationWidget::UpdateDataSourceOnDataSourceChange() -> void {
+auto SegmentationWidget::UpdateDataSourceOnDataSourceChange() const -> void {
     if (!Pipeline_)
         return;
 
     auto& app = App::GetInstance();
     auto& ctDataSource = app.GetCtDataSource();
-    auto artifactsPipeline = [this, &app]() {
+    auto const [in, out] = [this, &app] {
         switch (app.GetCtDataSourceType()) {
             case App::CtDataSourceType::IMPLICIT: return Pipeline_->GetArtifactsAlgorithm();
             case App::CtDataSourceType::IMPORTED: return Pipeline_->GetImageArtifactsAlgorithm();
             default: throw std::runtime_error("invalid data source type");
         }
     }();
-    artifactsPipeline.In.SetInputConnection(ctDataSource.GetOutputPort());
+    in.SetInputConnection(ctDataSource.GetOutputPort());
 
-    RenderWidget->UpdateDataSource(artifactsPipeline.Out);
+    RenderWidget->UpdateDataSource(out);
 }
 
 

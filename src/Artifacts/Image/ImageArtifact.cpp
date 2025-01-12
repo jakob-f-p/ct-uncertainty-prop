@@ -6,8 +6,8 @@
 #include <QComboBox>
 #include <QFormLayout>
 
-ImageArtifact::ImageArtifact(ImageArtifactData const& data) :
-        Artifact([&data]() {
+ImageArtifact::ImageArtifact(ImageArtifactData const& data) noexcept :
+        Artifact([&data] {
             return std::visit(Overload {
                 [](BasicImageArtifactData const& basicData) -> ImageArtifactVariant {
                     return BasicImageArtifact(basicData);
@@ -37,7 +37,7 @@ auto ImageArtifact::GetProperties() noexcept -> PipelineParameterProperties {
 auto ImageArtifact::ContainsImageArtifact(const ImageArtifact& imageArtifact) -> bool {
     return std::visit(Overload {
             [] (BasicImageArtifact&)               { return false; },
-            [&](CompositeImageArtifact& composite) { return composite.ContainsImageArtifact(imageArtifact); },
+            [&](CompositeImageArtifact const& composite) { return composite.ContainsImageArtifact(imageArtifact); },
     }, Artifact);
 }
 
@@ -79,11 +79,11 @@ auto ImageArtifact::Get(uint16_t targetIdx, uint16_t& currentIdx) -> ImageArtifa
 
     return std::visit(Overload {
             [&](BasicImageArtifact&) -> ImageArtifact*  { return nullptr; },
-            [&](CompositeImageArtifact& composite) { return composite.Get(targetIdx, currentIdx); }
+            [&](CompositeImageArtifact const& composite) { return composite.Get(targetIdx, currentIdx); }
     }, Artifact);
 }
 
-auto ImageArtifact::IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> int32_t {
+auto ImageArtifact::IndexOf(ImageArtifact const& imageArtifact, uint16_t& currentIdx) const -> int32_t {
     if (this == &imageArtifact)
         return currentIdx;
 
@@ -101,7 +101,7 @@ auto ImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtk
 }
 
 ImageArtifactData::ImageArtifactData(const ImageArtifact& artifact) :
-        Data([&]() {
+        Data([&] {
             return std::visit(Overload {
                     [&](BasicImageArtifact const&) -> ImageArtifactDataVariant {
                         return BasicImageArtifactData{};
@@ -154,7 +154,7 @@ ImageArtifactWidget::ImageArtifactWidget() :
 
     std::visit([&](auto* widget) { Layout->addRow(widget); }, TypeWidget);
 
-    QObject::connect(TypeComboBox, &QComboBox::currentIndexChanged, [&]() { UpdateTypeWidget(); });
+    connect(TypeComboBox, &QComboBox::currentIndexChanged, [&] { UpdateTypeWidget(); });
 }
 
 auto ImageArtifactWidget::GetData() const noexcept -> ImageArtifactData {
@@ -181,7 +181,7 @@ auto ImageArtifactWidget::Populate(const ImageArtifactData& data) noexcept -> vo
 auto ImageArtifactWidget::UpdateTypeWidget() -> void {
     auto type = TypeComboBox->currentData().value<Type>();
 
-    TypeWidgetVariant newWidgetVariant = [type]() {
+    TypeWidgetVariant newWidgetVariant = [type] {
         switch (type) {
             case Type::BASIC:     return TypeWidgetVariant { new BasicImageArtifactWidget() };
             case Type::COMPOSITE: return TypeWidgetVariant { new CompositeImageArtifactWidget() };
@@ -196,7 +196,7 @@ auto ImageArtifactWidget::UpdateTypeWidget() -> void {
     TypeWidget = newWidgetVariant;
 }
 
-auto ImageArtifactWidget::TypeToString(ImageArtifactWidget::Type type) -> std::string {
+auto ImageArtifactWidget::TypeToString(Type type) -> std::string {
     switch (type) {
         case Type::BASIC:     return "Artifact";
         case Type::COMPOSITE: return "Composition";
@@ -204,7 +204,7 @@ auto ImageArtifactWidget::TypeToString(ImageArtifactWidget::Type type) -> std::s
     }
 }
 
-auto ImageArtifactWidget::FindWidget(QWidget* widget) -> ImageArtifactWidget& {
+auto ImageArtifactWidget::FindWidget(QWidget const* widget) -> ImageArtifactWidget& {
     if (!widget)
         throw std::runtime_error("Given widget must not be nullptr");
 

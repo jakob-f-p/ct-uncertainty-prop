@@ -10,7 +10,7 @@ public:
     using WorkerFunction = std::function<void()>;
 
     explicit VoidWorker(WorkerFunction&& workerFunction) :
-            Function(std::move(workerFunction)) {};
+            Function(std::move(workerFunction)) {}
 
 public Q_SLOTS:
     void DoWork() {

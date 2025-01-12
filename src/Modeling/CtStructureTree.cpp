@@ -59,8 +59,8 @@ void CtStructureTree::CombineWithBasicStructure(BasicStructure&& basicStructure,
     if (CtStructureExists(basicStructure) || CtStructureExists(combinedStructure))
         throw std::runtime_error("CT Structure already exists. Cannot combine existing Structure.");
 
-    uidx_t const combinedInsertionIdx = 0;
-    uidx_t const basicInsertionIdx = 1;
+    constexpr uidx_t combinedInsertionIdx = 0;
+    constexpr uidx_t basicInsertionIdx = 1;
 
     IncrementParentAndChildIndices(combinedInsertionIdx);
     IncrementParentAndChildIndices(basicInsertionIdx);
@@ -151,7 +151,7 @@ void CtStructureTree::RemoveBasicStructure(uidx_t removeIdx) {
         throw std::runtime_error("Given index of structure to remove does not exist. "
                                  "Cannot remove non-existing structure");
 
-    auto& structure = std::get<BasicStructure>(GetStructureAt(removeIdx));
+    auto const& structure = std::get<BasicStructure>(GetStructureAt(removeIdx));
 
     if (RootIdx == removeIdx) {
         Structures.erase(Structures.begin());
@@ -220,10 +220,10 @@ struct EvaluateImplicitStructures {
 
         switch (combinedStructure.Operator) {
             case CombinedStructure::OperatorType::UNION:
-                return *std::min_element(evals.begin(), evals.end(), compareModelingResults);
+                return *std::ranges::min_element(evals, compareModelingResults);
 
             case CombinedStructure::OperatorType::INTERSECTION:
-                return *std::max_element(evals.begin(), evals.end(), compareModelingResults);
+                return *std::ranges::max_element(evals, compareModelingResults);
 
             case CombinedStructure::OperatorType::DIFFERENCE_: {
                 ModelingResult result = std::reduce(std::next(evals.begin()), evals.end(),
@@ -277,10 +277,10 @@ struct EvaluateFunctionValue {
 
         switch (combinedStructure.Operator) {
             case CombinedStructure::OperatorType::UNION:
-                return *std::min_element(results.begin(), results.end());
+                return *std::ranges::min_element(results);
 
             case CombinedStructure::OperatorType::INTERSECTION:
-                return *std::max_element(results.begin(), results.end());
+                return *std::ranges::max_element(results);
 
             case CombinedStructure::OperatorType::DIFFERENCE_: {
                 return std::reduce(std::next(results.begin()), results.end(),
@@ -304,9 +304,9 @@ auto CtStructureTree::FunctionValue(Point point, CtStructureVariant const& struc
 
 struct FindClosestPointOnXYPlane {
     auto operator() (BasicStructure const& basicStructure) const noexcept -> std::optional<DoublePoint> {
-        auto point = basicStructure.ClosestPointOnXYPlane(basicStructure.GetTransformedPoint(Point_));
+        auto const point = basicStructure.ClosestPointOnXYPlane(basicStructure.GetTransformedPoint(Point_));
         return point
-                ? std::optional<DoublePoint> { basicStructure.GetInverselyTransformedPoint(*point) }
+                ? std::optional { basicStructure.GetInverselyTransformedPoint(*point) }
                 : std::nullopt;
     }
 
@@ -326,25 +326,25 @@ struct FindClosestPointOnXYPlane {
         if (points.empty())
             return std::nullopt;
 
-        std::transform(points.cbegin(), points.cend(),
-                       points.begin(),
-                       [&](DoublePoint const& point) { return combinedStructure.GetInverselyTransformedPoint(point); });
+        std::ranges::transform(std::as_const(points),
+                               points.begin(),
+                               [&](DoublePoint const& point) { return combinedStructure.GetInverselyTransformedPoint(point); });
 
         static const auto compareDistances = [this](DoublePoint const& a, DoublePoint const& b) {
             return VectorDistance(a, Point_) < VectorDistance(b, Point_);
         };
 
-        auto const it = [&]() {
+        auto const it = [&] {
             switch (combinedStructure.Operator) {
                 case CombinedStructure::OperatorType::UNION:
-                    return std::min_element(points.begin(), points.end(), compareDistances);
+                    return std::ranges::min_element(points, compareDistances);
 
                 case CombinedStructure::OperatorType::INTERSECTION:
-                    return std::max_element(points.begin(), points.end(), compareDistances);
+                    return std::ranges::max_element(points, compareDistances);
 
                 case CombinedStructure::OperatorType::DIFFERENCE_:
                     qWarning("todo");
-                    return std::min_element(points.begin(), points.end(), compareDistances);
+                    return std::ranges::min_element(points, compareDistances);
 
                 default:
                     return points.end();
@@ -353,7 +353,7 @@ struct FindClosestPointOnXYPlane {
 
         return it == points.end()
                 ? std::nullopt
-                : std::optional<DoublePoint> { *it };
+                : std::optional { *it };
     }
 
     const std::vector<CtStructureVariant>& Structures;
@@ -368,7 +368,7 @@ auto CtStructureTree::ClosestPointOnXYPlane(Point const& point,
 //    auto const& closestPoint = std::visit(FindClosestPointOnXYPlane { Structures, point }, structure);
 
     return closestPoint
-            ? std::optional<DoublePoint> { TransformPointFromStructure(*closestPoint, structure) }
+            ? std::optional { TransformPointFromStructure(*closestPoint, structure) }
             : std::nullopt;
 //    return closestPoint
 //           ? std::optional<DoublePoint> { closestPoint }
@@ -382,10 +382,10 @@ void CtStructureTree::SetData(uidx_t structureIdx, QVariant const& data) {
     CtStructureVariant& structureVariant = Structures[structureIdx];
 
     if (data.canConvert<CombinedStructureData>()) {
-        auto combinedData = data.value<CombinedStructureData>();
+        auto const combinedData = data.value<CombinedStructureData>();
         combinedData.PopulateStructure(std::get<CombinedStructure>(structureVariant));
     } else {
-        auto basicData = data.value<BasicStructureData>();
+        auto const basicData = data.value<BasicStructureData>();
         basicData.PopulateStructure(std::get<BasicStructure>(structureVariant));
     }
 
@@ -428,7 +428,7 @@ auto CtStructureTree::CtStructureExists(auto const& ctStructure) const -> bool {
     });
 }
 
-void CtStructureTree::AddTreeEventCallback(CtStructureTree::TreeEventCallback&& treeEventCallback) {
+void CtStructureTree::AddTreeEventCallback(TreeEventCallback&& treeEventCallback) {
     TreeEventCallbacks.emplace_back(std::move(treeEventCallback));
 }
 
@@ -456,7 +456,7 @@ auto CtStructureTree::GetBasicStructureIdsOfStructureAt(uidx_t idx) const -> std
 
 auto
 CtStructureTree::GetBasicStructureIds(CtStructureVariant const& structure) const -> std::vector<StructureId> {
-    if (auto it = std::find(Structures.cbegin(), Structures.cend(), structure);
+    if (auto const it = std::ranges::find(Structures, structure);
         it == Structures.cend())
         throw std::runtime_error("Structure does not exist");
 
@@ -478,7 +478,7 @@ struct MaxTissueValueAlgorithm {
             tissueValues.emplace_back(value);
         }
 
-        return *std::max_element(tissueValues.begin(), tissueValues.end());
+        return *std::ranges::max_element(tissueValues);
     }
 
     std::vector<CtStructureVariant> const& Structures;
@@ -528,10 +528,10 @@ auto CtStructureTree::GetParentIdxOf(const auto& ctStructure) const -> idx_t {
 
 auto CtStructureTree::IncrementParentAndChildIndices(uidx_t startIdx) -> void {
     if (RootIdx >= startIdx)
-        RootIdx++;
+        ++RootIdx;
 
     auto incrementParentIndicesGreaterThanOrEqualToStart
-            = [=](auto& structure) { if (structure.ParentIdx >= startIdx) structure.ParentIdx++; };
+            = [=](auto& structure) { if (structure.ParentIdx >= startIdx) ++structure.ParentIdx; };
 
     for (auto& structureVariant : Structures) {
         std::visit(incrementParentIndicesGreaterThanOrEqualToStart, structureVariant);
@@ -546,10 +546,10 @@ auto CtStructureTree::IncrementParentAndChildIndices(uidx_t startIdx) -> void {
 
 auto CtStructureTree::DecrementParentAndChildIndices(uidx_t startIdx) -> void {
     if (RootIdx >= startIdx)
-        RootIdx--;
+        --RootIdx;
 
     auto decrementParentIndicesGreaterThanOrEqualToStart
-            = [=](auto& structure) { if (structure.ParentIdx >= startIdx) structure.ParentIdx--; };
+            = [=](auto& structure) { if (structure.ParentIdx >= startIdx) --structure.ParentIdx; };
 
     for (auto& structureVariant : Structures) {
         std::visit(decrementParentIndicesGreaterThanOrEqualToStart, structureVariant);

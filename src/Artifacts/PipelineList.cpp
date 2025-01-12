@@ -36,8 +36,8 @@ auto PipelineList::AddPipeline() -> Pipeline& {
 }
 
 void PipelineList::RemovePipeline(Pipeline& pipeline) {
-    auto removeIt = std::find_if(Pipelines.begin(), Pipelines.end(),
-                                 [&](auto& p) { return p.get() == &pipeline; });
+    auto const removeIt = std::ranges::find_if(Pipelines,
+                                         [&](auto& p) { return p.get() == &pipeline; });
     if (removeIt == Pipelines.end())
         throw std::runtime_error("Given pipeline could not be removed because it was not present");
 
@@ -50,7 +50,7 @@ void PipelineList::AddTreeEventCallback(TreeEventCallback&& treeEventCallback) {
     TreeEventCallbacks.emplace_back(std::move(treeEventCallback));
 }
 
-void PipelineList::ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) {
+void PipelineList::ProcessCtStructureTreeEvent(const CtStructureTreeEvent& event) const {
     for (auto& pipeline: Pipelines)
         pipeline->ProcessCtStructureTreeEvent(event);
 

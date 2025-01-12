@@ -7,8 +7,7 @@
 
 PipelineParameterSpaceView::PipelineParameterSpaceView(PipelineParameterSpace& parameterSpace) :
         ParameterSpaceModel(new PipelineParameterSpaceModel(parameterSpace, this)) {
-
-    setModel(ParameterSpaceModel);
+    QTreeView::setModel(ParameterSpaceModel);
 
     setHeaderHidden(true);
 }
@@ -33,8 +32,7 @@ auto PipelineParameterSpaceModel::parent(QModelIndex const& child) const -> QMod
     if (!child.isValid())
         return {};
 
-    bool const isSpanSet = static_cast<int>(child.internalId()) == -1; // === parent.isInvalid()
-    if (isSpanSet)
+    if (static_cast<int>(child.internalId()) == -1)
         return {};
 
     uint16_t const parentIdx = static_cast<int>(child.internalId());
@@ -57,7 +55,7 @@ auto PipelineParameterSpaceModel::columnCount(QModelIndex const& /*parent*/) con
 }
 
 auto PipelineParameterSpaceModel::flags(QModelIndex const& index) const -> Qt::ItemFlags {
-    if (!index.isValid() || !index.data(Roles::IS_PARAMETER_SPAN).toBool())
+    if (!index.isValid() || !index.data(IS_PARAMETER_SPAN).toBool())
         return QAbstractItemModel::flags(index);
 
     return Qt::ItemIsEnabled | Qt::ItemIsSelectable;
@@ -67,16 +65,14 @@ auto PipelineParameterSpaceModel::data(QModelIndex const& index, int role) const
     if (!index.isValid())
         return {};
 
-    QModelIndex const parentIndex = index.parent();
-
-    if (parentIndex.isValid()) {
+    if (QModelIndex const parentIndex = index.parent(); parentIndex.isValid()) {
         auto& spanSet = ParameterSpace.GetSpanSet(parentIndex.row());
         auto& parameterSpan = spanSet.Get(index.row());
 
         switch (role) {
             case Qt::DisplayRole: return QString::fromStdString(parameterSpan.GetName());
-            case Roles::POINTER: return QVariant::fromValue(&parameterSpan); // Qt::UserRole
-            case Roles::IS_PARAMETER_SPAN: return true;
+            case POINTER: return QVariant::fromValue(&parameterSpan); // Qt::UserRole
+            case IS_PARAMETER_SPAN: return true;
             default: return {};
         }
     }
@@ -85,14 +81,14 @@ auto PipelineParameterSpaceModel::data(QModelIndex const& index, int role) const
 
     switch (role) {
         case Qt::DisplayRole: return QString::fromStdString(ParameterSpace.GetSpanSetName(spanSet));
-        case Roles::POINTER: return QVariant::fromValue(&spanSet); // Qt::UserRole
-        case Roles::IS_PARAMETER_SPAN: return false;
+        case POINTER: return QVariant::fromValue(&spanSet); // Qt::UserRole
+        case IS_PARAMETER_SPAN: return false;
         default: return {};
     }
 }
 
 auto PipelineParameterSpaceModel::AddParameterSpan(PipelineParameterSpan&& parameterSpan) -> QModelIndex {
-    auto artifactPointer = parameterSpan.GetArtifact();
+    auto const artifactPointer = parameterSpan.GetArtifact();
     auto const& spanSet = ParameterSpace.GetSetForArtifactPointer(artifactPointer);
 
     uidx_t const spanSetRowIdx = ParameterSpace.GetSpanSetIdx(spanSet);
@@ -101,7 +97,7 @@ auto PipelineParameterSpaceModel::AddParameterSpan(PipelineParameterSpan&& param
     uidx_t const insertionIdx = spanSet.GetSize();
 
     beginResetModel();
-    auto const& span = ParameterSpace.AddParameterSpan(artifactPointer, std::move(parameterSpan));
+    ParameterSpace.AddParameterSpan(artifactPointer, std::move(parameterSpan));
     endResetModel();
 
     return index(insertionIdx, 0, parentModelIndex);
@@ -111,7 +107,7 @@ auto PipelineParameterSpaceModel::RemoveParameterSpan(QModelIndex const& index) 
     if (!index.isValid() || !index.parent().isValid())
         throw std::runtime_error("Cannot remove parameter span. Given index is not valid");
 
-    auto* parameterSpan = index.data(Qt::UserRole).value<PipelineParameterSpan*>();
+    auto const* parameterSpan = index.data(Qt::UserRole).value<PipelineParameterSpan*>();
     if (!parameterSpan)
         throw std::runtime_error("Parameter span must not be null");
 
@@ -122,8 +118,8 @@ auto PipelineParameterSpaceModel::RemoveParameterSpan(QModelIndex const& index) 
     spanSet.RemoveParameterSpan(*parameterSpan);
 
     if (spanSet.GetSize() == 0) {
-        auto spanSetIt = std::find(ParameterSpace.ParameterSpanSets.cbegin(), ParameterSpace.ParameterSpanSets.cend(),
-                                   spanSet);
+        auto const spanSetIt = std::ranges::find(std::as_const(ParameterSpace.ParameterSpanSets),
+                                           spanSet);
 
         if (spanSetIt == ParameterSpace.ParameterSpanSets.cend())
             throw std::runtime_error("Parameter span set not found");

@@ -10,20 +10,20 @@ using uidx_t = uint16_t;
 using StructureId = uint16_t;
 
 
-struct idx_t : public std::optional<uidx_t> {
+struct idx_t : std::optional<uidx_t> {
     using std::optional<uidx_t>::operator=;
 
     auto
     operator++() noexcept -> idx_t& { if (has_value()) value()++; return *this;  }
 
     auto
-    operator++(int) noexcept -> idx_t { idx_t previous = *this; ++(*this); return previous;  }
+    operator++(int) noexcept -> idx_t { idx_t const previous = *this; ++*this; return previous;  }
 
     auto
     operator--() noexcept -> idx_t& { if (has_value()) value()--; return *this;  }
 
     auto
-    operator--(int) noexcept -> idx_t { idx_t previous = *this; --(*this); return previous;  }
+    operator--(int) noexcept -> idx_t { idx_t const previous = *this; --*this; return previous;  }
 
     [[nodiscard]] auto
     ToSigned() const noexcept -> int32_t { return has_value() ? value() : -1; }

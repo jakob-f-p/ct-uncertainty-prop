@@ -8,8 +8,7 @@
 
 PipelineParameterSpaceStateView::PipelineParameterSpaceStateView(
         PipelineParameterSpaceState const& parameterSpaceState) {
-
-    setModel(new PipelineParameterSpaceStateModel(parameterSpaceState, this));
+    QTreeView::setModel(new PipelineParameterSpaceStateModel(parameterSpaceState, this));
 
     setMinimumWidth(350);
 
@@ -23,7 +22,7 @@ PipelineParameterSpaceStateModel::PipelineParameterSpaceStateModel(
         QAbstractItemModel(parent),
         ParameterSpaceState(parameterSpaceState),
         ParameterSpace(parameterSpaceState.ParameterSpace),
-        Format([this]() {
+        Format([this] {
             float max = 0.1;
             for (int i = 0; i < ParameterSpace.GetNumberOfSpanSets(); i++) {
                 auto const& spanSet = ParameterSpace.GetSpanSet(i);
@@ -31,12 +30,12 @@ PipelineParameterSpaceStateModel::PipelineParameterSpaceStateModel(
                 for (int j = 0; j < spanSet.GetSize(); j++) {
                     auto const& span = spanSet.Get(j);
 
-                    auto const range = span.GetRange();
-                    max = std::max({ max, std::abs(range.Min), std::abs(range.Max) });
+                    auto const [rangeMin, rangeMax] = span.GetRange();
+                    max = std::max({ max, std::abs(rangeMin), std::abs(rangeMax) });
                 }
             }
             uint16_t const numberOfNonDecimals = std::floor(std::log10(max)) + 1;
-            uint16_t const numberOfDecimals = 2;
+            constexpr uint16_t numberOfDecimals = 2;
             uint16_t const width = numberOfNonDecimals + numberOfDecimals + 2;
             return NumberFormat { width, numberOfDecimals };
         }()) {}
@@ -52,8 +51,7 @@ auto PipelineParameterSpaceStateModel::parent(QModelIndex const& child) const ->
     if (!child.isValid())
         return {};
 
-    bool const isSpanSet = static_cast<int>(child.internalId()) == -1; // === parent.isInvalid()
-    if (isSpanSet)
+    if (static_cast<int>(child.internalId()) == -1)
         return {};
 
     uint16_t const parentIdx = static_cast<int>(child.internalId());
@@ -99,9 +97,7 @@ auto PipelineParameterSpaceStateModel::data(QModelIndex const& index, int role) 
     if (!index.isValid() || (role != Qt::DisplayRole && role != Qt::FontRole && role != Qt::ToolTipRole))
         return {};
 
-    QModelIndex const parentIndex = index.parent();
-
-    if (parentIndex.isValid()) {
+    if (QModelIndex const parentIndex = index.parent(); parentIndex.isValid()) {
         auto const& spanSet = ParameterSpace.GetSpanSet(parentIndex.row());
         auto const& parameterSpan = spanSet.Get(index.row());
 

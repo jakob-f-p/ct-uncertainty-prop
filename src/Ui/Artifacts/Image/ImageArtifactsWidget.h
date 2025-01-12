@@ -18,8 +18,8 @@ public:
     explicit ImageArtifactsWidget(QWidget* parent = nullptr);
 
     void SetCurrentView(int pipelineIdx);
-    void AddView(Pipeline& pipeline);
-    void RemoveCurrentView();
+    void AddView(Pipeline const& pipeline);
+    void RemoveCurrentView() const;
 
 protected Q_SLOTS:
     void AddChildArtifact();
@@ -30,11 +30,11 @@ protected Q_SLOTS:
     void UpdateButtonStatesOnSelectionChange(const QModelIndex& currentIndex);
 
 private:
-    void DisableImageArtifactButtons();
+    void DisableImageArtifactButtons() const;
 
-    auto GetCurrentView() -> ImageArtifactsView*;
-    auto GetCurrentModel() -> ImageArtifactsModel*;
-    auto GetCurrentSelectionModel() -> QItemSelectionModel*;
+    auto GetCurrentView() const -> ImageArtifactsView*;
+    auto GetCurrentModel() const -> ImageArtifactsModel*;
+    auto GetCurrentSelectionModel() const -> QItemSelectionModel*;
 
     QStackedLayout* Views;
 

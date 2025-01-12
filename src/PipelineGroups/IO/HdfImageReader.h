@@ -52,7 +52,7 @@ public:
     };
 
     static auto
-    Validate(std::filesystem::path const& file, ValidationParameters const& params) -> void;
+    Validate(std::filesystem::path const& filePath, ValidationParameters const& params) -> void;
 
 protected:
     HdfImageReader() = default;

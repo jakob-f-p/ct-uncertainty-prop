@@ -13,7 +13,6 @@
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QFileDialog>
-#include <QFontDatabase>
 #include <QGraphicsLayout>
 #include <QGraphicsSceneMouseEvent>
 #include <QLabel>
@@ -28,21 +27,21 @@
 MainChartWidget::MainChartWidget(ChartView* chartView) :
         VLayout(new QVBoxLayout(this)),
         View(chartView),
-        LightThemeButton([]() {
+        LightThemeButton([] {
             auto* button = new QPushButton(GenerateSimpleIcon("LightMode"), "");
             button->setCheckable(true);
             button->setChecked(false);
             button->setMinimumWidth(static_cast<int>(static_cast<double>(button->sizeHint().width()) * 1.2));
             return button;
         }()),
-        DarkThemeButton([]() {
+        DarkThemeButton([] {
             auto* button = new QPushButton(GenerateSimpleIcon("DarkMode"), "");
             button->setCheckable(true);
             button->setChecked(true);
             button->setMinimumWidth(static_cast<int>(static_cast<double>(button->sizeHint().width()) * 1.2));
             return button;
         }()),
-        ThemeButtonGroup([this]() {
+        ThemeButtonGroup([this] {
             auto* buttonGroup = new QButtonGroup(this);
             buttonGroup->addButton(LightThemeButton);
             buttonGroup->addButton(DarkThemeButton);
@@ -72,7 +71,7 @@ MainChartWidget::MainChartWidget(ChartView* chartView) :
 
     connect(ThemeButtonGroup, &QButtonGroup::buttonPressed, this, [this](QAbstractButton* button) {
         auto* pushButton = qobject_cast<QPushButton*>(button);
-        ChartView::Theme const theme = [this, pushButton]() {
+        ChartView::Theme const theme = [this, pushButton] {
             if (pushButton == LightThemeButton)
                 return ChartView::Theme::LIGHT;
 
@@ -180,10 +179,8 @@ void TsneMainChartWidget::OnPointsSelected(QList<QPointF> const& points) {
     connect(dialogButtonBar, &QDialogButtonBox::rejected, dialog, &QDialog::reject);
     fLayout->addRow(dialogButtonBar);
 
-    connect(dialog, &QDialog::accepted, this, [this, dialog, &points]() {
-        QString const name = dialog->findChild<NameLineEdit*>()->GetText();
-
-        if (!name.isEmpty())
+    connect(dialog, &QDialog::accepted, this, [this, dialog, &points] {
+        if (QString const name = dialog->findChild<NameLineEdit*>()->GetText(); !name.isEmpty())
                 Q_EMIT PcaPointsSelected(name, points);
     });
 
@@ -200,10 +197,10 @@ ChartView::ChartView(QString const& chartName) :
         Tooltip(nullptr),
         CurrentTheme(Theme::DARK) {
 
-    setDragMode(QGraphicsView::NoDrag);
+    setDragMode(NoDrag);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setFrameShape(QFrame::NoFrame);
+    setFrameShape(NoFrame);
     setBackgroundRole(QPalette::Window);
     setRenderHint(QPainter::Antialiasing);
     setMouseTracking(true);
@@ -270,7 +267,7 @@ auto ChartView::ExportChart() -> void {
     if (!Chart)
         throw std::runtime_error("chart must not be nullptr");
 
-    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
+    auto const homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
     if (homeLocations.empty() || homeLocations.at(0).isEmpty())
         throw std::runtime_error("home path must not be empty");
     QString const& homePath = homeLocations.at(0);
@@ -278,6 +275,7 @@ auto ChartView::ExportChart() -> void {
     QString const fileFilter = "Images (*.png)";
     QString const caption = QString("Save %1").arg(ChartName);
     QString const fileName = QFileDialog::getSaveFileName(this, caption, homePath, fileFilter);
+    // ReSharper disable once CppExpressionWithoutSideEffects
     grab().save(fileName);
 }
 
@@ -286,7 +284,7 @@ auto ChartView::UpdateTheme(Theme theme) -> void {
         throw std::runtime_error("chart must not be nullptr");
 
     CurrentTheme = theme;
-    static const std::array<QColor, 12> colors {
+    static const std::array colors {
         QColor { "#a6cee3" }, QColor { "#1f78b4" }, QColor { "#b2df8a" }, QColor { "#33a02c" },
         QColor { "#fb9a99" }, QColor { "#e31a1c" }, QColor { "#fdbf6f" }, QColor { "#ff7f00" },
         QColor { "#cab2d6" }, QColor { "#6a3d9a" }, QColor { "#ffff99" }, QColor { "#b15928" },
@@ -303,7 +301,7 @@ auto ChartView::UpdateTheme(Theme theme) -> void {
                 scatterSeries->setSelectedColor(scatterSeries->color().lighter());
                 scatterSeries->setBorderColor(QColor { "black" });
 
-                colorIdx = (++colorIdx) % colors.size();
+                colorIdx = ++colorIdx % colors.size();
             }
 
             break;
@@ -321,7 +319,7 @@ auto ChartView::UpdateTheme(Theme theme) -> void {
                 scatterSeries->setSelectedColor(scatterSeries->color().darker());
                 scatterSeries->setBorderColor(QColor { "white" });
 
-                colorIdx = (++colorIdx) % colors.size();
+                colorIdx = ++colorIdx % colors.size();
             }
             break;
         }
@@ -329,8 +327,7 @@ auto ChartView::UpdateTheme(Theme theme) -> void {
         default: throw std::runtime_error("invalid theme");
     }
 
-    auto seriesList = Chart->series();
-    for (auto* series : seriesList) {
+    for (auto seriesList = Chart->series(); auto* series : seriesList) {
         auto* scatterSeries = qobject_cast<QScatterSeries*>(series);
 
         static const qreal markerSize = scatterSeries->markerSize() * 0.35;
@@ -363,8 +360,8 @@ auto ChartView::GetCurrentForegroundBackground() const -> PenBrushPair {
     if (!Chart)
         throw std::runtime_error("Chart must not be null");
 
-    auto penColor = QPen(Chart->axes(Qt::Orientation::Horizontal).at(0)->labelsColor());
-    auto brushColor = [this]() {
+    auto const penColor = QPen(Chart->axes(Qt::Orientation::Horizontal).at(0)->labelsColor());
+    auto const brushColor = [this] {
         switch (CurrentTheme) {
             case Theme::LIGHT: return Chart->backgroundBrush();
             case Theme::DARK:  return QBrush(palette().color(QPalette::ColorRole::Window));
@@ -386,7 +383,7 @@ void ChartView::ToggleTooltip(QPointF const& point, bool entered) {
 
         uint16_t const numberOfNonDecimals = std::floor(
                 std::max({ std::log10(std::abs(point.x())), std::log10(std::abs(point.y())) }) + 1);
-        uint16_t const numberOfDecimals = 2;
+        constexpr uint16_t numberOfDecimals = 2;
         uint16_t const formatWidth = numberOfNonDecimals + numberOfDecimals + 2;
         std::string const tooltipString = std::format("x: {:{}.{}f}\ny: {:{}.{}f}",
                                                       point.x(), formatWidth, numberOfDecimals, point.y(),
@@ -399,7 +396,7 @@ void ChartView::ToggleTooltip(QPointF const& point, bool entered) {
     }
 }
 
-auto ChartView::GetAxisRange(QValueAxis* axis) -> std::pair<double, double> {
+auto ChartView::GetAxisRange(QValueAxis const* axis) -> std::pair<double, double> {
     if (!axis)
         throw std::runtime_error("axis must not be nullptr");
 
@@ -415,7 +412,7 @@ auto ChartView::GetAxisRange(QValueAxis* axis) -> std::pair<double, double> {
     return { axisMin, axisMax };
 }
 
-auto ChartView::GetAxisTickInterval(QValueAxis* axis) -> double {
+auto ChartView::GetAxisTickInterval(QValueAxis const* axis) -> double {
     if (!axis)
         throw std::runtime_error("axis must not be nullptr");
 
@@ -435,20 +432,18 @@ auto ChartView::GetAxisTickInterval(QValueAxis* axis) -> double {
 auto ChartView::ConnectScatterSeries(std::map<uint16_t, QScatterSeries*> const& indexScatterSeriesMap) noexcept
 -> void {
 
-    for (auto const& pair : indexScatterSeriesMap) {
-        auto* scatterSeries = pair.second;
-
+    for (auto const& [scatterIdx, scatterSeries] : indexScatterSeriesMap) {
         connect(scatterSeries, &QScatterSeries::hovered, this, &ChartView::ToggleTooltip);
 
         connect(scatterSeries, &QScatterSeries::clicked, this,
-                [this, scatterSeries, groupIdx = pair.first, indexScatterSeriesMap](QPointF const& point) {
+                [this, scatterSeries, groupIdx = scatterIdx, indexScatterSeriesMap](QPointF const& point) {
 
                     auto points = scatterSeries->points();
-                    auto it = std::find(points.cbegin(), points.cend(), point);
+                    auto const it = std::ranges::find(std::as_const(points), point);
                     if (it == points.cend())
                         throw std::runtime_error("point not present in chart");
 
-                    auto idx = static_cast<uint16_t>(std::distance(points.cbegin(), it));
+                    auto const idx = static_cast<uint16_t>(std::distance(points.cbegin(), it));
 
                     bool const pointIsAlreadySelected = scatterSeries->isPointSelected(idx);
 
@@ -481,11 +476,11 @@ auto PcaChartView::CreateScatterSeries() noexcept -> std::map<uint16_t, QScatter
         scatterSeries->setName(QString::fromStdString(batchData.Group.GetName()));
 
         QList<QPointF> points;
-        std::transform(batchData.StateDataList.cbegin(), batchData.StateDataList.cend(),
-                       std::back_inserter(points),
-                       [](auto const& psData) {
-                           return QPointF(psData.PcaCoordinates.at(0), psData.PcaCoordinates.at(1));
-                       });
+        std::ranges::transform(batchData.StateDataList,
+                               std::back_inserter(points),
+                               [](auto const& psData) {
+                                   return QPointF(psData.PcaCoordinates.at(0), psData.PcaCoordinates.at(1));
+                               });
         scatterSeries->append(points);
 
         indexScatterSeriesMap.emplace(i, scatterSeries);
@@ -516,11 +511,11 @@ auto TsneChartView::CreateScatterSeries() noexcept -> std::map<uint16_t, QScatte
         scatterSeries->setName(QString::fromStdString(batchData.Group.GetName()));
 
         QList<QPointF> points;
-        std::transform(batchData.StateDataList.cbegin(), batchData.StateDataList.cend(),
-                       std::back_inserter(points),
-                       [](auto const& psData) {
-                           return QPointF(psData.TsneCoordinates.at(0), psData.TsneCoordinates.at(1));
-                       });
+        std::ranges::transform(batchData.StateDataList,
+                               std::back_inserter(points),
+                               [](auto const& psData) {
+                                   return QPointF(psData.TsneCoordinates.at(0), psData.TsneCoordinates.at(1));
+                               });
         scatterSeries->append(points);
 
         indexScatterSeriesMap.emplace(i, scatterSeries);

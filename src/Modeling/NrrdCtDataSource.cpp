@@ -11,6 +11,7 @@
 #include <vtkTypeUInt8Array.h>
 
 #include <cassert>
+#include <ranges>
 #include <span>
 
 vtkStandardNewMacro(NrrdCtDataSource)
@@ -24,7 +25,7 @@ void NrrdCtDataSource::PrintSelf(ostream &os, vtkIndent indent) {
 void NrrdCtDataSource::ExecuteDataWithInformation(vtkDataObject* output, vtkInformation* outInfo) {
     vtkImageData* data = vtkImageData::SafeDownCast(output);
 
-    vtkNew<vtkNrrdReader> nrrdReader;
+    vtkNew<vtkNrrdReader> const nrrdReader;
     nrrdReader->SetFileName(absolute(Filename).string().c_str());
     nrrdReader->Update();
     data->ShallowCopy(nrrdReader->GetOutput());
@@ -35,7 +36,7 @@ void NrrdCtDataSource::ExecuteDataWithInformation(vtkDataObject* output, vtkInfo
     for (int i = 0; i < 3; ++i)
         dimRatios[i] = static_cast<double>(newDimensions[i]) / static_cast<double>(oldDimensions[i]);
 
-    vtkNew<vtkImageResample> imageResample;
+    vtkNew<vtkImageResample> const imageResample;
     imageResample->SetMagnificationFactors(dimRatios.data());
     imageResample->SetInputData(data);
     imageResample->Update();
@@ -45,10 +46,13 @@ void NrrdCtDataSource::ExecuteDataWithInformation(vtkDataObject* output, vtkInfo
     data->SetOrigin(GetOrigin().data());
     data->SetSpacing(GetSpacing().data());
 
-    auto const targetExtent = GetWholeExtent();
-    std::span<int, 6> const newExtent { data->GetExtent(), 6 };
-    for (int i = 0; i < 6; ++i)
-        assert(newExtent[i] == targetExtent[i]);
+    assert(([data, targetExtent = GetWholeExtent()]() -> bool {
+        std::span<int, 6> const newExtent { data->GetExtent(), 6 };
+        bool allSame = true;
+        for (int i = 0; i < 6; ++i)
+            allSame &= (newExtent[i] == targetExtent[i]);
+        return allSame;
+    })());
 
     auto* pointData = data->GetPointData();
     auto* dataArray = pointData->GetScalars();
@@ -56,7 +60,7 @@ void NrrdCtDataSource::ExecuteDataWithInformation(vtkDataObject* output, vtkInfo
     if (!uint8DataArray)
         throw std::runtime_error("unsupported data type");
 
-    vtkNew<vtkFloatArray> floatArray;
+    vtkNew<vtkFloatArray> const floatArray;
     floatArray->DeepCopy(uint8DataArray);
     floatArray->SetName("Radiodensities");
 

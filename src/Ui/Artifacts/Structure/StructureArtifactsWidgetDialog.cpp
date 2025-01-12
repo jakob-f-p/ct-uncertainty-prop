@@ -13,21 +13,21 @@
 #include <QVBoxLayout>
 
 StructureArtifactsWidgetDialog::StructureArtifactsWidgetDialog(StructureArtifactList& structureWrapper,
-                                                               std::string& title,
+                                                               std::string const& title,
                                                                QWidget* parent) :
         QDialog(parent),
         CreateDialog(nullptr),
-        View(new StructureArtifactsView(structureWrapper)),
-        Model(dynamic_cast<StructureArtifactsModel*>(View->model())),
-        SelectionModel(View->selectionModel()),
         AddButton(new QPushButton("")),
         RemoveButton(new QPushButton("")),
         MoveUpButton(new QPushButton("")),
         MoveDownButton(new QPushButton("")),
         Buttons({ AddButton,
-                  RemoveButton,
-                  MoveUpButton,
-                  MoveDownButton }) {
+            RemoveButton,
+            MoveUpButton,
+            MoveDownButton }),
+        View(new StructureArtifactsView(structureWrapper)),
+        Model(dynamic_cast<StructureArtifactsModel*>(View->model())),
+        SelectionModel(View->selectionModel()) {
 
     setMinimumSize(300, 300);
 
@@ -72,8 +72,8 @@ void StructureArtifactsWidgetDialog::AddArtifact() {
     CreateDialog = new StructureArtifactDialog(ArtifactsDialog::Mode::CREATE, this);
     CreateDialog->show();
 
-    connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
-        auto data = GetWidgetData<StructureArtifactWidget>(CreateDialog);
+    connect(CreateDialog, &ArtifactsDialog::accepted, [&] {
+        auto const data = GetWidgetData<StructureArtifactWidget>(CreateDialog);
         QModelIndex const parentIndex = SelectionModel->currentIndex();
         QModelIndex const newIndex = Model->AddStructureArtifact(data, parentIndex);
 
@@ -84,7 +84,7 @@ void StructureArtifactsWidgetDialog::AddArtifact() {
     });
 }
 
-void StructureArtifactsWidgetDialog::RemoveArtifact() {
+void StructureArtifactsWidgetDialog::RemoveArtifact() const {
     QModelIndex const index = SelectionModel->selection().indexes().at(0);
     assert(SelectionModel->selection().indexes().size() == 1);
 
@@ -93,7 +93,7 @@ void StructureArtifactsWidgetDialog::RemoveArtifact() {
     SelectionModel->clearSelection();
 }
 
-void StructureArtifactsWidgetDialog::MoveUp() {
+void StructureArtifactsWidgetDialog::MoveUp() const {
     QModelIndex const index = SelectionModel->selection().indexes().at(0);
     assert(SelectionModel->selection().indexes().size() == 1);
 
@@ -103,7 +103,7 @@ void StructureArtifactsWidgetDialog::MoveUp() {
     SelectionModel->select(newIndex, QItemSelectionModel::SelectionFlag::Select);
 }
 
-void StructureArtifactsWidgetDialog::MoveDown() {
+void StructureArtifactsWidgetDialog::MoveDown() const {
     QModelIndex const index = SelectionModel->selection().indexes().at(0);
     assert(SelectionModel->selection().indexes().size() == 1);
 
@@ -114,8 +114,8 @@ void StructureArtifactsWidgetDialog::MoveDown() {
 }
 
 void StructureArtifactsWidgetDialog::UpdateButtonStatesOnSelectionChange(const QItemSelection& selected,
-                                                                         const QItemSelection&) {
-    auto modelIndexList = selected.indexes();
+                                                                         const QItemSelection&) const {
+    auto const modelIndexList = selected.indexes();
     if (modelIndexList.size() > 1)
         throw std::runtime_error("Invalid selection");
 
@@ -132,7 +132,7 @@ void StructureArtifactsWidgetDialog::UpdateButtonStatesOnSelectionChange(const Q
     MoveDownButton->setEnabled(hasSiblingsAfter);
 }
 
-void StructureArtifactsWidgetDialog::DisableButtons() {
+void StructureArtifactsWidgetDialog::DisableButtons() const {
     for (const auto& button: Buttons)
         button->setEnabled(false);
 }

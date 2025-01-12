@@ -22,15 +22,15 @@ AnalysisMainWidget::AnalysisMainWidget(PipelineGroupList const& pipelineGroups,
                                        ChartWidget* chartWidget,
                                        AnalysisSampleDataWidget* dataWidget) :
         GroupList(pipelineGroups),
-        BatchData([&pipelineGroups]() {
-            auto batchData = pipelineGroups.GetBatchData();
+        BatchData([&pipelineGroups] {
+            auto const batchData = pipelineGroups.GetBatchData();
             return batchData
                     ? std::make_unique<PipelineBatchListData>(std::move(*batchData))
                     : nullptr;
         }()),
-        ChartWidget_(new OptionalWidget<ChartWidget>("Please generate the data first", chartWidget)),
+        ChartWidget_(new OptionalWidget("Please generate the data first", chartWidget)),
         RenderWidget(new ParameterSpaceStateRenderWidget()),
-        DataWidget(new OptionalWidget<AnalysisSampleDataWidget>("Please select a sample point", dataWidget)) {
+        DataWidget(new OptionalWidget("Please select a sample point", dataWidget)) {
 
     auto* dockWidget = new QDockWidget();
     dockWidget->setFeatures(
@@ -68,7 +68,7 @@ AnalysisMainWidget::AnalysisMainWidget(PipelineGroupList const& pipelineGroups,
 AnalysisMainWidget::~AnalysisMainWidget() = default;
 
 auto AnalysisMainWidget::UpdateData() -> void {
-    auto optionalBatchData = GroupList.GetBatchData();
+    auto const optionalBatchData = GroupList.GetBatchData();
     BatchData = optionalBatchData
             ? std::make_unique<PipelineBatchListData>(std::move(*optionalBatchData))
             : nullptr;
@@ -88,15 +88,15 @@ auto AnalysisMainWidget::UpdateData() -> void {
 
 PcaMainWidget::PcaMainWidget(PipelineGroupList const& pipelineGroups) :
         AnalysisMainWidget(pipelineGroups, new PcaChartWidget(), new PcaSampleDataWidget()) {
-    auto* pcaChartWidget = findChild<PcaMainChartWidget*>();
-    auto* pcaDataWidget = findChild<PcaSampleDataWidget*>();
+    auto const* pcaChartWidget = findChild<PcaMainChartWidget*>();
+    auto const* pcaDataWidget = findChild<PcaSampleDataWidget*>();
 
     connect(pcaChartWidget, &PcaMainChartWidget::PcaDataChanged, pcaDataWidget, &PcaSampleDataWidget::UpdateData);
 }
 
 PcaMainWidget::~PcaMainWidget() = default;
 
-void PcaMainWidget::SelectPcaPoints(QString const& pointSetName, QList<QPointF> const& points) {
+void PcaMainWidget::SelectPcaPoints(QString const& pointSetName, QList<QPointF> const& points) const {
     dynamic_cast<PcaChartWidget&>(ChartWidget_->Widget()).SelectPcaPoints(pointSetName, points);
 }
 
@@ -111,9 +111,9 @@ TsneMainWidget::~TsneMainWidget() = default;
 
 
 ParameterSpaceStateRenderWidget::ParameterSpaceStateRenderWidget() :
-        RenderWidget(nullptr, { true, true, RenderWidget::WindowWidthSliderMode::ABOVE, true }),
-        DataSource(nullptr),
-        BatchListData(nullptr) {}
+        RenderWidget(nullptr, { true, true, WindowWidthSliderMode::ABOVE, true }),
+        BatchListData(nullptr),
+        DataSource(nullptr) {}
 
 auto ParameterSpaceStateRenderWidget::UpdateData(PipelineBatchListData const* batchData) -> void {
     BatchListData = batchData;
@@ -142,14 +142,14 @@ auto ParameterSpaceStateRenderWidget::UpdateSample(std::optional<SampleId> sampl
         auto* radiodensities = radiodensityArray->WritePointer(0, numberOfPoints);
         auto* mask = maskArray->WritePointer(0, numberOfPoints);
 
-        std::span<float> const radiodensitySpan { radiodensities, std::next(radiodensities, numberOfPoints) };
-        std::span<vtkTypeInt16> const maskSpan { mask, std::next(mask, numberOfPoints) };
+        std::span const radiodensitySpan { radiodensities, std::next(radiodensities, numberOfPoints) };
+        std::span const maskSpan { mask, std::next(mask, numberOfPoints) };
 
         std::transform(radiodensitySpan.begin(), radiodensitySpan.end(),
                        maskSpan.begin(),
                        radiodensitySpan.begin(),
-                       [](float const& radiodensity, vtkTypeInt16 const& mask) {
-            return mask == 0 ? -1000.0 : radiodensity;
+                       [](float const& radiodensity, vtkTypeInt16 const& maskValue) {
+            return maskValue == 0 ? -1000.0 : radiodensity;
         });
 
         UpdateImageAlgorithm(*CurrentImage);

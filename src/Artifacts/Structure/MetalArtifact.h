@@ -6,7 +6,6 @@
 
 #include <QWidget>
 
-#include <vtkTransform.h>
 #include <vtkVector.h>
 
 #include <array>
@@ -96,10 +95,10 @@ public:
     MetalArtifactWidget();
 
     [[nodiscard]] auto
-    GetData() noexcept -> Data;
+    GetData() const noexcept -> Data;
 
     auto
-    Populate(Data const& data) noexcept -> void;
+    Populate(Data const& data) const noexcept -> void;
 
 private:
     QFormLayout* Layout;

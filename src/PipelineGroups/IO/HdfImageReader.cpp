@@ -36,13 +36,13 @@ auto HdfImageReader::ReadImageBatch(BatchImages& batchImages) -> void {
     auto file = HighFive::File(Filename.string(), HighFive::File::ReadOnly);
 
 
-    auto sampleIdsAttribute = file.getAttribute("sample ids");
+    auto const sampleIdsAttribute = file.getAttribute("sample ids");
     std::vector<SampleId> sampleIds { sampleIdsAttribute.getSpace().getElementCount() };
     sampleIdsAttribute.read_raw<SampleId>(sampleIds.data(), HdfImageWriter::GetSampleIdDataType());
 
-    auto imageExtentAttribute = file.getAttribute("extent");
-    auto imageSpacingAttribute = file.getAttribute("spacing");
-    auto imageOriginAttribute = file.getAttribute("origin");
+    auto const imageExtentAttribute = file.getAttribute("extent");
+    auto const imageSpacingAttribute = file.getAttribute("spacing");
+    auto const imageOriginAttribute = file.getAttribute("origin");
 
     std::array<int, 6> imageExtent {};
     std::array<double, 3> imageSpacing {};
@@ -51,9 +51,7 @@ auto HdfImageReader::ReadImageBatch(BatchImages& batchImages) -> void {
     imageSpacingAttribute.read(imageSpacing);
     imageOriginAttribute.read(imageOrigin);
 
-    for (auto& batchImage : batchImages) {
-        auto& image = batchImage.ImageData;
-
+    for (auto& [id, image] : batchImages) {
         image.SetExtent(imageExtent.data());
         image.SetSpacing(imageSpacing.data());
         image.SetOrigin(imageOrigin.data());
@@ -67,20 +65,20 @@ auto HdfImageReader::ReadImageBatch(BatchImages& batchImages) -> void {
 
     std::vector<ReadPile> readPiles;
     ReadPile flatReadPile { batchImages.size() };
-    std::transform(batchImages.cbegin(), batchImages.cend(),
-                   flatReadPile.begin(),
-                   [&sampleIds](BatchImage const& batchImage) {
+    std::ranges::transform(std::as_const(batchImages),
+                           flatReadPile.begin(),
+                           [&sampleIds](BatchImage const& batchImage) {
 
-        SampleId const& sampleId = batchImage.Id;
+                               SampleId const& sampleId = batchImage.Id;
 
-        auto it = std::find(sampleIds.cbegin(), sampleIds.cend(), sampleId);
-        if (it == sampleIds.cend())
-            throw std::runtime_error("invalid sample id");
+                               auto const it = std::ranges::find(std::as_const(sampleIds), sampleId);
+                               if (it == sampleIds.cend())
+                                   throw std::runtime_error("invalid sample id");
 
-        uint16_t const idx = std::distance(sampleIds.cbegin(), it);
+                               uint16_t const idx = std::distance(sampleIds.cbegin(), it);
 
-        return IdxSampleIdPair { idx, sampleId };
-    });
+                               return IdxSampleIdPair { idx, sampleId };
+                           });
 
     ReadPile currentPile;
     for (int i = 0; i < flatReadPile.size(); i++) {
@@ -108,55 +106,55 @@ auto HdfImageReader::ReadImageBatch(BatchImages& batchImages) -> void {
     using PileDataVectorsVariant = std::variant<std::vector<std::vector<std::vector<float>>>,
                                                 std::vector<std::vector<std::vector<short>>>>;
     std::vector<PileDataVectorsVariant> pileDataVectors { ArrayNames.size() };
-    std::transform(ArrayNames.cbegin(), ArrayNames.cend(),
-                   pileDataVectors.begin(),
-                   [&readPiles, &file, imageNumberOfPoints](std::string const& arrayName) -> PileDataVectorsVariant {
+    std::ranges::transform(std::as_const(ArrayNames),
+                           pileDataVectors.begin(),
+                           [&readPiles, &file, imageNumberOfPoints](std::string const& arrayName) -> PileDataVectorsVariant {
 
-        auto const dataSet = file.getDataSet(arrayName);
-        auto const vtkTypeAttribute = dataSet.getAttribute("vtkType");
-        auto const vtkDataType = vtkTypeAttribute.read<int>();
+                               auto const dataSet = file.getDataSet(arrayName);
+                               auto const vtkTypeAttribute = dataSet.getAttribute("vtkType");
+                               auto const vtkDataType = vtkTypeAttribute.read<int>();
 
-        std::variant<float, short> dataTypeHolderVariant = [vtkDataType]() -> std::variant<float, short> {
-            switch (vtkDataType) {
-                case VTK_FLOAT: return static_cast<float>(0);
-                case VTK_SHORT: return static_cast<short>(0);
-                default: throw std::runtime_error("vtk data type not supported");
-            }
-        }();
+                               std::variant<float, short> dataTypeHolderVariant = [vtkDataType]() -> std::variant<float, short> {
+                                   switch (vtkDataType) {
+                                       case VTK_FLOAT: return static_cast<float>(0);
+                                       case VTK_SHORT: return static_cast<short>(0);
+                                       default: throw std::runtime_error("vtk data type not supported");
+                                   }
+                               }();
 
-        return std::visit([&readPiles, &dataSet, imageNumberOfPoints](auto dataTypeHolder) -> PileDataVectorsVariant {
-            using ValueType = decltype(dataTypeHolder);
+                               return std::visit([&readPiles, &dataSet, imageNumberOfPoints](auto dataTypeHolder) -> PileDataVectorsVariant {
+                                   using ValueType = decltype(dataTypeHolder);
 
-            std::vector<std::vector<std::vector<ValueType>>> pileDataVectors {};
-            pileDataVectors.reserve(readPiles.size());
+                                   std::vector<std::vector<std::vector<ValueType>>> pileDataVectors {};
+                                   pileDataVectors.reserve(readPiles.size());
 
-            for (auto const& pile : readPiles) {
-                std::vector<std::vector<ValueType>> dataVector {
-                    pile.size(),
-                    std::vector<ValueType> { imageNumberOfPoints,
-                                             std::allocator<std::vector<ValueType>> {} }
-                };
-                size_t const firstIdx = pile.at(0).Idx;
-                size_t const numberOfImages = pile.at(pile.size() - 1).Idx - firstIdx + 1;
-                std::vector<size_t> const offset { firstIdx, 0 };
-                std::vector<size_t> const counts { numberOfImages, imageNumberOfPoints };
+                                   for (auto const& pile : readPiles) {
+                                       std::vector<std::vector<ValueType>> dataVector {
+                                           pile.size(),
+                                           std::vector<ValueType> { imageNumberOfPoints,
+                                               std::allocator<std::vector<ValueType>> {} }
+                                       };
+                                       size_t const firstIdx = pile.at(0).Idx;
+                                       size_t const numberOfImages = pile.at(pile.size() - 1).Idx - firstIdx + 1;
+                                       std::vector<size_t> const offset { firstIdx, 0 };
+                                       std::vector const counts { numberOfImages, imageNumberOfPoints };
 
-                auto selection = dataSet.select(offset, counts);
-                selection.read(dataVector);
+                                       auto selection = dataSet.select(offset, counts);
+                                       selection.read(dataVector);
 
-                pileDataVectors.emplace_back(std::move(dataVector));
-            }
+                                       pileDataVectors.emplace_back(std::move(dataVector));
+                                   }
 
-            return pileDataVectors;
-        }, dataTypeHolderVariant);
-    });
+                                   return pileDataVectors;
+                               }, dataTypeHolderVariant);
+                           });
 
     for (int i = 0; i < ArrayNames.size(); i++) {
         auto const& arrayName = ArrayNames.at(i);
 
         std::visit([&batchImages, &arrayName, imageNumberOfPoints](auto& pileDataVector) {
             using DataVectorType = std::remove_reference_t<std::remove_cv_t<decltype(pileDataVector)>>;
-            using ValueType = DataVectorType::value_type::value_type::value_type;
+            using ValueType = typename DataVectorType::value_type::value_type::value_type;
             using VtkArrayType = std::conditional_t<std::is_same_v<ValueType, float>,
                     vtkFloatArray,
                     std::conditional_t<std::is_same_v<ValueType, short>,
@@ -164,7 +162,7 @@ auto HdfImageReader::ReadImageBatch(BatchImages& batchImages) -> void {
                             nullptr_t>>;
 
             auto imageVectorsViewIt = std::ranges::views::join(pileDataVector).begin();
-            for (int j = 0; j < batchImages.size(); j++, imageVectorsViewIt++) {
+            for (int j = 0; j < batchImages.size(); j++, ++imageVectorsViewIt) {
                 std::vector<ValueType> const& imageVector = *imageVectorsViewIt;
                 auto& image = batchImages.at(j).ImageData;
 
@@ -187,12 +185,12 @@ auto HdfImageReader::ReadImageBatch(BatchImages& batchImages) -> void {
         }, pileDataVectors.at(i));
     }
 
-    for (auto& batchImage : batchImages)
-        batchImage.ImageData.GetPointData()->SetActiveScalars(ArrayNames.at(0).c_str());
+    for (auto& [id, image] : batchImages)
+        image.GetPointData()->SetActiveScalars(ArrayNames.at(0).c_str());
 }
 
 auto HdfImageReader::Validate(std::filesystem::path const& filePath,
-                              HdfImageReader::ValidationParameters const& params) -> void {
+                              ValidationParameters const& params) -> void {
     if (params.ArrayNames.empty()
 //        || params.ImageSize == 0
         || params.NumberOfImages == 0)
@@ -201,21 +199,18 @@ auto HdfImageReader::Validate(std::filesystem::path const& filePath,
     if (filePath.empty() || !is_regular_file(filePath))
         throw std::runtime_error("invalid filename");
 
-    auto file = HighFive::File(filePath.string(), HighFive::File::ReadOnly);
+    auto const file = HighFive::File(filePath.string(), HighFive::File::ReadOnly);
 
-    auto numberOfImagesAttribute = file.getAttribute("number of images");
-    auto const numberOfImages = numberOfImagesAttribute.read<uint16_t>();
-    if (numberOfImages != params.NumberOfImages)
+    auto const numberOfImagesAttribute = file.getAttribute("number of images");
+    if (auto const numberOfImages = numberOfImagesAttribute.read<uint16_t>(); numberOfImages != params.NumberOfImages)
         throw std::runtime_error("given file contains invalid number of images");
 
-    auto imageExtentAttribute = file.getAttribute("extent");
+    auto const imageExtentAttribute = file.getAttribute("extent");
     std::array<int, 6> imageExtent {};
     imageExtentAttribute.read(imageExtent);
     std::array<uint64_t, 3> imageDimensions {};
     for (int i = 0; i < imageDimensions.size(); i++)
         imageDimensions.at(i) = imageExtent.at(2 * i + 1) - imageExtent.at(2 * i) + 1;
-    uint64_t const imageNumberOfPoints = std::reduce(imageDimensions.cbegin(), imageDimensions.cend(),
-                                                     1, std::multiplies{});
 //    if (imageNumberOfPoints != params.ImageSize)
 //        throw std::runtime_error("given file contains images with invalid size");
 
@@ -225,9 +220,7 @@ auto HdfImageReader::Validate(std::filesystem::path const& filePath,
     bool allDataSetsFound = true;
     for (auto const& name : objectNames) {
         try {
-            file.getDataSet(name);
-
-            if (std::find(params.ArrayNames.begin(), params.ArrayNames.end(), name) == params.ArrayNames.cend())
+            if (std::ranges::find(params.ArrayNames, name) == params.ArrayNames.cend())
                 allDataSetsFound = false;
 
             numberOfDataSets++;

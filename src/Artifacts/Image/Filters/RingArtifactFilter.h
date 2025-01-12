@@ -29,7 +29,7 @@ public:
     }
 
     [[nodiscard]] auto
-    GetCenterPoint() -> std::array<float, 3> { return Center; }
+    GetCenterPoint() const -> std::array<float, 3> { return Center; }
 
 protected:
     RingArtifactFilter() = default;

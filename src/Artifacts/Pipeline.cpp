@@ -21,7 +21,7 @@ Pipeline::Pipeline(CtStructureTree& structureTree, std::string name) :
 
     for (uidx_t i = 0; i < structureTree.StructureCount(); ++i)
         TreeStructureArtifacts->AddStructureArtifactList(i);
-};
+}
 
 Pipeline::~Pipeline() = default;
 
@@ -88,7 +88,7 @@ auto Pipeline::operator==(const Pipeline& other) const noexcept -> bool {
 
 auto
 Pipeline::AddBeforeArtifactRemovedCallback(void* receiver,
-                                           Pipeline::BeforeArtifactRemovedCallback&& callback) const noexcept -> void {
+                                           BeforeArtifactRemovedCallback&& callback) const noexcept -> void {
     CallbackMap.emplace(receiver, std::move(callback));
 }
 
@@ -97,7 +97,7 @@ auto Pipeline::RemoveBeforeArtifactRemovedCallback(void* receiver) const noexcep
 }
 
 auto Pipeline::BeforeArtifactRemoved(ArtifactVariantPointer const& artifactVariantPointer) const -> void {
-    for (auto const& [receiver, callback] : CallbackMap)
+    for (auto const& callback: CallbackMap | std::views::values)
         callback(artifactVariantPointer);
 }
 

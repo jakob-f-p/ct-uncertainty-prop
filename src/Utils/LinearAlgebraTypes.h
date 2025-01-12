@@ -1,7 +1,6 @@
 #pragma once
 
 #include <array>
-#include <limits>
 
 
 using DoubleVector = std::array<double, 3>;
@@ -11,9 +10,12 @@ using DoublePoint = DoubleVector;
 using FloatPoint = FloatVector;
 
 [[nodiscard]] auto static
-DoubleToFloatPoint(DoublePoint point) -> FloatPoint { return { static_cast<float>(point[0]),
-                                                               static_cast<float>(point[1]),
-                                                               static_cast<float>(point[2]) }; }
+DoubleToFloatPoint(DoublePoint const& point) -> FloatPoint {
+    return {
+        static_cast<float>(point[0]),
+        static_cast<float>(point[1]),
+        static_cast<float>(point[2]) };
+        }
 
 [[nodiscard]] auto static
 VectorLength(DoubleVector const& v) -> double {

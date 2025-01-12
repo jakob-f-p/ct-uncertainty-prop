@@ -6,7 +6,6 @@
 #include "../../Artifacts/Pipeline.h"
 #include "../../Artifacts/PipelineList.h"
 
-#include <QIcon>
 #include <QPushButton>
 #include <QLabel>
 #include <QStackedLayout>
@@ -46,7 +45,7 @@ PipelinesWidget::PipelinesWidget(PipelineList& pipelines, QWidget* parent) :
     vLayout->addWidget(StructureArtifactModelingWidget);
 
     Pipelines.AddTreeEventCallback(
-            [widget = StructureArtifactModelingWidget]() { widget->ResetModel(); });
+            [widget = StructureArtifactModelingWidget] { widget->ResetModel(); });
 
     vLayout->addWidget(ImageArtifactModelingWidget);
 
@@ -122,7 +121,7 @@ void PipelinesWidget::UpdatePipelineView() {
     Q_EMIT PipelineViewUpdated(GetCurrentPipeline());
 }
 
-void PipelinesWidget::InitializeViews() {
+void PipelinesWidget::InitializeViews() const {
     if (Pipelines.IsEmpty())
         Pipelines.AddPipeline();
 
@@ -132,6 +131,6 @@ void PipelinesWidget::InitializeViews() {
     }
 }
 
-auto PipelinesWidget::GetCurrentPipeline() -> Pipeline& {
+auto PipelinesWidget::GetCurrentPipeline() const -> Pipeline& {
     return Pipelines.Get(CurrentPipelineIndex);
 }

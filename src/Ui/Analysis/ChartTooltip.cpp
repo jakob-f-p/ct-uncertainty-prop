@@ -2,7 +2,6 @@
 
 #include <QChart>
 #include <QFontDatabase>
-#include <QFontMetrics>
 #include <QGraphicsItem>
 #include <QGraphicsSceneMouseEvent>
 #include <QPainter>
@@ -19,8 +18,8 @@ ChartTooltip::ChartTooltip(QChart& parentChart,
         IsChartPositionAnchor(isChartPositionAnchor),
         Text(std::move(text)),
         Font(QFontDatabase::systemFont(QFontDatabase::FixedFont)),
-        TextPen(foregroundBackgroundColors.Pen),
-        BackgroundBrush(foregroundBackgroundColors.Brush) {
+        BackgroundBrush(foregroundBackgroundColors.Brush),
+        TextPen(foregroundBackgroundColors.Pen) {
 
     QFontMetrics const metrics { Font };
     TextRectangle = metrics.boundingRect(QRect(0, 0, 150, 150), Qt::AlignLeft, Text);
@@ -65,8 +64,8 @@ auto ChartTooltip::GetTooltipPath() const -> QPainterPath {
     QPointF const chartPositionAnchor = IsChartPositionAnchor
                                         ? Anchor
                                         : Chart->mapToPosition(Anchor);
-    QPointF const anchor = mapFromParent(chartPositionAnchor);
-    if (!Rectangle.contains(anchor) && !chartPositionAnchor.isNull()) {
+    if (QPointF const anchor = mapFromParent(chartPositionAnchor);
+        !Rectangle.contains(anchor) && !chartPositionAnchor.isNull()) {
         // establish the position of the anchor point in relation to rectangle
         bool const above = anchor.y() <= Rectangle.top();
         bool const aboveCenter = anchor.y() > Rectangle.top() && anchor.y() <= Rectangle.center().y();
@@ -113,8 +112,8 @@ auto ChartTooltip::AdjustPosition() noexcept -> void {
                                         : Chart->mapToPosition(Anchor);
     setPos(chartPositionAnchor + QPoint(10, -50));
 
-    auto rect = mapRectToParent(boundingRect());
-    auto parentRect = parentItem()->boundingRect();
+    auto const rect = mapRectToParent(boundingRect());
+    auto const parentRect = parentItem()->boundingRect();
 
     if (!parentRect.contains(rect)) {
         if (parentRect.top() > rect.top())
@@ -130,7 +129,6 @@ auto ChartTooltip::AdjustPosition() noexcept -> void {
             moveBy(parentRect.right() - rect.right() - 1, 0);
     }
 
-    auto newRect = mapRectToParent(boundingRect());
-    if (!parentRect.contains(newRect))
+    if (auto const newRect = mapRectToParent(boundingRect()); !parentRect.contains(newRect))
         qWarning("Tooltip too large for chart");
 }

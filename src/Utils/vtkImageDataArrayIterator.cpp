@@ -22,8 +22,8 @@ void vtkImageDataArrayIterator<DType>::Initialize(vtkImageData* id, ExtentType e
     if (!array)
         throw std::runtime_error(std::format("No array named '{}' exists", arrayName));
 
-    std::array<int, 3> startCoordinates = { ext[0], ext[2], ext[4] };
-    std::array<int, 3> endCoordinates =   { ext[1], ext[3], ext[5] };
+    std::array startCoordinates = { ext[0], ext[2], ext[4] };
+    std::array endCoordinates =   { ext[1], ext[3], ext[5] };
     this->Pointer = static_cast<DType*>(id->GetArrayPointer(array, startCoordinates.data()));
 
     id->GetIncrements(this->Increments);

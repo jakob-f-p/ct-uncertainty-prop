@@ -20,15 +20,15 @@ public:
     explicit PipelineGroupsWidget(PipelineGroupList& pipelineGroups);
 
 public Q_SLOTS:
-    void UpdatePipelineList() noexcept;
+    void UpdatePipelineList() const noexcept;
 
 protected:
     void hideEvent(QHideEvent* event) override;
 
 private Q_SLOTS:
     void OnPipelineGroupChanged(PipelineGroup* pipelineGroup);
-    void OnParameterSpanChanged(PipelineGroup* pipelineGroup, PipelineParameterSpan* parameterSpan);
-    void OnRequestCreateParameterSpan(PipelineGroup* pipelineGroup);
+    void OnParameterSpanChanged(PipelineGroup const* pipelineGroup, PipelineParameterSpan const* parameterSpan) const;
+    void OnRequestCreateParameterSpan(PipelineGroup const* pipelineGroup);
 
 private:
     PipelineGroupListWidget* GroupListWidget;

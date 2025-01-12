@@ -8,7 +8,7 @@
 
 #include <QPainter>
 
-ImageArtifactsView::ImageArtifactsView(Pipeline* pipeline, QWidget* parent) : QTreeView(parent) {
+ImageArtifactsView::ImageArtifactsView(Pipeline const* pipeline, QWidget* parent) : QTreeView(parent) {
     setIndentation(indentation() + 2);
 
     setHeaderHidden(true);
@@ -39,7 +39,7 @@ void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, cons
 
     QPoint const oldBrushOrigin = painter->brushOrigin();
 
-    if (verticalScrollMode() == QAbstractItemView::ScrollPerPixel)
+    if (verticalScrollMode() == ScrollPerPixel)
         painter->setBrushOrigin(QPoint(0, verticalOffset()));
     if (selectionModel()->isSelected(index))
         extraFlags |= QStyle::State_Selected;
@@ -90,12 +90,12 @@ void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, cons
         opt.state = extraFlags;
 
         bool moreSiblings = false;
-        if (!hasHiddenIndices()) {
-            moreSiblings = (model()->rowCount(ancestor) - 1 > current.row());
-        } else {
+        if (!hasHiddenIndices())
+            moreSiblings = model()->rowCount(ancestor) - 1 > current.row();
+        else {
             QModelIndex successorIndex = index.model()->sibling(index.row() + 1, 0, index);
             while (successorIndex.isValid()) {
-                if (getLevel(successorIndex) == uint(currentLevel)) {
+                if (getLevel(successorIndex) == static_cast<uint>(currentLevel)) {
                     moreSiblings = true;
                     break;
                 }
@@ -113,18 +113,18 @@ void ImageArtifactsView::drawBranches(QPainter* painter, const QRect& rect, cons
 }
 
 void ImageArtifactsView::iterate(const QModelIndex& index, const QAbstractItemModel* model,
-                                 const std::function<void(const QModelIndex&, int)>& f, int depth) const {
+                                 const std::function<void(const QModelIndex&, int)>& f, int const depth) {
     if (index.isValid())
         f(index, depth);
 
-    auto numberOfChildren = model->rowCount(index);
+    auto const numberOfChildren = model->rowCount(index);
     for (int i = 0; i < numberOfChildren; ++i)
         iterate(model->index(i, 0, index), model, f, depth + 1);
 }
 
 bool ImageArtifactsView::hasHiddenIndices() const {
     int hiddenItems = 0;
-    iterate(rootIndex(), model(), [&](const QModelIndex& index, int depth) {
+    iterate(rootIndex(), model(), [&](const QModelIndex& index, int) {
         if (isIndexHidden(index))
             hiddenItems++;
     });
@@ -144,8 +144,8 @@ ImageArtifactsReadOnlyView::ImageArtifactsReadOnlyView(Pipeline const& pipeline,
         ImageArtifactsView(const_cast<Pipeline*>(&pipeline), parent) {}
 
 auto ImageArtifactsReadOnlyView::Select(ImageArtifact const& imageArtifact) -> void {
-    auto imageArtifactPointer = const_cast<ImageArtifact*>(&imageArtifact);
-    auto match = Search(*model(), ImageArtifactsModel::Roles::POINTER,
+    auto const imageArtifactPointer = const_cast<ImageArtifact*>(&imageArtifact);
+    auto const match = Search(*model(), ImageArtifactsModel::Roles::POINTER,
                         QVariant::fromValue(imageArtifactPointer), rootIndex());
 
     if (match == QModelIndex{})

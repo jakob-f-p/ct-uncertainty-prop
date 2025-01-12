@@ -5,6 +5,8 @@
 #include "../Utils/Enum.h"
 #include "../Utils/IndexTypes.h"
 
+#include <QMetaEnum>
+
 class QComboBox;
 
 class CombinedStructure;
@@ -49,10 +51,10 @@ namespace CombinedStructureDetails {
         CombinedStructureWidgetImpl();
 
         auto
-        GetData() noexcept -> Data;
+        GetData() const noexcept -> Data;
 
         auto
-        Populate(const Data& data) noexcept -> void;
+        Populate(const Data& data) const noexcept -> void;
 
     private:
         QFormLayout* Layout;

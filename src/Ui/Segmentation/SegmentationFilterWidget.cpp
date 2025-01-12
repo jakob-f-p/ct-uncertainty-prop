@@ -24,7 +24,7 @@ SegmentationFilterWidget::SegmentationFilterWidget(ThresholdFilter& thresholdFil
     FilterWidget->Populate(dynamic_cast<ThresholdFilter&>(*SegmentationFilter));
     FilterWidget->SetFilterData(dynamic_cast<ThresholdFilter&>(*SegmentationFilter));
 
-    connect(FilterWidget, &ThresholdFilterWidget::DataChanged, this, [this]() {
+    connect(FilterWidget, &ThresholdFilterWidget::DataChanged, this, [this] {
         FilterWidget->SetFilterData(dynamic_cast<ThresholdFilter&>(*SegmentationFilter));
     });
 }

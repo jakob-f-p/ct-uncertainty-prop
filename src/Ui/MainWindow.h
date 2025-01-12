@@ -2,8 +2,6 @@
 
 #include <QMainWindow>
 
-#include <vtkNew.h>
-
 class ArtifactsWidget;
 class CtDataSource;
 class CtStructureTree;
@@ -25,7 +23,7 @@ public:
                         Mode mode = Mode::NORMAL);
 
     auto
-    UpdateDataSource(CtDataSource& dataSource) noexcept -> void;
+    UpdateDataSource(CtDataSource& dataSource) const noexcept -> void;
 
 protected:
     auto

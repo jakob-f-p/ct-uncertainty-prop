@@ -15,7 +15,7 @@
 PipelineGroupWidget::PipelineGroupWidget(PipelineGroup& pipelineGroup, QWidget* parent) :
         QWidget(parent),
         Group(pipelineGroup),
-        NumberOfPipelinesSpinBox([&pipelineGroup]() {
+        NumberOfPipelinesSpinBox([&pipelineGroup] {
             auto* spinBox = new QSpinBox();
             spinBox->setRange(0, 10000);
             spinBox->setValue(pipelineGroup.GetParameterSpace().GetNumberOfPipelines());
@@ -55,7 +55,7 @@ PipelineGroupWidget::PipelineGroupWidget(PipelineGroup& pipelineGroup, QWidget* 
 
     connect(SelectionModel, &QItemSelectionModel::selectionChanged, this, &PipelineGroupWidget::OnSelectionChanged);
 
-    connect(this, &PipelineGroupWidget::ParameterSpanChanged, this, [this]() { UpdateButtonStatus(); });
+    connect(this, &PipelineGroupWidget::ParameterSpanChanged, this, [this] { UpdateButtonStatus(); });
 }
 
 void PipelineGroupWidget::AddParameterSpan(PipelineParameterSpan&& parameterSpan) {
@@ -74,7 +74,7 @@ void PipelineGroupWidget::UpdateNumberOfPipelines() {
     Q_EMIT NumberOfPipelinesUpdated();
 }
 
-auto PipelineGroupWidget::UpdateButtonStatus() -> void {
+auto PipelineGroupWidget::UpdateButtonStatus() const -> void {
     QModelIndexList const selectedIndices = SelectionModel->selection().indexes();
     if (selectedIndices.size() > 1)
         throw std::runtime_error("Invalid selection (larger than one index)");

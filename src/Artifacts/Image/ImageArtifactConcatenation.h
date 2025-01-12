@@ -1,7 +1,6 @@
 #pragma once
 
 #include <functional>
-#include <map>
 #include <memory>
 
 #include <vtkNew.h>
@@ -34,7 +33,7 @@ public:
     MoveChildImageArtifact(ImageArtifact const& imageArtifact, int newIdx);
 
     auto
-    UpdateArtifactFilter() -> void;
+    UpdateArtifactFilter() const -> void;
 
     [[nodiscard]] auto
     GetFilterMTime() const noexcept -> vtkMTimeType;
@@ -54,16 +53,16 @@ private:
     friend class ImageArtifactsReadOnlyModel1;
 
     [[nodiscard]] auto
-    GetStart() noexcept -> ImageArtifact&;
+    GetStart() const noexcept -> ImageArtifact&;
 
     [[nodiscard]] auto
-    Get(uint16_t idx) -> ImageArtifact&;
+    Get(uint16_t idx) const -> ImageArtifact&;
 
     [[nodiscard]] auto
     IndexOf(ImageArtifact const& imageArtifact) const -> uint16_t;
 
     auto
-    EmitEvent() -> void;
+    EmitEvent() const -> void;
 
     BeforeRemoveArtifactCallback BeforeRemoveCallback;
     std::vector<ConcatenationEventCallback> Callbacks;

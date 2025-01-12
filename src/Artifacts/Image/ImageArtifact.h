@@ -4,15 +4,15 @@
 
 #include <QWidget>
 
-class ImageArtifactData;
+struct ImageArtifactData;
 
 class QFormLayout;
 
 class ImageArtifact {
 public:
-    explicit ImageArtifact(ImageArtifactData const& data);
-    ImageArtifact(BasicImageArtifact&& basicImageArtifact);
-    ImageArtifact(CompositeImageArtifact&& compositeImageArtifact);
+    explicit ImageArtifact(ImageArtifactData const& data) noexcept;
+    explicit ImageArtifact(BasicImageArtifact&& basicImageArtifact);
+    explicit ImageArtifact(CompositeImageArtifact&& compositeImageArtifact);
     ImageArtifact(ImageArtifact const& other) = default;
 
     [[nodiscard]] auto
@@ -95,14 +95,14 @@ public:
     Populate(ImageArtifactData const& data) noexcept -> void;
 
     [[nodiscard]] auto static
-    GetWidgetData(QWidget* widget) -> ImageArtifactData { return FindWidget(widget).GetData(); }
+    GetWidgetData(QWidget const* widget) -> ImageArtifactData { return FindWidget(widget).GetData(); }
 
     auto static
-    SetWidgetData(QWidget* widget, ImageArtifactData const& data) -> void { FindWidget(widget).Populate(data); }
+    SetWidgetData(QWidget const* widget, ImageArtifactData const& data) -> void { FindWidget(widget).Populate(data); }
 
 private:
     [[nodiscard]] auto static
-    FindWidget(QWidget* widget) -> ImageArtifactWidget&;
+    FindWidget(QWidget const* widget) -> ImageArtifactWidget&;
 
     auto
     UpdateTypeWidget() -> void;

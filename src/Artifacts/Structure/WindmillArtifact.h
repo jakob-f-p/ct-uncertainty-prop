@@ -59,7 +59,7 @@ public:
                        bool pointOccupiedByStructure,
                        CtStructureTree const& structureTree,
                        CtStructureVariant const& structure,
-                       std::array<double, 3> spacing) const noexcept -> float;
+                       std::array<double, 3> const& spacing) const noexcept -> float;
 
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties;
@@ -106,10 +106,10 @@ public:
     WindmillArtifactWidget();
 
     [[nodiscard]] auto
-    GetData() noexcept -> Data;
+    GetData() const noexcept -> Data;
 
     auto
-    Populate(Data const& data) noexcept -> void;
+    Populate(Data const& data) const noexcept -> void;
 
 private:
     QFormLayout* Layout;

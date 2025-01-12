@@ -25,21 +25,21 @@ auto MotionArtifactData::PopulateArtifact(MotionArtifact& artifact) const noexce
 
 MotionArtifactWidget::MotionArtifactWidget() :
         Layout(new QFormLayout(this)),
-        RadiodensitySpinBox([]() {
+        RadiodensitySpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(0.01, 20.0);
             spinBox->setValue(1.0);
             spinBox->setSingleStep(0.1);
             return spinBox;
         }()),
-        KernelRadiusSpinBox([]() {
+        KernelRadiusSpinBox([] {
             auto* spinBox = new QSpinBox();
             spinBox->setRange(0, 20);
             spinBox->setValue(4);
             spinBox->setSingleStep(1);
             return spinBox;
         }()),
-        KernelSdSpinBox([]() {
+        KernelSdSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(0.01, 20.0);
             spinBox->setValue(1.0);
@@ -62,7 +62,7 @@ MotionArtifactWidget::MotionArtifactWidget() :
     Layout->addRow(transformGroup);
 }
 
-auto MotionArtifactWidget::GetData() noexcept -> MotionArtifactWidget::Data {
+auto MotionArtifactWidget::GetData() const noexcept -> Data {
     Data data {};
 
     data.RadiodensityFactor = static_cast<float>(RadiodensitySpinBox->value());
@@ -73,7 +73,7 @@ auto MotionArtifactWidget::GetData() noexcept -> MotionArtifactWidget::Data {
     return data;
 }
 
-auto MotionArtifactWidget::Populate(MotionArtifactWidget::Data const& data) noexcept -> void {
+auto MotionArtifactWidget::Populate(Data const& data) const noexcept -> void {
     RadiodensitySpinBox->setValue(data.RadiodensityFactor);
     KernelRadiusSpinBox->setValue(data.KernelRadius);
     KernelSdSpinBox->setValue(data.KernelSd);
@@ -116,10 +116,10 @@ auto MotionArtifact::SetTransform(SimpleTransformData const& data) noexcept -> v
 
 auto MotionArtifact::EvaluateAtPosition(DoublePoint const& point,
                                         float /*maxRadiodensity*/,
-                                        bool pointOccupiedByStructure,
+                                        bool const pointOccupiedByStructure,
                                         CtStructureTree const& structureTree,
                                         CtStructureVariant const& structure,
-                                        std::array<double, 3> spacing) const noexcept -> float {
+                                        std::array<double, 3> const& spacing) const noexcept -> float {
     if (pointOccupiedByStructure)
         return 0.0F;
 
@@ -135,14 +135,15 @@ auto MotionArtifact::EvaluateAtPosition(DoublePoint const& point,
         return result;
 
     std::vector<float> convolvedValues { Kernel2D.size(), std::allocator<float>{} };
-    size_t const kernel1DSize = KernelRadius * 2 + 1;
     {
+        size_t const kernel1DSize = KernelRadius * 2 + 1;
+
         DoublePoint pointOther { transformedPoint[0],
-                                 transformedPoint[1] - (KernelRadius * spacing[1]),
+                                 transformedPoint[1] - KernelRadius * spacing[1],
                                  transformedPoint[2] };
 
         for (size_t iOther = 0; iOther < kernel1DSize; ++iOther) {
-            DoublePoint pointBlur { pointOther[0] - (KernelRadius * spacing[0]),
+            DoublePoint pointBlur { pointOther[0] - KernelRadius * spacing[0],
                                     pointOther[1],
                                     pointOther[2] };
 
@@ -182,7 +183,7 @@ auto MotionArtifact::GetProperties() noexcept -> PipelineParameterProperties {
 auto MotionArtifact::UpdateKernel() noexcept -> void {
     static constexpr auto gaussianFunction = [](double sd, double x, double y) {
         double const twoVariance = 2.0 * sd * sd;
-        return (1.0 / (std::sqrt(std::numbers::pi * twoVariance)) * std::exp(-(x * x + y * y / twoVariance)));
+        return 1.0 / std::sqrt(std::numbers::pi * twoVariance) * std::exp(-(x * x + y * y / twoVariance));
     };
 
     size_t const kernel1DSize = KernelRadius * 2 + 1;
@@ -193,9 +194,7 @@ auto MotionArtifact::UpdateKernel() noexcept -> void {
     for (int i = 0; i < kernel1DSize; ++i)
         for (int j = 0; j < kernel1DSize; ++j)
             Kernel2D[i * kernel1DSize + j] = static_cast<float>(
-                    gaussianFunction(KernelSd,
-                                     static_cast<double>(i - KernelRadius),
-                                     static_cast<double>(j - KernelRadius)));
+                    gaussianFunction(KernelSd, i - KernelRadius, j - KernelRadius));
 
     float const kernelSum = std::reduce(Kernel2D.begin(), Kernel2D.end());
 

@@ -12,7 +12,6 @@
 #include "Utils/PythonInterpreter.h"
 
 #include <QApplication>
-#include <QSurfaceFormat>
 
 #include <QVTKOpenGLNativeWidget.h>
 
@@ -26,13 +25,13 @@ App::App(int argc, char* argv[]) :
         Argv(argv),
         QApp(std::make_unique<QApplication>(Argc, Argv)),
         CtDataTree(new CtStructureTree()),
-        DataSource([this](){
+        DataSource([this] {
             vtkNew<ImplicitCtDataSource> dataSource;
             dataSource->SetDataTree(CtDataTree.get());
             return dataSource;
         }()),
         Pipelines(new PipelineList(*CtDataTree)),
-        PipelineGroups([&pipelines = *Pipelines]() {
+        PipelineGroups([&pipelines = *Pipelines] {
             auto* const pipelineGroupList = new PipelineGroupList(pipelines);
 
             auto const& removeDependentPipelineGroups = [pipelineGroupList](PipelineEvent const& event) {
@@ -42,8 +41,8 @@ App::App(int argc, char* argv[]) :
                 if (event.PipelinePointer == nullptr)
                     throw std::runtime_error("pipeline pointer may not be nullptr");
 
-                auto pipelineGroups = pipelineGroupList->FindPipelineGroupsByBasePipeline(*event.PipelinePointer);
-                for (auto const* group : pipelineGroups)
+                for (auto const pipelineGroups = pipelineGroupList->FindPipelineGroupsByBasePipeline(*event.PipelinePointer);
+                     auto const* group : pipelineGroups)
                     pipelineGroupList->RemovePipelineGroup(*group);
             };
             pipelines.AddPipelineEventCallback(removeDependentPipelineGroups);
@@ -62,7 +61,7 @@ App::App(int argc, char* argv[]) :
 
 App::~App() {
     Self = nullptr;
-};
+}
 
 App* App::Self = nullptr;
 
@@ -87,7 +86,7 @@ auto App::Run() -> int {
 
     spdlog::debug("Creating Ui...");
 
-    auto const mode = MainWindow::Mode::PRESENTATION;
+    constexpr auto mode = MainWindow::Mode::PRESENTATION;
     MainWindow_ = std::make_unique<MainWindow>(*CtDataTree, *ThresholdFilterAlgorithm,
                                                *Pipelines, *PipelineGroups, mode);
 
@@ -125,11 +124,11 @@ auto App::SetCtDataSource(CtDataSource& ctDataSource) -> void {
     MainWindow_->UpdateDataSource(ctDataSource);
 }
 
-auto App::GetCtDataSourceType() const -> App::CtDataSourceType {
-    if (auto* implicitSource = dynamic_cast<ImplicitCtDataSource*>(DataSource.Get()))
+auto App::GetCtDataSourceType() const -> CtDataSourceType {
+    if (dynamic_cast<ImplicitCtDataSource*>(DataSource.Get()))
         return CtDataSourceType::IMPLICIT;
 
-    if (auto* importedSource = dynamic_cast<NrrdCtDataSource*>(DataSource.Get()))
+    if (dynamic_cast<NrrdCtDataSource*>(DataSource.Get()))
         return CtDataSourceType::IMPORTED;
 
     throw std::runtime_error("Invalid data source type");
@@ -142,9 +141,9 @@ auto App::GetImageDimensions() const -> std::array<uint32_t, 3> {
     auto const intDims = DataSource->GetVolumeNumberOfVoxels();
 
     std::array<uint32_t, 3> uintDims {};
-    std::transform(intDims.cbegin(), intDims.cend(),
-                   uintDims.begin(),
-                   [](int n) { return static_cast<uint32_t>(n); });
+    std::ranges::transform(intDims,
+                           uintDims.begin(),
+                           [](int const n) { return static_cast<uint32_t>(n); });
 
     return uintDims;
 }
@@ -161,13 +160,13 @@ auto App::GetPipelineGroups() const -> PipelineGroupList& {
     return *PipelineGroups;
 }
 
-auto App::GetPythonInterpreter() -> PythonInterpreter& {
+auto App::GetPythonInterpreter() const -> PythonInterpreter& {
     return *PyInterpreter;
 }
 
 void App::InitializeWithTestData() {
-    static constexpr DataInitializer::Config config = DataInitializer::Config::SCENARIO_IMPORTED;
+    static constexpr auto config = DataInitializer::Config::SCENARIO_IMPORTED;
 
-    DataInitializer initializer { *this };
+    DataInitializer const initializer { *this };
     initializer(config);
 }

@@ -7,7 +7,7 @@
 
 PipelineGroupListView::PipelineGroupListView(PipelineGroupList& pipelineGroups) :
         GroupListModel(new PipelineGroupListModel(pipelineGroups, this)) {
-    setModel(GroupListModel);
+    QAbstractItemView::setModel(GroupListModel);
 }
 
 auto PipelineGroupListView::model() const noexcept -> PipelineGroupListModel* {
@@ -77,7 +77,7 @@ auto PipelineGroupListModel::RemovePipelineGroup(QModelIndex const& index) -> vo
     if (!index.isValid())
         throw std::runtime_error("Cannot remove image artifact. Given index is not valid");
 
-    auto* pipelineGroup = index.data(Qt::UserRole).value<PipelineGroup*>();
+    auto const* pipelineGroup = index.data(Qt::UserRole).value<PipelineGroup*>();
     if (!pipelineGroup)
         throw std::runtime_error("Pipeline group must not be null");
 

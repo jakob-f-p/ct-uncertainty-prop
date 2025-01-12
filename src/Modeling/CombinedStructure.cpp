@@ -22,13 +22,13 @@ CombinedStructureDetails::CombinedStructureWidgetImpl::CombinedStructureWidgetIm
     Layout->setFieldGrowthPolicy(QFormLayout::FieldGrowthPolicy::FieldsStayAtSizeHint);
     Layout->setHorizontalSpacing(15);
 
-    for (const auto &operatorAndName : GetOperatorTypeValues())
-        OperatorComboBox->addItem(operatorAndName.Name, QVariant::fromValue(operatorAndName.EnumValue));
+    for (auto const & [name, enumValue] : GetOperatorTypeValues())
+        OperatorComboBox->addItem(name, QVariant::fromValue(enumValue));
 
     Layout->addRow("Operator Type", OperatorComboBox);
 }
 
-auto CombinedStructureDetails::CombinedStructureWidgetImpl::GetData() noexcept -> Data {
+auto CombinedStructureDetails::CombinedStructureWidgetImpl::GetData() const noexcept -> Data {
     Data data {};
 
     data.Operator = OperatorComboBox->currentData().value<OperatorType>();
@@ -36,8 +36,8 @@ auto CombinedStructureDetails::CombinedStructureWidgetImpl::GetData() noexcept -
     return data;
 }
 
-auto CombinedStructureDetails::CombinedStructureWidgetImpl::Populate(const Data& data) noexcept -> void {
-    if (int idx = OperatorComboBox->findData(QVariant::fromValue(data.Operator));
+auto CombinedStructureDetails::CombinedStructureWidgetImpl::Populate(const Data& data) const noexcept -> void {
+    if (int const idx = OperatorComboBox->findData(QVariant::fromValue(data.Operator));
             idx != -1)
         OperatorComboBox->setCurrentIndex(idx);
 }
@@ -62,8 +62,8 @@ auto CombinedStructure::AddStructureIndex(uidx_t idx) -> void {
     ChildStructureIndices.push_back(idx);
 }
 
-auto CombinedStructure::RemoveStructureIndex(uidx_t idx) -> void {
-    auto removeIt = std::find(ChildStructureIndices.begin(), ChildStructureIndices.end(), idx);
+auto CombinedStructure::RemoveStructureIndex(uidx_t const idx) -> void {
+    auto const removeIt = std::ranges::find(ChildStructureIndices, idx);
     if (removeIt == ChildStructureIndices.end())
         throw std::runtime_error("Given index could not be removed because it was not present");
 
@@ -89,8 +89,8 @@ auto CombinedStructure::StructureIdxAt(uidx_t positionIdx) const -> uidx_t {
     return ChildStructureIndices.at(positionIdx);
 }
 
-auto CombinedStructure::PositionIndex(uidx_t childIdx) const -> int {
-    auto searchIt = std::find(ChildStructureIndices.begin(), ChildStructureIndices.end(), childIdx);
+auto CombinedStructure::PositionIndex(uidx_t const childIdx) const -> int {
+    auto const searchIt = std::ranges::find(ChildStructureIndices, childIdx);
     if(searchIt == ChildStructureIndices.end())
         throw std::runtime_error("Given Structure is not contained in children");
 
@@ -101,8 +101,8 @@ auto CombinedStructure::GetViewName() const noexcept -> std::string {
     return OperatorTypeToString(Operator) + (GetName().empty() ? "" : " (" + GetName() + ")");
 }
 
-auto CombinedStructure::ReplaceChild(uidx_t oldIdx, uidx_t newIdx) -> void {
-    auto oldIt = std::find(ChildStructureIndices.begin(), ChildStructureIndices.end(), oldIdx);
+auto CombinedStructure::ReplaceChild(uidx_t const oldIdx, uidx_t const newIdx) -> void {
+    auto const oldIt = std::ranges::find(ChildStructureIndices, oldIdx);
     if (oldIt == ChildStructureIndices.end())
         throw std::runtime_error("Given old child index is not a child index of this structure");
 

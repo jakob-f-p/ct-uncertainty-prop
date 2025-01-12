@@ -9,7 +9,7 @@
 
 class DoubleCoordinateRowWidget;
 class CuppingArtifactFilter;
-class CuppingArtifactData;
+struct CuppingArtifactData;
 
 class QDoubleSpinBox;
 class QFormLayout;
@@ -41,10 +41,10 @@ public:
     SetCenter(FloatPoint center) -> void { Center = center; }
 
     auto
-    UpdateFilterParameters() -> void;
+    UpdateFilterParameters() const -> void;
 
     [[nodiscard]] auto
-    GetFilter() -> vtkImageAlgorithm&;
+    GetFilter() const -> vtkImageAlgorithm&;
 
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties;
@@ -86,10 +86,10 @@ public:
     CuppingArtifactWidget();
 
     [[nodiscard]] auto
-    GetData() noexcept -> CuppingArtifactData;
+    GetData() const noexcept -> CuppingArtifactData;
 
     auto
-    Populate(const CuppingArtifactData& data) noexcept -> void;
+    Populate(const CuppingArtifactData& data) const noexcept -> void;
 
 private:
     QDoubleSpinBox* MinRadiodensityFactorSpinBox;

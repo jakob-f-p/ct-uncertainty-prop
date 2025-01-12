@@ -16,10 +16,10 @@ public:
     explicit ArtifactsWidget(PipelineList& pipelines);
 
     [[nodiscard]] auto
-    GetCurrentPipeline() -> Pipeline&;
+    GetCurrentPipeline() const -> Pipeline&;
 
     auto
-    UpdateDataSource() -> void;
+    UpdateDataSource() const -> void;
 
 private:
     PipelinesWidget* PipelineWidget;

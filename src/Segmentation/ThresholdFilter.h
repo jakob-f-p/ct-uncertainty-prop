@@ -43,10 +43,10 @@ public:
     ThresholdFilterWidget();
 
     auto
-    Populate(ThresholdFilter& thresholdFilter) -> void;
+    Populate(ThresholdFilter& thresholdFilter) const -> void;
 
     auto
-    SetFilterData(ThresholdFilter& thresholdFilter) -> void;
+    SetFilterData(ThresholdFilter& thresholdFilter) const -> void;
 
 Q_SIGNALS:
     void DataChanged();

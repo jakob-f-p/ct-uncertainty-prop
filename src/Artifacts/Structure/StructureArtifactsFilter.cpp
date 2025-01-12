@@ -3,7 +3,6 @@
 #include "StructureArtifactListCollection.h"
 #include "../../Modeling/CtStructureTree.h"
 #include "../../Utils/ImageDataUtils.h"
-#include "../../Utils/Overload.h"
 
 #include <vtkErrorCode.h>
 #include <vtkDataObject.h>
@@ -79,7 +78,7 @@ auto StructureArtifactsFilter::RequestInformation(vtkInformation* request,
 
 
 template<std::size_t N>
-struct num { static const constexpr auto value = N; };
+struct num { static constexpr auto value = N; };
 
 template<typename F, std::size_t... Is>
 void for_(F func, std::index_sequence<Is...>) { (func(num<Is>{}), ...); }
@@ -107,28 +106,28 @@ auto StructureArtifactsFilter::RequestData(vtkInformation* request, vtkInformati
     auto* structureIdArray = vtkTypeUInt16Array::SafeDownCast(
             output->GetPointData()->GetAbstractArray("BasicStructureIds"));
 
-    vtkNew<vtkFloatArray> radiodensityArray;
+    vtkNew<vtkFloatArray> const radiodensityArray;
     auto* inputRadiodensityArray = vtkFloatArray::SafeDownCast(
             input->GetPointData()->GetAbstractArray("Radiodensities"));
     radiodensityArray->DeepCopy(inputRadiodensityArray);
     output->GetPointData()->AddArray(radiodensityArray);
 
     vtkIdType const numberOfPoints = output->GetNumberOfPoints();
-    vtkNew<vtkFloatArray> motionArtifactArray;
+    vtkNew<vtkFloatArray> const motionArtifactArray;
     motionArtifactArray->SetNumberOfComponents(1);
     motionArtifactArray->SetName(GetArrayName(SubType::MOTION).data());
     motionArtifactArray->SetNumberOfTuples(numberOfPoints);
     motionArtifactArray->FillValue(0.0F);
     output->GetPointData()->AddArray(motionArtifactArray);
 
-    vtkNew<vtkFloatArray> metallicArtifactArray;
+    vtkNew<vtkFloatArray> const metallicArtifactArray;
     metallicArtifactArray->SetNumberOfComponents(1);
     metallicArtifactArray->SetName(GetArrayName(SubType::METAL).data());
     metallicArtifactArray->SetNumberOfTuples(numberOfPoints);
     metallicArtifactArray->FillValue(0.0F);
     output->GetPointData()->AddArray(metallicArtifactArray);
 
-    vtkNew<vtkFloatArray> windmillArtifactArray;
+    vtkNew<vtkFloatArray> const windmillArtifactArray;
     windmillArtifactArray->SetNumberOfComponents(1);
     windmillArtifactArray->SetName(GetArrayName(SubType::WINDMILL).data());
     windmillArtifactArray->SetNumberOfTuples(numberOfPoints);
@@ -181,8 +180,8 @@ auto StructureArtifactsFilter::RequestData(vtkInformation* request, vtkInformati
     return 1;
 }
 
-auto StructureArtifactsFilter::GetArrayName(StructureArtifactsFilter::SubType subType) noexcept -> std::string {
-    return StructureArtifactDetails::SubTypeToString(subType);
+auto StructureArtifactsFilter::GetArrayName(SubType subType) noexcept -> std::string {
+    return SubTypeToString(subType);
 }
 
 StructureArtifactsFilter::Algorithm::Algorithm(StructureArtifactsFilter* self,
@@ -196,24 +195,24 @@ StructureArtifactsFilter::Algorithm::Algorithm(StructureArtifactsFilter* self,
         Self(self),
         StructureTree(structureTree),
         VolumeData(volumeData),
-        Spacing([this]() {
+        StructureVariant(structureVariant),
+        MaxStructureRadiodensity(StructureTree->GetMaxTissueValue(*structureVariant)),
+        StructureArtifact_(structureArtifact),
+        Spacing([this] {
             std::array<double, 3> spacing {};
             std::copy(VolumeData->GetSpacing(), std::next(VolumeData->GetSpacing(), 3), spacing.begin());
             return spacing;
         }()),
-        UpdateDims([this]() {
+        UpdateDims([this] {
             std::array<int, 3> updateDims {};
             std::copy(VolumeData->GetDimensions(), std::next(VolumeData->GetDimensions(), 3), updateDims.begin());
             return updateDims;
         }()),
-        StartPoint([this]() {
+        StartPoint([this] {
             DoublePoint startPoint;
             VolumeData->GetPoint(0, startPoint.data());
             return startPoint;
         }()),
-        StructureVariant(structureVariant),
-        MaxStructureRadiodensity(StructureTree->GetMaxTissueValue(*structureVariant)),
-        StructureArtifact_(structureArtifact),
         Radiodensities(radiodensities),
         BasicStructureIds(basicStructureIds),
         StructureArtifactIds(StructureTree->GetBasicStructureIds(*StructureVariant)),
@@ -326,8 +325,8 @@ void StructureArtifactsFilter::Algorithm::operator()(vtkIdType pointId, vtkIdTyp
 
             for (; x <= xEnd; x++) {
                 bool const pointOccupiedByStructure
-                        = std::any_of(StructureArtifactIds.cbegin(), StructureArtifactIds.cend(),
-                                      [&](StructureId id) { return id == BasicStructureIds[pointId]; });
+                        = std::ranges::any_of(StructureArtifactIds,
+                                              [&](StructureId id) { return id == BasicStructureIds[pointId]; });
 
                 ArtifactValues[pointId] += StructureArtifact_->EvaluateAtPosition(point,
                                                                                   MaxStructureRadiodensity,

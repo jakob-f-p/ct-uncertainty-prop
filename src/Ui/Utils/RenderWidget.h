@@ -51,10 +51,10 @@ public Q_SLOTS:
     Render() const -> void;
 
     auto
-    UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> void;
+    UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) const -> void;
 
     auto
-    UpdateImageAlgorithm(vtkImageData& imageData) -> void;
+    UpdateImageAlgorithm(vtkImageData& imageData) const -> void;
 
 private:
     friend class CtRenderWidget;
@@ -99,10 +99,10 @@ public Q_SLOTS:
     UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> void;
 
     auto
-    UpdateImageAlgorithm(vtkImageData& imageData) -> void;
+    UpdateImageAlgorithm(vtkImageData& imageData) const -> void;
 
     auto
-    UpdateWindowWidth(Range<double> range) -> void;
+    UpdateWindowWidth(Range<double> range) const -> void;
 
 protected:
     auto
@@ -113,7 +113,7 @@ private:
     UpdateImageAlgorithm(vtkAlgorithm& imageAlgorithm) -> void;
 
     auto
-    UpdateColorMappingFunctions() -> void;
+    UpdateColorMappingFunctions() const -> void;
 
     RenderWidget* Parent;
 

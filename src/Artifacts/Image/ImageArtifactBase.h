@@ -17,7 +17,7 @@ class vtkImageAlgorithm;
 namespace ImageArtifactBaseDetails {
 
     template<typename T>
-    concept TArtifactData = requires(T data, T::Artifact artifact) {
+    concept TArtifactData = requires(T data, typename T::Artifact artifact) {
         data.PopulateFromArtifact(artifact);
         data.PopulateArtifact(artifact);
     };
@@ -41,7 +41,7 @@ namespace ImageArtifactBaseDetails {
         AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm&;
 
     protected:
-        friend class ::CompositeImageArtifact;
+        friend class CompositeImageArtifact;
         template<TArtifactData ArtifactData> friend struct ImageArtifactBaseData;
 
         ImageArtifactBase() = default;
@@ -57,7 +57,7 @@ namespace ImageArtifactBaseDetails {
         QString ViewName;
         ArtifactData Data;
 
-        using Artifact = ArtifactData::Artifact;
+        using Artifact = typename ArtifactData::Artifact;
 
         auto
         PopulateFromArtifact(const Artifact& artifact) noexcept -> void;
@@ -69,7 +69,7 @@ namespace ImageArtifactBaseDetails {
 
     template<typename T>
     concept TArtifactWidget = std::derived_from<T, QWidget>
-                              && requires(T widget, T::Data data) {
+                              && requires(T widget, typename T::Data data) {
         { widget.GetData() } -> std::same_as<typename T::Data>;
         widget.Populate(data);
     };

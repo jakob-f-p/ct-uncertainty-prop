@@ -5,11 +5,9 @@
 #include <vtkFloatArray.h>
 #include <vtkImageData.h>
 #include <vtkInformation.h>
-#include <vtkInformationVector.h>
 #include <vtkObjectFactory.h>
 #include <vtkPointData.h>
 #include <vtkSMPTools.h>
-#include <vtkStreamingDemandDrivenPipeline.h>
 
 #include <numbers>
 
@@ -41,7 +39,7 @@ void CuppingArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input,
     vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);
     float* radiodensities = radioDensityArray->WritePointer(0, numberOfPoints);
 
-    vtkNew<vtkFloatArray> newArtifactValueArray;
+    vtkNew<vtkFloatArray> const newArtifactValueArray;
     newArtifactValueArray->SetNumberOfComponents(1);
     newArtifactValueArray->SetNumberOfTuples(numberOfPoints);
     newArtifactValueArray->FillValue(0.0F);
@@ -72,17 +70,17 @@ CuppingArtifactFilter::Algorithm::Algorithm(CuppingArtifactFilter* self,
                                             float* artifactValues) :
         Self(self),
         VolumeData(volumeData),
-        Spacing([this]() {
+        Spacing([this] {
             std::array<double, 3> spacing {};
             std::copy(VolumeData->GetSpacing(), std::next(VolumeData->GetSpacing(), 3), spacing.begin());
             return spacing;
         }()),
-        UpdateDims([this]() {
+        UpdateDims([this] {
             std::array<int, 3> updateDims {};
             std::copy(VolumeData->GetDimensions(), std::next(VolumeData->GetDimensions(), 3), updateDims.begin());
             return updateDims;
         }()),
-        StartPoint([this]() {
+        StartPoint([this] {
             DoublePoint startPoint;
             VolumeData->GetPoint(0, startPoint.data());
             return startPoint;
@@ -92,7 +90,7 @@ CuppingArtifactFilter::Algorithm::Algorithm(CuppingArtifactFilter* self,
         MinRadiodensityFactor(Self->GetMinRadiodensityFactor()),
         RadiodensityFactorRange(1.0F - MinRadiodensityFactor),
         Center(Self->GetCenterPoint()),
-        xyMaxDistance([&]() {
+        xyMaxDistance([&] {
             std::array<double, 6> bounds {};
             VolumeData->GetBounds(bounds.data());
             double const xMaxDistance = std::max(std::abs(bounds[1] - Center[0]),

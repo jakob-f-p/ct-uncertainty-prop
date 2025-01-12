@@ -22,7 +22,7 @@ struct CtStructureTreeEvent {
     CtStructureTreeEventType Type;
     uidx_t Idx;
 
-    constexpr CtStructureTreeEvent(CtStructureTreeEventType type, uidx_t idx) noexcept : Type(type), Idx(idx) {};
+    constexpr CtStructureTreeEvent(CtStructureTreeEventType type, uidx_t idx) noexcept : Type(type), Idx(idx) {}
 };
 
 using StructureDataVariant = std::variant<BasicStructureData, CombinedStructureData>;
@@ -136,9 +136,8 @@ private:
     DecrementParentAndChildIndices(uidx_t startIdx) -> void;
 
     [[nodiscard]] auto
-    TransformPointUntilStructure(Point point, CtStructureVariant const& structure) const -> Point {
+    TransformPointUntilStructure(Point const& point, CtStructureVariant const& structure) const -> Point {
         std::vector<CtStructureVariant const*> ancestors;
-        uidx_t const structureIdx = std::visit([&](auto const& s) { return FindIndexOf(s); }, structure);
 
         idx_t ancestorIdx = std::visit([](auto const& s) { return s.ParentIdx; }, structure);
         while (ancestorIdx) {
@@ -149,15 +148,14 @@ private:
         }
 
         return std::accumulate(ancestors.crbegin(), ancestors.crend(), point,
-                        [](Point point, CtStructureVariant const* ancestor) {
-            return std::visit([&](auto const& s) { return s.GetTransformedPoint(point); }, *ancestor);
+                        [](Point ancestorPoint, CtStructureVariant const* ancestor) {
+            return std::visit([&](auto const& s) { return s.GetTransformedPoint(ancestorPoint); }, *ancestor);
         });
     }
 
     [[nodiscard]] auto
-    TransformPointFromStructure(Point point, CtStructureVariant const& structure) const -> Point {
+    TransformPointFromStructure(Point const& point, CtStructureVariant const& structure) const -> Point {
         std::vector<CtStructureVariant const*> ancestors;
-        uidx_t const structureIdx = std::visit([&](auto const& s) { return FindIndexOf(s); }, structure);
 
         idx_t ancestorIdx = std::visit([](auto const& s) { return s.ParentIdx; }, structure);
         while (ancestorIdx) {

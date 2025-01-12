@@ -10,7 +10,7 @@ auto main(int argc, char* argv[]) -> int {
 #endif
 
     auto logger = spdlog::rotating_logger_mt("app", "../data/logs/log.txt", 10ULL * (1<<10), 20, true);
-    spdlog::set_default_logger(logger);
+    set_default_logger(logger);
 #ifdef BUILD_TYPE_DEBUG
     logger->set_level(spdlog::level::trace);
     logger->flush_on(spdlog::level::trace);

@@ -63,7 +63,7 @@ public:
     GetPipelineGroups() const -> PipelineGroupList&;
 
     [[nodiscard]] auto
-    GetPythonInterpreter() -> PythonInterpreter&;
+    GetPythonInterpreter() const -> PythonInterpreter&;
 
 protected:
     App(int argc, char* argv[]);

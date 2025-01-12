@@ -12,7 +12,7 @@ public:
     explicit AnalysisWidget(PipelineGroupList const& pipelineGroups);
 
     auto
-    UpdateData() -> void;
+    UpdateData() const -> void;
 
 private:
     TsneMainWidget* TsneWidget;

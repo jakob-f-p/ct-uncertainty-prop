@@ -13,12 +13,12 @@ WindMillArtifact::WindMillArtifact(WindMillArtifact const& other) :
         DarkAngularWidth(other.DarkAngularWidth),
         BrightIntensityValue(other.BrightIntensityValue),
         DarkIntensityValue(other.DarkIntensityValue) {}
-WindMillArtifact::WindMillArtifact(WindMillArtifact&&) = default;
-auto WindMillArtifact::operator= (WindMillArtifact&&) -> WindMillArtifact& = default;
+WindMillArtifact::WindMillArtifact(WindMillArtifact&&) noexcept = default;
+auto WindMillArtifact::operator= (WindMillArtifact&&) noexcept -> WindMillArtifact& = default;
 
 WindMillArtifact::~WindMillArtifact() = default;
 
-auto WindMillArtifact::UpdateFilterParameters() -> void {
+auto WindMillArtifact::UpdateFilterParameters() const -> void {
     Filter->SetBrightAngularWidth(BrightAngularWidth);
     Filter->SetDarkAngularWidth(DarkAngularWidth);
 
@@ -28,7 +28,7 @@ auto WindMillArtifact::UpdateFilterParameters() -> void {
     Filter->SetCenterPoint(Center);
 }
 
-auto WindMillArtifact::GetFilter() -> vtkImageAlgorithm& {
+auto WindMillArtifact::GetFilter() const -> vtkImageAlgorithm& {
     UpdateFilterParameters();
 
     return *Filter;
@@ -66,10 +66,10 @@ WindMillArtifactWidget::WindMillArtifactWidget() :
     auto* gLayout = new QGridLayout(this);
     gLayout->setHorizontalSpacing(15);
 
-    std::vector<QString> labels { "Bright", "Dark" };
-    std::vector<QDoubleSpinBox*> widthSpinBoxes { BrightAngularWidthSpinBox, DarkAngularWidthSpinBox };
-    std::vector<QDoubleSpinBox*> intensitySpinBoxes { BrightIntensityValueSpinBox, DarkIntensityValueSpinBox };
-    std::vector<double> ranges { 0.0, 1000.0, -1000.0, 0.0 };
+    std::vector<QString> const labels { "Bright", "Dark" };
+    std::vector const widthSpinBoxes { BrightAngularWidthSpinBox, DarkAngularWidthSpinBox };
+    std::vector const intensitySpinBoxes { BrightIntensityValueSpinBox, DarkIntensityValueSpinBox };
+    std::vector const ranges { 0.0, 1000.0, -1000.0, 0.0 };
 
     for (int i = 0; i < 2; i++) {
         auto* label = new QLabel(labels.at(i));
@@ -98,7 +98,7 @@ WindMillArtifactWidget::WindMillArtifactWidget() :
     gLayout->addWidget(CenterPointWidget, 2, 0, 1, 5);
 }
 
-auto WindMillArtifactWidget::GetData() noexcept -> WindMillArtifactData {
+auto WindMillArtifactWidget::GetData() const noexcept -> WindMillArtifactData {
     return { static_cast<float>(BrightAngularWidthSpinBox->value()),
              static_cast<float>(DarkAngularWidthSpinBox->value()),
              static_cast<float>(BrightIntensityValueSpinBox->value()),
@@ -106,7 +106,7 @@ auto WindMillArtifactWidget::GetData() noexcept -> WindMillArtifactData {
              CenterPointWidget->GetRowData(0).ToFloatArray() };
 }
 
-auto WindMillArtifactWidget::Populate(const WindMillArtifactData& data) noexcept -> void {
+auto WindMillArtifactWidget::Populate(const WindMillArtifactData& data) const noexcept -> void {
     BrightAngularWidthSpinBox->setValue(data.BrightAngularWidth);
     DarkAngularWidthSpinBox->setValue(data.DarkAngularWidth);
 

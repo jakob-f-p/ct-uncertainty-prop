@@ -6,8 +6,6 @@
 #include <QPainter>
 #include <QScatterSeries>
 
-#include <iostream>
-
 
 ChartLassoSelectionTool::ChartLassoSelectionTool(QChart& parentChart, PenBrushPair const& foregroundBackgroundColors) :
         QGraphicsObject(&parentChart),
@@ -46,10 +44,9 @@ auto ChartLassoSelectionTool::mouseReleaseEvent(QGraphicsSceneMouseEvent* /*even
         auto const& firstPoint = Lasso.first();
         auto const& lastPoint = Lasso.last();
         auto const distanceVector = firstPoint - lastPoint;
-        float const distance = std::sqrt(QPointF::dotProduct(distanceVector, distanceVector));
 
-        bool const isClosed = distance < closing_tolerance;
-        if (isClosed) {
+        if (float const distance = std::sqrt(QPointF::dotProduct(distanceVector, distanceVector));
+            distance < closing_tolerance) {
             std::vector<QScatterSeries const*> scatterSeries { static_cast<size_t>(Chart->series().size()) };
             std::transform(Chart->series().cbegin(), Chart->series().cend(), scatterSeries.begin(),
                            [](QAbstractSeries const* series) { return dynamic_cast<QScatterSeries const*>(series); });
@@ -61,8 +58,6 @@ auto ChartLassoSelectionTool::mouseReleaseEvent(QGraphicsSceneMouseEvent* /*even
                     QPointF const chartPoint = Chart->mapToPosition(point);
                     QPointF const scenePoint = Chart->mapToScene(chartPoint);
                     QPointF const localPoint = mapFromScene(scenePoint);
-                    bool const lassoContains = Lasso.containsPoint(localPoint, Qt::FillRule::OddEvenFill);
-                    bool const lassoRectContains = Lasso.boundingRect().contains(localPoint);
                     return Lasso.containsPoint(localPoint, Qt::FillRule::OddEvenFill);
                 });
 
@@ -86,9 +81,6 @@ auto ChartLassoSelectionTool::mouseMoveEvent(QGraphicsSceneMouseEvent* event) ->
 }
 
 auto ChartLassoSelectionTool::AdjustPosition() noexcept -> void {
-    auto rect = mapRectToParent(boundingRect());
-    auto parentRect = parentItem()->boundingRect();
-
     QRectF const sceneRect = mapFromScene(scene()->sceneRect()).boundingRect();
     for (auto& point : Lasso) {
         float const clampedX = static_cast<float>(std::clamp(point.x(), sceneRect.left(), sceneRect.right()));

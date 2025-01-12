@@ -18,14 +18,14 @@ class QWidget;
 
 
 template<typename T>
-concept Evaluable = requires(T structure, T::Data data) {
+concept Evaluable = requires(T structure, typename T::Data data) {
     structure.AddFunctionData(data);
     structure.SetFunctionData(data);
     { structure.EvaluateFunction(Point{}) } -> std::same_as<float>;
 };
 
 template<typename T>
-concept HasWidget = requires(T::Data data, T::Data::Widget* widget) {
+concept HasWidget = requires(typename T::Data data, typename T::Data::Widget* widget) {
     data.PopulateFromWidget(widget);
     data.PopulateWidget(widget);
 };
@@ -51,10 +51,10 @@ struct SphereData {
     using Widget = SphereWidget;
 
     auto
-    PopulateFromWidget(Widget* widget) noexcept -> void;
+    PopulateFromWidget(Widget const* widget) noexcept -> void;
 
     auto
-    PopulateWidget(Widget* widget) const noexcept -> void;
+    PopulateWidget(Widget const* widget) const noexcept -> void;
 };
 
 
@@ -65,10 +65,10 @@ public:
     SphereWidget();
 
     [[nodiscard]] auto
-    GetData() noexcept -> SphereData;
+    GetData() const noexcept -> SphereData;
 
     auto
-    Populate(const SphereData& data) noexcept -> void;
+    Populate(const SphereData& data) const noexcept -> void;
 
 private:
     QDoubleSpinBox* RadiusSpinBox;
@@ -86,7 +86,7 @@ struct Sphere {
     AddFunctionData(Data& data) const noexcept -> void;
 
     auto
-    SetFunctionData(const Data& data) noexcept -> void;
+    SetFunctionData(const Data& data) const noexcept -> void;
 
     [[nodiscard]] auto
     EvaluateFunction(Point point) const noexcept -> float {
@@ -94,7 +94,7 @@ struct Sphere {
     }
 
     [[nodiscard]] auto
-    ClosestPointOnXYPlane(Point point) const -> std::optional<DoublePoint> {
+    ClosestPointOnXYPlane(Point const& point) const -> std::optional<DoublePoint> {
         double const radius3d = Function->GetRadius();
         double const radius2dSquared = radius3d * radius3d - point[2] * point[2];
         if (radius2dSquared <= 0.0F)
@@ -102,13 +102,13 @@ struct Sphere {
 
         double const radius2d = sqrt(radius2dSquared);
 
-        double* center = Function->GetCenter();
-        std::array<double, 2> const diffCenter { point[0] - center[0], point[1] - center[1] };
+        double const* center = Function->GetCenter();
+        std::array const diffCenter { point[0] - center[0], point[1] - center[1] };
         double const distanceCenter2d = sqrt(diffCenter[0] * diffCenter[0] + diffCenter[1] * diffCenter[1]);
-        std::array<double, 2> const normalizedDifference2d { diffCenter[0] / distanceCenter2d,
+        std::array const normalizedDifference2d { diffCenter[0] / distanceCenter2d,
                                                              diffCenter[1] / distanceCenter2d };
 
-        std::array<double, 2> const closestPoint2d { normalizedDifference2d[0] * radius2d,
+        std::array const closestPoint2d { normalizedDifference2d[0] * radius2d,
                                                      normalizedDifference2d[1] * radius2d };
 
         return DoublePoint { closestPoint2d[0], closestPoint2d[1], point[2] };
@@ -134,10 +134,10 @@ struct BoxData {
     using Widget = BoxWidget;
 
     auto
-    PopulateFromWidget(Widget* widget) noexcept -> void;
+    PopulateFromWidget(Widget const* widget) noexcept -> void;
 
     auto
-    PopulateWidget(Widget* widget) const noexcept -> void;
+    PopulateWidget(Widget const* widget) const noexcept -> void;
 
 private:
     static const QString BoxMinPointName;
@@ -153,7 +153,7 @@ struct Box {
     AddFunctionData(Data& data) const noexcept -> void;
 
     auto
-    SetFunctionData(const Data& data) noexcept -> void;
+    SetFunctionData(const Data& data) const noexcept -> void;
 
     [[nodiscard]] auto
     EvaluateFunction(Point point) const noexcept -> float {
@@ -161,7 +161,7 @@ struct Box {
     }
 
     [[nodiscard]] auto
-    ClosestPointOnXYPlane(Point point) const -> std::optional<DoublePoint> {
+    ClosestPointOnXYPlane(Point const& point) const -> std::optional<DoublePoint> {
         double const* bounds = Function->GetBounds();
         if (point[2] < bounds[4] || point[2] > bounds[5])
             return std::nullopt;
@@ -170,7 +170,7 @@ struct Box {
             return [&](float const& a, float const& b) { return std::abs(a - x) < std::abs(b - x); };
         };
 
-        std::array<double, 2> const closestPoint2d { std::max(bounds[0], bounds[1], compareDistances(point[0])),
+        std::array const closestPoint2d { std::max(bounds[0], bounds[1], compareDistances(point[0])),
                                                      std::max(bounds[2], bounds[3], compareDistances(point[1])) };
 
         return DoublePoint { closestPoint2d[0], closestPoint2d[1], point[2] };
@@ -190,10 +190,10 @@ public:
     BoxWidget();
 
     [[nodiscard]] auto
-    GetData() noexcept -> BoxData;
+    GetData() const noexcept -> BoxData;
 
     auto
-    Populate(const BoxData& data) noexcept -> void;
+    Populate(const BoxData& data) const noexcept -> void;
 
 private:
     DoubleCoordinateRowWidget* MinMaxPointWidget;
@@ -212,10 +212,10 @@ struct ConeData {
     using Widget = ConeWidget;
 
     auto
-    PopulateFromWidget(Widget* widget) noexcept -> void;
+    PopulateFromWidget(Widget const* widget) noexcept -> void;
 
     auto
-    PopulateWidget(Widget* widget) const noexcept -> void;
+    PopulateWidget(Widget const* widget) const noexcept -> void;
 };
 
 
@@ -226,10 +226,10 @@ public:
     ConeWidget();
 
     [[nodiscard]] auto
-    GetData() noexcept -> ConeData;
+    GetData() const noexcept -> ConeData;
 
     auto
-    Populate(ConeData const& data) noexcept -> void;
+    Populate(ConeData const& data) const noexcept -> void;
 
 private:
     QDoubleSpinBox* RadiusSpinBox;
@@ -246,7 +246,7 @@ struct Cone {
     AddFunctionData(Data& data) const noexcept -> void;
 
     auto
-    SetFunctionData(Data const& data) noexcept -> void;
+    SetFunctionData(Data const& data) const noexcept -> void;
 
     [[nodiscard]] auto
     EvaluateFunction(Point point) const noexcept -> float {
@@ -254,11 +254,11 @@ struct Cone {
     }
 
     [[nodiscard]] auto
-    ClosestPointOnXYPlane(Point point) const -> std::optional<DoublePoint> {
+    ClosestPointOnXYPlane(Point const& point) const -> std::optional<DoublePoint> {
         double const angleRad = vtkMath::RadiansFromDegrees(UnboundedCone->GetAngle());
         double const height = BasePlane->GetOrigin()[0];
-        double const radius = height * tan(angleRad);
-        if (point[2] > std::abs(radius))
+        if (double const radius = height * tan(angleRad);
+            point[2] > std::abs(radius))
             return std::nullopt;
 
         double const theta = vtkMath::RadiansFromDegrees(UnboundedCone->GetAngle());
@@ -296,10 +296,10 @@ struct CylinderData {
     using Widget = CylinderWidget;
 
     auto
-    PopulateFromWidget(Widget* widget) noexcept -> void;
+    PopulateFromWidget(Widget const* widget) noexcept -> void;
 
     auto
-    PopulateWidget(Widget* widget) const noexcept -> void;
+    PopulateWidget(Widget const* widget) const noexcept -> void;
 };
 
 
@@ -310,10 +310,10 @@ public:
     CylinderWidget();
 
     [[nodiscard]] auto
-    GetData() noexcept -> CylinderData;
+    GetData() const noexcept -> CylinderData;
 
     auto
-    Populate(CylinderData const& data) noexcept -> void;
+    Populate(CylinderData const& data) const noexcept -> void;
 
 private:
     QDoubleSpinBox* RadiusSpinBox;
@@ -330,7 +330,7 @@ struct Cylinder {
     AddFunctionData(Data& data) const noexcept -> void;
 
     auto
-    SetFunctionData(Data const& data) noexcept -> void;
+    SetFunctionData(Data const& data) const noexcept -> void;
 
     [[nodiscard]] auto
     EvaluateFunction(Point point) const noexcept -> float {
@@ -338,7 +338,7 @@ struct Cylinder {
     }
 
     [[nodiscard]] auto
-    ClosestPointOnXYPlane(Point point) const -> std::optional<DoublePoint> {
+    ClosestPointOnXYPlane(Point const& point) const -> std::optional<DoublePoint> {
         double const radius = UnboundedCylinder->GetRadius();
         if (point[2] > std::abs(radius))
             return std::nullopt;

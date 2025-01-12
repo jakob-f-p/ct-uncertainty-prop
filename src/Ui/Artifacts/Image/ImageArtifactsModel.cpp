@@ -2,14 +2,13 @@
 
 #include "../../../Artifacts/Image/ImageArtifact.h"
 #include "../../../Artifacts/Image/ImageArtifactConcatenation.h"
-#include "../../../Utils/LinearAlgebraTypes.h"
 
 ImageArtifactsModel::ImageArtifactsModel(ImageArtifactConcatenation& imageArtifactConcatenation,
                                          QObject* parent) :
         QAbstractItemModel(parent),
         Concatenation(imageArtifactConcatenation) {
 
-    imageArtifactConcatenation.AddConcatenationEventCallback([this]() {
+    imageArtifactConcatenation.AddConcatenationEventCallback([this] {
         beginResetModel();
         endResetModel();
     });
@@ -37,9 +36,8 @@ auto ImageArtifactsModel::parent(const QModelIndex& childModelIndex) const -> QM
 
     ImageArtifact const& childArtifact = Concatenation.Get(static_cast<uidx_t>(childModelIndex.internalId()));
 
-    ImageArtifact* parentArtifact = childArtifact.GetParent();
-    assert(parentArtifact);
-    if (&Concatenation.GetStart() == parentArtifact)
+    ImageArtifact const* parentArtifact = childArtifact.GetParent();
+    if (!parentArtifact || &Concatenation.GetStart() == parentArtifact)
         return {};
 
     uidx_t const parentIdx = Concatenation.IndexOf(*parentArtifact);
@@ -73,11 +71,11 @@ auto ImageArtifactsModel::data(const QModelIndex& index, int role) const -> QVar
             return QString::fromStdString(
                     Concatenation.Get(static_cast<uidx_t>(index.internalId())).GetViewName());
 
-        case ImageArtifactsModel::DATA: // Qt::UserRole
+        case DATA: // Qt::UserRole
             return QVariant::fromValue(ImageArtifactData(
                     Concatenation.Get(static_cast<uidx_t>(index.internalId()))));
 
-        case ImageArtifactsModel::POINTER:
+        case POINTER:
             return QVariant::fromValue(&Concatenation.Get(static_cast<uidx_t>(index.internalId())));
 
         default: return {};
@@ -104,7 +102,7 @@ auto ImageArtifactsModel::setData(const QModelIndex& index, const QVariant& valu
     }
 
     ImageArtifact& artifact = Concatenation.Get(static_cast<uidx_t>(index.internalId()));
-    auto data = value.value<ImageArtifactData>();
+    auto const data = value.value<ImageArtifactData>();
     data.PopulateArtifact(artifact);
 
     Q_EMIT dataChanged(index, index);
@@ -128,7 +126,6 @@ void ImageArtifactsModel::RemoveImageArtifact(const QModelIndex& index) {
     if (!index.isValid())
         throw std::runtime_error("Cannot remove image artifact. Given index is not valid");
 
-    QModelIndex const parentIndex = index.parent();
     auto& imageArtifact = Concatenation.Get(static_cast<uidx_t>(index.internalId()));
 
 //    beginRemoveRows(parentIndex, index.row(), index.row());
@@ -172,10 +169,8 @@ auto ImageArtifactsModel::AddImageArtifact(const ImageArtifactData& data,
 }
 
 auto ImageArtifactsModel::Move(const QModelIndex& sourceIndex, int displacement) -> QModelIndex {
-    QModelIndex const parentIndex = sourceIndex.parent();
-    auto& imageArtifact = Concatenation.Get(static_cast<uidx_t>(sourceIndex.internalId()));
+    auto const& imageArtifact = Concatenation.Get(static_cast<uidx_t>(sourceIndex.internalId()));
 
-    int const prevIdx = sourceIndex.row();
     int const newIdx = sourceIndex.row() + displacement;
 
 //    beginMoveRows(parentIndex, prevIdx, prevIdx,

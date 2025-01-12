@@ -49,13 +49,13 @@ template class SpanState<FloatPoint>;
 template<typename T>
 SpanStateSourceIterator<T>::SpanStateSourceIterator(ParameterSpan<T>& parameterSpan) :
         Span(&parameterSpan),
-        CurrentState([&parameterSpan]() {
+        CurrentState([&parameterSpan] {
             SpanState<T> state { parameterSpan };
             state.Value = parameterSpan.Numbers.Min;
             return state;
         }()),
         InitialState(SpanState<T> { parameterSpan }),
-        TotalNumberOfStates(parameterSpan.GetNumberOfPipelines()) {};
+        TotalNumberOfStates(parameterSpan.GetNumberOfPipelines()) {}
 
 template<typename T>
 SpanStateSourceIterator<T>::~SpanStateSourceIterator() {
@@ -93,7 +93,7 @@ SpanStateSourceIterator<T>::SpanStateSourceIterator(ParameterSpan<T>& parameterS
         CurrentState(SpanState<T>(parameterSpan)),
         InitialState(CurrentState),
         TotalNumberOfStates(parameterSpan.GetNumberOfPipelines()),
-        StateIdx(TotalNumberOfStates) {};
+        StateIdx(TotalNumberOfStates) {}
 
 template<>
 auto inline
@@ -115,10 +115,10 @@ static_assert(std::input_iterator<SpanStateSourceIterator<FloatPoint>>);
 
 
 ParameterSpanState::ParameterSpanState(PipelineParameterSpan& parameterSpan) :
-        State([&parameterSpan]() {
+        State([&parameterSpan] {
             return std::visit(Overload {
-                [](ParameterSpan<float>& span)      -> SpanStateVariant { return SpanState<float>(span); },
-                [](ParameterSpan<FloatPoint>& span) -> SpanStateVariant { return SpanState<FloatPoint>(span); }
+                [](ParameterSpan<float>& span)      -> SpanStateVariant { return SpanState(span); },
+                [](ParameterSpan<FloatPoint>& span) -> SpanStateVariant { return SpanState(span); }
             }, parameterSpan.SpanVariant);
         }()) {}
 
@@ -139,9 +139,9 @@ auto ParameterSpanState::GetValue() const noexcept -> std::variant<float, FloatP
 ParameterSpanStateSourceIterator::ParameterSpanStateSourceIterator(PipelineParameterSpan& parameterSpan)  :
         IteratorVariant(std::visit(Overload {
                 [](ParameterSpan<float>& span)      -> SourceIteratorVariant {
-                    return SpanStateSourceIterator<float>(span); },
+                    return SpanStateSourceIterator(span); },
                 [](ParameterSpan<FloatPoint>& span) -> SourceIteratorVariant {
-                    return SpanStateSourceIterator<FloatPoint>(span); }
+                    return SpanStateSourceIterator(span); }
         }, parameterSpan.SpanVariant)) {}
 
 auto ParameterSpanStateSourceIterator::operator*() const -> ParameterSpanState {
@@ -162,7 +162,7 @@ auto ParameterSpanStateSourceIterator::End() -> ParameterSpanStateSourceIterator
 
 ParameterSpanSetState::ParameterSpanSetState(PipelineParameterSpanSet& parameterSpanSet) :
         SpanSet(parameterSpanSet),
-        States([&parameterSpanSet]() {
+        States([&parameterSpanSet] {
             SpanStates spanStates;
             spanStates.reserve(parameterSpanSet.GetSize());
 
@@ -192,7 +192,7 @@ auto ParameterSpanSetState::FindSpanStateBySpan(PipelineParameterSpan const& par
 
 PipelineParameterSpaceState::PipelineParameterSpaceState(PipelineParameterSpace& parameterSpace) :
         ParameterSpace(parameterSpace),
-        States([&parameterSpace]() {
+        States([&parameterSpace] {
             SpanSetStates spanSetStates;
             spanSetStates.reserve(parameterSpace.GetNumberOfSpanSets());
 
@@ -211,9 +211,8 @@ auto PipelineParameterSpaceState::FindSpanStateBySpan(PipelineParameterSpan cons
         -> ParameterSpanState const& {
 
     for (auto const& state : States) {
-        std::optional<std::reference_wrapper<ParameterSpanState const>> res = state.FindSpanStateBySpan(parameterSpan);
-
-        if (res)
+        if (std::optional<std::reference_wrapper<ParameterSpanState const>> const res
+                = state.FindSpanStateBySpan(parameterSpan))
             return *res;
     }
 

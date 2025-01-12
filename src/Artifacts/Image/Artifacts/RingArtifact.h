@@ -8,7 +8,7 @@
 
 class DoubleCoordinateRowWidget;
 class RingArtifactFilter;
-class RingArtifactData;
+struct RingArtifactData;
 
 class QDoubleSpinBox;
 class QFormLayout;
@@ -40,10 +40,10 @@ public:
     SetCenter(std::array<float, 3> center) -> void { Center = center; }
 
     auto
-    UpdateFilterParameters() -> void;
+    UpdateFilterParameters() const -> void;
 
     [[nodiscard]] auto
-    GetFilter() -> vtkImageAlgorithm&;
+    GetFilter() const -> vtkImageAlgorithm&;
 
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties;
@@ -88,10 +88,10 @@ public:
     RingArtifactWidget();
 
     [[nodiscard]] auto
-    GetData() noexcept -> RingArtifactData;
+    GetData() const noexcept -> RingArtifactData;
 
     auto
-    Populate(const RingArtifactData& data) noexcept -> void;
+    Populate(const RingArtifactData& data) const noexcept -> void;
 
 private:
     QDoubleSpinBox* InnerRadiusSpinBox;

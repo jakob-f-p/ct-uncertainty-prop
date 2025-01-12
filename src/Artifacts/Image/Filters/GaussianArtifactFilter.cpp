@@ -3,11 +3,9 @@
 #include <vtkFloatArray.h>
 #include <vtkImageData.h>
 #include <vtkInformation.h>
-#include <vtkInformationVector.h>
 #include <vtkObjectFactory.h>
 #include <vtkPointData.h>
 #include <vtkSMPTools.h>
-#include <vtkStreamingDemandDrivenPipeline.h>
 
 #include <random>
 #include <span>
@@ -36,20 +34,20 @@ void GaussianArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input
                                                              vtkInformation* outInfo) {
     vtkIdType const numberOfPoints = output->GetNumberOfPoints();
 
-    vtkNew<vtkFloatArray> newNoiseValueArray;
+    vtkNew<vtkFloatArray> const newNoiseValueArray;
     newNoiseValueArray->SetNumberOfComponents(1);
     newNoiseValueArray->SetNumberOfTuples(output->GetNumberOfPoints());
     newNoiseValueArray->FillValue(0.0F);
     float* newNoiseValues = newNoiseValueArray->WritePointer(0, numberOfPoints);
-    std::span<float> const newNoiseValueSpan { newNoiseValues, static_cast<size_t>(numberOfPoints) };
+    std::span const newNoiseValueSpan { newNoiseValues, static_cast<size_t>(numberOfPoints) };
 
     static unsigned int seed = 0;
-    std::normal_distribution<float> normalDistribution { static_cast<float>(Mean),
+    std::normal_distribution normalDistribution { static_cast<float>(Mean),
                                                          static_cast<float>(Sd) };
     std::mt19937 engine { ++seed };
 
-    std::generate(newNoiseValueSpan.begin(), newNoiseValueSpan.end(),
-                  [&]() { return normalDistribution(engine); });
+    std::ranges::generate(newNoiseValueSpan,
+                          [&] { return normalDistribution(engine); });
 
     vtkFloatArray* radioDensityArray = GetRadiodensitiesArray(output);
     float* radiodensities = radioDensityArray->WritePointer(0, numberOfPoints);

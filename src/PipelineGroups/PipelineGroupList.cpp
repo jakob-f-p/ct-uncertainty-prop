@@ -9,7 +9,6 @@
 #include "../Utils/PythonInterpreter.h"
 #include "../App.h"
 
-#include <pybind11/embed.h>
 #include <pybind11/stl.h>
 
 #include "nlohmann/json.hpp"
@@ -28,19 +27,19 @@ auto PipelineGroupList::GetName() const noexcept -> std::string {
 }
 
 auto PipelineGroupList::GetMTime() const noexcept -> vtkMTimeType {
-    auto basePipelines = GetBasePipelines();
+    auto const basePipelines = GetBasePipelines();
     std::vector<vtkMTimeType> basePipelineMTimes;
     basePipelineMTimes.reserve(basePipelines.size());
-    std::transform(basePipelines.cbegin(), basePipelines.cend(), std::back_inserter(basePipelineMTimes),
-                   [](auto const* pipeline) { return pipeline->GetMTime(); });
-    auto const basePipelineTimeIt = std::max_element(basePipelineMTimes.cbegin(), basePipelineMTimes.cend());
+    std::ranges::transform(basePipelines, std::back_inserter(basePipelineMTimes),
+                           [](auto const* pipeline) { return pipeline->GetMTime(); });
+    auto const basePipelineTimeIt = std::ranges::max_element(std::as_const(basePipelineMTimes));
     vtkMTimeType const basePipelineTime = basePipelineTimeIt != basePipelineMTimes.cend() ? *basePipelineTimeIt : 0;
 
     std::vector<vtkMTimeType> pipelineGroupMTimes;
     pipelineGroupMTimes.reserve(PipelineGroups.size());
     for (auto const& group : PipelineGroups)
         pipelineGroupMTimes.emplace_back(group->GetMTime());
-    auto const groupMTimeIt = std::max_element(pipelineGroupMTimes.cbegin(), pipelineGroupMTimes.cend());
+    auto const groupMTimeIt = std::ranges::max_element(std::as_const(pipelineGroupMTimes));
     vtkMTimeType const groupMTime = groupMTimeIt != pipelineGroupMTimes.cend() ? *groupMTimeIt : 0;
 
     return std::max({ TimeStamp.GetMTime(), basePipelineTime, groupMTime });
@@ -59,7 +58,7 @@ auto PipelineGroupList::GetBasePipelines() const noexcept -> std::vector<Pipelin
     return basePipelines;
 }
 
-auto PipelineGroupList::Get(int idx) noexcept -> PipelineGroup& {
+auto PipelineGroupList::Get(int const idx) const noexcept -> PipelineGroup& {
     return *PipelineGroups.at(idx);
 }
 
@@ -74,9 +73,9 @@ auto PipelineGroupList::AddPipelineGroup(Pipeline const& pipeline, std::string c
     return *PipelineGroups.emplace_back(std::make_unique<PipelineGroup>(pipeline, name));
 }
 
-void PipelineGroupList::RemovePipelineGroup(PipelineGroup const& pipeline) {
-    auto removeIt = std::find_if(PipelineGroups.begin(), PipelineGroups.end(),
-                                 [&](auto& p) { return p.get() == &pipeline; });
+void PipelineGroupList::RemovePipelineGroup(PipelineGroup const& pipelineGroup) {
+    auto const removeIt = std::ranges::find_if(PipelineGroups,
+                                         [&](auto& p) { return p.get() == &pipelineGroup; });
     if (removeIt == PipelineGroups.end())
         throw std::runtime_error("Given pipeline group could not be removed because it was not present");
 
@@ -95,20 +94,19 @@ auto PipelineGroupList::FindPipelineGroupsByBasePipeline(Pipeline const& basePip
     return { filteredPipelineGroups.begin(), filteredPipelineGroups.end() };
 }
 
-auto PipelineGroupList::GenerateImages(ProgressEventCallback const& callback) -> void {
+auto PipelineGroupList::GenerateImages(ProgressEventCallback const& callback) const -> void {
     spdlog::debug("Generating images ...");
     auto const startTime = std::chrono::high_resolution_clock::now();
 
-    std::vector<double> progressList (PipelineGroups.size(), 0.0);
+    std::vector progressList (PipelineGroups.size(), 0.0);
     callback(0.0);
 
     auto const timeStampTime = std::chrono::system_clock::now();
-    auto const roundedStartTime = round<std::chrono::seconds>(timeStampTime);
     std::string const timeStampString = std::format("{0:%Y}-{0:%m}-{0:%d}_{0:%H}-{0:%M}-{0:2%S}", timeStampTime);
 
     ImagesFile = std::filesystem::path(DataDirectory) /= { std::format("images_{}.h5", timeStampString) };
 
-    vtkNew<HdfImageWriter> imageWriter;
+    vtkNew<HdfImageWriter> const imageWriter;
     imageWriter->SetFilename(ImagesFile);
     imageWriter->SetArrayNames({ "Radiodensities", "Segmentation Mask" });
     imageWriter->SetTotalNumberOfImages(GetNumberOfPipelines());
@@ -125,22 +123,22 @@ auto PipelineGroupList::GenerateImages(ProgressEventCallback const& callback) ->
                  duration);
 }
 
-auto PipelineGroupList::ExtractFeatures(PipelineGroupList::ProgressEventCallback const& callback) -> void {
+auto PipelineGroupList::ExtractFeatures(ProgressEventCallback const& callback) -> void {
     spdlog::debug("Extracting features ...");
     auto const startTime = std::chrono::high_resolution_clock::now();
 
-    std::vector<double> progressList (PipelineGroups.size(), 0.0);
+    std::vector progressList (PipelineGroups.size(), 0.0);
     std::vector<int> groupSizeVector (PipelineGroups.size(), 0.0);
-    std::vector<double> groupSizeWeightVector (PipelineGroups.size(), 0.0);
-    std::transform(PipelineGroups.begin(), PipelineGroups.end(), groupSizeVector.begin(),
-                   [](auto const& group) { return group->GetParameterSpace().GetNumberOfPipelines(); });
+    std::vector groupSizeWeightVector (PipelineGroups.size(), 0.0);
+    std::ranges::transform(PipelineGroups, groupSizeVector.begin(),
+                           [](auto const& group) { return group->GetParameterSpace().GetNumberOfPipelines(); });
     int const totalNumberOfPipelines = std::reduce(groupSizeVector.cbegin(), groupSizeVector.cend());
-    std::transform(groupSizeVector.cbegin(), groupSizeVector.cend(), groupSizeWeightVector.begin(),
-                   [=](int size) { return static_cast<double>(size) / static_cast<double>(totalNumberOfPipelines); });
+    std::ranges::transform(std::as_const(groupSizeVector), groupSizeWeightVector.begin(),
+                           [=](int const size) { return static_cast<double>(size) / static_cast<double>(totalNumberOfPipelines); });
 
     callback(0.0);
 
-    vtkNew<HdfImageReader> imageReader;
+    vtkNew<HdfImageReader> const imageReader;
     imageReader->SetFilename(ImagesFile);
     imageReader->SetArrayNames({ "Radiodensities", "Segmentation Mask" });
 
@@ -157,7 +155,7 @@ auto PipelineGroupList::ExtractFeatures(PipelineGroupList::ProgressEventCallback
                  duration);
 }
 
-auto PipelineGroupList::DoPCAs(uint8_t numberOfDimensions, ProgressEventCallback const& callback) -> void {
+auto PipelineGroupList::DoPCAs(uint8_t const numberOfDimensions, ProgressEventCallback const& callback) const -> void {
     spdlog::debug("Doing PCAs ...");
     auto const startTime = std::chrono::high_resolution_clock::now();
 
@@ -193,12 +191,12 @@ auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
     auto& interpreter = App::GetInstance().GetPythonInterpreter();
     pybind11::gil_scoped_acquire const acquire {};
 
-    auto it = std::find_if(subsetData.Data.cbegin(), subsetData.Data.cend(),
-                 [](PipelineBatchData const& batchData) {
-        auto it = std::find_if(batchData.StateDataList.cbegin(), batchData.StateDataList.cend(),
-                               [](auto const& stateData) { return stateData.PcaCoordinates.size() > 0; });
-        return it != batchData.StateDataList.cend();
-    });
+    auto const it = std::ranges::find_if(subsetData.Data,
+                                   [](PipelineBatchData const& batchData) {
+                                       auto const iit = std::ranges::find_if(batchData.StateDataList,
+                                                                      [](auto const& stateData) { return stateData.PcaCoordinates.size() > 0; });
+                                       return iit != batchData.StateDataList.cend();
+                                   });
     if (it == subsetData.Data.cend())
         throw std::runtime_error("illegal number of pca dimensions");
     uint16_t const numberOfDimensions = it->StateDataList.at(0).PcaCoordinates.size();
@@ -207,7 +205,7 @@ auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
                                                                            featureData,
                                                                            numberOfDimensions);
 
-    auto const pcaData = pcaCoordinateData.cast<PcaData>();
+    auto const [explainedVarianceRatios, principalAxes, values] = pcaCoordinateData.cast<PcaData>();
 
     PipelineBatchListData batchListData { subsetData.GroupList,
                                           subsetData.FeatureNames,
@@ -219,11 +217,11 @@ auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
         for (int j = 0; j < batchData.StateDataList.size(); j++, k++) {
             auto& stateData = batchData.StateDataList.at(j);
 
-            stateData.PcaCoordinates = pcaData.Values.at(k);
+            stateData.PcaCoordinates = values.at(k);
         }
 
-        batchData.PcaExplainedVarianceRatios = pcaData.ExplainedVarianceRatios;
-        batchData.PcaPrincipalAxes = pcaData.PrincipalAxes;
+        batchData.PcaExplainedVarianceRatios = explainedVarianceRatios;
+        batchData.PcaPrincipalAxes = principalAxes;
     }
 
     auto const endTime = std::chrono::high_resolution_clock::now();
@@ -234,7 +232,7 @@ auto PipelineGroupList::DoPCAForSubset(PipelineBatchListData const& subsetData,
     return batchListData;
 }
 
-auto PipelineGroupList::DoTsne(uint8_t numberOfDimensions, ProgressEventCallback const& callback) -> void {
+auto PipelineGroupList::DoTsne(uint8_t const numberOfDimensions, ProgressEventCallback const& callback) const -> void {
     spdlog::debug("Doing t-SNE ...");
     auto const startTime = std::chrono::high_resolution_clock::now();
 
@@ -281,8 +279,8 @@ auto PipelineGroupList::GetDataStatus() const noexcept -> DataStatus {
 }
 
 auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineBatchListData> {
-    bool const dataHasBeenGenerated = std::all_of(PipelineGroups.cbegin(), PipelineGroups.cend(),
-                                            [](auto const& group) { return group->GetDataStatus().IsComplete(); });
+    bool const dataHasBeenGenerated = std::ranges::all_of(PipelineGroups,
+                                                          [](auto const& group) { return group->GetDataStatus().IsComplete(); });
     if (PipelineGroups.empty() || !dataHasBeenGenerated)
         return std::nullopt;
 
@@ -322,27 +320,27 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
         std::vector<std::reference_wrapper<PipelineParameterSpaceState>> const& spaceStateVector
                 = spaceStateVectors.at(i);
         std::vector<HdfImageReadHandle> const& imageDataVector = *imageDataVectors.at(i);
-        FeatureData const& featureData = *featureDataVector.at(i);
-        PcaData const& pcaData = *pcaDataVector.at(i);
+        auto const& [featureNames, featureValues] = *featureDataVector.at(i);
+        auto const& [explainedVarianceRatios, principalAxes, pcaValues] = *pcaDataVector.at(i);
         SampleCoordinateData const& tsneData = *tsneDataVector.at(i);
 
         std::vector<ParameterSpaceStateData> stateDataList;
         stateDataList.reserve(imageDataVectors.at(0)->size());
         for (int j = 0; j < imageDataVectors.at(i)->size(); j++)
             stateDataList.emplace_back(spaceStateVector.at(j), imageDataVector.at(j),
-                                       featureData.Values.at(j), pcaData.Values.at(j), tsneData.at(j));
+                                       featureValues.at(j), pcaValues.at(j), tsneData.at(j));
 
         stateDataLists.emplace_back(*PipelineGroups.at(i),
-                                    pcaData.ExplainedVarianceRatios, pcaData.PrincipalAxes,
+                                    explainedVarianceRatios, principalAxes,
                                     std::move(stateDataList));
     }
 
     std::vector<std::string> const& featureNames = featureDataVector.at(0)->Names;
 
-    vtkMTimeType const imageMTime   = *std::max_element(imageMTimes.cbegin(), imageMTimes.cend());  // max
-    vtkMTimeType const featureMTime = *std::min_element(featureMTimes.cbegin(), featureMTimes.cend());
-    vtkMTimeType const pcaMTime     = *std::min_element(pcaMTimes.cbegin(), pcaMTimes.cend());
-    vtkMTimeType const tsneMTime    = *std::min_element(tsneMTimes.cbegin(), tsneMTimes.cend());
+    vtkMTimeType const imageMTime   = *std::ranges::max_element(std::as_const(imageMTimes));  // max
+    vtkMTimeType const featureMTime = *std::ranges::min_element(std::as_const(featureMTimes));
+    vtkMTimeType const pcaMTime     = *std::ranges::min_element(std::as_const(pcaMTimes));
+    vtkMTimeType const tsneMTime    = *std::ranges::min_element(std::as_const(tsneMTimes));
     vtkMTimeType const totalMTime   = std::min({ imageMTime, featureMTime, pcaMTime, tsneMTime });
 
     return PipelineBatchListData { *this,
@@ -352,7 +350,7 @@ auto PipelineGroupList::GetBatchData() const noexcept -> std::optional<PipelineB
 }
 
 auto PipelineGroupList::ExportImagesHdf5(std::filesystem::path const& exportPath,
-                                         PipelineGroupList::ProgressEventCallback const& callback) const -> void {
+                                         ProgressEventCallback const& callback) const -> void {
     spdlog::debug("Exporting Images in .hdf5 format ...");
     auto const startTime = std::chrono::high_resolution_clock::now();
 
@@ -364,7 +362,7 @@ auto PipelineGroupList::ExportImagesHdf5(std::filesystem::path const& exportPath
     if (!is_regular_file(exportPath) && exists(exportPath))
         throw std::runtime_error("Invalid export path");
 
-    std::filesystem::copy(ImagesFile, exportPath, std::filesystem::copy_options::overwrite_existing);
+    copy(ImagesFile, exportPath, std::filesystem::copy_options::overwrite_existing);
 
     callback(1.0);
 
@@ -375,7 +373,7 @@ auto PipelineGroupList::ExportImagesHdf5(std::filesystem::path const& exportPath
 }
 
 auto PipelineGroupList::ExportImagesVtk(std::filesystem::path const& exportDir,
-                                        PipelineGroupList::ProgressEventCallback const& callback) -> void {
+                                        ProgressEventCallback const& callback) const -> void {
     spdlog::debug("Exporting Images in .vtk format ...");
     auto const startTime = std::chrono::high_resolution_clock::now();
     auto const startFileTime = std::chrono::file_clock::now();
@@ -388,16 +386,16 @@ auto PipelineGroupList::ExportImagesVtk(std::filesystem::path const& exportDir,
     if (!is_directory(exportDir))
         throw std::runtime_error("Invalid export path");
 
-    std::vector<double> progressList (PipelineGroups.size(), 0.0);
+    std::vector progressList (PipelineGroups.size(), 0.0);
     std::vector<int> groupSizeVector {};
     for (auto const& group : PipelineGroups)
         groupSizeVector.emplace_back(group->GetParameterSpace().GetNumberOfPipelines());
     std::vector<double> groupSizeWeightVector { PipelineGroups.size(), std::allocator<double>{} };
-    std::transform(groupSizeVector.cbegin(), groupSizeVector.cend(),
-                   groupSizeWeightVector.begin(),
-                   [totalSize = GetNumberOfPipelines()](int size) {
-        return static_cast<double>(size) / static_cast<double>(totalSize);
-    });
+    std::ranges::transform(std::as_const(groupSizeVector),
+                           groupSizeWeightVector.begin(),
+                           [totalSize = GetNumberOfPipelines()](int const size) {
+                               return static_cast<double>(size) / static_cast<double>(totalSize);
+                           });
 
     for (int i = 0; i < PipelineGroups.size(); i++)
         PipelineGroups[i]->ExportImagesVtk(exportDir, WeightedProgressUpdater { i, progressList,
@@ -426,7 +424,7 @@ auto PipelineGroupList::ExportImagesVtk(std::filesystem::path const& exportDir,
 }
 
 auto PipelineGroupList::ImportImages(std::filesystem::path const& importFilePath,
-                                     PipelineGroupList::ProgressEventCallback const& callback) -> void {
+                                     ProgressEventCallback const& callback) const -> void {
     spdlog::debug("Importing Images ...");
     auto const startTime = std::chrono::high_resolution_clock::now();
 
@@ -449,7 +447,7 @@ auto PipelineGroupList::ImportImages(std::filesystem::path const& importFilePath
                  : std::filesystem::path(DataDirectory) /= { std::format("images_{}.h5", timeStampString) };
 
     if (!isAlreadyInDataDirectory)
-        std::filesystem::copy_file(importFilePath, ImagesFile, std::filesystem::copy_options::overwrite_existing);
+        copy_file(importFilePath, ImagesFile, std::filesystem::copy_options::overwrite_existing);
 
     for (auto& group : PipelineGroups)
         group->ImportImages();
@@ -463,15 +461,12 @@ auto PipelineGroupList::ImportImages(std::filesystem::path const& importFilePath
 }
 
 auto PipelineGroupList::ExportFeatures(std::filesystem::path const& exportPath,
-                                       PipelineGroupList::ProgressEventCallback const& callback) -> void {
+                                       ProgressEventCallback const& callback) const -> void {
     if (exists(exportPath) && !is_regular_file(exportPath))
         throw std::runtime_error("Given export path is invalid.");
 
     if (GetDataStatus().Feature <= 0)
         throw std::runtime_error("Cannot export features. They have not been generated yet");
-
-    size_t const numberOfGroups = PipelineGroups.size();
-    size_t const groupIdx = 1;
 
     callback(0.0);
 
@@ -479,15 +474,15 @@ auto PipelineGroupList::ExportFeatures(std::filesystem::path const& exportPath,
     json jsonObject { json::array() };
 
     for (auto const& group : PipelineGroups) {
-        FeatureData features = *group->GetFeatureData();
+        auto [featureNames, featureValues] = *group->GetFeatureData();
 
         json jsonFeatures {};
-        for (auto const& values : features.Values) {
+        for (auto const& values : featureValues) {
 
             json jsonSampleValues {};
 
             for (int i = 0; i < values.size(); i++) {
-                auto const& name = features.Names.at(i);
+                auto const& name = featureNames.at(i);
                 auto const& value = values.at(i);
                 jsonSampleValues[name] = value;
             }
@@ -505,7 +500,7 @@ auto PipelineGroupList::ExportFeatures(std::filesystem::path const& exportPath,
 }
 
 auto PipelineGroupList::ImportFeatures(std::filesystem::path const& importFilePath,
-                                       PipelineGroupList::ProgressEventCallback const& callback) -> void {
+                                       ProgressEventCallback const& callback) const -> void {
 
     if (!is_regular_file(importFilePath))
         throw std::runtime_error("Given import path is invalid.");
@@ -522,8 +517,8 @@ auto PipelineGroupList::ImportFeatures(std::filesystem::path const& importFilePa
     for (auto& jsonGroupFeatures : jsonObject) {
         FeatureData featureData {};
 
-        auto& jsonFirstSampleFeatures = jsonGroupFeatures.at(0);
-        for (auto const& jsonSampleFeature : jsonFirstSampleFeatures.items()) {
+        for (auto& jsonFirstSampleFeatures = jsonGroupFeatures.at(0);
+             auto const& jsonSampleFeature : jsonFirstSampleFeatures.items()) {
             std::string const& featureName = jsonSampleFeature.key();
             featureData.Names.emplace_back(featureName);
         }
@@ -547,7 +542,7 @@ auto PipelineGroupList::ImportFeatures(std::filesystem::path const& importFilePa
     spdlog::info("Imported features");
 }
 
-auto PipelineGroupList::ProgressUpdater::operator()(double current) noexcept -> void {
+auto PipelineGroupList::ProgressUpdater::operator()(double const current) const noexcept -> void {
     ProgressList[Idx] = current;
 
     double const totalProgress = std::reduce(ProgressList.cbegin(), ProgressList.cend())
@@ -555,7 +550,7 @@ auto PipelineGroupList::ProgressUpdater::operator()(double current) noexcept -> 
     Callback(totalProgress);
 }
 
-auto PipelineGroupList::WeightedProgressUpdater::operator()(double current) noexcept -> void {
+auto PipelineGroupList::WeightedProgressUpdater::operator()(double const current) const noexcept -> void {
     ProgressList[Idx] = current;
 
     double const totalProgress = std::transform_reduce(ProgressList.cbegin(), ProgressList.cend(),
@@ -564,14 +559,14 @@ auto PipelineGroupList::WeightedProgressUpdater::operator()(double current) noex
     Callback(totalProgress);
 }
 
-auto PipelineGroupList::MultiTaskProgressUpdater::operator()(double current) noexcept -> void {
+auto PipelineGroupList::MultiTaskProgressUpdater::operator()(double const current) const noexcept -> void {
     ProgressList[Idx] = current;
 
     double const taskFactor = 1.0 / static_cast<double>(NumberOfTasks);
     double const taskOffset = static_cast<double>(CurrentTask) * taskFactor;
 
-    double const taskProgress = (std::reduce(ProgressList.cbegin(), ProgressList.cend())
-                                 / static_cast<double>(ProgressList.size()));
+    double const taskProgress = std::reduce(ProgressList.cbegin(), ProgressList.cend())
+                                  / static_cast<double>(ProgressList.size());
     double const totalProgress = taskProgress * taskFactor + taskOffset;
 
     Callback(totalProgress);
@@ -580,5 +575,5 @@ auto PipelineGroupList::MultiTaskProgressUpdater::operator()(double current) noe
 
 std::filesystem::path const PipelineGroupList::DataDirectory = { "..\\data" };
 std::filesystem::path const PipelineGroupList::FeatureDirectory
-        = (std::filesystem::path(DataDirectory) /= { "features" });
+        = std::filesystem::path(DataDirectory) /= { "features" };
 std::filesystem::path PipelineGroupList::ImagesFile {};

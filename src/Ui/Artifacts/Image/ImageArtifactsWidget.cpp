@@ -67,29 +67,28 @@ void ImageArtifactsWidget::SetCurrentView(int pipelineIdx) {
     UpdateButtonStatesOnSelectionChange(QModelIndex());
 }
 
-void ImageArtifactsWidget::AddView(Pipeline& pipeline) {
+void ImageArtifactsWidget::AddView(Pipeline const& pipeline) {
     auto* newView = new ImageArtifactsView(&pipeline);
     auto* newModel = newView->model();
     newView->setHeaderHidden(true);
     Views->addWidget(newView);
 
-    auto updateButtonStatesOnModelReset = [&, newModel, newView]() {
+    auto updateButtonStatesOnModelReset = [&, newModel, newView] {
         DisableImageArtifactButtons();
 
-        bool const viewIsEmpty = !newModel->hasChildren(newView->rootIndex());
-        if (viewIsEmpty) {
+        if (!newModel->hasChildren(newView->rootIndex())) {
             AddChildButton->setEnabled(true);
         }
     };
     connect(newModel, &QAbstractItemModel::modelReset, this, updateButtonStatesOnModelReset);
 
-    auto* newImageArtifactSelectionModel = newView->selectionModel();
+    auto const* newImageArtifactSelectionModel = newView->selectionModel();
     connect(newImageArtifactSelectionModel, &QItemSelectionModel::currentChanged,
             this, &ImageArtifactsWidget::UpdateButtonStatesOnSelectionChange);
 
 }
 
-void ImageArtifactsWidget::RemoveCurrentView() {
+void ImageArtifactsWidget::RemoveCurrentView() const {
     if (Views->count() <= 1) {
         qWarning("Cannot remove any more views");
         return;
@@ -102,8 +101,8 @@ void ImageArtifactsWidget::AddChildArtifact() {
     CreateDialog = new ImageArtifactDialog(ArtifactsDialog::Mode::CREATE, this);
     CreateDialog->show();
 
-    connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
-        auto data = ImageArtifactWidget::GetWidgetData(CreateDialog);
+    connect(CreateDialog, &ArtifactsDialog::accepted, [&] {
+        auto const data = ImageArtifactWidget::GetWidgetData(CreateDialog);
         QModelIndex const parentIndex = GetCurrentSelectionModel()->currentIndex();
         QModelIndex const newIndex = GetCurrentModel()->AddChildImageArtifact(data, parentIndex);
 
@@ -116,18 +115,10 @@ void ImageArtifactsWidget::AddSiblingArtifact() {
     CreateDialog = new ImageArtifactDialog(ArtifactsDialog::Mode::CREATE, this);
 
     CreateDialog->updateGeometry();
-    auto sizeHint = CreateDialog->sizeHint();
-    auto minSizeHint = CreateDialog->minimumSizeHint();
-    auto minSize = CreateDialog->minimumSize();
-    auto maxSize = CreateDialog->maximumSize();
-    auto geom = CreateDialog->geometry();
-    auto geomUpdated = CreateDialog->geometry();
-    auto visible = CreateDialog->isVisible();
-    auto policy = CreateDialog->sizePolicy();
     CreateDialog->show();
 
-    connect(CreateDialog, &ArtifactsDialog::accepted, [&]() {
-        auto data = ImageArtifactWidget::GetWidgetData(CreateDialog);
+    connect(CreateDialog, &ArtifactsDialog::accepted, [&] {
+        auto const data = ImageArtifactWidget::GetWidgetData(CreateDialog);
         QModelIndex const siblingIndex = GetCurrentSelectionModel()->currentIndex();
         QModelIndex const newIndex = GetCurrentModel()->AddSiblingImageArtifact(data, siblingIndex);
 
@@ -178,20 +169,20 @@ void ImageArtifactsWidget::UpdateButtonStatesOnSelectionChange(const QModelIndex
     MoveDownButton->setEnabled(hasSiblingsAfter);
 }
 
-void ImageArtifactsWidget::DisableImageArtifactButtons() {
+void ImageArtifactsWidget::DisableImageArtifactButtons() const {
     for (const auto& button: Buttons)
         button->setEnabled(false);
 }
 
-ImageArtifactsView* ImageArtifactsWidget::GetCurrentView() {
+ImageArtifactsView* ImageArtifactsWidget::GetCurrentView() const {
     return dynamic_cast<ImageArtifactsView*>(Views->currentWidget());
 }
 
-ImageArtifactsModel* ImageArtifactsWidget::GetCurrentModel() {
+ImageArtifactsModel* ImageArtifactsWidget::GetCurrentModel() const {
     return dynamic_cast<ImageArtifactsModel*>(GetCurrentView()->model());
 }
 
-QItemSelectionModel* ImageArtifactsWidget::GetCurrentSelectionModel() {
+QItemSelectionModel* ImageArtifactsWidget::GetCurrentSelectionModel() const {
     return GetCurrentView()->selectionModel();
 }
 

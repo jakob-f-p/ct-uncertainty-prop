@@ -29,21 +29,21 @@ CompositeImageArtifactDetails::CompositeImageArtifactWidgetImpl::CompositeImageA
     auto* fLayout = new QFormLayout(this);
     fLayout->setContentsMargins(0, 5, 0, 5);
 
-    for (const auto &compositionTypeAndName : CompositeImageArtifactDetails::GetCompositionTypeValues())
-        CompositionTypeComboBox->addItem(compositionTypeAndName.Name,
-                                         QVariant::fromValue(compositionTypeAndName.EnumValue));
+    for (auto const & [name, enumValue] : GetCompositionTypeValues())
+        CompositionTypeComboBox->addItem(name,
+                                         QVariant::fromValue(enumValue));
 
     fLayout->addRow("Composition Type", CompositionTypeComboBox);
 }
 
-auto CompositeImageArtifactDetails::CompositeImageArtifactWidgetImpl::GetData() noexcept -> CompositeImageArtifactData {
+auto CompositeImageArtifactDetails::CompositeImageArtifactWidgetImpl::GetData() const noexcept -> CompositeImageArtifactData {
     return { CompositionTypeComboBox->currentData().value<CompositionType>()};
 }
 
-auto CompositeImageArtifactDetails::CompositeImageArtifactWidgetImpl::Populate(
-        CompositeImageArtifactData const& data) noexcept -> void {
+void CompositeImageArtifactDetails::CompositeImageArtifactWidgetImpl::Populate(
+    CompositeImageArtifactData const& data) const noexcept {
 
-    if (int idx = CompositionTypeComboBox->findData(QVariant::fromValue(data.CompositionType));
+    if (int const idx = CompositionTypeComboBox->findData(QVariant::fromValue(data.CompositionType));
             idx != -1)
         CompositionTypeComboBox->setCurrentIndex(idx);
 }
@@ -61,8 +61,8 @@ CompositeImageArtifact::CompositeImageArtifact(CompositeImageArtifactData const&
 }
 
 CompositeImageArtifact::CompositeImageArtifact(CompositeImageArtifact const& other) :
-        ImageArtifactBaseDetails::ImageArtifactBase(other),
-        ImageArtifacts([&other]() {
+        ImageArtifactBase(other),
+        ImageArtifacts([&other] {
             std::vector<std::unique_ptr<ImageArtifact>> imageArtifacts;
             imageArtifacts.reserve(other.ImageArtifacts.size());
 
@@ -73,14 +73,14 @@ CompositeImageArtifact::CompositeImageArtifact(CompositeImageArtifact const& oth
         }()),
         CompType(other.CompType) {}
 
-CompositeImageArtifact::CompositeImageArtifact(CompositeImageArtifact&&) = default;
+CompositeImageArtifact::CompositeImageArtifact(CompositeImageArtifact&&) noexcept = default;
 
-auto CompositeImageArtifact::operator=(CompositeImageArtifact&&) -> CompositeImageArtifact& = default;
+auto CompositeImageArtifact::operator=(CompositeImageArtifact&&) noexcept -> CompositeImageArtifact& = default;
 
 CompositeImageArtifact::~CompositeImageArtifact() = default;
 
 auto CompositeImageArtifact::GetViewName() const noexcept -> std::string {
-    std::string const viewName = CompositionTypeToString(CompType) + (Name.empty() ? "" : (" (" + Name + ")"));
+    std::string const viewName = CompositionTypeToString(CompType) + (Name.empty() ? "" : " (" + Name + ")");
     return viewName;
 }
 
@@ -89,7 +89,7 @@ auto CompositeImageArtifact::GetProperties() noexcept -> PipelineParameterProper
 }
 
 auto CompositeImageArtifact::ContainsImageArtifact(const ImageArtifact& imageArtifact) const noexcept -> bool {
-    return std::any_of(ImageArtifacts.begin(), ImageArtifacts.end(), [&](auto& child) {
+    return std::ranges::any_of(ImageArtifacts, [&](auto& child) {
         if (child.get() == &imageArtifact)
             return true;
 
@@ -106,8 +106,8 @@ auto CompositeImageArtifact::AddImageArtifact(ImageArtifact&& artifact, int idx)
 }
 
 void CompositeImageArtifact::RemoveImageArtifact(const ImageArtifact& imageArtifact) {
-    auto artifactIt = std::find_if(ImageArtifacts.begin(), ImageArtifacts.end(),
-                                   [&](auto& artifact) { return artifact.get() == &imageArtifact; });
+    auto const artifactIt = std::ranges::find_if(ImageArtifacts,
+                                           [&](auto& artifact) { return artifact.get() == &imageArtifact; });
 
     if (artifactIt == ImageArtifacts.end())
         throw std::runtime_error("Cannot remove image artifact from this composition since"
@@ -120,17 +120,17 @@ void CompositeImageArtifact::MoveChildImageArtifact(const ImageArtifact& imageAr
     if (newIdx < 0 || newIdx >= ImageArtifacts.size())
         throw std::runtime_error("Cannot move given image artifact to index");
 
-    auto currentIt = std::find_if(ImageArtifacts.begin(), ImageArtifacts.end(),
-                                  [&](auto& artifact) { return artifact.get() == &imageArtifact; });
+    auto const currentIt = std::ranges::find_if(ImageArtifacts,
+                                                [&](auto& artifact) { return artifact.get() == &imageArtifact; });
     if (currentIt == ImageArtifacts.end())
         throw std::runtime_error("Cannot move given image artifact to index");
 
-    auto currentIdx = std::distance(ImageArtifacts.begin(), currentIt);
+    auto const currentIdx = std::distance(ImageArtifacts.begin(), currentIt);
 
     if (currentIdx == newIdx)
         return;
 
-    auto newIt = std::next(ImageArtifacts.begin(), newIdx);
+    auto const newIt = std::next(ImageArtifacts.begin(), newIdx);
     if (currentIdx < newIdx) {
         std::rotate(currentIt, std::next(currentIt), std::next(newIt));
     } else {
@@ -151,16 +151,14 @@ auto CompositeImageArtifact::ChildArtifact(uint8_t idx) const -> ImageArtifact& 
 
 auto CompositeImageArtifact::GetChildIdx(const ImageArtifact& imageArtifact) const -> uint8_t {
     uint64_t const idx = std::distance(ImageArtifacts.begin(),
-                                 std::find_if(ImageArtifacts.begin(), ImageArtifacts.end(),
-                                              [&](auto& artifact) { return artifact.get() == &imageArtifact; }));
+                                 std::ranges::find_if(ImageArtifacts,
+                                                      [&](auto& artifact) { return artifact.get() == &imageArtifact; }));
     return static_cast<uint8_t>(idx);
 }
 
-auto CompositeImageArtifact::Get(uint16_t targetIdx, uint16_t& currentIdx) -> ImageArtifact* {
+auto CompositeImageArtifact::Get(uint16_t targetIdx, uint16_t& currentIdx) const -> ImageArtifact* {
     for (const auto& childArtifact : ImageArtifacts) {
-        ImageArtifact* artifact = childArtifact->Get(targetIdx, currentIdx);
-
-        if (artifact)
+        if (ImageArtifact* artifact = childArtifact->Get(targetIdx, currentIdx))
             return artifact;
     }
 
@@ -169,22 +167,20 @@ auto CompositeImageArtifact::Get(uint16_t targetIdx, uint16_t& currentIdx) -> Im
 
 auto CompositeImageArtifact::IndexOf(const ImageArtifact& imageArtifact, uint16_t& currentIdx) const -> int32_t {
     for (const auto& childArtifact : ImageArtifacts) {
-        int32_t idx = childArtifact->IndexOf(imageArtifact, currentIdx);
-
-        if (idx != -1)
+        if (int32_t const idx = childArtifact->IndexOf(imageArtifact, currentIdx); idx != -1)
             return idx;
     }
 
     return -1;
 }
 
-auto CompositeImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) -> vtkImageAlgorithm& {
+auto CompositeImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorithm) const -> vtkImageAlgorithm& {
     switch (CompType) {
 
         case CompositionType::SEQUENTIAL: {
             vtkImageAlgorithm* currentImageAlgorithm = &inputAlgorithm;
 
-            for (auto& imageArtifact : ImageArtifacts)
+            for (auto const& imageArtifact : ImageArtifacts)
                 currentImageAlgorithm = &imageArtifact->AppendImageFilters(*currentImageAlgorithm);
 
             return *currentImageAlgorithm;
@@ -195,7 +191,7 @@ auto CompositeImageArtifact::AppendImageFilters(vtkImageAlgorithm& inputAlgorith
 
             Filter->SetBaseFilterConnection(inputAlgorithm.GetOutputPort());
 
-            for (auto& imageArtifact : ImageArtifacts) {
+            for (auto const& imageArtifact : ImageArtifacts) {
                 auto& appendedAlgorithm = imageArtifact->AppendImageFilters(inputAlgorithm);
 
                 Filter->AddParallelFilterConnection(appendedAlgorithm.GetOutputPort());

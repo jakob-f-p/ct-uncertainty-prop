@@ -19,7 +19,7 @@ auto BasicStructureDetails::BasicStructureDataImpl::PopulateFromStructure(const 
 
 auto BasicStructureDetails::BasicStructureDataImpl::PopulateStructure(Structure& structure) const noexcept
         -> void {
-    structure.SetTissueType(BasicStructureDetails::GetTissueTypeByName(TissueName.toStdString()));
+    structure.SetTissueType(GetTissueTypeByName(TissueName.toStdString()));
 
     std::visit([&](auto& shape) -> void { shape.SetFunctionData(std::get<DataTypeT<decltype(shape)>>(Data)); },
                structure.Shape);
@@ -89,12 +89,12 @@ BasicStructureDetails::BasicStructureWidgetImpl::BasicStructureWidgetImpl() :
     Layout->setFieldGrowthPolicy(QFormLayout::FieldGrowthPolicy::FieldsStayAtSizeHint);
     Layout->setHorizontalSpacing(15);
 
-    TissueTypeComboBox->addItems(BasicStructureDetails::GetTissueTypeNames());
+    TissueTypeComboBox->addItems(GetTissueTypeNames());
     Layout->addRow("Tissue Type", TissueTypeComboBox);
 
-    for (const auto &implicitFunctionAndName : BasicStructureDetails::GetFunctionTypeValues())
-        FunctionTypeComboBox->addItem(implicitFunctionAndName.Name,
-                                      QVariant::fromValue(implicitFunctionAndName.EnumValue));
+    for (auto const & [name, enumValue] : GetFunctionTypeValues())
+        FunctionTypeComboBox->addItem(name,
+                                      QVariant::fromValue(enumValue));
     Layout->addRow("Structure Type", FunctionTypeComboBox);
 
     auto* subTypeVLayout = new QVBoxLayout(SubTypeGroupBox);
@@ -103,7 +103,7 @@ BasicStructureDetails::BasicStructureWidgetImpl::BasicStructureWidgetImpl() :
     UpdateFunctionParametersGroup();
     Layout->addRow(SubTypeGroupBox);
 
-    QObject::connect(FunctionTypeComboBox, &QComboBox::currentIndexChanged, [&]() { UpdateFunctionParametersGroup(); });
+    connect(FunctionTypeComboBox, &QComboBox::currentIndexChanged, [&] { UpdateFunctionParametersGroup(); });
 }
 
 auto BasicStructureDetails::BasicStructureWidgetImpl::GetData() noexcept -> Data {
@@ -134,7 +134,7 @@ auto BasicStructureDetails::BasicStructureWidgetImpl::Populate(const Data& data)
 auto BasicStructureDetails::BasicStructureWidgetImpl::UpdateFunctionParametersGroup() -> void {
     auto functionType = FunctionTypeComboBox->currentData().value<FunctionType>();
 
-    ShapeWidgetVariant newSubTypeWidgetVariant = [functionType]() {
+    ShapeWidgetVariant newSubTypeWidgetVariant = [functionType] {
         switch (functionType) {
             case FunctionType::SPHERE:   return ShapeWidgetVariant { new SphereWidget() };
             case FunctionType::BOX:      return ShapeWidgetVariant { new BoxWidget() };
@@ -155,5 +155,5 @@ auto BasicStructureDetails::BasicStructureWidgetImpl::UpdateFunctionParametersGr
 
     SubTypeWidgetVariant = newSubTypeWidgetVariant;
 
-    SubTypeGroupBox->setTitle(QString::fromStdString(BasicStructureDetails::FunctionTypeToString(functionType)));
+    SubTypeGroupBox->setTitle(QString::fromStdString(FunctionTypeToString(functionType)));
 }

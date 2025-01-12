@@ -11,10 +11,10 @@ public:
     }
 
     [[nodiscard]] auto
-    GetText() noexcept -> QString { return text(); };
+    GetText() const noexcept -> QString { return text(); }
 
     auto
-    SetText(QString const& name) noexcept -> void { setText(name); };
+    SetText(QString const& name) noexcept -> void { setText(name); }
 
 Q_SIGNALS:
     void TextChanged(QString const& text);

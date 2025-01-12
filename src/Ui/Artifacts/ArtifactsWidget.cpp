@@ -7,7 +7,6 @@
 #include "../../App.h"
 
 #include <QDockWidget>
-#include <QFrame>
 #include <QPushButton>
 #include <QVBoxLayout>
 
@@ -41,18 +40,18 @@ ArtifactsWidget::ArtifactsWidget(PipelineList& pipelines) :
     addDockWidget(Qt::DockWidgetArea::RightDockWidgetArea, dockWidget);
 }
 
-auto ArtifactsWidget::GetCurrentPipeline() -> Pipeline& {
+auto ArtifactsWidget::GetCurrentPipeline() const -> Pipeline& {
     return PipelineWidget->GetCurrentPipeline();
 }
 
-auto ArtifactsWidget::UpdateDataSource() -> void {
+auto ArtifactsWidget::UpdateDataSource() const -> void {
     RenderWidget->UpdateImageArtifactFiltersOnPipelineChange(GetCurrentPipeline());
 }
 
 
-ArtifactRenderWidget::ArtifactRenderWidget(PipelineList& pipelines, QWidget* parent) :
+ArtifactRenderWidget::ArtifactRenderWidget(PipelineList& pipelines, QWidget*) :
         Pipeline_(nullptr) {
-    pipelines.AddTreeEventCallback([&]() { Render(); });
+    pipelines.AddTreeEventCallback([&] { Render(); });
 }
 
 ArtifactRenderWidget::~ArtifactRenderWidget() = default;
@@ -63,16 +62,16 @@ auto ArtifactRenderWidget::UpdateDataSource() -> void {
 
     auto& app = App::GetInstance();
     auto& ctDataSource = app.GetCtDataSource();
-    auto artifactsPipeline = [this, &app]() {
+    auto const [in, out] = [this, &app] {
         switch (app.GetCtDataSourceType()) {
             case App::CtDataSourceType::IMPLICIT: return Pipeline_->GetArtifactsAlgorithm();
             case App::CtDataSourceType::IMPORTED: return Pipeline_->GetImageArtifactsAlgorithm();
             default: throw std::runtime_error("invalid data source type");
         }
     }();
-    artifactsPipeline.In.SetInputConnection(ctDataSource.GetOutputPort());
+    in.SetInputConnection(ctDataSource.GetOutputPort());
 
-    UpdateImageAlgorithm(artifactsPipeline.Out);
+    UpdateImageAlgorithm(out);
 }
 
 auto ArtifactRenderWidget::UpdateImageArtifactFiltersOnPipelineChange(Pipeline const& newPipeline) -> void {
@@ -80,14 +79,14 @@ auto ArtifactRenderWidget::UpdateImageArtifactFiltersOnPipelineChange(Pipeline c
 
     auto& app = App::GetInstance();
     auto& ctDataSource = app.GetCtDataSource();
-    auto artifactsPipeline = [&newPipeline, &app]() {
+    auto const [in, out] = [&newPipeline, &app] {
         switch (app.GetCtDataSourceType()) {
             case App::CtDataSourceType::IMPLICIT: return newPipeline.GetArtifactsAlgorithm();
             case App::CtDataSourceType::IMPORTED: return newPipeline.GetImageArtifactsAlgorithm();
             default: throw std::runtime_error("invalid data source type");
         }
     }();
-    artifactsPipeline.In.SetInputConnection(ctDataSource.GetOutputPort());
+    in.SetInputConnection(ctDataSource.GetOutputPort());
 
-    UpdateImageAlgorithm(artifactsPipeline.Out);
+    UpdateImageAlgorithm(out);
 }

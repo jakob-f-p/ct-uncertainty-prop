@@ -13,7 +13,7 @@
 vtkStandardNewMacro(MergeParallelImageArtifactFilters)
 
 MergeParallelImageArtifactFilters::MergeParallelImageArtifactFilters() {
-    SetNumberOfInputPorts(2);
+    vtkAlgorithm::SetNumberOfInputPorts(2);
 }
 
 auto MergeParallelImageArtifactFilters::SetBaseFilterConnection(vtkAlgorithmOutput* input) noexcept -> void {
@@ -31,7 +31,7 @@ int MergeParallelImageArtifactFilters::FillInputPortInformation(int port, vtkInf
     ImageArtifactFilter::FillInputPortInformation(port, info);
 
     if (port == 1)
-        info->Set(vtkAlgorithm::INPUT_IS_REPEATABLE(), 1);
+        info->Set(INPUT_IS_REPEATABLE(), 1);
 
     return 1;
 }
@@ -51,9 +51,8 @@ int MergeParallelImageArtifactFilters::RequestInformation(vtkInformation* reques
 
     outInfo->Set(CAN_PRODUCE_SUB_EXTENT(), 1);
 
-    std::vector<SubType> const containedSubTypes = GetContainedSubTypes(baseInInfo, parallelInInfos);
-
-    for (const auto subType : containedSubTypes)
+    for (std::vector<SubType> const containedSubTypes = GetContainedSubTypes(baseInInfo, parallelInInfos);
+         const auto subType : containedSubTypes)
         AddArrayInformationToPointDataVector(subType, outputVector);
 
     return 1;
@@ -82,45 +81,44 @@ int MergeParallelImageArtifactFilters::RequestData(vtkInformation* request,
     std::vector<SubType> containedSubTypes = GetContainedSubTypes(baseInInfo, parallelInInfos);
 
     std::vector<vtkFloatArray*> outputArrays;
-    std::transform(containedSubTypes.begin(), containedSubTypes.end(), std::back_inserter(outputArrays),
-                   [&, baseInput, output](SubType subType) { return GetDeepCopiedArtifactArray(baseInput, output, subType); });
+    std::ranges::transform(containedSubTypes, std::back_inserter(outputArrays),
+                           [&, baseInput, output](SubType subType) { return GetDeepCopiedArtifactArray(baseInput, output, subType); });
     outputArrays.push_back(GetDeepCopiedRadiodensitiesArray(baseInput, output));
 
     std::vector<float*> artifactArrayWritePointers;
-    std::transform(outputArrays.begin(), outputArrays.end(), std::back_inserter(artifactArrayWritePointers),
-                   [=](vtkFloatArray* array) { return array->WritePointer(0, numberOfPoints); });
+    std::ranges::transform(outputArrays, std::back_inserter(artifactArrayWritePointers),
+                           [=](vtkFloatArray* array) { return array->WritePointer(0, numberOfPoints); });
 
     std::vector<std::vector<vtkFloatArray*>> inputArrays;
-    std::transform(containedSubTypes.begin(), containedSubTypes.end(), std::back_inserter(inputArrays),
-                   [&, parallelInInfos](SubType subType) {
-        std::vector<vtkFloatArray*> subTypeInputArrays;
+    std::ranges::transform(containedSubTypes, std::back_inserter(inputArrays),
+                           [&, parallelInInfos](SubType subType) {
+                               std::vector<vtkFloatArray*> subTypeInputArrays;
 
-        for (int i = 0; i < parallelInInfos->GetNumberOfInformationObjects(); i++) {
-            vtkInformation* parallelInfo = parallelInInfos->GetInformationObject(i);
+                               for (int i = 0; i < parallelInInfos->GetNumberOfInformationObjects(); i++) {
+                                   if (vtkInformation* parallelInfo = parallelInInfos->GetInformationObject(i);
+                                       PointDataInformationVectorHasArray(parallelInfo, subType))
+                                       subTypeInputArrays.push_back(GetArtifactArray(parallelInputs[i], subType));
+                               }
 
-            if (PointDataInformationVectorHasArray(parallelInfo, subType))
-                subTypeInputArrays.push_back(GetArtifactArray(parallelInputs[i], subType));
-        }
-
-        return subTypeInputArrays;
-    });
+                               return subTypeInputArrays;
+                           });
     std::vector<vtkFloatArray*> inputRadiodensityArrays;
-    std::transform(parallelInputs.begin(), parallelInputs.end(), std::back_inserter(inputRadiodensityArrays),
-                   [&](vtkImageData* parallelInput) { return GetRadiodensitiesArray(parallelInput); });
+    std::ranges::transform(parallelInputs, std::back_inserter(inputRadiodensityArrays),
+                           [&](vtkImageData* parallelInput) { return GetRadiodensitiesArray(parallelInput); });
     inputArrays.push_back(inputRadiodensityArrays);
 
 
     std::vector<std::vector<const float*>> inputArrayReadPointers;
-    std::transform(inputArrays.begin(), inputArrays.end(), std::back_inserter(inputArrayReadPointers),
-                   [=](std::vector<vtkFloatArray*> subTypeInputArrays) {
-        std::vector<const float*> subTypeReadPointers;
-        std::transform(subTypeInputArrays.begin(), subTypeInputArrays.end(), std::back_inserter(subTypeReadPointers),
-                       [=](vtkFloatArray* array) { return array->WritePointer(0, numberOfPoints); });
-        return subTypeReadPointers;
-    });
+    std::ranges::transform(inputArrays, std::back_inserter(inputArrayReadPointers),
+                           [=](std::vector<vtkFloatArray*> subTypeInputArrays) {
+                               std::vector<const float*> subTypeReadPointers;
+                               std::ranges::transform(subTypeInputArrays, std::back_inserter(subTypeReadPointers),
+                                                      [=](vtkFloatArray* array) { return array->WritePointer(0, numberOfPoints); });
+                               return subTypeReadPointers;
+                           });
 
 
-    auto addInputArrayDeltasToOutputArrays = [containedSubTypes, artifactArrayWritePointers, inputArrayReadPointers]
+    auto addInputArrayDeltasToOutputArrays = [artifactArrayWritePointers, inputArrayReadPointers]
     (vtkIdType pointId, vtkIdType endPointId) {
         vtkIdType const startPointId = pointId;
 
@@ -158,7 +156,7 @@ int MergeParallelImageArtifactFilters::RequestData(vtkInformation* request,
 auto MergeParallelImageArtifactFilters::InfoPointDataInformationVectorHasArray(vtkInformationVector* infos,
                                                                                SubType subType) -> bool {
     for (int i = 0; i < infos->GetNumberOfInformationObjects(); ++i) {
-        if (ImageArtifactFilter::PointDataInformationVectorHasArray(infos->GetInformationObject(i), subType))
+        if (PointDataInformationVectorHasArray(infos->GetInformationObject(i), subType))
             return true;
     }
 
@@ -169,10 +167,10 @@ auto MergeParallelImageArtifactFilters::GetContainedSubTypes(vtkInformation* bas
                                                              vtkInformationVector* parallelInInfos) noexcept
                                                              -> std::vector<SubType> {
     std::vector<SubType> containedSubTypes;
-    for (auto const& subTypeAndName : BasicImageArtifactDetails::GetSubTypeValues()) {
-        if (PointDataInformationVectorHasArray(baseInInfo, subTypeAndName.EnumValue)
-            || InfoPointDataInformationVectorHasArray(parallelInInfos, subTypeAndName.EnumValue)) {
-            containedSubTypes.push_back(subTypeAndName.EnumValue);
+    for (auto const& [name, enumValue] : BasicImageArtifactDetails::GetSubTypeValues()) {
+        if (PointDataInformationVectorHasArray(baseInInfo, enumValue)
+            || InfoPointDataInformationVectorHasArray(parallelInInfos, enumValue)) {
+            containedSubTypes.push_back(enumValue);
             break;
         }
     }

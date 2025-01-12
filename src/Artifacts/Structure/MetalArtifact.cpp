@@ -4,7 +4,6 @@
 
 #include <QDoubleSpinBox>
 #include <QFormLayout>
-#include <QGroupBox>
 #include <QLabel>
 
 auto MetalArtifactData::PopulateFromArtifact(MetalArtifact const& artifact) noexcept -> void {
@@ -21,7 +20,7 @@ auto MetalArtifactData::PopulateArtifact(MetalArtifact& artifact) const noexcept
 
 MetalArtifactWidget::MetalArtifactWidget() :
         Layout(new QFormLayout(this)),
-        DirectionXSpinBox([]() {
+        DirectionXSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(-1.0, 1.0);
             spinBox->setSingleStep(0.1);
@@ -29,7 +28,7 @@ MetalArtifactWidget::MetalArtifactWidget() :
             spinBox->setValue(1.0);
             return spinBox;
         }()),
-        DirectionYSpinBox([]() {
+        DirectionYSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(-1.0, 1.0);
             spinBox->setSingleStep(0.1);
@@ -37,7 +36,7 @@ MetalArtifactWidget::MetalArtifactWidget() :
             spinBox->setValue(0.0);
             return spinBox;
         }()),
-        MaxAttenuationFactorSpinBox([]() {
+        MaxAttenuationFactorSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(0.01, 1.0);
             spinBox->setValue(1.0);
@@ -45,7 +44,7 @@ MetalArtifactWidget::MetalArtifactWidget() :
             spinBox->setDecimals(2);
             return spinBox;
         }()),
-        LengthSpinBox([]() {
+        LengthSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(0.0, 500.0);
             spinBox->setValue(0.0);
@@ -71,7 +70,7 @@ MetalArtifactWidget::MetalArtifactWidget() :
     Layout->addRow("Length", LengthSpinBox);
 }
 
-auto MetalArtifactWidget::GetData() noexcept -> MetalArtifactWidget::Data {
+auto MetalArtifactWidget::GetData() const noexcept -> Data {
     Data data {};
 
     data.DirectionHighestAttenuation = { static_cast<float>(DirectionXSpinBox->value()),
@@ -82,7 +81,7 @@ auto MetalArtifactWidget::GetData() noexcept -> MetalArtifactWidget::Data {
     return data;
 }
 
-auto MetalArtifactWidget::Populate(MetalArtifactWidget::Data const& data) noexcept -> void {
+auto MetalArtifactWidget::Populate(Data const& data) const noexcept -> void {
     DirectionXSpinBox->setValue(data.DirectionHighestAttenuation.GetX());
     DirectionYSpinBox->setValue(data.DirectionHighestAttenuation.GetY());
     MaxAttenuationFactorSpinBox->setValue(data.MaxAttenuationFactor);
@@ -147,17 +146,17 @@ auto MetalArtifact::EvaluateAtPosition(DoublePoint const& point,
     if (!closestXYPoint || point == *closestXYPoint)
         return 0.0F;
 
-    auto const radiodensity = structureTree.FunctionValueAndRadiodensity(point, &structure).Radiodensity;
-    if (radiodensity <= 0.0F)
+    if (auto const radiodensity = structureTree.FunctionValueAndRadiodensity(point, &structure).Radiodensity;
+        radiodensity <= 0.0F)
         return 0.0F;
 
-    vtkVector2<float> const difference { static_cast<float>((*closestXYPoint)[0] - point[0]),
+    vtkVector2 const difference { static_cast<float>((*closestXYPoint)[0] - point[0]),
                                          static_cast<float>((*closestXYPoint)[1] - point[1]) };
     float const distance = std::sqrt(difference.SquaredNorm());
-    float const distanceFactor = std::max(1.0F - (distance / Length), 0.0F);
+    float const distanceFactor = std::max(1.0F - distance / Length, 0.0F);
 
     float const cosAngle = difference.Dot(DirectionHighestAttenuationNormed) / distance;
-    float const inverseCosAngleSquared = 1.0F - (cosAngle * cosAngle);
+    float const inverseCosAngleSquared = 1.0F - cosAngle * cosAngle;
     float const directionFactor = MaxAttenuationChangeFactor + inverseCosAngleSquared * FactorRange;
 
     return maxRadiodensity * distanceFactor * directionFactor;

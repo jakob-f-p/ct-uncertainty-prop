@@ -5,6 +5,8 @@
 
 #include "../Utils/Enum.h"
 
+#include <QMetaEnum>
+
 class BasicStructure;
 
 class QComboBox;
@@ -62,7 +64,7 @@ namespace BasicStructureDetails {
 
     [[nodiscard]] auto static
     GetTissueTypeByName(const std::string& tissueName) noexcept -> TissueType {
-        if (auto search = TissueTypeMap.find(tissueName);
+        if (auto const search = TissueTypeMap.find(tissueName);
                 search != TissueTypeMap.end())
             return search->second;
 
@@ -74,8 +76,8 @@ namespace BasicStructureDetails {
     [[nodiscard]] auto static
     GetTissueTypeNames() noexcept -> QStringList {
         QStringList names;
-        std::transform(TissueTypeMap.cbegin(), TissueTypeMap.cend(), std::back_inserter(names),
-                       [](const auto& type) { return QString::fromStdString(type.first); });
+        std::ranges::transform(std::as_const(TissueTypeMap), std::back_inserter(names),
+                               [](const auto& type) { return QString::fromStdString(type.first); });
         return names;
     }
 

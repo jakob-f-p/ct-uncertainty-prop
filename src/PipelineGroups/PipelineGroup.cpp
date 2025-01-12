@@ -81,7 +81,7 @@ auto PipelineGroup::GenerateImages(HdfImageWriter& imageWriter, ProgressEventCal
 
     auto& app = App::GetInstance();
     auto& ctDataSource = app.GetCtDataSource();
-    auto artifactsPipeline = [this, &app]() {
+    auto [in, out] = [this, &app] {
         switch (app.GetCtDataSourceType()) {
             case App::CtDataSourceType::IMPLICIT: return GetBasePipeline().GetArtifactsAlgorithm();
             case App::CtDataSourceType::IMPORTED: return GetBasePipeline().GetImageArtifactsAlgorithm();
@@ -89,8 +89,8 @@ auto PipelineGroup::GenerateImages(HdfImageWriter& imageWriter, ProgressEventCal
         }
     }();
     auto& thresholdAlgorithm = app.GetThresholdFilter();
-    artifactsPipeline.In.SetInputConnection(ctDataSource.GetOutputPort());
-    thresholdAlgorithm.SetInputConnection(artifactsPipeline.Out.GetOutputPort());
+    in.SetInputConnection(ctDataSource.GetOutputPort());
+    thresholdAlgorithm.SetInputConnection(out.GetOutputPort());
 
     HdfImageReadHandles imageReadHandles;
     imageReadHandles.reserve(numberOfStates);
@@ -112,7 +112,7 @@ auto PipelineGroup::GenerateImages(HdfImageWriter& imageWriter, ProgressEventCal
             double const progress = static_cast<double>(i) / static_cast<double>(numberOfStates);
             callback(progress);
 
-            auto& state = Data.States[i];
+            auto const& state = Data.States[i];
             if (!state)
                 throw std::runtime_error("State must not be nullptr");
 
@@ -232,14 +232,14 @@ PYBIND11_EMBEDDED_MODULE(feature_extraction_cpp, m) {
             .def("__repr__", [](FeatureData const& featureData) {
                 std::ostringstream repr;
                 repr << "Names: [";
-                std::copy(featureData.Names.cbegin(), featureData.Names.cend(),
-                          std::ostream_iterator<std::string>(repr, ", "));
+                std::ranges::copy(featureData.Names,
+                                  std::ostream_iterator<std::string>(repr, ", "));
                 repr << "]\nData: [";
                 for (auto const& row : featureData.Values) {
                     repr << "[";
-                    std::transform(row.cbegin(), row.cend(),
-                                   std::ostream_iterator<std::string>(repr, ", "),
-                                   [](double value) { return std::to_string(value); });
+                    std::ranges::transform(row,
+                                           std::ostream_iterator<std::string>(repr, ", "),
+                                           [](double value) { return std::to_string(value); });
                     repr << "]\n";
                 }
                 repr << "]\n";
@@ -254,23 +254,23 @@ PYBIND11_EMBEDDED_MODULE(feature_extraction_cpp, m) {
             .def("__repr__", [](PcaData const& pcaData) {
                 std::ostringstream repr;
                 repr << "Explained variance ratios: [";
-                std::copy(pcaData.ExplainedVarianceRatios.cbegin(), pcaData.ExplainedVarianceRatios.cend(),
-                          std::ostream_iterator<double>(repr, ", "));
+                std::ranges::copy(pcaData.ExplainedVarianceRatios,
+                                  std::ostream_iterator<double>(repr, ", "));
                 repr << "]\nPrincipal Axes: [";
                 for (auto const& row : pcaData.PrincipalAxes) {
                     repr << "[";
-                    std::transform(row.cbegin(), row.cend(),
-                                   std::ostream_iterator<std::string>(repr, ", "),
-                                   [](double value) { return std::to_string(value); });
+                    std::ranges::transform(row,
+                                           std::ostream_iterator<std::string>(repr, ", "),
+                                           [](double value) { return std::to_string(value); });
                     repr << "]\n";
                 }
                 repr << "]\n";
                 repr << "]\nValues: [";
                 for (auto const& row : pcaData.Values) {
                     repr << "[";
-                    std::transform(row.cbegin(), row.cend(),
-                                   std::ostream_iterator<std::string>(repr, ", "),
-                                   [](double value) { return std::to_string(value); });
+                    std::ranges::transform(row,
+                                           std::ostream_iterator<std::string>(repr, ", "),
+                                           [](double value) { return std::to_string(value); });
                     repr << "]\n";
                 }
                 repr << "]\n";
@@ -292,11 +292,9 @@ auto PipelineGroup::ExtractFeatures(HdfImageReader& imageReader, ProgressEventCa
     uint64_t const numberOfImages = Data.States.size();
     uint64_t const maxBatchSize = GetMaxImageBatchSize();
 
-    uint64_t const numberOfTasks = 3;
-
     callback(0.0);
 
-    std::function<void(int)> const extractionCallback = [&callback, numberOfImages](int i) {
+    std::function const extractionCallback = [&callback, numberOfImages](int i) {
         double const progress = static_cast<double>(i + 1) / static_cast<double>(numberOfImages);
         callback(progress);
     };
@@ -332,18 +330,16 @@ auto PipelineGroup::ExtractFeatures(HdfImageReader& imageReader, ProgressEventCa
         std::vector<ImageMaskRefPair> batchImageMaskRefPairs {};
         for (int k = 0; k < currentBatchSize; k++) {
             auto& imageData = *batchImageData.at(k);
-            auto& pair = batchImageMaskPairs.at(k);
+            auto& [image, mask] = batchImageMaskPairs.at(k);
 
-            auto& image = *pair.Image;
-            image.ShallowCopy(&imageData);
-            image.GetPointData()->SetActiveScalars("Radiodensities");
+            image->ShallowCopy(&imageData);
+            image->GetPointData()->SetActiveScalars("Radiodensities");
 
-            auto& mask = *pair.Mask;
-            mask.ShallowCopy(&imageData);
-            mask.GetPointData()->SetActiveScalars("Segmentation Mask");
+            mask->ShallowCopy(&imageData);
+            mask->GetPointData()->SetActiveScalars("Segmentation Mask");
 
             batchImageMaskRefPairs.emplace_back(SampleId { GroupId, static_cast<uint16_t>(i + k) },
-                                                image, mask);
+                                                *image, *mask);
         }
 
         auto const extractionStartTime = std::chrono::high_resolution_clock::now();
@@ -365,10 +361,10 @@ auto PipelineGroup::ExtractFeatures(HdfImageReader& imageReader, ProgressEventCa
     }
 
     FeatureData featureData { batchFeatureDataVector.at(0).Names, {} };
-    for (auto const& batchFeatureData : batchFeatureDataVector)
+    for (auto const& [names, values] : batchFeatureDataVector)
         featureData.Values.insert(featureData.Values.cend(),
-                                  batchFeatureData.Values.begin(),
-                                  batchFeatureData.Values.end());
+                                  values.begin(),
+                                  values.end());
 
     Data.Features.Emplace(std::move(featureData));
 
@@ -400,29 +396,29 @@ auto PipelineGroup::DoPCA(uint8_t numberOfDimensions) -> void {
 auto PipelineGroup::GetParameterSpaceStates() -> std::vector<std::reference_wrapper<PipelineParameterSpaceState>> {
     std::vector<std::reference_wrapper<PipelineParameterSpaceState>> states;
 
-    std::transform(Data.States.begin(), Data.States.end(),
-                   std::back_inserter(states),
-                   [](auto& stateUniquePointer) -> PipelineParameterSpaceState& {
-        return *stateUniquePointer.get();
-    });
+    std::ranges::transform(Data.States,
+                           std::back_inserter(states),
+                           [](auto& stateUniquePointer) -> PipelineParameterSpaceState& {
+                               return *stateUniquePointer.get();
+                           });
 
     return states;
 }
 
 auto PipelineGroup::GetImageData() const -> TimeStampedDataRef<HdfImageReadHandles> {
-    return TimeStampedDataRef<HdfImageReadHandles> { Data.Images };
+    return TimeStampedDataRef { Data.Images };
 }
 
 auto PipelineGroup::GetFeatureData() const -> TimeStampedDataRef<FeatureData> {
-    return TimeStampedDataRef<FeatureData> { Data.Features };
+    return TimeStampedDataRef { Data.Features };
 }
 
 auto PipelineGroup::GetPcaData() const -> TimeStampedDataRef<PcaData> {
-    return TimeStampedDataRef<PcaData> { Data.PcaData };
+    return TimeStampedDataRef { Data.PcaData };
 }
 
 auto PipelineGroup::GetTsneData() const -> TimeStampedDataRef<SampleCoordinateData> {
-    return TimeStampedDataRef<SampleCoordinateData> { Data.TsneData };
+    return TimeStampedDataRef { Data.TsneData };
 }
 
 auto PipelineGroup::SetFeatureData(FeatureData&& featureData) -> void {
@@ -453,8 +449,7 @@ auto PipelineGroup::ImportImages() -> void {
 }
 
 auto PipelineGroup::ExportImagesVtk(std::filesystem::path const& exportDir,
-                                    PipelineGroup::ProgressEventCallback const& callback) -> void {
-    std::atomic_uint const numberOfExportedImages = 0;
+                                    ProgressEventCallback const& callback) -> void {
     size_t const numberOfImages = Data.Images->size();
 
     auto const now = std::chrono::system_clock::now();
@@ -472,7 +467,7 @@ auto PipelineGroup::ExportImagesVtk(std::filesystem::path const& exportDir,
         path const imagePath = path(exportDir) /= path(std::format("Volume-{}-{}.vtk", GroupId, stateIdx));
         path const maskPath =  path(exportDir) /= path(std::format("Mask-{}-{}.vtk",   GroupId, stateIdx));
 
-        vtkNew<ImageScalarsWriter> imageExporter;
+        vtkNew<ImageScalarsWriter> const imageExporter;
         imageExporter->SetInputData(image);
         imageExporter->SetHeader(timeStampString.c_str());
         imageExporter->WriteExtentOff();
@@ -488,16 +483,16 @@ auto PipelineGroup::ExportImagesVtk(std::filesystem::path const& exportDir,
 }
 
 auto PipelineGroup::AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
-                                     PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan& {
+                                     PipelineParameterSpan&& parameterSpan) const -> PipelineParameterSpan& {
     return ParameterSpace->AddParameterSpan(artifactVariantPointer, std::move(parameterSpan));
 }
 
 auto PipelineGroup::RemoveParameterSpan(ArtifactVariantPointer artifactVariantPointer,
-                                        PipelineParameterSpan const& parameterSpan) -> void {
+                                        PipelineParameterSpan const& parameterSpan) const -> void {
     ParameterSpace->RemoveParameterSpan(artifactVariantPointer, parameterSpan);
 }
 
-auto PipelineGroup::RemoveParameterSpansForArtifact(ArtifactVariantPointer artifactVariantPointer) -> void {
+auto PipelineGroup::RemoveParameterSpansForArtifact(ArtifactVariantPointer artifactVariantPointer) const -> void {
     ParameterSpace->RemoveParameterSpansForArtifact(artifactVariantPointer);
 }
 
@@ -509,9 +504,7 @@ auto PipelineGroup::UpdateParameterSpaceStates() noexcept -> void {
     SpaceStates spaceStateUniquePointers;
     spaceStateUniquePointers.reserve(ParameterSpace->GetNumberOfPipelines());
 
-    auto spaceStates = ParameterSpace->GenerateSpaceStates();
-
-    for (auto& state : spaceStates)
+    for (auto spaceStates = ParameterSpace->GenerateSpaceStates(); auto& state : spaceStates)
         spaceStateUniquePointers.emplace_back(std::make_unique<PipelineParameterSpaceState>(std::move(state)));
 
     Data.States = std::move(spaceStateUniquePointers);

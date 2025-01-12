@@ -11,13 +11,13 @@ auto ImageArtifactsDelegate::getDialog(QModelIndex const& /*index*/, QWidget* pa
 }
 
 void ImageArtifactsDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
-    auto data = index.data(Qt::UserRole).value<ImageArtifactData>();
+    auto const data = index.data(Qt::UserRole).value<ImageArtifactData>();
 
     ImageArtifactWidget::SetWidgetData(editor, data);
 }
 
 void ImageArtifactsDelegate::setModelData(QWidget* editor, QAbstractItemModel* model, const QModelIndex& index) const {
-    auto data = ImageArtifactWidget::GetWidgetData(editor);
+    auto const data = ImageArtifactWidget::GetWidgetData(editor);
 
     model->setData(index, QVariant::fromValue(data));
 }

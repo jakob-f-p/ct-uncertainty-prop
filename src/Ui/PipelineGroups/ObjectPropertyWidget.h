@@ -21,7 +21,7 @@ public:
     explicit FloatParameterSpanWidget(FloatObjectProperty const& property, QWidget* parent = nullptr);
 
     auto
-    SetParameterSpan(ParameterSpan<float> const& floatParameterSpan) noexcept -> void;
+    SetParameterSpan(ParameterSpan<float> const& floatParameterSpan) const noexcept -> void;
 
     struct ParameterSpanData {
         FloatObjectProperty Property;
@@ -29,7 +29,7 @@ public:
     };
 
     [[nodiscard]] auto
-    GetParameterSpanData() -> ParameterSpanData;
+    GetParameterSpanData() const -> ParameterSpanData;
 
 Q_SIGNALS:
     void ValueChanged();
@@ -51,7 +51,7 @@ public:
     explicit FloatPointParameterSpanWidget(FloatPointObjectProperty const& property, QWidget* parent = nullptr);
 
     auto
-    SetParameterSpan(ParameterSpan<FloatPoint> const& parameterSpan) noexcept -> void;
+    SetParameterSpan(ParameterSpan<FloatPoint> const& parameterSpan) const noexcept -> void;
 
     struct ParameterSpanData {
         FloatPointObjectProperty Property;
@@ -59,7 +59,7 @@ public:
     };
 
     [[nodiscard]] auto
-    GetParameterSpanData() -> ParameterSpanData;
+    GetParameterSpanData() const -> ParameterSpanData;
 
 Q_SIGNALS:
     void ValueChanged();
@@ -79,7 +79,7 @@ public:
     explicit ObjectPropertyGroup(ArtifactVariantPointer artifactVariantPointer, QWidget* parent = nullptr);
 
     [[nodiscard]] auto
-    GetParameterSpan(ArtifactVariantPointer artifactPointer, std::string name) -> PipelineParameterSpan;
+    GetParameterSpan(ArtifactVariantPointer artifactPointer, std::string const& name) -> PipelineParameterSpan;
 
     auto
     SetParameterSpan(PipelineParameterSpan const& parameterSpan) -> void;

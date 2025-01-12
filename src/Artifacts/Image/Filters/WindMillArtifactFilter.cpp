@@ -5,11 +5,9 @@
 #include <vtkFloatArray.h>
 #include <vtkImageData.h>
 #include <vtkInformation.h>
-#include <vtkInformationVector.h>
 #include <vtkObjectFactory.h>
 #include <vtkPointData.h>
 #include <vtkSMPTools.h>
-#include <vtkStreamingDemandDrivenPipeline.h>
 
 #include <numbers>
 
@@ -40,7 +38,7 @@ void WindMillArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input
                                                              vtkInformation* outInfo) {
     vtkIdType const numberOfPoints = output->GetNumberOfPoints();
 
-    vtkNew<vtkFloatArray> newArtifactValueArray;
+    vtkNew<vtkFloatArray> const newArtifactValueArray;
     newArtifactValueArray->SetNumberOfComponents(1);
     newArtifactValueArray->SetNumberOfTuples(numberOfPoints);
     newArtifactValueArray->FillValue(0.0F);
@@ -70,17 +68,17 @@ void WindMillArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* input
 WindMillArtifactFilter::Algorithm::Algorithm(WindMillArtifactFilter* self, vtkImageData* volumeData, float* artifactValues) :
         Self(self),
         VolumeData(volumeData),
-        Spacing([this]() {
+        Spacing([this] {
             std::array<double, 3> spacing {};
             std::copy(VolumeData->GetSpacing(), std::next(VolumeData->GetSpacing(), 3), spacing.begin());
             return spacing;
         }()),
-        UpdateDims([this]() {
+        UpdateDims([this] {
             std::array<int, 3> updateDims {};
             std::copy(VolumeData->GetDimensions(), std::next(VolumeData->GetDimensions(), 3), updateDims.begin());
             return updateDims;
         }()),
-        StartPoint([this]() {
+        StartPoint([this] {
             DoublePoint startPoint;
             VolumeData->GetPoint(0, startPoint.data());
             return startPoint;

@@ -23,9 +23,9 @@ public:
     explicit PipelineGroupListWidget(PipelineGroupList& pipelineGroups);
 
 public Q_SLOTS:
-    void UpdatePipelineList() noexcept;
+    void UpdatePipelineList() const noexcept;
 
-    void UpdateNumberOfPipelines();
+    void UpdateNumberOfPipelines() const;
 
 Q_SIGNALS:
     void PipelineGroupChanged(PipelineGroup* pipelineGroup);
@@ -35,16 +35,16 @@ protected:
 
 private Q_SLOTS:
     void OnAddPipelineGroup();
-    void OnRemovePipelineGroup();
+    void OnRemovePipelineGroup() const;
 
     void OnSelectionChanged(QItemSelection const& selected, QItemSelection const& deselected);
 
 private:
     auto
-    UpdateBasePipelineFilterComboBoxItems() noexcept -> void;
+    UpdateBasePipelineFilterComboBoxItems() const noexcept -> void;
 
     auto
-    UpdateButtonStatus() -> void;
+    UpdateButtonStatus() const -> void;
 
     PipelineGroupList& PipelineGroups;
 

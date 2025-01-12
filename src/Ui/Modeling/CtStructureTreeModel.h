@@ -55,7 +55,7 @@ public:
     void RemoveBasicStructure(const QModelIndex& index);
 
     [[nodiscard]] auto
-    HasRoot() -> bool;
+    HasRoot() const -> bool;
 
 protected:
     friend class StructureArtifactsWidget;

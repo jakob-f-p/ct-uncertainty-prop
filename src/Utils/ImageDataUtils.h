@@ -13,7 +13,7 @@ PointIdToDimensionCoordinates(vtkIdType pointId,
     int const y = (pointId - z * dimX_dimY) / dimX;
     int const x = pointId - z * dimX_dimY - y * dimX;
     return { x, y, z };
-};
+}
 
 [[nodiscard]] auto static
 GetDecrementedCoordinates(std::array<int, 3> const coordinates,
@@ -35,5 +35,5 @@ GetDecrementedCoordinates(std::array<int, 3> const coordinates,
     }
 
     return decrementedCoordinates;
-};
+}
 

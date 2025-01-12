@@ -1,6 +1,5 @@
 #pragma once
 
-#include "../../PipelineGroups/ArtifactVariantPointer.h"
 #include <QTreeView>
 
 class PipelineParameterSpace;

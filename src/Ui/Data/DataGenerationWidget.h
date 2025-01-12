@@ -33,7 +33,7 @@ public:
 
 public Q_SLOTS:
     auto
-    UpdateRowStatuses() -> void;
+    UpdateRowStatuses() const -> void;
 
     auto
     DisableButtons() const -> void;
@@ -48,7 +48,7 @@ private:
     struct Statuses {
         using Status = DataGenerationStatus;
 
-        explicit Statuses(DataGenerationWidget& dataGenerationWidget);
+        explicit Statuses(DataGenerationWidget const& dataGenerationWidget);
 
         [[nodiscard]] auto
         AllUpToDate() const noexcept -> bool { return Image == Status::UP_TO_DATE
@@ -91,7 +91,7 @@ class DataGenerationTaskWidget : public QWidget {
 public:
     struct ProgressCallback {
         auto
-        operator()(double progress) -> void;
+        operator()(double progress) const -> void;
 
         DataGenerationTaskWidget& Widget;
     };
@@ -120,7 +120,7 @@ protected:
 
 protected Q_SLOTS:
     auto
-    UpdateProgress(double progress) -> void;
+    UpdateProgress(double progress) const -> void;
 
 Q_SIGNALS:
     auto

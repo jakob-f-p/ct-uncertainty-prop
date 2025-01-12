@@ -6,7 +6,6 @@
 
 #include <QApplication>
 #include <QBarCategoryAxis>
-#include <QBarSeries>
 #include <QBarSet>
 #include <QChartView>
 #include <QGraphicsLayout>
@@ -21,7 +20,7 @@ PcaSecondaryChartWidget::PcaSecondaryChartWidget() :
         QSplitter(Qt::Orientation::Vertical),
         BatchData(nullptr),
         ExplainedVarianceChartView(new PcaExplainedVariancePieChartView()),
-        PrincipalAxesChartView(new OptionalWidget<PcaFeaturesChartView>("Please select a\nprincipal component",
+        PrincipalAxesChartView(new OptionalWidget("Please select a\nprincipal component",
                                                                         new PcaFeaturesChartView())) {
 
     setContentsMargins({});
@@ -32,15 +31,14 @@ PcaSecondaryChartWidget::PcaSecondaryChartWidget() :
     ExplainedVarianceChartView->setContentsMargins(0, 0, 0, 10);
     PrincipalAxesChartView->setContentsMargins(0, 10, 0, 0);
 
-    setBaseSize(200, sizeHint().height());
+    setBaseSize(200, QSplitter::sizeHint().height());
 
     connect(ExplainedVarianceChartView, &PcaExplainedVariancePieChartView::PrincipalComponentSelected,
             this, [this](QString const& pcName, size_t pcIdx) {
 
         assert(BatchData);
 
-        bool const validPcSelected = pcIdx < BatchData->GetBatchWithPcaData().PcaExplainedVarianceRatios.size();
-        if (validPcSelected) {
+        if (pcIdx < BatchData->GetBatchWithPcaData().PcaExplainedVarianceRatios.size()) {
             PrincipalAxesChartView->Widget().UpdateData(BatchData, pcName, pcIdx);
             PrincipalAxesChartView->ShowWidget();
         } else
@@ -70,10 +68,10 @@ PcaExplainedVariancePieChartView::PcaExplainedVariancePieChartView() :
         Chart(nullptr),
         Tooltip(nullptr) {
 
-    setDragMode(QGraphicsView::NoDrag);
+    setDragMode(NoDrag);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setFrameShape(QFrame::NoFrame);
+    setFrameShape(NoFrame);
     setBackgroundRole(QPalette::Window);
     setRenderHint(QPainter::Antialiasing);
     setMouseTracking(true);
@@ -118,7 +116,7 @@ auto PcaExplainedVariancePieChartView::UpdateData(PipelineBatchListData const* b
         for (auto* slice: slices)
             slice->setExploded(false);
 
-        size_t const pcIdx = std::distance(slices.cbegin(), std::find(slices.cbegin(), slices.cend(), clickedSlice));
+        size_t const pcIdx = std::distance(slices.cbegin(), std::ranges::find(slices, clickedSlice));
 
         bool const isValidSlice = pcIdx < batchListData->GetBatchWithPcaData().PcaExplainedVarianceRatios.size();
         clickedSlice->setExploded(isValidSlice);
@@ -163,17 +161,17 @@ void PcaExplainedVariancePieChartView::ToggleTooltip(QPieSlice* slice, bool ente
         double const minPlotAreaDim = std::min(Chart->plotArea().width(), Chart->plotArea().height());
         double const radius = slice->series()->pieSize() * minPlotAreaDim / 2.0;
         double const halfRadius = radius / 2.0;
-        double const midSliceAngleDeg12 = slice->startAngle() + (slice->angleSpan() / 2);
+        double const midSliceAngleDeg12 = slice->startAngle() + slice->angleSpan() / 2;
         double const midSliceAngleDeg = midSliceAngleDeg12 + -90.0;
         double const midSliceAngle = midSliceAngleDeg * std::numbers::pi / 180.0;
         QPointF const xyNormalizedCoordinates { cos(midSliceAngle), sin(midSliceAngle) };
-        QPointF const anchorPoint = Chart->rect().center() + (xyNormalizedCoordinates * halfRadius);
+        QPointF const anchorPoint = Chart->rect().center() + xyNormalizedCoordinates * halfRadius;
 
         QString const valueString = QString::fromStdString(std::format("{:.{}f}", value, 2));
         QString const text = QString("%1: %2 %").arg(sliceName).arg(valueString);
 
-        auto penColor = QPen(slice->labelColor());
-        auto brushColor = QBrush(palette().color(QPalette::ColorRole::Window));
+        auto const penColor = QPen(slice->labelColor());
+        auto const brushColor = QBrush(palette().color(QPalette::ColorRole::Window));
 
         Tooltip = new ChartTooltip(*Chart, anchorPoint, text, { penColor, brushColor }, true);
         Tooltip->show();
@@ -188,10 +186,10 @@ PcaFeaturesChartView::PcaFeaturesChartView() :
         Chart(nullptr),
         Tooltip(nullptr) {
 
-    setDragMode(QGraphicsView::NoDrag);
+    setDragMode(NoDrag);
     setVerticalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
     setHorizontalScrollBarPolicy(Qt::ScrollBarAlwaysOff);
-    setFrameShape(QFrame::NoFrame);
+    setFrameShape(NoFrame);
     setBackgroundRole(QPalette::Window);
     setRenderHint(QPainter::Antialiasing);
     setMouseTracking(true);
@@ -214,16 +212,16 @@ auto PcaFeaturesChartView::UpdateData(PipelineBatchListData const* batchListData
     for (size_t i = 0; i < featureNames.size(); i++)
         Features.emplace_back(featureCoefficients.at(i), featureNames.at(i));
 
-    std::sort(Features.begin(), Features.end(),
-              [](auto const& a, auto const& b) {
-        bool const absoluteLessThan = std::abs(a.Coefficient) < std::abs(b.Coefficient);
-        bool const absoluteEqual = std::abs(a.Coefficient) == std::abs(b.Coefficient);
-        bool const lessThan = a.Coefficient < b.Coefficient;
+    std::ranges::sort(Features,
+                      [](auto const& a, auto const& b) {
+                          bool const absoluteLessThan = std::abs(a.Coefficient) < std::abs(b.Coefficient);
+                          bool const absoluteEqual = std::abs(a.Coefficient) == std::abs(b.Coefficient);
+                          bool const lessThan = a.Coefficient < b.Coefficient;
 
-        return absoluteLessThan || (absoluteEqual && lessThan);
-    });
+                          return absoluteLessThan || (absoluteEqual && lessThan);
+                      });
 
-    static const int rangeSize = 10;
+    static constexpr int rangeSize = 10;
     auto const rangeBeginIt = Features.size() > rangeSize
                                       ? std::prev(Features.end(), rangeSize)
                                       : Features.begin();
@@ -244,11 +242,11 @@ auto PcaFeaturesChartView::ToggleTooltip(bool entered, int barIdx) -> void {
         delete Tooltip;
         Tooltip = nullptr;
     } else if (!Tooltip) {  // after clicked during hover, hovered signal is emitted again
-        auto* yAxis = dynamic_cast<QBarCategoryAxis*>(Chart->axes(Qt::Vertical).at(0));
+        auto const* yAxis = dynamic_cast<QBarCategoryAxis*>(Chart->axes(Qt::Vertical).at(0));
         QString const featureName = yAxis->at(barIdx);
 
-        auto* barSeries = dynamic_cast<QHorizontalBarSeries*>(Chart->series().at(0));
-        auto* barSet = barSeries->barSets().at(0);
+        auto const* barSeries = dynamic_cast<QHorizontalBarSeries*>(Chart->series().at(0));
+        auto const* barSet = barSeries->barSets().at(0);
         double const absoluteValue = barSet->at(barIdx);
         double const value = barSet->isBarSelected(barIdx) ? -absoluteValue : absoluteValue;
 
@@ -257,22 +255,22 @@ auto PcaFeaturesChartView::ToggleTooltip(bool entered, int barIdx) -> void {
         QString const valueString = QString::fromStdString(std::format("{:.{}f}", value, 2));
         QString const text = QString("%1: %2").arg(featureName).arg(valueString);
 
-        auto penColor = QPen(Chart->axes(Qt::Orientation::Vertical).at(0)->labelsColor());
-        auto brushColor = QBrush(palette().color(QPalette::ColorRole::Window));
+        auto const penColor = QPen(Chart->axes(Qt::Orientation::Vertical).at(0)->labelsColor());
+        auto const brushColor = QBrush(palette().color(QPalette::ColorRole::Window));
 
         Tooltip = new ChartTooltip(*Chart, anchorPoint, text, { penColor, brushColor });
         Tooltip->show();
     }
 }
 
-auto PcaFeaturesChartView::MoveRange(int numberOfSteps) -> void {
-    auto* categoryAxis = dynamic_cast<QBarCategoryAxis*>(Chart->axes(Qt::Orientation::Vertical).front());
+auto PcaFeaturesChartView::MoveRange(int const numberOfSteps) -> void {
+    auto const* categoryAxis = dynamic_cast<QBarCategoryAxis*>(Chart->axes(Qt::Orientation::Vertical).front());
 
     static constexpr auto findFeatureName = [](QString const& featureNameToFind) {
         return [name = featureNameToFind.toStdString()](Feature const& feature) { return feature.Name.get() == name; };
     };
-    auto const minIt = std::find_if(Features.begin(), Features.end(), findFeatureName(categoryAxis->min()));
-    auto const maxIt = std::find_if(Features.begin(), Features.end(), findFeatureName(categoryAxis->max()));
+    auto const minIt = std::ranges::find_if(Features, findFeatureName(categoryAxis->min()));
+    auto const maxIt = std::ranges::find_if(Features, findFeatureName(categoryAxis->max()));
     if (minIt == Features.end() || maxIt == Features.end())
         throw std::runtime_error("category not found");
 
@@ -298,8 +296,8 @@ auto PcaFeaturesChartView::UpdateChart(std::span<Feature> visibleFeatures) -> vo
     QString const title = QString("Most important features for %1").arg(PcName);
 
     bool const containsLargest
-            = std::find_if(visibleFeatures.begin(), visibleFeatures.end(),
-                           [this](Feature const feature) { return feature.Name.get() == Features.back().Name.get(); })
+            = std::ranges::find_if(visibleFeatures,
+                                   [this](Feature const feature) { return feature.Name.get() == Features.back().Name.get(); })
                     != visibleFeatures.end();
 
     auto* barSet = new QBarSet(title);
@@ -331,11 +329,11 @@ auto PcaFeaturesChartView::UpdateChart(std::span<Feature> visibleFeatures) -> vo
     barSet->setSelectedColor(barSet->color().darker());
 
     auto* yAxis = new QBarCategoryAxis();
-    for (auto& feature : visibleFeatures) {
-        if (feature.Name.get().empty())
+    for (auto& [coefficient, name] : visibleFeatures) {
+        if (name.get().empty())
             throw std::runtime_error("invalid feature name");
 
-        yAxis->append(QString::fromStdString(feature.Name));
+        yAxis->append(QString::fromStdString(name));
     }
     if (!containsLargest)
         yAxis->append(QString::fromStdString(Features.back().Name.get()));
@@ -378,11 +376,11 @@ auto PcaFeaturesChartView::UpdateChart(std::span<Feature> visibleFeatures) -> vo
     connect(Chart, &ScrollAwareChart::wheelRotated, this, &PcaFeaturesChartView::MoveRange);
 }
 
-auto PcaFeaturesChartView::ResizeChart(QSize size) -> void {
+auto PcaFeaturesChartView::ResizeChart(QSize size) const -> void {
     static constexpr qreal plotAreaFraction = 0.7;
 
     qreal const leftMargin = size.width() * (1 - plotAreaFraction);
-    qreal const bottomMargin = 50.0;
+    constexpr qreal bottomMargin = 50.0;
     qreal const newPlotAreaWidth = size.width() * plotAreaFraction - 15.0;
     qreal const height = size.height() - bottomMargin;
     Chart->setPlotArea({ leftMargin + 0.5, 0.5, newPlotAreaWidth, height });

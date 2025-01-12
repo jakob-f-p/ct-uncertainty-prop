@@ -18,7 +18,7 @@ auto RingArtifact::operator= (RingArtifact&&) noexcept -> RingArtifact& = defaul
 
 RingArtifact::~RingArtifact() = default;
 
-auto RingArtifact::UpdateFilterParameters() -> void {
+auto RingArtifact::UpdateFilterParameters() const -> void {
     Filter->SetInnerRadius(InnerRadius);
     Filter->SetRingWidth(RingWidth);
     Filter->SetRadiodensityFactor(RadiodensityFactor);
@@ -26,7 +26,7 @@ auto RingArtifact::UpdateFilterParameters() -> void {
     Filter->SetCenterPoint(Center);
 }
 
-auto RingArtifact::GetFilter() -> vtkImageAlgorithm& {
+auto RingArtifact::GetFilter() const -> vtkImageAlgorithm& {
     UpdateFilterParameters();
 
     return *Filter;
@@ -76,19 +76,19 @@ auto RingArtifactData::PopulateArtifact(RingArtifact& artifact) const noexcept -
 }
 
 RingArtifactWidget::RingArtifactWidget() :
-        InnerRadiusSpinBox([]() {
+        InnerRadiusSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(0.0, 100.0);
             spinBox->setSingleStep(1.0);
             return spinBox;
         }()),
-        RingWidthSpinBox([]() {
+        RingWidthSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(0.0, 100.0);
             spinBox->setSingleStep(1.0);
             return spinBox;
         }()),
-        RadiodensityFactorSpinBox([]() {
+        RadiodensityFactorSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setRange(0.0, 100.0);
             spinBox->setSingleStep(0.1);
@@ -106,14 +106,14 @@ RingArtifactWidget::RingArtifactWidget() :
     fLayout->addRow(RadiodensityFactorSpinBox);
 }
 
-auto RingArtifactWidget::GetData() noexcept -> RingArtifactData {
+auto RingArtifactWidget::GetData() const noexcept -> RingArtifactData {
     return { static_cast<float>(InnerRadiusSpinBox->value()),
              static_cast<float>(RingWidthSpinBox->value()),
              static_cast<float>(RadiodensityFactorSpinBox->value()),
              CenterPointWidget->GetRowData(0).ToFloatArray() };
 }
 
-auto RingArtifactWidget::Populate(const RingArtifactData& data) noexcept -> void {
+auto RingArtifactWidget::Populate(const RingArtifactData& data) const noexcept -> void {
     InnerRadiusSpinBox->setValue(data.InnerRadius);
     RingWidthSpinBox->setValue(data.RingWidth);
     RadiodensityFactorSpinBox->setValue(data.RadiodensityFactor);

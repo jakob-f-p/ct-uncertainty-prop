@@ -1,16 +1,16 @@
+#pragma once
+
 #include <pybind11/embed.h>
 #include <pybind11/stl/filesystem.h>
 
 #include <filesystem>
-#include <iostream>
 #include <span>
-#include <utility>
 
 
 class PythonInterpreter {
 public:
     explicit PythonInterpreter(int argc = 0, const char* const* argv = nullptr) :
-            Interpreter([argc, argv]() {
+            Interpreter([argc, argv] {
                         PyConfig config;
                         PyConfig_InitPythonConfig(&config);
 
@@ -57,9 +57,8 @@ public:
     }
 
     struct ImportedModule {
-    public:
         explicit ImportedModule(std::string const& name) :
-                Module({ pybind11::module_::import(name.c_str()) }) {};
+                Module({ pybind11::module_::import(name.c_str()) }) {}
 
         template<typename ...T>
         auto
@@ -73,7 +72,7 @@ public:
 
     private:
         auto
-        SetArgvPathToModulePath() -> void {
+        SetArgvPathToModulePath() const -> void {
             std::string const addArgvFileName = "import sys\n"
                                                 "sys.argv = ['" + GetModulePath().generic_string() + "']";
 
@@ -92,9 +91,7 @@ public:
 private:
     auto static
     AddPythonLibPaths(PyConfig& config) -> void {
-        PyStatus status;
-        status = PyConfig_Read(&config);
-        if (PyStatus_Exception(status) != 0)
+        if (PyStatus const status = PyConfig_Read(&config); PyStatus_Exception(status) != 0)
             throw std::runtime_error("PyStatus exception");
 
         namespace fs = std::filesystem;
@@ -117,14 +114,12 @@ private:
 
         std::span const oldSearchPaths(config.module_search_paths.items, config.module_search_paths.length);
 
-        for (auto const& path : pathsToAdd) {
-            auto searchIt = std::find(oldSearchPaths.begin(), oldSearchPaths.end(), path.native());
+        for (auto const& path : pathsToAdd)
             PyWideStringList_Append(&config.module_search_paths, path.native().data());
-        }
     }
 
     auto
-    AddImportedModule(std::string moduleName) -> void {
+    AddImportedModule(std::string moduleName) const -> void {
         NameModuleMap->emplace(moduleName, moduleName);
     }
 

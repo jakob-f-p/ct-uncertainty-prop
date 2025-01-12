@@ -12,12 +12,12 @@ SaltPepperArtifact::SaltPepperArtifact(SaltPepperArtifact const& other) :
         PepperAmount(other.PepperAmount),
         SaltIntensityValue(other.SaltIntensityValue),
         PepperIntensityValue(other.PepperIntensityValue) {}
-SaltPepperArtifact::SaltPepperArtifact(SaltPepperArtifact&&) = default;
-auto SaltPepperArtifact::operator= (SaltPepperArtifact&&) -> SaltPepperArtifact& = default;
+SaltPepperArtifact::SaltPepperArtifact(SaltPepperArtifact&&) noexcept = default;
+auto SaltPepperArtifact::operator= (SaltPepperArtifact&&) noexcept -> SaltPepperArtifact& = default;
 
 SaltPepperArtifact::~SaltPepperArtifact() = default;
 
-auto SaltPepperArtifact::UpdateFilterParameters() -> void {
+auto SaltPepperArtifact::UpdateFilterParameters() const -> void {
     Filter->SetSaltAmount(SaltAmount);
     Filter->SetPepperAmount(PepperAmount);
 
@@ -25,7 +25,7 @@ auto SaltPepperArtifact::UpdateFilterParameters() -> void {
     Filter->SetPepperIntensityValue(PepperIntensityValue);
 }
 
-auto SaltPepperArtifact::GetFilter() -> vtkImageAlgorithm& {
+auto SaltPepperArtifact::GetFilter() const -> vtkImageAlgorithm& {
     UpdateFilterParameters();
 
     return *Filter;
@@ -58,10 +58,10 @@ SaltPepperArtifactWidget::SaltPepperArtifactWidget() :
     auto* gLayout = new QGridLayout(this);
     gLayout->setHorizontalSpacing(15);
 
-    std::vector<QString> labels { "Salt", "Pepper" };
-    std::vector<QDoubleSpinBox*> amountSpinBoxes { SaltAmountSpinBox, PepperAmountSpinBox };
-    std::vector<QDoubleSpinBox*> intensitySpinBoxes { SaltIntensityValueSpinBox, PepperIntensityValueSpinBox };
-    std::vector<double> ranges { 0.0, 3000.0, -1000.0, 0.0 };
+    std::vector<QString> const labels { "Salt", "Pepper" };
+    std::vector const amountSpinBoxes { SaltAmountSpinBox, PepperAmountSpinBox };
+    std::vector const intensitySpinBoxes { SaltIntensityValueSpinBox, PepperIntensityValueSpinBox };
+    std::vector const ranges { 0.0, 3000.0, -1000.0, 0.0 };
 
     for (int i = 0; i < 2; i++) {
         auto* label = new QLabel(labels.at(i));
@@ -88,14 +88,14 @@ SaltPepperArtifactWidget::SaltPepperArtifactWidget() :
     }
 }
 
-auto SaltPepperArtifactWidget::GetData() noexcept -> SaltPepperArtifactData {
+auto SaltPepperArtifactWidget::GetData() const noexcept -> SaltPepperArtifactData {
     return { static_cast<float>(SaltAmountSpinBox->value()),
              static_cast<float>(PepperAmountSpinBox->value()),
              static_cast<float>(SaltIntensityValueSpinBox->value()),
              static_cast<float>(PepperIntensityValueSpinBox->value()), };
 }
 
-auto SaltPepperArtifactWidget::Populate(const SaltPepperArtifactData& data) noexcept -> void {
+auto SaltPepperArtifactWidget::Populate(const SaltPepperArtifactData& data) const noexcept -> void {
     SaltAmountSpinBox->setValue(data.SaltAmount);
     PepperAmountSpinBox->setValue(data.PepperAmount);
 

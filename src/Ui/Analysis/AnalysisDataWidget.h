@@ -29,7 +29,7 @@ public:
 
 public Q_SLOTS:
     auto
-    UpdateSample(std::optional<SampleId> sampleId) -> void;
+    UpdateSample(std::optional<SampleId> sampleId) const -> void;
 
 protected:
     struct XYCoords { double X, Y; };
@@ -49,7 +49,7 @@ private:
     OptionalWidget<PipelineParameterSpaceStateView>* ParameterSpaceStateView;
 };
 
-class PcaSampleDataWidget : public AnalysisSampleDataWidget {
+class PcaSampleDataWidget final : public AnalysisSampleDataWidget {
 public:
     PcaSampleDataWidget();
 

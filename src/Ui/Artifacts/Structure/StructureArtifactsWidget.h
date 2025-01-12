@@ -14,12 +14,12 @@ class StructureArtifactsWidget : public QWidget {
 public:
     explicit StructureArtifactsWidget(QWidget* parent = nullptr);
 
-    void SetCurrentView(int pipelineIdx);
-    void AddView(Pipeline& pipeline);
-    void RemoveCurrentView();
+    void SetCurrentView(int pipelineIdx) const;
+    void AddView(Pipeline& pipeline) const;
+    void RemoveCurrentView() const;
 
 public Q_SLOTS:
-    void ResetModel();
+    void ResetModel() const;
 
 private:
     QStackedLayout* Views;

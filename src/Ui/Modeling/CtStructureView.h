@@ -43,7 +43,7 @@ public:
     Select(BasicStructure const& basicStructure) -> void;
 
     auto
-    Select(CombinedStructure const& combinedStructure) -> void;
+    Select(CombinedStructure const& combinedStructure) const -> void;
 
 Q_SIGNALS:
     void CtStructureChanged(idx_t structureIdx);

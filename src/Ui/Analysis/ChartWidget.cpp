@@ -35,7 +35,7 @@ auto PcaChartWidget::UpdateData(PipelineBatchListData const* batchListData) -> v
     PcaSecondaryWidget->UpdateData(batchListData);
 }
 
-auto PcaChartWidget::SelectPcaPoints(QString const& name, QList<QPointF> const& points) -> void {
+auto PcaChartWidget::SelectPcaPoints(QString const& name, QList<QPointF> const& points) const -> void {
     PcaMainWidget->SelectPcaPoints(name, points);
 }
 

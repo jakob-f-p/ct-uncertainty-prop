@@ -80,7 +80,7 @@ auto CtStructureTreeModel::data(const QModelIndex& index, int role) const -> QVa
                     std::visit([](const auto& structure) { return structure.GetViewName(); },
                                structureVariant));
 
-        case TreeModelRoles::STRUCTURE_DATA_VARIANT: {
+        case STRUCTURE_DATA_VARIANT: {
             auto const& structureDataVariant
                     = std::visit(Overload {
                             [](BasicStructure const& structure) {
@@ -97,14 +97,14 @@ auto CtStructureTreeModel::data(const QModelIndex& index, int role) const -> QVa
             return QVariant::fromValue(std::move(structureDataVariant));
         }
 
-        case TreeModelRoles::IS_BASIC_STRUCTURE: {
-            bool isBasic = std::visit(Overload { [](const CombinedStructure&) { return false; },
+        case IS_BASIC_STRUCTURE: {
+            bool const isBasic = std::visit(Overload { [](const CombinedStructure&) { return false; },
                                                  [](const BasicStructure&)    { return true;  } },
                               structureVariant);
             return isBasic;
         }
 
-        case TreeModelRoles::POINTER_CONST:
+        case POINTER_CONST:
             return std::visit([](auto const& structure) { return QVariant::fromValue(&structure); },
                               structureVariant);
 
@@ -152,7 +152,7 @@ auto CtStructureTreeModel::AddBasicStructure(const BasicStructureData& basicStru
 
     endInsertRows();
 
-    QModelIndex newIndex = index(insertionIndex, 0, parentIndex);
+    QModelIndex const newIndex = index(insertionIndex, 0, parentIndex);
     return newIndex;
 }
 
@@ -183,11 +183,11 @@ void CtStructureTreeModel::RemoveBasicStructure(const QModelIndex &index) {
     endResetModel();
 }
 
-auto CtStructureTreeModel::HasRoot() -> bool {
+auto CtStructureTreeModel::HasRoot() const -> bool {
     return Tree.HasRoot();
 }
 
-CtStructureTreeReadOnlyModel::CtStructureTreeReadOnlyModel(CtStructureTree const& ctStructureTree, QObject* parent) :
+CtStructureTreeReadOnlyModel::CtStructureTreeReadOnlyModel(CtStructureTree const& ctStructureTree, QObject*) :
         CtStructureTreeModel(const_cast<CtStructureTree&>(ctStructureTree)) {}
 
 auto CtStructureTreeReadOnlyModel::flags(QModelIndex const& index) const -> Qt::ItemFlags {
@@ -196,7 +196,7 @@ auto CtStructureTreeReadOnlyModel::flags(QModelIndex const& index) const -> Qt::
 
 CtStructureArtifactsModel::CtStructureArtifactsModel(CtStructureTree& ctStructureTree,
                                                      Pipeline& pipeline,
-                                                     QObject* parent) :
+                                                     QObject*) :
         CtStructureTreeModel(ctStructureTree),
         Pipeline_(pipeline) {}
 

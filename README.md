@@ -29,11 +29,15 @@ The project uses two languages that interact with each other. Most of the applic
 processing is done using Python. For running the code, you need
  - C++ Compiler with full C++20 support
  - C++ Dependencies
-   - Most of the required dependencies get installed automatically by CMake when running the application for the first time. Unfortunately, dependency management through CMake can be fragile. So some things might not work immediately on some systems. The dependencies and their setup are implicitly documented in the respective CMakeList.txt in the /deps directory of this project.
+   - Some of the required dependencies get installed automatically by CMake when running the application for the first time. Unfortunately, dependency management through CMake can be fragile. So some things might not work immediately on some systems. The dependencies and their setup are implicitly documented in the respective CMakeList.txt in the /deps directory of this project.
+   - Qt 6.6.2
+   - VTK 9.3.0 with Qt Support
    - HDF5: This dependency needs to be installed manually. Please ensure that zlib support is enabled.
  - Python 3.9
  - Python Dependencies:
    - PyRadiomics 3.1.0: Either install the official version using `pip install 'pyradiomics==3.1.0'` or install the custom performance-optimized version in the `/external` directory of this project. For more information, please read the `README.md` file there.
+
+These are the dependencies the system was last tested with. Newer minor releases will probably also work.
 
 ## BibTeX
 Paper:

@@ -7,7 +7,7 @@
 #include <vtkNew.h>
 
 class SaltPepperArtifactFilter;
-class SaltPepperArtifactData;
+struct SaltPepperArtifactData;
 
 class QDoubleSpinBox;
 class QFormLayout;
@@ -22,8 +22,8 @@ public:
     SaltPepperArtifact();
     SaltPepperArtifact(SaltPepperArtifact const& other);
     auto operator= (SaltPepperArtifact const&) -> SaltPepperArtifact& = delete;
-    SaltPepperArtifact(SaltPepperArtifact&&);
-    auto operator= (SaltPepperArtifact&&) -> SaltPepperArtifact&;
+    SaltPepperArtifact(SaltPepperArtifact&&) noexcept;
+    auto operator= (SaltPepperArtifact&&) noexcept -> SaltPepperArtifact&;
     ~SaltPepperArtifact();
 
     auto
@@ -39,10 +39,10 @@ public:
     SetPepperIntensity(float pepperIntensityValue) -> void { PepperIntensityValue = pepperIntensityValue; }
 
     auto
-    UpdateFilterParameters() -> void;
+    UpdateFilterParameters() const -> void;
 
     [[nodiscard]] auto
-    GetFilter() -> vtkImageAlgorithm&;
+    GetFilter() const -> vtkImageAlgorithm&;
 
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties {
@@ -111,10 +111,10 @@ public:
     SaltPepperArtifactWidget();
 
     [[nodiscard]] auto
-    GetData() noexcept -> SaltPepperArtifactData;
+    GetData() const noexcept -> SaltPepperArtifactData;
 
     auto
-    Populate(const SaltPepperArtifactData& data) noexcept -> void;
+    Populate(const SaltPepperArtifactData& data) const noexcept -> void;
 
 private:
     QDoubleSpinBox* SaltAmountSpinBox;

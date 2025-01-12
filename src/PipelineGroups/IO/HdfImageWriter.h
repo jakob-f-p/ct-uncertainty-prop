@@ -94,10 +94,10 @@ private:
     friend class HdfImageReader;
 
     auto
-    InitializeFile(HighFive::File& file) -> void;
+    InitializeFile(HighFive::File& file) const -> void;
 
     auto
-    WriteImageBatch(HighFive::File& file) -> void;
+    WriteImageBatch(HighFive::File const& file) -> void;
 
     [[nodiscard]] static auto
     GetSampleIdDataType() noexcept -> HighFive::DataType const&;

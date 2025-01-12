@@ -27,7 +27,7 @@ StructureArtifactsWidget::StructureArtifactsWidget(QWidget* parent) :
     Views->addWidget(placeHolderView);
 }
 
-void StructureArtifactsWidget::SetCurrentView(int pipelineIdx) {
+void StructureArtifactsWidget::SetCurrentView(int pipelineIdx) const {
     if (pipelineIdx + 1 >= Views->count()) {
         qWarning("Cannot set view");
         return;
@@ -36,7 +36,7 @@ void StructureArtifactsWidget::SetCurrentView(int pipelineIdx) {
     Views->setCurrentIndex(pipelineIdx + 1);
 }
 
-void StructureArtifactsWidget::AddView(Pipeline& pipeline) {
+void StructureArtifactsWidget::AddView(Pipeline& pipeline) const {
     auto* newView = new QTreeView();
     auto* newDelegate = new StructureArtifactsWidgetDelegate(pipeline, newView);
     newView->setItemDelegate(newDelegate);
@@ -47,7 +47,7 @@ void StructureArtifactsWidget::AddView(Pipeline& pipeline) {
     Views->addWidget(newView);
 }
 
-void StructureArtifactsWidget::RemoveCurrentView() {
+void StructureArtifactsWidget::RemoveCurrentView() const {
     if (Views->count() <= 1) {
         qWarning("Cannot remove any more views");
         return;
@@ -56,9 +56,9 @@ void StructureArtifactsWidget::RemoveCurrentView() {
     Views->removeWidget(Views->currentWidget());
 }
 
-void StructureArtifactsWidget::ResetModel() {
+void StructureArtifactsWidget::ResetModel() const {
     for (int i = 1; i < Views->count(); i++) {
-        auto* view = dynamic_cast<QTreeView*>(Views->widget(i));
+        auto const* view = dynamic_cast<QTreeView*>(Views->widget(i));
         auto* model = dynamic_cast<CtStructureTreeModel*>(view->model());
         model->beginResetModel();
         model->endResetModel();

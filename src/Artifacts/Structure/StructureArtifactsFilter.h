@@ -49,7 +49,7 @@ public:
                   StructureArtifact const* structureArtifact,
                   float* radiodensities,
                   StructureId const* basicStructureIds,
-                  float* const artifactValues);
+                  float* artifactValues);
 
         void operator()(vtkIdType pointId, vtkIdType endPointId) const;
     };

@@ -16,8 +16,8 @@ template<typename T>
 class ParameterSpan;
 
 class PipelineParameterSpace;
-class PipelineParameterSpan;
 class PipelineParameterSpanSet;
+struct PipelineParameterSpan;
 
 
 template<typename T>
@@ -96,7 +96,7 @@ public:
 
     template<typename Arg>
     explicit ParameterSpanState(Arg&& arg)
-            : State(std::forward<decltype(arg)>(arg)) {};
+            : State(std::forward<decltype(arg)>(arg)) {}
 
     auto
     Apply() const noexcept -> void;
@@ -140,7 +140,7 @@ struct ParameterSpanStateSourceIterator {
 private:
     template<typename Arg>
     explicit ParameterSpanStateSourceIterator(Arg&& arg)
-            : IteratorVariant(std::forward<decltype(arg)>(arg)) {};
+            : IteratorVariant(std::forward<decltype(arg)>(arg)) {}
 
     SourceIteratorVariant IteratorVariant;
 };
@@ -148,11 +148,9 @@ private:
 static_assert(std::input_iterator<ParameterSpanStateSourceIterator>);
 
 
-
-class ParameterSpanSetState {
+struct ParameterSpanSetState {
     using SpanStates = std::vector<ParameterSpanState>;
 
-public:
     explicit ParameterSpanSetState(PipelineParameterSpanSet& parameterSpanSet);
 
     auto

@@ -13,7 +13,7 @@ auto StructureArtifactsModel::index(int row, int column, QModelIndex const& pare
     if (!hasIndex(row, column, parent))
         return {};
 
-    auto* structureArtifact = &StructureWrapper.Get(row);
+    auto const* structureArtifact = &StructureWrapper.Get(row);
 
     return createIndex(row, column, structureArtifact);
 }
@@ -45,7 +45,7 @@ auto StructureArtifactsModel::data(QModelIndex const& index, int role) const -> 
     switch (role) {
         case Qt::DisplayRole: return QString::fromStdString(artifact->GetViewName());
 
-        case Roles::DATA: { // Qt::UserRole
+        case DATA: { // Qt::UserRole
             StructureArtifactData data {};
 
             data.PopulateFromArtifact(*artifact);
@@ -53,7 +53,7 @@ auto StructureArtifactsModel::data(QModelIndex const& index, int role) const -> 
             return QVariant::fromValue(data);
         }
 
-        case Roles::POINTER: return QVariant::fromValue(artifact);
+        case POINTER: return QVariant::fromValue(artifact);
 
         default: return {};
     }
@@ -70,7 +70,7 @@ auto StructureArtifactsModel::setData(QModelIndex const& index, QVariant const& 
         return false;
 
     auto* artifact = static_cast<StructureArtifact*>(index.internalPointer());
-    auto data = value.value<StructureArtifactData>();
+    auto const data = value.value<StructureArtifactData>();
     data.PopulateArtifact(*artifact);
 
     Q_EMIT dataChanged(index, index);
@@ -97,7 +97,7 @@ void StructureArtifactsModel::RemoveStructureArtifact(QModelIndex const& index) 
     if (!index.isValid())
         throw std::runtime_error("Cannot remove image artifact. Given index is not valid");
 
-    auto* artifact = static_cast<StructureArtifact*>(index.internalPointer());
+    auto const* artifact = static_cast<StructureArtifact*>(index.internalPointer());
 
     beginRemoveRows({}, index.row(), index.row());
     StructureWrapper.RemoveStructureArtifact(*artifact);
@@ -119,7 +119,7 @@ auto StructureArtifactsModel::MoveDown(QModelIndex const& index) -> QModelIndex 
 }
 
 auto StructureArtifactsModel::Move(QModelIndex const& sourceIndex, int displacement) -> QModelIndex {
-    auto* structureArtifact = static_cast<StructureArtifact*>(sourceIndex.internalPointer());
+    auto const* structureArtifact = static_cast<StructureArtifact*>(sourceIndex.internalPointer());
 
     int const prevIdx = sourceIndex.row();
     int const newIdx = sourceIndex.row() + displacement;

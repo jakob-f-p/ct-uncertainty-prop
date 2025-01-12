@@ -37,13 +37,13 @@ protected:
                            vtkInformationVector **inputVector,
                            vtkInformationVector *outputVector) override;
 
-    std::array<double, 3> GetSpacing();
+    std::array<double, 3> GetSpacing() const;
 
-    std::array<double, 3> GetOrigin();
+    std::array<double, 3> GetOrigin() const;
 
-    std::array<int, 6> GetWholeExtent();
+    std::array<int, 6> GetWholeExtent() const;
 
-    std::array<int, 3> GetDimensions();
+    std::array<int, 3> GetDimensions() const;
 
 
     FloatVector PhysicalDimensions {};

@@ -10,7 +10,7 @@
 
 RangeSlider::RangeSlider(SliderSettings sliderSettings, QWidget* parent) :
         QSlider(parent),
-        Range_([sliderSettings]() {
+        Range_([sliderSettings] {
             int const diff = sliderSettings.Max - sliderSettings.Min;
             int const diff_quarter = diff / 4;
             return Range { sliderSettings.Min + diff_quarter, sliderSettings.Max - diff_quarter };
@@ -20,7 +20,7 @@ RangeSlider::RangeSlider(SliderSettings sliderSettings, QWidget* parent) :
         LastPos(0) {
 
     setOrientation(Qt::Orientation::Horizontal);
-    setTickPosition(TickPosition::NoTicks);
+    setTickPosition(NoTicks);
     setMinimum(sliderSettings.Min);
     setMaximum(sliderSettings.Max);
     setSingleStep(sliderSettings.Step);
@@ -28,9 +28,9 @@ RangeSlider::RangeSlider(SliderSettings sliderSettings, QWidget* parent) :
     setContentsMargins({});
 }
 
-auto RangeSlider::GetValue() const noexcept -> RangeSlider::Range { return Range_; }
+auto RangeSlider::GetValue() const noexcept -> Range { return Range_; }
 
-auto RangeSlider::SetValue(RangeSlider::Range range) -> void {
+auto RangeSlider::SetValue(Range range) -> void {
     if (range.Min >= range.Max || range.Min < minimum() || range.Max > maximum())
         return;
 
@@ -176,7 +176,7 @@ auto RangeSlider::mouseReleaseEvent(QMouseEvent* event) -> void {
     QSlider::mouseReleaseEvent(event);
 }
 
-auto RangeSlider::PixelPosToRangeValue(int pos) -> int {
+auto RangeSlider::PixelPosToRangeValue(int pos) const -> int {
     QStyleOptionSlider opt;
     initStyleOption(&opt);
 
@@ -192,8 +192,8 @@ auto RangeSlider::PixelPosToRangeValue(int pos) -> int {
 
 
 LabeledRangeSlider::LabeledRangeSlider(QString const& labelText,
-                                       RangeSlider::SliderSettings sliderSettings,
-                                       QWidget* parent) :
+                                       RangeSlider::SliderSettings const sliderSettings,
+                                       QWidget*) :
         Slider(new RangeSlider(sliderSettings)),
         LowLabel(new QLabel("")),
         HighLabel(new QLabel("")),
@@ -226,4 +226,4 @@ LabeledRangeSlider::LabeledRangeSlider(QString const& labelText,
 
 auto LabeledRangeSlider::GetValue() const noexcept -> RangeSlider::Range { return Slider->GetValue(); }
 
-auto LabeledRangeSlider::SetValue(RangeSlider::Range range) -> void { Slider->SetValue(range); }
+auto LabeledRangeSlider::SetValue(RangeSlider::Range range) const -> void { Slider->SetValue(range); }

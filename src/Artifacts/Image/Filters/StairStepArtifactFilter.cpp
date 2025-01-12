@@ -4,11 +4,9 @@
 #include <vtkFloatArray.h>
 #include <vtkImageData.h>
 #include <vtkInformation.h>
-#include <vtkInformationVector.h>
 #include <vtkObjectFactory.h>
 #include <vtkPointData.h>
 #include <vtkSMPTools.h>
-#include <vtkStreamingDemandDrivenPipeline.h>
 
 #include <numbers>
 
@@ -35,7 +33,7 @@ void StairStepArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* inpu
                                                               vtkInformation* outInfo) {
     vtkIdType const numberOfPoints = output->GetNumberOfPoints();
 
-    vtkNew<vtkFloatArray> newArtifactValueArray;
+    vtkNew<vtkFloatArray> const newArtifactValueArray;
     newArtifactValueArray->SetNumberOfComponents(1);
     newArtifactValueArray->SetNumberOfTuples(numberOfPoints);
     newArtifactValueArray->FillValue(0.0F);
@@ -46,7 +44,7 @@ void StairStepArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* inpu
 
     std::array<double, 6> bounds {};
     output->GetBounds(bounds.data());
-    double zDistance = bounds[5] - bounds[4];
+    double const zDistance = bounds[5] - bounds[4];
 
     std::array<int, 6> previousExtent {}, newExtent {};
     output->GetExtent(previousExtent.data());
@@ -60,19 +58,19 @@ void StairStepArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* inpu
     newOutputSpacing = previousOutputSpacing;
     newOutputSpacing[2] = zDistance / static_cast<double>(zNewNrOfVoxels);
 
-    vtkNew<vtkImageReslice> imageDownSample;
+    vtkNew<vtkImageReslice> const imageDownSample;
     imageDownSample->SetOutputSpacing(newOutputSpacing.data());
     imageDownSample->SetOutputExtent(newExtent.data());
     imageDownSample->SetInputData(input);
     imageDownSample->Update();
-    vtkSmartPointer<vtkImageData> const downSampledImage = imageDownSample->GetOutput();
+    vtkSmartPointer const downSampledImage = imageDownSample->GetOutput();
 
-    vtkNew<vtkImageReslice> imageUpSample;
+    vtkNew<vtkImageReslice> const imageUpSample;
     imageUpSample->SetOutputSpacing(previousOutputSpacing.data());
     imageUpSample->SetOutputExtent(previousExtent.data());
     imageUpSample->SetInputData(downSampledImage);
     imageUpSample->Update();
-    vtkSmartPointer<vtkImageData> const upSampledImage = imageUpSample->GetOutput();
+    vtkSmartPointer const upSampledImage = imageUpSample->GetOutput();
 
     assert(output->GetNumberOfPoints() == upSampledImage->GetNumberOfPoints());
 

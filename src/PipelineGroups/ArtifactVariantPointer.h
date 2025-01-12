@@ -9,7 +9,7 @@ class StructureArtifact;
 
 struct ArtifactVariantPointer {
 
-    ArtifactVariantPointer() : ArtifactPointer(static_cast<ImageArtifact*>(nullptr)) {};
+    ArtifactVariantPointer() : ArtifactPointer(static_cast<ImageArtifact*>(nullptr)) {}
 
     template<typename PointerType>
     requires std::is_pointer_v<PointerType>

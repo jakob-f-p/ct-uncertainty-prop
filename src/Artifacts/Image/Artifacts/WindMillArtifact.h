@@ -8,7 +8,7 @@
 
 class DoubleCoordinateRowWidget;
 class WindMillArtifactFilter;
-class WindMillArtifactData;
+struct WindMillArtifactData;
 
 class QDoubleSpinBox;
 class QFormLayout;
@@ -23,8 +23,8 @@ public:
     WindMillArtifact();
     WindMillArtifact(WindMillArtifact const& other);
     auto operator= (WindMillArtifact const&) -> WindMillArtifact& = delete;
-    WindMillArtifact(WindMillArtifact&&);
-    auto operator= (WindMillArtifact&&) -> WindMillArtifact&;
+    WindMillArtifact(WindMillArtifact&&) noexcept;
+    auto operator= (WindMillArtifact&&) noexcept -> WindMillArtifact&;
     ~WindMillArtifact();
 
     auto
@@ -43,10 +43,10 @@ public:
     SetCenter(std::array<float, 3> center) -> void { Center = center; }
 
     auto
-    UpdateFilterParameters() -> void;
+    UpdateFilterParameters() const -> void;
 
     [[nodiscard]] auto
-    GetFilter() -> vtkImageAlgorithm&;
+    GetFilter() const -> vtkImageAlgorithm&;
 
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties {
@@ -124,10 +124,10 @@ public:
     WindMillArtifactWidget();
 
     [[nodiscard]] auto
-    GetData() noexcept -> WindMillArtifactData;
+    GetData() const noexcept -> WindMillArtifactData;
 
     auto
-    Populate(const WindMillArtifactData& data) noexcept -> void;
+    Populate(const WindMillArtifactData& data) const noexcept -> void;
 
 private:
     QDoubleSpinBox* BrightAngularWidthSpinBox;

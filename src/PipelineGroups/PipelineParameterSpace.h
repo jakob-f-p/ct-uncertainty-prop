@@ -5,7 +5,6 @@
 
 #include <vtkTimeStamp.h>
 
-#include <unordered_map>
 #include <variant>
 
 class ImageArtifact;
@@ -51,7 +50,7 @@ public:
 
 private:
     friend class PipelineParameterSpace;
-    friend class ParameterSpanSetState;
+    friend struct ParameterSpanSetState;
 
     using ParameterSpanSet = std::vector<PipelineParameterSpan>;
 

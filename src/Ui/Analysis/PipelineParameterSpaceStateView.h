@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QAbstractItemModel>
 #include <QTreeView>
 
 class PipelineParameterSpace;

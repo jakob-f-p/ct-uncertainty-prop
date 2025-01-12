@@ -10,16 +10,16 @@
 StairStepArtifact::StairStepArtifact() = default;
 StairStepArtifact::StairStepArtifact(StairStepArtifact const& other) :
         SamplingRate(other.SamplingRate) {}
-StairStepArtifact::StairStepArtifact(StairStepArtifact&&) = default;
-auto StairStepArtifact::operator= (StairStepArtifact&&) -> StairStepArtifact& = default;
+StairStepArtifact::StairStepArtifact(StairStepArtifact&&) noexcept = default;
+auto StairStepArtifact::operator= (StairStepArtifact&&) noexcept -> StairStepArtifact& = default;
 
 StairStepArtifact::~StairStepArtifact() = default;
 
-auto StairStepArtifact::UpdateFilterParameters() -> void {
+auto StairStepArtifact::UpdateFilterParameters() const -> void {
     Filter->SetSamplingRate(SamplingRate);
 }
 
-auto StairStepArtifact::GetFilter() -> vtkImageAlgorithm& {
+auto StairStepArtifact::GetFilter() const -> vtkImageAlgorithm& {
     UpdateFilterParameters();
 
     return *Filter;
@@ -47,10 +47,10 @@ StairStepArtifactWidget::StairStepArtifactWidget() :
     fLayout->addRow("Relative sampling rate", SamplingRateSpinBox);
 }
 
-auto StairStepArtifactWidget::GetData() noexcept -> StairStepArtifactData {
+auto StairStepArtifactWidget::GetData() const noexcept -> StairStepArtifactData {
     return { static_cast<float>(SamplingRateSpinBox->value()) };
 }
 
-auto StairStepArtifactWidget::Populate(const StairStepArtifactData& data) noexcept -> void {
+auto StairStepArtifactWidget::Populate(const StairStepArtifactData& data) const noexcept -> void {
     SamplingRateSpinBox->setValue(data.SamplingRate);
 }

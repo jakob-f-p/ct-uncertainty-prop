@@ -35,16 +35,16 @@ PipelineGroupsWidget::PipelineGroupsWidget(PipelineGroupList& pipelineGroups) :
 
     for (int i = 0; i < count(); ++i) {
         auto* frame = dynamic_cast<QFrame*>(widget(i));
-        frame->setFrameShape(QFrame::Shape::StyledPanel);
-        frame->setFrameShadow(QFrame::Shadow::Sunken);
+        frame->setFrameShape(StyledPanel);
+        frame->setFrameShadow(Sunken);
         frame->setBackgroundRole(QPalette::ColorRole::Window);
         frame->setAutoFillBackground(true);
     }
 
-    QList<int> const widths = { GroupListWidget->sizeHint().width(),
+    QList const widths = { GroupListWidget->sizeHint().width(),
                                 GroupWidget->sizeHint().width(),
                                 ParameterSpanWidget->sizeHint().width() };
-    int const maxWidth = *std::max_element(widths.begin(), widths.end());
+    int const maxWidth = *std::ranges::max_element(widths);
 
     GroupWidget->setBaseSize(maxWidth, GroupWidget->baseSize().height());
     ParameterSpanWidget->setBaseSize(maxWidth, ParameterSpanWidget->baseSize().height());
@@ -53,16 +53,16 @@ PipelineGroupsWidget::PipelineGroupsWidget(PipelineGroupList& pipelineGroups) :
             this, [&](PipelineGroup* pipelineGroup) { OnPipelineGroupChanged(pipelineGroup); });
 }
 
-void PipelineGroupsWidget::UpdatePipelineList() noexcept {
+auto PipelineGroupsWidget::UpdatePipelineList() const noexcept -> void {
     GroupListWidget->UpdatePipelineList();
 }
 
-void PipelineGroupsWidget::hideEvent(QHideEvent* /*event*/) {
+auto PipelineGroupsWidget::hideEvent(QHideEvent* /*event*/) -> void {
     GroupWidget->HideWidget();
     ParameterSpanWidget->HideWidget();
 }
 
-void PipelineGroupsWidget::OnPipelineGroupChanged(PipelineGroup* pipelineGroup) {
+auto PipelineGroupsWidget::OnPipelineGroupChanged(PipelineGroup* pipelineGroup) -> void {
     if (!pipelineGroup) {
         GroupWidget->HideWidget();
         return;
@@ -75,13 +75,14 @@ void PipelineGroupsWidget::OnPipelineGroupChanged(PipelineGroup* pipelineGroup) 
             this, [this, pipelineGroup](PipelineParameterSpan* span) { OnParameterSpanChanged(pipelineGroup, span); });
 
     connect(&GroupWidget->Widget(), &PipelineGroupWidget::RequestCreateParameterSpan,
-            this, [this, pipelineGroup]() { OnRequestCreateParameterSpan(pipelineGroup); });
+            this, [this, pipelineGroup] { OnRequestCreateParameterSpan(pipelineGroup); });
 
     connect(&GroupWidget->Widget(), &PipelineGroupWidget::NumberOfPipelinesUpdated,
             GroupListWidget, &PipelineGroupListWidget::UpdateNumberOfPipelines);
 }
 
-void PipelineGroupsWidget::OnParameterSpanChanged(PipelineGroup* pipelineGroup, PipelineParameterSpan* parameterSpan) {
+auto PipelineGroupsWidget::OnParameterSpanChanged(PipelineGroup const* pipelineGroup,
+                                                  PipelineParameterSpan const* parameterSpan) const -> void {
     if (!parameterSpan) {
         ParameterSpanWidget->HideWidget();
         return;
@@ -91,15 +92,15 @@ void PipelineGroupsWidget::OnParameterSpanChanged(PipelineGroup* pipelineGroup, 
             new PipelineParameterSpanReadOnlyWidget(pipelineGroup->GetBasePipeline(), *parameterSpan));
 }
 
-void PipelineGroupsWidget::OnRequestCreateParameterSpan(PipelineGroup* pipelineGroup) {
+void PipelineGroupsWidget::OnRequestCreateParameterSpan(PipelineGroup const* pipelineGroup) {
     auto* createWidget = new PipelineParameterSpanCreateWidget(pipelineGroup->GetBasePipeline());
     ParameterSpanWidget->UpdateWidget(createWidget);
 
     connect(createWidget, &PipelineParameterSpanCreateWidget::Accept,
-            this, [this, createWidget]() {
+            this, [this, createWidget] {
                 GroupWidget->Widget().AddParameterSpan(createWidget->GetPipelineParameterSpan());
             });
 
     connect(createWidget, &PipelineParameterSpanCreateWidget::Reject,
-            this, [this]() { ParameterSpanWidget->HideWidget(); });
+            this, [this] { ParameterSpanWidget->HideWidget(); });
 }

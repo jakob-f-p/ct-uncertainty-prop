@@ -59,7 +59,7 @@ private:
     template<typename U>
     friend class SpanState;
     template<typename U>
-    friend class SpanStateSourceIterator;
+    friend struct SpanStateSourceIterator;
 
     ArtifactVariantPointer ArtifactPointer;
     std::string Name;
@@ -72,7 +72,7 @@ private:
 struct PipelineParameterSpan {
 
     template<typename... Args>
-    PipelineParameterSpan(Args&&... args) : SpanVariant(std::forward<Args>(args)...) {};
+    PipelineParameterSpan(Args&&... args) : SpanVariant(std::forward<Args>(args)...) {}
 
     [[nodiscard]] auto
     GetArtifact() const noexcept -> ArtifactVariantPointer;
@@ -108,7 +108,7 @@ struct PipelineParameterSpan {
     operator== (Type const& other) const noexcept -> bool {
         return std::holds_alternative<Type>(SpanVariant)
                        && &std::get<Type>(SpanVariant) == &other;
-    };
+    }
 
 private:
     friend class ObjectPropertyGroup;

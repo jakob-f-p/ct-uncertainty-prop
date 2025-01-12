@@ -14,7 +14,7 @@ auto PipelineParameterSpanSet::AddParameterSpan(PipelineParameterSpan&& paramete
 }
 
 auto PipelineParameterSpanSet::RemoveParameterSpan(PipelineParameterSpan const& parameterSpan) -> void {
-    auto it = std::find(ParameterSpans.begin(), ParameterSpans.end(), parameterSpan);
+    auto const it = std::ranges::find(ParameterSpans, parameterSpan);
 
     if (it == ParameterSpans.end())
         throw std::runtime_error("Cannot remove given parameter span because it does not exist.");
@@ -48,7 +48,7 @@ auto PipelineParameterSpanSet::Get(uint16_t idx) const -> PipelineParameterSpan 
 }
 
 auto PipelineParameterSpanSet::GetIdx(PipelineParameterSpan const& parameterSpan) const -> uint16_t {
-    auto it = std::find(ParameterSpans.cbegin(), ParameterSpans.cend(), parameterSpan);
+    auto const it = std::ranges::find(ParameterSpans, parameterSpan);
 
     if (it == ParameterSpans.cend())
         throw std::runtime_error("Given parameter span not found");
@@ -81,7 +81,7 @@ auto PipelineParameterSpace::AddParameterSpan(ArtifactVariantPointer artifactVar
 
 auto PipelineParameterSpace::AddParameterSpan(PipelineParameterSpanSet& spanSet,
                                               PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan& {
-    if (std::find(ParameterSpanSets.cbegin(), ParameterSpanSets.cend(), spanSet) == ParameterSpanSets.cend())
+    if (std::ranges::find(std::as_const(ParameterSpanSets), spanSet) == ParameterSpanSets.cend())
         throw std::runtime_error("Span set does not exist in parameter space");
 
     MTime.Modified();
@@ -99,7 +99,7 @@ auto PipelineParameterSpace::RemoveParameterSpan(PipelineParameterSpanSet& spanS
     spanSet.RemoveParameterSpan(parameterSpan);
 
     if (spanSet.GetSize() == 0) {
-        auto it = std::find(ParameterSpanSets.cbegin(), ParameterSpanSets.cend(), spanSet);
+        auto const it = std::ranges::find(std::as_const(ParameterSpanSets), spanSet);
         ParameterSpanSets.erase(it);
     }
 
@@ -155,9 +155,7 @@ auto PipelineParameterSpace::GetSpanSet(uint16_t idx) const -> PipelineParameter
 auto PipelineParameterSpace::GetSpanSet(PipelineParameterSpan const& parameterSpan) -> PipelineParameterSpanSet& {
     for (auto& spanSet : ParameterSpanSets) {
         for (int i = 0; i < spanSet.GetSize(); i++) {
-            auto& span = spanSet.Get(i);
-
-            if (span == parameterSpan)
+            if (auto& span = spanSet.Get(i); span == parameterSpan)
                 return spanSet;
         }
     }
@@ -179,7 +177,7 @@ auto PipelineParameterSpace::GetSpanSetIdx(PipelineParameterSpanSet const& spanS
 }
 
 auto PipelineParameterSpace::GetSpanSetName(PipelineParameterSpanSet const& spanSet) const -> std::string {
-    auto it = std::find(ParameterSpanSets.cbegin(), ParameterSpanSets.cend(), spanSet);
+    auto const it = std::ranges::find(ParameterSpanSets, spanSet);
 
     if (it == ParameterSpanSets.cend())
         throw std::runtime_error("Span set not found");
@@ -205,8 +203,8 @@ auto PipelineParameterSpace::GenerateSpaceStates() -> std::vector<PipelineParame
 auto PipelineParameterSpace::ContainsSetForArtifactPointer(ArtifactVariantPointer artifactVariantPointer) const noexcept
         -> bool {
 
-    auto it = std::find_if(ParameterSpanSets.cbegin(), ParameterSpanSets.cend(),
-                           [&](auto const& set) { return set.ArtifactPointer == artifactVariantPointer; });
+    auto const it = std::ranges::find_if(ParameterSpanSets,
+                                         [&](auto const& set) { return set.ArtifactPointer == artifactVariantPointer; });
 
     return it != ParameterSpanSets.cend();
 }
@@ -217,8 +215,8 @@ auto PipelineParameterSpace::GetSetForArtifactPointer(ArtifactVariantPointer art
     if (!ContainsSetForArtifactPointer(artifactVariantPointer))
         ParameterSpanSets.emplace_back(artifactVariantPointer);
 
-    auto it = std::find_if(ParameterSpanSets.begin(), ParameterSpanSets.end(),
-                           [&](auto const& set) { return set.ArtifactPointer == artifactVariantPointer; });
+    auto const it = std::ranges::find_if(ParameterSpanSets,
+                                   [&](auto const& set) { return set.ArtifactPointer == artifactVariantPointer; });
 
     if (it == ParameterSpanSets.end())
         throw std::runtime_error("No set for given artifact pointer exists");
@@ -235,8 +233,8 @@ auto PipelineParameterSpace::GenerateSpaceStatesRecursive(std::vector<PipelinePa
     }
 
     ParameterSpanStateSourceIterator it (*spans.at(depth));
-    auto endIt = it.End();
-    for (; it != endIt; ++it) {
+    for (auto const endIt = it.End(); it != endIt; ++it) {
+        // ReSharper disable once CppExpressionWithoutSideEffects
         *it;
         GenerateSpaceStatesRecursive(spans, states, depth + 1);
     }

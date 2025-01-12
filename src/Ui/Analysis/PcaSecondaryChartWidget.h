@@ -103,7 +103,7 @@ private:
     UpdateChart(std::span<Feature> visibleFeatures) -> void;
 
     auto
-    ResizeChart(QSize size) -> void;
+    ResizeChart(QSize size) const -> void;
 
     QGraphicsScene* GraphicsScene;
     ScrollAwareChart* Chart;

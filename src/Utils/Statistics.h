@@ -1,6 +1,5 @@
 #pragma once
 
-#include <algorithm>
 #include <numeric>
 #include <span>
 #include <vector>
@@ -18,19 +17,19 @@ template<typename T>
 Mean(std::span<T> values) noexcept -> T {
     T const sum = std::reduce(values.begin(), values.end());
     return sum / values.size();
-};
+}
 
 template<typename T>
 [[nodiscard]] auto
 Variance(std::span<T> values) noexcept -> T {
     T const mean = Mean(values);
     T const sumOfSquaredDifferences = std::reduce(values.begin(), values.end(),
-                                                  0.0, [mean](T sum, T const& val) {
-        T const& diff = (val - mean);
+                                                  0.0, [mean](T, T const& val) {
+        T const& diff = val - mean;
         return diff * diff;
     });
     return sumOfSquaredDifferences / values.size();
-};
+}
 
 template<typename T>
 [[nodiscard]] auto
@@ -45,7 +44,7 @@ CumulativeSum(std::vector<T> values) noexcept -> std::vector<T> {
         cumulativeSumVector[i] = cumulativeSumVector[i - 1] + values[i];
 
     return cumulativeSumVector;
-};
+}
 
 
 }

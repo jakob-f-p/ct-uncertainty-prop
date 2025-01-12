@@ -45,11 +45,11 @@ CtDataSource::CtDataSource() {
     int const defaultResolution = 16;
 #else
 //    int const defaultResolution = 256;
-    int const defaultResolution = 192;
+    constexpr int defaultResolution = 192;
 #endif
     std::fill(NumberOfVoxels.begin(), NumberOfVoxels.end(), defaultResolution);
 
-    float const defaultPhysicalDimensionsLength = 100.0F;
+    constexpr float defaultPhysicalDimensionsLength = 100.0F;
     std::fill(PhysicalDimensions.begin(), PhysicalDimensions.end(), defaultPhysicalDimensionsLength);
 
     CtDataSource::SetNumberOfInputPorts(0);
@@ -79,7 +79,7 @@ auto CtDataSource::RequestInformation(vtkInformation* vtkNotUsed(request),
     return 1;
 }
 
-auto CtDataSource::GetSpacing() -> std::array<double, 3> {
+auto CtDataSource::GetSpacing() const -> std::array<double, 3> {
     std::array<double, 3> spacing {};
 
     for (int i = 0; i < spacing.size(); ++i) {
@@ -89,7 +89,7 @@ auto CtDataSource::GetSpacing() -> std::array<double, 3> {
     return spacing;
 }
 
-auto CtDataSource::GetOrigin() -> std::array<double, 3> {
+auto CtDataSource::GetOrigin() const -> std::array<double, 3> {
     std::array<double, 3> origin {};
 
     for (int i = 0; i < origin.size(); ++i) {
@@ -99,7 +99,7 @@ auto CtDataSource::GetOrigin() -> std::array<double, 3> {
     return origin;
 }
 
-auto CtDataSource::GetWholeExtent() -> std::array<int, 6> {
+auto CtDataSource::GetWholeExtent() const -> std::array<int, 6> {
     std::array<int, 6> extent {};
     std::fill(extent.begin(), extent.end(), 0);
 
@@ -110,7 +110,7 @@ auto CtDataSource::GetWholeExtent() -> std::array<int, 6> {
     return extent;
 }
 
-auto CtDataSource::GetDimensions() -> std::array<int, 3> {
+auto CtDataSource::GetDimensions() const -> std::array<int, 3> {
     auto const extent = GetWholeExtent();
 
     std::array<int, 3> dims {};

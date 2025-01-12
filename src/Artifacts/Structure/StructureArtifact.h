@@ -1,14 +1,14 @@
 #pragma once
 
+
 #include "MotionArtifact.h"
 #include "MetalArtifact.h"
 #include "WindmillArtifact.h"
 #include "../../Utils/Enum.h"
 #include "../../Utils/LinearAlgebraTypes.h"
 
+#include <QMetaEnum>
 #include <QWidget>
-
-#include <vtkTimeStamp.h>
 
 #include <string>
 #include <variant>
@@ -49,7 +49,7 @@ namespace StructureArtifactDetails {
     ENUM_GET_VALUES(SubType);
 
     [[nodiscard]] static consteval auto
-    GetNumberOfSubTypeValues() -> int { return 3; };
+    GetNumberOfSubTypeValues() -> int { return 3; }
 
     [[nodiscard]] static consteval auto
     GetSubTypeValuesConstEval() {
@@ -65,7 +65,6 @@ namespace StructureArtifactDetails {
 class StructureArtifact;
 
 struct StructureArtifactData {
-public:
     using StructureArtifactDataVariant = std::variant<MotionArtifactData, MetalArtifactData, WindmillArtifactData>;
 
     QString Name;

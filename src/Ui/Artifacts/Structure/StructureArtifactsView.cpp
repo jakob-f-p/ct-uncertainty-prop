@@ -6,7 +6,7 @@
 #include "../../../Artifacts/Structure/StructureArtifact.h"
 
 StructureArtifactsView::StructureArtifactsView(StructureArtifactList& structureArtifactList) {
-    setModel(new StructureArtifactsModel(structureArtifactList, this));
+    QAbstractItemView::setModel(new StructureArtifactsModel(structureArtifactList, this));
     setItemDelegate(new StructureArtifactsDelegate(this));
 }
 
@@ -20,7 +20,7 @@ StructureArtifactsView::StructureArtifactsDelegate::getDialog(QModelIndex const&
 }
 
 void StructureArtifactsView::StructureArtifactsDelegate::setEditorData(QWidget* editor, const QModelIndex& index) const {
-    auto data = index.data(Qt::UserRole).value<StructureArtifactData>();
+    auto const data = index.data(Qt::UserRole).value<StructureArtifactData>();
 
     SetWidgetData<StructureArtifactWidget>(editor, data);
 }
@@ -28,7 +28,7 @@ void StructureArtifactsView::StructureArtifactsDelegate::setEditorData(QWidget* 
 void StructureArtifactsView::StructureArtifactsDelegate::setModelData(QWidget* editor,
                                                                       QAbstractItemModel* model,
                                                                       const QModelIndex& index) const {
-    auto data = GetWidgetData<StructureArtifactWidget>(editor);
+    auto const data = GetWidgetData<StructureArtifactWidget>(editor);
 
     model->setData(index, QVariant::fromValue(data));
 }
@@ -37,14 +37,14 @@ StructureArtifactsReadOnlyView::StructureArtifactsReadOnlyView(StructureArtifact
         StructureArtifactsView(const_cast<StructureArtifactList&>(structureArtifactList)),
         Model(new StructureArtifactsReadOnlyModel(structureArtifactList, this)) {
 
-    auto* oldModel = model();
-    setModel(Model);
+    auto const* oldModel = model();
+    QAbstractItemView::setModel(Model);
     delete oldModel;
 }
 
-auto StructureArtifactsReadOnlyView::Select(StructureArtifact const& structureArtifact) -> void {
-    auto structureArtifactPointer = QVariant::fromValue(const_cast<StructureArtifact*>(&structureArtifact));
-    auto match = Search(*Model, StructureArtifactsModel::Roles::POINTER,
+auto StructureArtifactsReadOnlyView::Select(StructureArtifact const& structureArtifact) const -> void {
+    auto const structureArtifactPointer = QVariant::fromValue(const_cast<StructureArtifact*>(&structureArtifact));
+    auto const match = Search(*Model, StructureArtifactsModel::Roles::POINTER,
                         QVariant::fromValue(structureArtifactPointer), rootIndex());
 
     if (match == QModelIndex{})

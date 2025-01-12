@@ -35,7 +35,7 @@ public:
     explicit StructureArtifactsReadOnlyView(StructureArtifactList const& structureArtifactList);
 
     auto
-    Select(StructureArtifact const& structureArtifact) -> void;
+    Select(StructureArtifact const& structureArtifact) const -> void;
 
 Q_SIGNALS:
     void StructureArtifactChanged(StructureArtifact* structureArtifact);

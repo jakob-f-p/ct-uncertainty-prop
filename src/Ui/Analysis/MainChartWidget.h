@@ -124,7 +124,7 @@ protected:
     AddItemsFromSceneOnUpdateData() -> void;
 
     virtual auto
-    EditAxes(QValueAxis* xAxis, QValueAxis* yAxis) -> void {};
+    EditAxes(QValueAxis* xAxis, QValueAxis* yAxis) -> void {}
 
 private Q_SLOTS:
     void ToggleTooltip(QPointF const& point, bool entered);
@@ -134,10 +134,10 @@ private:
     ConnectScatterSeries(std::map<uint16_t, QScatterSeries*> const& indexScatterSeriesMap) noexcept -> void;
 
     [[nodiscard]] static auto
-    GetAxisRange(QValueAxis* axis) -> std::pair<double, double>;
+    GetAxisRange(QValueAxis const* axis) -> std::pair<double, double>;
 
     [[nodiscard]] static auto
-    GetAxisTickInterval(QValueAxis* axis) -> double;
+    GetAxisTickInterval(QValueAxis const* axis) -> double;
 
 protected:
     PipelineBatchListData const* BatchListData;

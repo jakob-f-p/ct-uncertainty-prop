@@ -21,7 +21,7 @@ public:
     UpdateDataSourceOnPipelineChange(Pipeline& pipeline) -> void;
 
     auto
-    UpdateDataSourceOnDataSourceChange() -> void;
+    UpdateDataSourceOnDataSourceChange() const -> void;
 
 private:
     Pipeline const* Pipeline_;

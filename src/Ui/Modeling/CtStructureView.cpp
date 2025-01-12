@@ -8,10 +8,9 @@
 
 #include <QComboBox>
 #include <QDialog>
-#include <QEvent>
 
 CtStructureView::CtStructureView(CtStructureTree& ctStructureTree) {
-    setModel(new CtStructureTreeModel(ctStructureTree, this));
+    QTreeView::setModel(new CtStructureTreeModel(ctStructureTree, this));
     setItemDelegate(new CtStructureDelegate(this));
 }
 
@@ -45,7 +44,7 @@ void CtStructureView::CtStructureDelegate::setEditorData(QWidget* editor, QModel
 void CtStructureView::CtStructureDelegate::setModelData(QWidget* editor,
                                                         QAbstractItemModel* model,
                                                         QModelIndex const& index) const {
-    QVariant const editedData = index.data(TreeModelRoles::IS_BASIC_STRUCTURE).toBool()
+    QVariant const editedData = index.data(IS_BASIC_STRUCTURE).toBool()
             ? QVariant::fromValue(GetWidgetData<BasicStructureWidget>(editor))
             : QVariant::fromValue(GetWidgetData<CombinedStructureWidget>(editor));
 
@@ -75,13 +74,13 @@ void CtStructureReadOnlyView::selectionChanged(QItemSelection const& selected, Q
 
     QModelIndex const selectedIndex = selectedIndices.at(0);
 
-    auto structureIdx = idx_t::FromSigned(selectedIndex.internalId());
+    auto const structureIdx = idx_t::FromSigned(selectedIndex.internalId());
 
     Q_EMIT CtStructureChanged(structureIdx);
 }
 
 auto CtStructureReadOnlyView::Select(BasicStructure const& basicStructure) -> void {
-    auto match = Search(*StructureTreeModel, TreeModelRoles::POINTER_CONST,
+    auto const match = Search(*StructureTreeModel, POINTER_CONST,
                         QVariant::fromValue(&basicStructure), rootIndex());
 
     if (match == QModelIndex{})
@@ -94,8 +93,8 @@ auto CtStructureReadOnlyView::Select(BasicStructure const& basicStructure) -> vo
     selectionModel()->select(match, QItemSelectionModel::SelectionFlag::Select);
 }
 
-auto CtStructureReadOnlyView::Select(CombinedStructure const& combinedStructure) -> void {
-    auto match = Search(*StructureTreeModel, TreeModelRoles::POINTER_CONST,
+auto CtStructureReadOnlyView::Select(CombinedStructure const& combinedStructure) const -> void {
+    auto const match = Search(*StructureTreeModel, POINTER_CONST,
                         QVariant::fromValue(&combinedStructure), rootIndex());
 
     if (match == QModelIndex{})

@@ -37,8 +37,8 @@ public:
         ValueT Y;
         ValueT Z;
 
-        RowData(ValueT x, ValueT y, ValueT z) : X(x), Y(y), Z(z) {};
-        explicit RowData(std::array<ValueT, 3> const& array) : X(array[0]), Y(array[1]), Z(array[2]) {};
+        RowData(ValueT x, ValueT y, ValueT z) : X(x), Y(y), Z(z) {}
+        explicit RowData(std::array<ValueT, 3> const& array) : X(array[0]), Y(array[1]), Z(array[2]) {}
 
         [[nodiscard]] auto
         ToArray() const noexcept -> std::array<ValueT, 3> { return { X, Y, Z }; }
@@ -65,7 +65,7 @@ private:
                 case 0: X = &spinBox; break;
                 case 1: Y = &spinBox; break;
                 case 2: Z = &spinBox; break;
-                default: return;
+                default: ;
             }
         }
         auto operator[] (uint8_t idx) -> SpinBoxT* {
@@ -102,9 +102,9 @@ struct CoordinateRowWidget<double, QDoubleSpinBox>::RowData {
         double Y;
         double Z;
 
-        RowData(double x, double y, double z) : X(x), Y(y), Z(z) {};
-        explicit RowData(const std::array<double, 3>& array) : X(array[0]), Y(array[1]), Z(array[2]) {};
-        explicit RowData(const std::array<float, 3>& array) : X(array[0]), Y(array[1]), Z(array[2]) {};
+        RowData(double x, double y, double z) : X(x), Y(y), Z(z) {}
+        explicit RowData(const std::array<double, 3>& array) : X(array[0]), Y(array[1]), Z(array[2]) {}
+        explicit RowData(const std::array<float, 3>& array) : X(array[0]), Y(array[1]), Z(array[2]) {}
 
         [[nodiscard]] auto
         ToArray() const noexcept -> std::array<double, 3> { return { X, Y, Z }; }

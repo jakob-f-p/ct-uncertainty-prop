@@ -16,13 +16,13 @@ auto CuppingArtifact::operator= (CuppingArtifact&&) noexcept -> CuppingArtifact&
 
 CuppingArtifact::~CuppingArtifact() = default;
 
-auto CuppingArtifact::UpdateFilterParameters() -> void {
+auto CuppingArtifact::UpdateFilterParameters() const -> void {
     Filter->SetMinRadiodensityFactor(MinRadiodensityFactor);
 
     Filter->SetCenterPoint(Center);
 }
 
-auto CuppingArtifact::GetFilter() -> vtkImageAlgorithm& {
+auto CuppingArtifact::GetFilter() const -> vtkImageAlgorithm& {
     UpdateFilterParameters();
 
     return *Filter;
@@ -74,12 +74,12 @@ CuppingArtifactWidget::CuppingArtifactWidget() :
     fLayout->addRow(CenterPointWidget);
 }
 
-auto CuppingArtifactWidget::GetData() noexcept -> CuppingArtifactData {
+auto CuppingArtifactWidget::GetData() const noexcept -> CuppingArtifactData {
     return { static_cast<float>(MinRadiodensityFactorSpinBox->value()),
              CenterPointWidget->GetRowData(0).ToFloatArray() };
 }
 
-auto CuppingArtifactWidget::Populate(const CuppingArtifactData& data) noexcept -> void {
+auto CuppingArtifactWidget::Populate(const CuppingArtifactData& data) const noexcept -> void {
     MinRadiodensityFactorSpinBox->setValue(data.MinRadiodensityFactor);
 
     CenterPointWidget->SetRowData(0, DoubleCoordinateRowWidget::RowData(data.Center));

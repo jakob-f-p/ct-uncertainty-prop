@@ -1,8 +1,6 @@
 #pragma once
 
 #include "StructureArtifact.h"
-#include "../../Utils/LinearAlgebraTypes.h"
-
 #include <vtkNew.h>
 
 #include <memory>
@@ -22,7 +20,7 @@ public:
     StructureArtifactList(BeforeRemoveArtifactCallback removeCallback,
                           StructureProvider&& structureEvaluatorProvider):
             BeforeRemoveCallback(std::move(removeCallback)),
-            StructureProv(std::move(structureEvaluatorProvider)) {};
+            StructureProv(std::move(structureEvaluatorProvider)) {}
     StructureArtifactList(StructureArtifactList const&) = default;
     StructureArtifactList(StructureArtifactList&&) = default;
     auto operator= (StructureArtifactList const&) -> StructureArtifactList& = default;
@@ -130,10 +128,10 @@ public:
     [[nodiscard]] auto
     GetStructureArtifactList(StructureArtifact const& structureArtifact) const -> StructureArtifactList const&;
 
-    constexpr static auto const StructureHash = [](CtStructureVariant const& structure) {
+    constexpr static auto StructureHash = [](CtStructureVariant const& structure) {
         return std::hash<CtStructureVariant const*>{}(&structure);
     };
-    constexpr static auto const StructureEqual = [](CtStructureVariant const& left, CtStructureVariant const& right) {
+    constexpr static auto StructureEqual = [](CtStructureVariant const& left, CtStructureVariant const& right) {
         return &left == &right;
     };
     using StructureArtifactsMap = std::unordered_map<std::reference_wrapper<CtStructureVariant const>,

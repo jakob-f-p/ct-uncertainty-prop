@@ -1,5 +1,6 @@
 #pragma once
 
+
 #include "ImageArtifactBase.h"
 
 #include "Artifacts/CuppingArtifact.h"
@@ -10,6 +11,7 @@
 #include "Artifacts/WindMillArtifact.h"
 #include "../Types.h"
 
+#include <QMetaEnum>
 #include <QMetaObject>
 
 #include <string>
@@ -86,7 +88,7 @@ namespace BasicImageArtifactDetails {
     };
 }
 
-class BasicImageArtifactData;
+struct BasicImageArtifactData;
 
 class BasicImageArtifact : public ImageArtifactBaseDetails::ImageArtifactBase {
 public:
@@ -123,11 +125,11 @@ private:
 };
 
 struct BasicImageArtifactData :
-        public ImageArtifactBaseDetails::ImageArtifactBaseData<
+        ImageArtifactBaseDetails::ImageArtifactBaseData<
                 BasicImageArtifactDetails::BasicImageArtifactDataVariant> {};
 
 struct BasicImageArtifactWidget
-        : public ImageArtifactBaseDetails::ImageArtifactBaseWidget<
+        : ImageArtifactBaseDetails::ImageArtifactBaseWidget<
                 BasicImageArtifactDetails::BasicImageArtifactWidgetImpl,
                 BasicImageArtifactData> {
     Q_OBJECT

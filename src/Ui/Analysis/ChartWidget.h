@@ -36,7 +36,7 @@ public:
     UpdateData(PipelineBatchListData const* batchListData) -> void override;
 
     auto
-    SelectPcaPoints(QString const& name, QList<QPointF> const& points) -> void;
+    SelectPcaPoints(QString const& name, QList<QPointF> const& points) const -> void;
 
 private:
     PcaMainChartWidget* PcaMainWidget;

@@ -3,11 +3,9 @@
 #include <vtkFloatArray.h>
 #include <vtkImageData.h>
 #include <vtkInformation.h>
-#include <vtkInformationVector.h>
 #include <vtkObjectFactory.h>
 #include <vtkPointData.h>
 #include <vtkSMPTools.h>
-#include <vtkStreamingDemandDrivenPipeline.h>
 
 #include <random>
 
@@ -38,7 +36,7 @@ struct FillWithRandomIndices {
     int NumberOfIndices;
     vtkIdType NumberOfPoints;
 
-    auto operator() () noexcept -> void {
+    auto operator() () const noexcept -> void {
         static unsigned int seed = 0;
 
         std::uniform_int_distribution<vtkIdType> uniformDistribution { 0, NumberOfPoints - 1 };
@@ -48,9 +46,9 @@ struct FillWithRandomIndices {
 
         for (auto IdxsEndIt = Indices.begin(); IdxsEndIt != Indices.end();) {
             std::generate(IdxsEndIt, Indices.end(),
-                          [&]() { return uniformDistribution(engine); });
-            std::sort(Indices.begin(), Indices.end());
-            IdxsEndIt = std::unique(Indices.begin(), Indices.end());
+                          [&] { return uniformDistribution(engine); });
+            std::ranges::sort(Indices);
+            IdxsEndIt = std::ranges::unique(Indices).begin();
         }
     }
 };
@@ -84,7 +82,7 @@ void SaltPepperArtifactFilter::ExecuteDataWithImageInformation(vtkImageData* inp
     saltIndicesThread.join();
     pepperIndicesThread.join();
 
-    vtkNew<vtkFloatArray> newNoiseValueArray;
+    vtkNew<vtkFloatArray> const newNoiseValueArray;
     newNoiseValueArray->SetNumberOfComponents(1);
     newNoiseValueArray->SetNumberOfTuples(numberOfPoints);
     newNoiseValueArray->FillValue(0.0F);

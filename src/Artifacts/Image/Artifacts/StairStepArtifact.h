@@ -7,7 +7,7 @@
 #include <vtkNew.h>
 
 class StairStepArtifactFilter;
-class StairStepArtifactData;
+struct StairStepArtifactData;
 
 class QDoubleSpinBox;
 
@@ -21,18 +21,18 @@ public:
     StairStepArtifact();
     StairStepArtifact(StairStepArtifact const& other);
     auto operator= (StairStepArtifact const&) -> StairStepArtifact& = delete;
-    StairStepArtifact(StairStepArtifact&&);
-    auto operator= (StairStepArtifact&&) -> StairStepArtifact&;
+    StairStepArtifact(StairStepArtifact&&) noexcept;
+    auto operator= (StairStepArtifact&&) noexcept -> StairStepArtifact&;
     ~StairStepArtifact();
 
     auto
     SetRelativeZAxisSamplingRate(float samplingRate) -> void { SamplingRate = samplingRate; }
 
     auto
-    UpdateFilterParameters() -> void;
+    UpdateFilterParameters() const -> void;
 
     [[nodiscard]] auto
-    GetFilter() -> vtkImageAlgorithm&;
+    GetFilter() const -> vtkImageAlgorithm&;
 
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties {
@@ -78,10 +78,10 @@ public:
     StairStepArtifactWidget();
 
     [[nodiscard]] auto
-    GetData() noexcept -> StairStepArtifactData;
+    GetData() const noexcept -> StairStepArtifactData;
 
     auto
-    Populate(const StairStepArtifactData& data) noexcept -> void;
+    Populate(const StairStepArtifactData& data) const noexcept -> void;
 
 private:
     QDoubleSpinBox* SamplingRateSpinBox;

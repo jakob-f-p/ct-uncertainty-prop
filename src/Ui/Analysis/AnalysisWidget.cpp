@@ -17,7 +17,7 @@ AnalysisWidget::AnalysisWidget(PipelineGroupList const& pipelineGroups) :
     });
 }
 
-auto AnalysisWidget::UpdateData() -> void {
+auto AnalysisWidget::UpdateData() const -> void {
     TsneWidget->UpdateData();
     PcaWidget->UpdateData();
 }

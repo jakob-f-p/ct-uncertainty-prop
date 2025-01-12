@@ -39,9 +39,9 @@ BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::BasicImageArtifactWidge
     Layout->setFieldGrowthPolicy(QFormLayout::FieldGrowthPolicy::FieldsStayAtSizeHint);
     Layout->setHorizontalSpacing(15);
 
-    for (const auto &subTypeAndName : BasicImageArtifactDetails::GetSubTypeValues())
-        SubTypeComboBox->addItem(subTypeAndName.Name,
-                                 QVariant::fromValue(subTypeAndName.EnumValue));
+    for (auto const & [name, enumValue] : GetSubTypeValues())
+        SubTypeComboBox->addItem(name,
+                                 QVariant::fromValue(enumValue));
     Layout->addRow("Function Type", SubTypeComboBox);
 
     auto* subTypeVLayout = new QVBoxLayout(SubTypeGroupBox);
@@ -50,7 +50,7 @@ BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::BasicImageArtifactWidge
     UpdateSubTypeWidget();
     Layout->addRow(SubTypeGroupBox);
 
-    QObject::connect(SubTypeComboBox, &QComboBox::currentIndexChanged, [&]() { UpdateSubTypeWidget(); });
+    connect(SubTypeComboBox, &QComboBox::currentIndexChanged, [&] { UpdateSubTypeWidget(); });
 }
 
 auto BasicImageArtifactDetails::BasicImageArtifactWidgetImpl::GetData() const noexcept -> Data {
@@ -127,7 +127,7 @@ auto BasicImageArtifact::GetSubType(const BasicImageArtifactVariant& artifact) n
 }
 
 auto BasicImageArtifact::GetViewName() const noexcept -> std::string {
-    return SubTypeToString(GetSubType()) + (Name.empty() ? "" : (" (" + Name + ")"));
+    return SubTypeToString(GetSubType()) + (Name.empty() ? "" : " (" + Name + ")");
 }
 
 auto BasicImageArtifact::GetProperties() noexcept -> PipelineParameterProperties {

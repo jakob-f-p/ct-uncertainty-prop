@@ -9,7 +9,6 @@
 #include <QComboBox>
 #include <QDialogButtonBox>
 #include <QFormLayout>
-#include <QGroupBox>
 #include <QLabel>
 #include <QPushButton>
 #include <QSpinBox>
@@ -17,19 +16,19 @@
 
 PipelineGroupListWidget::PipelineGroupListWidget(PipelineGroupList& pipelineGroups) :
         PipelineGroups(pipelineGroups),
-        NumberOfPipelinesSpinBox([&pipelineGroups]() {
+        NumberOfPipelinesSpinBox([&pipelineGroups] {
             auto* spinBox = new QSpinBox();
             spinBox->setRange(0, 10000);
             spinBox->setValue(pipelineGroups.GetNumberOfPipelines());
             spinBox->setEnabled(false);
             return spinBox;
         }()),
-        AddPipelineGroupButton([]() {
+        AddPipelineGroupButton([] {
             auto* button = new QPushButton();
             button->setIcon(GenerateIcon("Plus"));
             return button;
         }()),
-        RemovePipelineGroupButton([]() {
+        RemovePipelineGroupButton([] {
             auto* button = new QPushButton();
             button->setIcon(GenerateIcon("Minus"));
             return button;
@@ -65,11 +64,11 @@ PipelineGroupListWidget::PipelineGroupListWidget(PipelineGroupList& pipelineGrou
     connect(SelectionModel, &QItemSelectionModel::selectionChanged, this, &PipelineGroupListWidget::OnSelectionChanged);
 }
 
-void PipelineGroupListWidget::UpdatePipelineList() noexcept {
+void PipelineGroupListWidget::UpdatePipelineList() const noexcept {
     UpdateBasePipelineFilterComboBoxItems();
 }
 
-void PipelineGroupListWidget::UpdateNumberOfPipelines() {
+void PipelineGroupListWidget::UpdateNumberOfPipelines() const {
     NumberOfPipelinesSpinBox->setValue(PipelineGroups.GetNumberOfPipelines());
 }
 
@@ -79,7 +78,7 @@ void PipelineGroupListWidget::showEvent(QShowEvent* event) {
     QWidget::showEvent(event);
 }
 
-auto PipelineGroupListWidget::UpdateBasePipelineFilterComboBoxItems() noexcept -> void {
+auto PipelineGroupListWidget::UpdateBasePipelineFilterComboBoxItems() const noexcept -> void {
     BasePipelineFilterComboBox->clear();
 
     BasePipelineFilterComboBox->addItem("All");
@@ -88,7 +87,7 @@ auto PipelineGroupListWidget::UpdateBasePipelineFilterComboBoxItems() noexcept -
                                             QVariant::fromValue(pipeline));
 }
 
-auto PipelineGroupListWidget::UpdateButtonStatus() -> void {
+auto PipelineGroupListWidget::UpdateButtonStatus() const -> void {
     bool const isValid = !SelectionModel->selection().indexes().empty();
 
     AddPipelineGroupButton->setEnabled(true);
@@ -104,9 +103,9 @@ void PipelineGroupListWidget::OnAddPipelineGroup() {
 
     auto* dialog = new PipelineGroupCreateDialog(options, this);
 
-    connect(dialog, &PipelineGroupCreateDialog::accepted, [this, dialog]() {
-        auto const data = dialog->GetData();
-        QModelIndex const index = ListView->model()->AddPipelineGroup(*data.BasePipeline, data.Name);
+    connect(dialog, &PipelineGroupCreateDialog::accepted, [this, dialog] {
+        auto const [name, basePipeline] = dialog->GetData();
+        QModelIndex const index = ListView->model()->AddPipelineGroup(*basePipeline, name);
 
         SelectionModel->clearSelection();
         SelectionModel->select(index, QItemSelectionModel::SelectionFlag::Select);
@@ -117,7 +116,7 @@ void PipelineGroupListWidget::OnAddPipelineGroup() {
     dialog->show();
 }
 
-void PipelineGroupListWidget::OnRemovePipelineGroup() {
+void PipelineGroupListWidget::OnRemovePipelineGroup() const {
     QModelIndex const index = SelectionModel->selection().indexes().at(0);
     ListView->model()->RemovePipelineGroup(index);
 
@@ -125,7 +124,7 @@ void PipelineGroupListWidget::OnRemovePipelineGroup() {
     UpdateButtonStatus();
 }
 
-void PipelineGroupListWidget::OnSelectionChanged(const QItemSelection& selected, const QItemSelection& deselected) {
+void PipelineGroupListWidget::OnSelectionChanged(const QItemSelection& selected, const QItemSelection&) {
     QModelIndexList const selectedIndices = selected.indexes();
 
     if (selectedIndices.empty()) {
@@ -150,8 +149,8 @@ PipelineGroupCreateDialog::PipelineGroupCreateDialog(std::vector<std::pair<QStri
         NameEdit(new NameLineEdit()),
         BasePipelineComboBox([&]() -> QComboBox* {
             auto* comboBox = new QComboBox();
-            for (auto const& option : options)
-                comboBox->addItem(option.first, option.second);
+            for (auto const& [name, data] : options)
+                comboBox->addItem(name, data);
             return comboBox;
         }()) {
 

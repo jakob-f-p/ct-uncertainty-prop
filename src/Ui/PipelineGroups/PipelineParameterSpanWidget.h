@@ -60,7 +60,7 @@ class PipelineParameterSpanReadOnlyWidget : public PipelineParameterSpanWidget {
 
 public:
     explicit PipelineParameterSpanReadOnlyWidget(Pipeline const& pipeline,
-                                                 PipelineParameterSpan& parameterSpan,
+                                                 PipelineParameterSpan const& parameterSpan,
                                                  QWidget* parent = nullptr);
 };
 
@@ -72,7 +72,7 @@ public:
     explicit PipelineArtifactsView(Pipeline const& pipeline);
 
     auto
-    SelectArtifact(ArtifactVariantPointer artifactPointer) -> void;
+    SelectArtifact(ArtifactVariantPointer artifactPointer) const -> void;
 
 Q_SIGNALS:
     void ArtifactChanged(ArtifactVariantPointer artifactVariantPointer);

@@ -77,12 +77,12 @@ ImplicitCtDataSource::SampleAlgorithm::SampleAlgorithm(ImplicitCtDataSource* sel
         Self(self),
         VolumeData(volumeData),
         Spacing(self->GetSpacing()),
-        UpdateDims([this]() {
+        UpdateDims([this] {
             std::array<int, 3> updateDims {};
             std::copy(VolumeData->GetDimensions(), std::next(VolumeData->GetDimensions(), 3), updateDims.begin());
             return updateDims;
         }()),
-        StartPoint([this]() {
+        StartPoint([this] {
             Point startPoint {};
             VolumeData->GetPoint(0, startPoint.data());
             return startPoint;
@@ -128,15 +128,15 @@ void ImplicitCtDataSource::SampleAlgorithm::operator()(vtkIdType pointId, vtkIdT
                 xEnd = x2;
 
             for (; x <= xEnd; x++) {
-                CtStructureTree::ModelingResult const result = Tree->FunctionValueAndRadiodensity(point);
+                auto const [functionValue, radiodensity, basicCtStructureId] = Tree->FunctionValueAndRadiodensity(point);
 
-                bool const pointIsWithinStructure = result.FunctionValue < 0;
-                FunctionValues[pointId] = result.FunctionValue;
+                bool const pointIsWithinStructure = functionValue < 0;
+                FunctionValues[pointId] = functionValue;
                 Radiodensities[pointId] = pointIsWithinStructure
-                                          ? result.Radiodensity
+                                          ? radiodensity
                                           : -1000.0f;
                 BasicStructureIds[pointId] = pointIsWithinStructure
-                                             ? result.BasicCtStructureId
+                                             ? basicCtStructureId
                                              : 0;
                 pointId++;
 

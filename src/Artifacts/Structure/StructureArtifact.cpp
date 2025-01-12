@@ -12,7 +12,7 @@
 
 
 auto StructureArtifact::GetViewName() const noexcept -> std::string {
-    std::string const viewName = SubTypeToString(GetSubType()) + (Name.empty() ? "" : (" (" + Name + ")"));
+    std::string const viewName = SubTypeToString(GetSubType()) + (Name.empty() ? "" : " (" + Name + ")");
     return viewName;
 }
 
@@ -20,12 +20,12 @@ auto StructureArtifact::GetProperties() noexcept -> PipelineParameterProperties 
     return std::visit([](auto& artifact) { return artifact.GetProperties(); }, Artifact);
 }
 
-auto StructureArtifact::GetSubType() const noexcept -> StructureArtifact::SubType {
+auto StructureArtifact::GetSubType() const noexcept -> SubType {
     return GetSubType(Artifact);
 }
 
 auto
-StructureArtifact::GetSubType(StructureArtifactVariant const& artifactVariant) -> StructureArtifact::SubType {
+StructureArtifact::GetSubType(StructureArtifactVariant const& artifactVariant) -> SubType {
     return std::visit(Overload {
             [](MotionArtifact const&)   { return SubType::MOTION; },
             [](MetalArtifact const&)    { return SubType::METAL; },
@@ -71,9 +71,9 @@ StructureArtifactWidget::StructureArtifactWidget() :
 
     Layout->addRow("Name", NameEdit);
 
-    for (const auto &subTypeAndName : StructureArtifactDetails::GetSubTypeValues())
-        SubTypeComboBox->addItem(subTypeAndName.Name,
-                                 QVariant::fromValue(subTypeAndName.EnumValue));
+    for (auto const & [name, enumValue] : StructureArtifactDetails::GetSubTypeValues())
+        SubTypeComboBox->addItem(name,
+                                 QVariant::fromValue(enumValue));
     Layout->addRow("Function Type", SubTypeComboBox);
 
     auto* subTypeVLayout = new QVBoxLayout(SubTypeGroupBox);
@@ -82,7 +82,7 @@ StructureArtifactWidget::StructureArtifactWidget() :
     UpdateSubTypeWidget();
     Layout->addRow(SubTypeGroupBox);
 
-    QObject::connect(SubTypeComboBox, &QComboBox::currentIndexChanged, [&]() { UpdateSubTypeWidget(); });
+    connect(SubTypeComboBox, &QComboBox::currentIndexChanged, [&] { UpdateSubTypeWidget(); });
 }
 
 auto StructureArtifactWidget::GetData() const noexcept -> StructureArtifactData {
@@ -134,5 +134,5 @@ auto StructureArtifactWidget::UpdateSubTypeWidget() noexcept -> void {
 
     WidgetVariant = newWidgetVariant;
 
-    SubTypeGroupBox->setTitle(QString::fromStdString(StructureArtifactDetails::SubTypeToString(subType)));
+    SubTypeGroupBox->setTitle(QString::fromStdString(SubTypeToString(subType)));
 }

@@ -27,8 +27,8 @@
 RenderWidget::RenderWidget(vtkImageAlgorithm* imageAlgorithm, Controls controls, QWidget* parent) :
         VtkRenderWidget(new CtRenderWidget(this, imageAlgorithm, parent)) {
 
-    setFrameShape(QFrame::Shape::Box);
-    setFrameShadow(QFrame::Shadow::Sunken);
+    setFrameShape(Box);
+    setFrameShadow(Sunken);
     setLineWidth(1);
     setMidLineWidth(1);
 
@@ -115,13 +115,13 @@ auto RenderWidget::Render() const -> void {
     VtkRenderWidget->Render();
 }
 
-auto RenderWidget::UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) -> void {
+auto RenderWidget::UpdateImageAlgorithm(vtkImageAlgorithm& imageAlgorithm) const -> void {
     VtkRenderWidget->UpdateImageAlgorithm(imageAlgorithm);
 
     VtkRenderWidget->Render();
 }
 
-auto RenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) -> void {
+auto RenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) const -> void {
     VtkRenderWidget->UpdateImageAlgorithm(imageData);
 
     VtkRenderWidget->Render();
@@ -135,12 +135,12 @@ CtRenderWidget::CtRenderWidget(RenderWidget* renderWidget, vtkImageAlgorithm* im
             if (imageAlgorithm)
                 return imageAlgorithm;
 
-            vtkNew<vtkImageData> trivialImage;
+            vtkNew<vtkImageData> const trivialImage;
             trivialImage->SetDimensions(101, 101, 101);
             trivialImage->SetSpacing(1, 1, 1);
             trivialImage->SetOrigin(-50, -50, -50);
 
-            vtkNew<vtkFloatArray> trivialDataArray;
+            vtkNew<vtkFloatArray> const trivialDataArray;
             trivialDataArray->SetNumberOfComponents(1);
             trivialDataArray->SetName("Radiodensities");
             trivialDataArray->SetNumberOfTuples(trivialImage->GetNumberOfPoints());
@@ -148,7 +148,7 @@ CtRenderWidget::CtRenderWidget(RenderWidget* renderWidget, vtkImageAlgorithm* im
             trivialImage->GetPointData()->AddArray(trivialDataArray);
             trivialImage->GetPointData()->SetActiveScalars("Radiodensities");
 
-            vtkSmartPointer<vtkTrivialProducer> trivialImageSource = vtkTrivialProducer::New();
+            vtkSmartPointer trivialImageSource = vtkTrivialProducer::New();
             trivialImageSource->SetOutput(trivialImage);
 
             return trivialImageSource;
@@ -162,14 +162,14 @@ CtRenderWidget::CtRenderWidget(RenderWidget* renderWidget, vtkImageAlgorithm* im
 
     UpdateColorMappingFunctions();
 
-    vtkNew<vtkVolumeProperty> volumeProperty;
+    vtkNew<vtkVolumeProperty> const volumeProperty;
     volumeProperty->SetColor(ColorTransferFunction.GetPointer());
     volumeProperty->SetScalarOpacity(OpacityMappingFunction.GetPointer());
     volumeProperty->ShadeOff();
     volumeProperty->SetInterpolationTypeToLinear();
     volumeProperty->SetAmbient(0.3);
 
-    vtkNew<vtkVolume> volume;
+    vtkNew<vtkVolume> const volume;
     volume->SetMapper(VolumeMapper);
     volume->SetProperty(volumeProperty);
 
@@ -178,7 +178,7 @@ CtRenderWidget::CtRenderWidget(RenderWidget* renderWidget, vtkImageAlgorithm* im
     Renderer->ResetCamera();
     InitialCamera->DeepCopy(Renderer->GetActiveCamera());
 
-    vtkNew<vtkGenericOpenGLRenderWindow> renderWindow;
+    vtkNew<vtkGenericOpenGLRenderWindow> const renderWindow;
     renderWindow->SetWindowName("CT-Data");
     renderWindow->AddRenderer(Renderer);
     renderWindow->SetInteractor(RenderWindowInteractor);
@@ -190,7 +190,7 @@ CtRenderWidget::CtRenderWidget(RenderWidget* renderWidget, vtkImageAlgorithm* im
     setRenderWindow(renderWindow);
     renderWindow->Render();
 
-    vtkNew<vtkAxesActor> axesActor;
+    vtkNew<vtkAxesActor> const axesActor;
     axesActor->SetTotalLength(20.0, 20.0, 20.0);
     OrientationMarkerWidget->SetOrientationMarker(axesActor);
     OrientationMarkerWidget->SetViewport(0.8, 0.0, 1.0, 0.2);
@@ -211,7 +211,7 @@ auto CtRenderWidget::Render() const -> void {
 }
 
 auto CtRenderWidget::Export() -> void {
-    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
+    auto const homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
     if (homeLocations.empty() || homeLocations.at(0).isEmpty())
         throw std::runtime_error("home path must not be empty");
     QString const& homePath = homeLocations.at(0);
@@ -232,16 +232,16 @@ auto CtRenderWidget::UpdateImageAlgorithm(vtkAlgorithm& imageAlgorithm) -> void 
     VolumeMapper->SetInputConnection(ImageAlgorithm->GetOutputPort());
 }
 
-auto CtRenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) -> void {
+auto CtRenderWidget::UpdateImageAlgorithm(vtkImageData& imageData) const -> void {
     VolumeMapper->SetInputData(&imageData);
 }
 
-auto CtRenderWidget::SetWindowWidth(CtRenderWidget::Range<double> range) -> void {
+auto CtRenderWidget::SetWindowWidth(Range<double> range) -> void {
     WindowWidth = { static_cast<int>(range.Min), static_cast<int>(range.Max) };
 }
 
-auto CtRenderWidget::UpdateWindowWidth(CtRenderWidget::Range<double> range) -> void {
-    Range<int> const newWindowWidth = { static_cast<int>(range.Min), static_cast<int>(range.Max) };
+auto CtRenderWidget::UpdateWindowWidth(Range<double> range) const -> void {
+    Range const newWindowWidth = { static_cast<int>(range.Min), static_cast<int>(range.Max) };
     if (newWindowWidth.Min == WindowWidth.Min && newWindowWidth.Max == WindowWidth.Max)
         return;
 
@@ -252,14 +252,14 @@ auto CtRenderWidget::UpdateWindowWidth(CtRenderWidget::Range<double> range) -> v
 auto CtRenderWidget::showEvent(QShowEvent* event) -> void {
     UpdateColorMappingFunctions();
 
-    auto currentRange = Parent->Slider->GetValue();
-    if (currentRange.Min != WindowWidth.Min || currentRange.Max != WindowWidth.Max)
+    if (auto const [sliderMin, sliderMax] = Parent->Slider->GetValue();
+        sliderMin != WindowWidth.Min || sliderMax != WindowWidth.Max)
         Parent->Slider->SetValue({ WindowWidth.Min, WindowWidth.Max });
 
     QWidget::showEvent(event);
 }
 
-auto CtRenderWidget::UpdateColorMappingFunctions() -> void {
+auto CtRenderWidget::UpdateColorMappingFunctions() const -> void {
     OpacityMappingFunction->RemoveAllPoints();
     ColorTransferFunction->RemoveAllPoints();
 

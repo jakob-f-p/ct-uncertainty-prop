@@ -2,7 +2,7 @@
 
 #include <QAbstractItemModel>
 
-class ImageArtifactData;
+struct ImageArtifactData;
 class ImageArtifactConcatenation;
 class Pipeline;
 

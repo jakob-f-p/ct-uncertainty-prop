@@ -6,7 +6,7 @@
 #include "../../../PipelineGroups/ObjectProperty.h"
 
 class GaussianArtifactFilter;
-class GaussianArtifactData;
+struct GaussianArtifactData;
 
 class QDoubleSpinBox;
 class QFormLayout;
@@ -22,7 +22,7 @@ public:
     GaussianArtifact(GaussianArtifact const& other);
     auto operator= (GaussianArtifact const&) -> GaussianArtifact& = delete;
     GaussianArtifact(GaussianArtifact&&) noexcept ;
-    auto operator= (GaussianArtifact&&) -> GaussianArtifact&;
+    auto operator= (GaussianArtifact&&) noexcept -> GaussianArtifact&;
     ~GaussianArtifact();
 
     [[nodiscard]] auto
@@ -38,10 +38,10 @@ public:
     SetStandardDeviation(float sd) -> void { Sd = sd; }
 
     auto
-    UpdateFilterParameters() -> void;
+    UpdateFilterParameters() const -> void;
 
     [[nodiscard]] auto
-    GetFilter() -> vtkImageAlgorithm&;
+    GetFilter() const -> vtkImageAlgorithm&;
 
     [[nodiscard]] auto
     GetProperties() noexcept -> PipelineParameterProperties {
@@ -57,10 +57,10 @@ public:
                                                               this->UpdateFilterParameters(); },
                                            { 0.0000001, 1000.0 }));
         return properties;
-    };
+    }
 
 private:
-    friend class GaussianArtifactData;
+    friend struct GaussianArtifactData;
 
     float Mean = 0.0F;
     float Sd = 0.0F;
@@ -94,10 +94,10 @@ public:
     GaussianArtifactWidget();
 
     [[nodiscard]] auto
-    GetData() noexcept -> GaussianArtifactData;
+    GetData() const noexcept -> GaussianArtifactData;
 
     auto
-    Populate(const GaussianArtifactData& data) noexcept -> void;
+    Populate(const GaussianArtifactData& data) const noexcept -> void;
 
 private:
     QDoubleSpinBox* MeanSpinBox;

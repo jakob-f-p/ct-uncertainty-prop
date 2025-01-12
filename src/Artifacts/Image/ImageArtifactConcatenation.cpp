@@ -70,7 +70,7 @@ auto ImageArtifactConcatenation::GetEndFilter() const -> vtkImageAlgorithm& {
     return *EndFilter;
 }
 
-auto ImageArtifactConcatenation::UpdateArtifactFilter() -> void {
+auto ImageArtifactConcatenation::UpdateArtifactFilter() const -> void {
     auto& secondToLastFilter = Start->AppendImageFilters(*StartFilter);
     EndFilter->SetInputConnection(secondToLastFilter.GetOutputPort());
 }
@@ -79,11 +79,11 @@ auto ImageArtifactConcatenation::GetFilterMTime() const noexcept -> vtkMTimeType
     return EndFilter->GetMTime();
 }
 
-auto ImageArtifactConcatenation::GetStart() noexcept -> ImageArtifact& {
+auto ImageArtifactConcatenation::GetStart() const noexcept -> ImageArtifact& {
     return *Start;
 }
 
-auto ImageArtifactConcatenation::Get(uint16_t idx) -> ImageArtifact& {
+auto ImageArtifactConcatenation::Get(uint16_t idx) const -> ImageArtifact& {
     uint16_t currentIdx = 0;
     ImageArtifact* imageArtifact = Start->Get(idx, currentIdx);
     if (!imageArtifact)
@@ -101,7 +101,7 @@ auto ImageArtifactConcatenation::IndexOf(ImageArtifact const& imageArtifact) con
     return static_cast<uint16_t>(idx);
 }
 
-auto ImageArtifactConcatenation::EmitEvent() -> void {
+auto ImageArtifactConcatenation::EmitEvent() const -> void {
     UpdateArtifactFilter();
 
     for (auto& callback : Callbacks)

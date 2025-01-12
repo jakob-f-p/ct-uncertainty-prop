@@ -1,6 +1,5 @@
 #pragma once
 
-#include <QBrush>
 #include <QPen>
 
 struct PenBrushPair {

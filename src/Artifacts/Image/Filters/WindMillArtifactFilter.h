@@ -27,7 +27,7 @@ public:
     SetCenterPoint(std::array<float, 3> center) -> void { if (center != Center) Center = center; Modified(); }
 
     [[nodiscard]] auto
-    GetCenterPoint() -> std::array<float, 3> { return Center; }
+    GetCenterPoint() const -> std::array<float, 3> { return Center; }
 
 protected:
     WindMillArtifactFilter() = default;

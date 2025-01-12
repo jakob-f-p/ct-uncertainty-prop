@@ -2,7 +2,6 @@
 
 #include "../Ui/Utils/CoordinateRowWidget.h"
 
-#include <QDoubleSpinBox>
 #include <QGridLayout>
 #include <QLabel>
 
@@ -22,7 +21,7 @@ auto SimpleTransform::GetMTime() const noexcept -> vtkMTimeType {
     return Transform->GetMTime();
 }
 
-auto SimpleTransform::Modified() noexcept -> void {
+auto SimpleTransform::Modified() const noexcept -> void {
     Transform->Modified();
 }
 
@@ -48,7 +47,7 @@ auto SimpleTransform::SetData(const SimpleTransformData& transformData) noexcept
     InverseTransform->Update();
     Transform->Update();
 
-    vtkNew<vtkMatrix4x4> vtkMatrix;
+    vtkNew<vtkMatrix4x4> const vtkMatrix;
     InverseTransform->GetMatrix(vtkMatrix);
     double const* doubleMatrix = vtkMatrix->GetData();
     std::copy(doubleMatrix, std::next(doubleMatrix, 12), InverseMatrix.data());
@@ -71,7 +70,7 @@ auto SimpleTransform::LeftMultiply(SimpleTransform const& other) const noexcept 
     Transform->Update();
     InverseTransform->Update();
 
-    vtkNew<vtkMatrix4x4> vtkMatrix;
+    vtkNew<vtkMatrix4x4> const vtkMatrix;
     Transform->GetMatrix(vtkMatrix);
     double const* doubleMatrix = vtkMatrix->GetData();
     std::copy(doubleMatrix, std::next(doubleMatrix, 12), transform.Matrix.data());
@@ -96,7 +95,7 @@ auto SimpleTransform::RightMultiply(SimpleTransform const& other) const noexcept
     Transform->Update();
     InverseTransform->Update();
 
-    vtkNew<vtkMatrix4x4> vtkMatrix;
+    vtkNew<vtkMatrix4x4> const vtkMatrix;
     Transform->GetMatrix(vtkMatrix);
     const double* doubleMatrix = vtkMatrix->GetData();
     std::copy(doubleMatrix, std::next(doubleMatrix, 12), transform.Matrix.data());
@@ -121,17 +120,17 @@ SimpleTransformWidget::SimpleTransformWidget() :
     vLayout->addWidget(TransformRows);
 }
 
-auto SimpleTransformWidget::GetData() noexcept -> SimpleTransformData {
+auto SimpleTransformWidget::GetData() const noexcept -> SimpleTransformData {
     SimpleTransformData data;
 
-    auto rowData = TransformRows->GetRowData();
+    auto const rowData = TransformRows->GetRowData();
     for (int i = 0; i < data.size(); i++)
         data[i] = rowData[i].ToArray();
 
     return data;
 }
 
-auto SimpleTransformWidget::SetData(const SimpleTransformData& data) noexcept -> void {
+auto SimpleTransformWidget::SetData(const SimpleTransformData& data) const noexcept -> void {
     for (int i = 0; i < data.size(); i++)
         TransformRows->SetRowData(i, DoubleCoordinateRowWidget::RowData(data[i]));
 }

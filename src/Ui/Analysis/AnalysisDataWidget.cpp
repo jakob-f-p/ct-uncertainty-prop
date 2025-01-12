@@ -1,48 +1,41 @@
 #include "AnalysisDataWidget.h"
 
-#include "ChartTooltip.h"
 #include "PipelineParameterSpaceStateView.h"
 #include "../Utils/NameLineEdit.h"
 #include "../Utils/WidgetUtils.h"
 #include "../../Artifacts/Pipeline.h"
 #include "../../PipelineGroups/PipelineGroupList.h"
 
-#include <QBarSet>
 #include <QChartView>
-#include <QDoubleSpinBox>
 #include <QFormLayout>
-#include <QHorizontalBarSeries>
 #include <QSpinBox>
-#include <QBarCategoryAxis>
-#include <QValueAxis>
-#include <QBarSeries>
 
 
 AnalysisSampleDataWidget::AnalysisSampleDataWidget(QString const& analysisName) :
         AnalysisName(analysisName),
         BatchListData(nullptr),
-        PipelineGroupNameEdit([]() {
+        PipelineGroupNameEdit([] {
             auto* lineEdit = new NameLineEdit();
             lineEdit->setEnabled(false);
             return lineEdit;
         }()),
-        NumberOfGroupPipelinesSpinBox([]() {
+        BasePipelineNameEdit([] {
+            auto* lineEdit = new NameLineEdit();
+            lineEdit->setEnabled(false);
+            return lineEdit;
+        }()),
+        NumberOfGroupPipelinesSpinBox([] {
             auto* spinBox = new QSpinBox();
             spinBox->setEnabled(false);
             spinBox->setRange(0, 100);
             return spinBox;
         }()),
-        BasePipelineNameEdit([]() {
-            auto* lineEdit = new NameLineEdit();
-            lineEdit->setEnabled(false);
-            return lineEdit;
-        }()),
-        PointXSpinBox([]() {
+        PointXSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setEnabled(false);
             return spinBox;
         }()),
-        PointYSpinBox([]() {
+        PointYSpinBox([] {
             auto* spinBox = new QDoubleSpinBox();
             spinBox->setEnabled(false);
             return spinBox;
@@ -93,7 +86,7 @@ auto AnalysisSampleDataWidget::UpdateData(PipelineBatchListData const* batchData
     UpdateSample(std::nullopt);
 }
 
-auto AnalysisSampleDataWidget::UpdateSample(std::optional<SampleId> sampleId) -> void {
+auto AnalysisSampleDataWidget::UpdateSample(std::optional<SampleId> const sampleId) const -> void {
     if (!sampleId)
         return;
 

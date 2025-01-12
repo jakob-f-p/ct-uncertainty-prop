@@ -39,7 +39,7 @@ private Q_SLOTS:
 
 private:
     auto
-    UpdateButtonStatus() -> void;
+    UpdateButtonStatus() const -> void;
 
     PipelineGroup const& Group;
 

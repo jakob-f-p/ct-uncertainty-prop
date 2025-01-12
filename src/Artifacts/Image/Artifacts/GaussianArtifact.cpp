@@ -11,16 +11,16 @@ GaussianArtifact::GaussianArtifact(GaussianArtifact const& other) :
         Mean(other.Mean),
         Sd(other.Sd) {}
 GaussianArtifact::GaussianArtifact(GaussianArtifact&&) noexcept = default;
-auto GaussianArtifact::operator= (GaussianArtifact&&) -> GaussianArtifact& = default;
+auto GaussianArtifact::operator= (GaussianArtifact&&) noexcept -> GaussianArtifact& = default;
 
 GaussianArtifact::~GaussianArtifact() = default;
 
-auto GaussianArtifact::UpdateFilterParameters() -> void {
+auto GaussianArtifact::UpdateFilterParameters() const -> void {
     Filter->SetMean(Mean);
     Filter->SetSd(Sd);
 }
 
-auto GaussianArtifact::GetFilter() -> vtkImageAlgorithm& {
+auto GaussianArtifact::GetFilter() const -> vtkImageAlgorithm& {
     UpdateFilterParameters();
 
     return *Filter;
@@ -55,12 +55,12 @@ GaussianArtifactWidget::GaussianArtifactWidget() :
     fLayout->addRow("SD", SdSpinBox);
 }
 
-auto GaussianArtifactWidget::GetData() noexcept -> GaussianArtifactData {
+auto GaussianArtifactWidget::GetData() const noexcept -> GaussianArtifactData {
     return { static_cast<float>(MeanSpinBox->value()),
              static_cast<float>(SdSpinBox->value()) };
 }
 
-auto GaussianArtifactWidget::Populate(const GaussianArtifactData& data) noexcept -> void {
+auto GaussianArtifactWidget::Populate(const GaussianArtifactData& data) const noexcept -> void {
     MeanSpinBox->setValue(data.Mean);
     SdSpinBox->setValue(data.Sd);
 }

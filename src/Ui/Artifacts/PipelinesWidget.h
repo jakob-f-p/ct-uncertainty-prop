@@ -18,7 +18,7 @@ class PipelinesWidget : public QWidget {
 public:
     explicit PipelinesWidget(PipelineList& pipelines, QWidget* parent = nullptr);
 
-    auto GetCurrentPipeline() -> Pipeline&;
+    auto GetCurrentPipeline() const -> Pipeline&;
 
 Q_SIGNALS:
     void PipelineViewUpdated(Pipeline& newPipeline);
@@ -31,7 +31,7 @@ private Q_SLOTS:
     void UpdatePipelineView();
 
 private:
-    void InitializeViews();
+    void InitializeViews() const;
 
     PipelineList& Pipelines;
     int CurrentPipelineIndex;

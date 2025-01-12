@@ -52,7 +52,7 @@ namespace System {
         throw std::runtime_error("unsupported operating system");
     }
 
-    [[nodiscard]] auto
+    [[nodiscard]] inline auto
     GetTotalSystemMemory() -> uint64_t {
 #ifdef UP_WINDOWS
         MEMORYSTATUSEX status;
@@ -70,7 +70,7 @@ namespace System {
         throw std::runtime_error("unsupported operating system");
     }
 
-    [[nodiscard]] auto
+    [[nodiscard]] inline auto
     GetMaxApplicationMemory() -> uint64_t {
         uint64_t const totalMemory = GetTotalSystemMemory();
         uint64_t const halfTotalMemory = totalMemory / 2;

@@ -44,18 +44,18 @@ class PcaMainWidget : public AnalysisMainWidget {
     Q_OBJECT
 
 public:
-    PcaMainWidget(PipelineGroupList const& pipelineGroups);
+    explicit PcaMainWidget(PipelineGroupList const& pipelineGroups);
     ~PcaMainWidget() override;
 
 public Q_SLOTS:
-    void SelectPcaPoints(QString const& pointSetName, QList<QPointF> const& points);
+    void SelectPcaPoints(QString const& pointSetName, QList<QPointF> const& points) const;
 };
 
 class TsneMainWidget : public AnalysisMainWidget {
     Q_OBJECT
 
 public:
-    TsneMainWidget(PipelineGroupList const& pipelineGroups);
+    explicit TsneMainWidget(PipelineGroupList const& pipelineGroups);
     ~TsneMainWidget() override;
 
 Q_SIGNALS:

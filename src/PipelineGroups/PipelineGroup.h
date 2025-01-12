@@ -84,14 +84,14 @@ public:
 
     auto
     AddParameterSpan(ArtifactVariantPointer artifactVariantPointer,
-                     PipelineParameterSpan&& parameterSpan) -> PipelineParameterSpan&;
+                     PipelineParameterSpan&& parameterSpan) const -> PipelineParameterSpan&;
 
     auto
     RemoveParameterSpan(ArtifactVariantPointer artifactVariantPointer,
-                        PipelineParameterSpan const& parameterSpan) -> void;
+                        PipelineParameterSpan const& parameterSpan) const -> void;
 
     auto
-    RemoveParameterSpansForArtifact(ArtifactVariantPointer artifactVariantPointer) -> void;
+    RemoveParameterSpansForArtifact(ArtifactVariantPointer artifactVariantPointer) const -> void;
 
     struct ImageMaskRefPair {
         SampleId Id;

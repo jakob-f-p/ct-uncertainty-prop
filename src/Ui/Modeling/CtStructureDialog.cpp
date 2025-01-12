@@ -38,14 +38,14 @@ CtStructureDialog::CtStructureDialog(QWidget* structureWidget, DialogMode mode, 
     }
 }
 
-BasicStructureDialog::BasicStructureDialog(CtStructureDialog::DialogMode mode, QWidget* parent) :
+BasicStructureDialog::BasicStructureDialog(DialogMode mode, QWidget* parent) :
         CtStructureDialog(new BasicStructureWidget(), mode, parent) {}
 
-CombinedStructureDialog::CombinedStructureDialog(CtStructureDialog::DialogMode mode, QWidget* parent) :
+CombinedStructureDialog::CombinedStructureDialog(DialogMode mode, QWidget* parent) :
         CtStructureDialog(new CombinedStructureWidget(), mode, parent) {}
 
 BasicAndCombinedStructureCreateDialog::BasicAndCombinedStructureCreateDialog(QWidget* parent) :
-        CtStructureDialog([]() {
+        CtStructureDialog([] {
                               auto* tabWidget = new QTabWidget();
                               tabWidget->addTab(new CombinedStructureWidget(), "Combination");
                               tabWidget->addTab(new BasicStructureWidget(), "Basic");

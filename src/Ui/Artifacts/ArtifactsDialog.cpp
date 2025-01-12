@@ -42,8 +42,8 @@ ArtifactsDialog::ArtifactsDialog(QWidget* widget, Mode mode, QWidget* parent) :
     }
 }
 
-ImageArtifactDialog::ImageArtifactDialog(ArtifactsDialog::Mode mode, QWidget* parent) :
+ImageArtifactDialog::ImageArtifactDialog(Mode mode, QWidget* parent) :
         ArtifactsDialog(new ImageArtifactWidget(), mode, parent) {}
 
-StructureArtifactDialog::StructureArtifactDialog(ArtifactsDialog::Mode mode, QWidget* parent) :
+StructureArtifactDialog::StructureArtifactDialog(Mode mode, QWidget* parent) :
         ArtifactsDialog(new StructureArtifactWidget(), mode, parent) {}

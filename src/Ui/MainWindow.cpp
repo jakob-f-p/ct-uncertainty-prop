@@ -83,18 +83,19 @@ auto MainWindow::keyPressEvent(QKeyEvent* event) -> void {
         return;
     }
 
-    auto homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
+    auto const homeLocations = QStandardPaths::standardLocations(QStandardPaths::HomeLocation);
     if (homeLocations.empty() || homeLocations.at(0).isEmpty())
         throw std::runtime_error("home path must not be empty");
     QString const& homePath = homeLocations.at(0);
 
     QString const fileFilter = "Images (*.png)";
-    QString const caption = QString("Save screenshot");
+    auto const caption = QString("Save screenshot");
     QString const fileName = QFileDialog::getSaveFileName(this, caption, homePath, fileFilter);
+    // ReSharper disable once CppExpressionWithoutSideEffects
     grab().save(fileName);
 }
 
-auto MainWindow::UpdateDataSource(CtDataSource& dataSource) noexcept -> void {
+auto MainWindow::UpdateDataSource(CtDataSource& dataSource) const noexcept -> void {
     ModelingWidget_->UpdateDataSource(dataSource);
     ArtifactsWidget_->UpdateDataSource();
     SegmentationWidget_->UpdateDataSourceOnDataSourceChange();

@@ -34,7 +34,7 @@ public:
             Name(std::move(name)),
             Getter(std::move(getter)),
             Setter(std::move(setter)),
-            Range(propertyRange) {};
+            Range(propertyRange) {}
     ObjectProperty(ObjectProperty&& other) noexcept = default;
     auto operator= (ObjectProperty&& other) noexcept -> ObjectProperty& = default;
     ObjectProperty(ObjectProperty const& other) = default;
@@ -75,7 +75,7 @@ class PipelineParameterProperty {
 
 public:
     template<typename Args>
-    PipelineParameterProperty(Args&& args) :
+    explicit PipelineParameterProperty(Args&& args) :
             PropertyVariant(std::forward<Args>(args)) {}
 
     [[nodiscard]] auto
@@ -116,7 +116,7 @@ public:
     }
 
     [[nodiscard]] auto
-    GetNames() -> std::vector<std::string> {
+    GetNames() const -> std::vector<std::string> {
         std::vector<std::string> names;
         names.reserve(Properties.size());
 

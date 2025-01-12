@@ -50,7 +50,7 @@ void ThresholdFilterExecute(ThresholdFilter* self, vtkImageData* inData, vtkImag
         OT* outSIEnd = outIt.EndSpan();
 
         for (; outSI != outSIEnd; ++inSI, ++maskSI, ++outSI) {
-            IT const value = (*inSI);
+            IT const value = *inSI;
             bool const valueIsWithinBounds = lowerThreshold <= value && value <= upperThreshold;
 
             *maskSI = valueIsWithinBounds
@@ -59,7 +59,7 @@ void ThresholdFilterExecute(ThresholdFilter* self, vtkImageData* inData, vtkImag
 
             *outSI = valueIsWithinBounds
                     ? (replaceIn  ? inValue  : static_cast<OT>(value))
-                    : (replaceOut ? outValue : static_cast<OT>(value));
+                    : replaceOut ? outValue : static_cast<OT>(value);
         }
     }
 }
@@ -93,14 +93,14 @@ void ThresholdFilter::PrepareImageData(vtkInformationVector** inputVector, vtkIn
     vtkInformation* info = inputVector[0]->GetInformationObject(0);
     vtkImageData* inData = vtkImageData::SafeDownCast(info->Get(vtkDataObject::DATA_OBJECT()));
 
-    vtkNew<vtkTypeInt16Array> segmentationMaskArray;
+    vtkNew<vtkTypeInt16Array> const segmentationMaskArray;
     segmentationMaskArray->SetNumberOfComponents(1);
     segmentationMaskArray->SetName("Segmentation Mask");
     segmentationMaskArray->SetNumberOfTuples(inData->GetNumberOfPoints());
     segmentationMaskArray->FillValue(0);
     inData->GetPointData()->AddArray(segmentationMaskArray);
 
-    vtkNew<vtkFloatArray> segmentedRadiodensitiesArray;
+    vtkNew<vtkFloatArray> const segmentedRadiodensitiesArray;
     segmentedRadiodensitiesArray->SetNumberOfComponents(1);
     segmentedRadiodensitiesArray->SetName("Segmented Radiodensities");
     segmentedRadiodensitiesArray->SetNumberOfTuples(inData->GetNumberOfPoints());
@@ -113,7 +113,7 @@ void ThresholdFilter::PrepareImageData(vtkInformationVector** inputVector, vtkIn
     inData->GetPointData()->SetActiveScalars("Radiodensities");
 }
 
-auto ThresholdFilterWidget::FilterModeToString(ThresholdFilterWidget::FilterMode mode) -> std::string {
+auto ThresholdFilterWidget::FilterModeToString(FilterMode mode) -> std::string {
     return [mode]() -> std::string {
         switch (mode) {
             case FilterMode::ABOVE:   return "Above";
@@ -181,7 +181,7 @@ void ThresholdFilterWidget::UpdateSpinBoxVisibility(int /*idx*/) {
         Q_EMIT DataChanged();
 }
 
-auto ThresholdFilterWidget::Populate(ThresholdFilter& thresholdFilter) -> void {
+auto ThresholdFilterWidget::Populate(ThresholdFilter& thresholdFilter) const -> void {
     auto const lower = static_cast<float>(thresholdFilter.GetLowerThreshold());
     auto const upper = static_cast<float>(thresholdFilter.GetUpperThreshold());
 
@@ -207,13 +207,11 @@ auto ThresholdFilterWidget::Populate(ThresholdFilter& thresholdFilter) -> void {
         UpperThresholdSpinBox->setValue(upper);
 }
 
-auto ThresholdFilterWidget::SetFilterData(ThresholdFilter& thresholdFilter) -> void {
+auto ThresholdFilterWidget::SetFilterData(ThresholdFilter& thresholdFilter) const -> void {
     auto const lower = static_cast<float>(LowerThresholdSpinBox->value());
     auto const upper = static_cast<float>(UpperThresholdSpinBox->value());
 
-    auto const mode = ModeComboBox->currentData().value<FilterMode>();
-
-    switch (mode) {
+    switch (ModeComboBox->currentData().value<FilterMode>()) {
         case FilterMode::ABOVE:   thresholdFilter.ThresholdByUpper(lower); break;
         case FilterMode::BELOW:   thresholdFilter.ThresholdByLower(upper); break;
         case FilterMode::BETWEEN: thresholdFilter.ThresholdBetween(lower, upper); break;

@@ -37,7 +37,7 @@ DataInitializer::DataInitializer(App& app) :
         Pipelines(app.GetPipelines()),
         PipelineGroups(app.GetPipelineGroups()) {}
 
-auto DataInitializer::operator()(DataInitializer::Config config) -> void {
+auto DataInitializer::operator()(Config config) const -> void {
     switch (config) {
         case Config::DEFAULT:
             DefaultSceneInitializer{ App_ }();
@@ -99,7 +99,7 @@ SceneInitializer::SceneInitializer(App& app) :
 DefaultSceneInitializer::DefaultSceneInitializer(App& app) :
         SceneInitializer(app) {}
 
-auto DefaultSceneInitializer::operator()() -> void {
+auto DefaultSceneInitializer::operator()() const -> void {
     BasicStructure sphere(Sphere{});
     sphere.SetTissueType(BasicStructureDetails::GetTissueTypeByName("Cancellous Bone"));
     sphere.SetTransformData({ 40.0F, 0.0F, 0.0F, 0.0F, 0.0F, 0.0F, 1.0F, 1.0F, 1.0F });
@@ -137,25 +137,25 @@ auto DefaultSceneInitializer::operator()() -> void {
 
     BasicImageArtifact gaussianArtifact(GaussianArtifact{});
     gaussianArtifact.SetName("sequential gaussian");
-    auto& gaussian = imageArtifactConcatenationA.AddImageArtifact(std::move(gaussianArtifact));
+    auto& gaussian = imageArtifactConcatenationA.AddImageArtifact(ImageArtifact(std::move(gaussianArtifact)));
 
     CompositeImageArtifact compositeImageArtifact;
     compositeImageArtifact.SetCompositionType(CompositeImageArtifactDetails::CompositionType::PARALLEL);
-    auto& composite = imageArtifactConcatenationA.AddImageArtifact(std::move(compositeImageArtifact));
+    auto& composite = imageArtifactConcatenationA.AddImageArtifact(ImageArtifact(std::move(compositeImageArtifact)));
 
     CompositeImageArtifact compositeImageArtifact1;
     compositeImageArtifact1.SetCompositionType(CompositeImageArtifactDetails::CompositionType::SEQUENTIAL);
-    auto& composite1 = imageArtifactConcatenationA.AddImageArtifact(std::move(compositeImageArtifact1), &composite);
+    auto& composite1 = imageArtifactConcatenationA.AddImageArtifact(ImageArtifact(std::move(compositeImageArtifact1)), &composite);
     BasicImageArtifact gaussianArtifact2(GaussianArtifact{});
     BasicImageArtifact gaussianArtifact3(GaussianArtifact{});
-    imageArtifactConcatenationA.AddImageArtifact(std::move(gaussianArtifact2), &composite1);
-    imageArtifactConcatenationA.AddImageArtifact(std::move(gaussianArtifact3), &composite1);
+    imageArtifactConcatenationA.AddImageArtifact(ImageArtifact(std::move(gaussianArtifact2)), &composite1);
+    imageArtifactConcatenationA.AddImageArtifact(ImageArtifact(std::move(gaussianArtifact3)), &composite1);
 
     BasicImageArtifact gaussianArtifact1(GaussianArtifact{});
-    imageArtifactConcatenationA.AddImageArtifact(std::move(gaussianArtifact1), &composite);
+    imageArtifactConcatenationA.AddImageArtifact(ImageArtifact(std::move(gaussianArtifact1)), &composite);
 
     BasicImageArtifact gaussianArtifact4(GaussianArtifact{});
-    imageArtifactConcatenationA.AddImageArtifact(std::move(gaussianArtifact4));
+    imageArtifactConcatenationA.AddImageArtifact(ImageArtifact(std::move(gaussianArtifact4)));
 
     SaltPepperArtifact saltPepperArtifact;
     saltPepperArtifact.SetSaltAmount(0.001);
@@ -197,19 +197,19 @@ auto DefaultSceneInitializer::operator()() -> void {
     gaussianArtifactB1sub.SetStandardDeviation(20.0);
     BasicImageArtifact gaussianArtifactB1(gaussianArtifactB1sub);
     gaussianArtifactB1.SetName("gaussian(100.0, 20.0)");
-    auto& gaussianB1 = imageArtifactConcatenationB.AddImageArtifact(std::move(gaussianArtifactB1));
+    auto& gaussianB1 = imageArtifactConcatenationB.AddImageArtifact(ImageArtifact(std::move(gaussianArtifactB1)));
     CuppingArtifact cuppingArtifactBsub;
     cuppingArtifactBsub.SetMinRadiodensityFactor(-300.0);
     BasicImageArtifact cuppingArtifactB(cuppingArtifactBsub);
     cuppingArtifactB.SetName("cupping(-300.0)");
-    auto& cuppingB = imageArtifactConcatenationB.AddImageArtifact(std::move(cuppingArtifactB));
+    auto& cuppingB = imageArtifactConcatenationB.AddImageArtifact(ImageArtifact(std::move(cuppingArtifactB)));
 
 
     PipelineGroup& pipelineGroupA = PipelineGroups.AddPipelineGroup(pipelineA, "PipelineGroup A");
 
     auto gaussianProperties = gaussian.GetProperties();
     auto& gaussianMeanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
-    ParameterSpan<float> gaussianMeanSpan (ArtifactVariantPointer(&gaussian),
+    ParameterSpan gaussianMeanSpan (ArtifactVariantPointer(&gaussian),
                                            gaussianMeanProperty,
     { gaussianMeanProperty.Get(), gaussianMeanProperty.Get() + 750, 50.0 },
     "My Mean Property");
@@ -220,7 +220,7 @@ auto DefaultSceneInitializer::operator()() -> void {
 
     auto gaussianB1Properties = gaussianB1.GetProperties();
     auto& gaussianB1MeanProperty = gaussianB1Properties.GetPropertyByName<float>("Mean");
-    ParameterSpan<float> gaussianB1MeanSpan (ArtifactVariantPointer(&gaussianB1),
+    ParameterSpan gaussianB1MeanSpan (ArtifactVariantPointer(&gaussianB1),
                                              gaussianB1MeanProperty,
     { gaussianB1MeanProperty.Get(),
                 gaussianB1MeanProperty.Get() + 100.0F,
@@ -230,7 +230,7 @@ auto DefaultSceneInitializer::operator()() -> void {
 
     auto cuppingBProperties = cuppingB.GetProperties();
     auto& cuppingBCenterProperty = cuppingBProperties.GetPropertyByName<FloatPoint>("Center");
-    ParameterSpan<FloatPoint> cuppingBCenterSpan (ArtifactVariantPointer(&cuppingB),
+    ParameterSpan cuppingBCenterSpan (ArtifactVariantPointer(&cuppingB),
                                                   cuppingBCenterProperty,
     { cuppingBCenterProperty.Get(),
                 { static_cast<float>(cuppingBCenterProperty.Get()[0] + 175.0),
@@ -245,7 +245,7 @@ auto DefaultSceneInitializer::operator()() -> void {
 DebugSceneInitializer::DebugSceneInitializer(App& app) :
         SceneInitializer(app) {}
 
-auto DebugSceneInitializer::operator()() -> void {
+auto DebugSceneInitializer::operator()() const -> void {
     auto cancellousBoneTissueType = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
 
     auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
@@ -258,7 +258,7 @@ auto DebugSceneInitializer::operator()() -> void {
 
     CtDataTree.AddBasicStructure(std::move(sphere));
 
-    static Range<float> const meanRange = { -25.0,  25.0, 5.0 };
+    static constexpr Range<float> meanRange = { -25.0,  25.0, 5.0 };
 
     auto& pipeline = Pipelines.Get(0);
 
@@ -270,14 +270,14 @@ auto DebugSceneInitializer::operator()() -> void {
 
     BasicImageArtifact gaussianBasicArtifact { std::move(gaussianArtifact) };
     gaussianBasicArtifact.SetName("gaussian");
-    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact));
+    auto& gaussian = concatenation.AddImageArtifact(ImageArtifact(std::move(gaussianBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Gaussian Pipelines");
 
     auto gaussianProperties = gaussian.GetProperties();
 
     auto& meanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
-    ParameterSpan<float> meanSpan {
+    ParameterSpan meanSpan {
             ArtifactVariantPointer(&gaussian),
             meanProperty,
             { meanRange.Min, meanRange.Max, meanRange.Step },
@@ -289,7 +289,7 @@ auto DebugSceneInitializer::operator()() -> void {
 DebugSingleSceneInitializer::DebugSingleSceneInitializer(App& app) :
         SceneInitializer(app) {}
 
-auto DebugSingleSceneInitializer::operator()() -> void {
+auto DebugSingleSceneInitializer::operator()() const -> void {
 //    auto cancellousBoneTissueType = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
 //
 //    auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
@@ -340,8 +340,8 @@ auto DebugSingleSceneInitializer::operator()() -> void {
 //    };
 //    pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(meanSpan));
 
-    static Range<float> const saltAmountRange = { 0.0, 0.01, 0.001 };
-    static Range<float> const pepperAmountRange = { 0.0, 0.01, 0.001 };
+    static constexpr Range<float> saltAmountRange = { 0.0, 0.01, 0.001 };
+    static constexpr Range<float> pepperAmountRange = { 0.0, 0.01, 0.001 };
 
     auto& pipeline = Pipelines.AddPipeline();
 
@@ -355,14 +355,14 @@ auto DebugSingleSceneInitializer::operator()() -> void {
 
     BasicImageArtifact saltPepperBasicArtifact { std::move(saltPepperArtifact) };
     saltPepperBasicArtifact.SetName("salt and pepper");
-    auto& saltPepper = concatenation.AddImageArtifact(std::move(saltPepperBasicArtifact));
+    auto& saltPepper = concatenation.AddImageArtifact(ImageArtifact(std::move(saltPepperBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Salt Pepper Pipelines");
 
     auto saltPepperProperties = saltPepper.GetProperties();
 
     auto& saltAmountProperty = saltPepperProperties.GetPropertyByName<float>("Salt Amount");
-    ParameterSpan<float> saltAmountSpan {
+    ParameterSpan saltAmountSpan {
             ArtifactVariantPointer(&saltPepper),
             saltAmountProperty,
             { saltAmountRange.Min, saltAmountRange.Max, saltAmountRange.Step },
@@ -371,7 +371,7 @@ auto DebugSingleSceneInitializer::operator()() -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(saltAmountSpan));
 
     auto& pepperAmountProperty = saltPepperProperties.GetPropertyByName<float>("Pepper Amount");
-    ParameterSpan<float> pepperAmountSpan {
+    ParameterSpan pepperAmountSpan {
             ArtifactVariantPointer(&saltPepper),
             pepperAmountProperty,
             { pepperAmountRange.Min, pepperAmountRange.Max, pepperAmountRange.Step },
@@ -383,8 +383,8 @@ auto DebugSingleSceneInitializer::operator()() -> void {
 SimpleSceneInitializer::SimpleSceneInitializer(App& app) :
         SceneInitializer(app) {}
 
-auto SimpleSceneInitializer::operator()() -> void {
-    auto cancellousBoneTissueType = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
+auto SimpleSceneInitializer::operator()() const -> void {
+    auto const cancellousBoneTissueType = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
 
     auto& thresholdFilter = dynamic_cast<ThresholdFilter&>(App_.GetThresholdFilter());
     thresholdFilter.ThresholdBetween(cancellousBoneTissueType.Radiodensity * 0.95,
@@ -405,9 +405,9 @@ auto SimpleSceneInitializer::operator()() -> void {
     InitializeMotion();
 }
 
-auto SimpleSceneInitializer::InitializeGaussian() noexcept -> void {
-    static Range<float> const meanRange = { -70.0,  70.0, 10.0 };
-    static Range<float> const sdRange   = {   0.0, 200.0, 25.0 };
+auto SimpleSceneInitializer::InitializeGaussian() const noexcept -> void {
+    static constexpr Range<float> meanRange = { -70.0,  70.0, 10.0 };
+    static constexpr Range<float> sdRange   = {   0.0, 200.0, 25.0 };
 
     auto& pipeline = Pipelines.Get(0);
 
@@ -419,14 +419,14 @@ auto SimpleSceneInitializer::InitializeGaussian() noexcept -> void {
 
     BasicImageArtifact gaussianBasicArtifact { std::move(gaussianArtifact) };
     gaussianBasicArtifact.SetName("gaussian");
-    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact));
+    auto& gaussian = concatenation.AddImageArtifact(ImageArtifact(std::move(gaussianBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Gaussian Pipelines");
 
     auto gaussianProperties = gaussian.GetProperties();
 
     auto& meanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
-    ParameterSpan<float> meanSpan {
+    ParameterSpan meanSpan {
             ArtifactVariantPointer(&gaussian),
             meanProperty,
             { meanRange.Min, meanRange.Max, meanRange.Step },
@@ -435,7 +435,7 @@ auto SimpleSceneInitializer::InitializeGaussian() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(meanSpan));
 
     auto& sdProperty = gaussianProperties.GetPropertyByName<float>("Standard Deviation");
-    ParameterSpan<float> sdSpan {
+    ParameterSpan sdSpan {
             ArtifactVariantPointer(&gaussian),
             sdProperty,
             { sdRange.Min, sdRange.Max, sdRange.Step },
@@ -444,9 +444,9 @@ auto SimpleSceneInitializer::InitializeGaussian() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(sdSpan));
 }
 
-auto SimpleSceneInitializer::InitializeCupping() noexcept -> void {
-    static Range<float> const minRadiodensityFactorRange = { 0.0, 1.0, 0.1 };
-    static Range<FloatPoint> const centerRange = { { -50.0, -50.0, -50.0 },
+auto SimpleSceneInitializer::InitializeCupping() const noexcept -> void {
+    static constexpr Range<float> minRadiodensityFactorRange = { 0.0, 1.0, 0.1 };
+    static constexpr Range<FloatPoint> centerRange = { { -50.0, -50.0, -50.0 },
                                                    { 50.0, 50.0, 50.0 },
                                                    { 10.0, 10.0, 10.0 } };
 
@@ -460,14 +460,14 @@ auto SimpleSceneInitializer::InitializeCupping() noexcept -> void {
 
     BasicImageArtifact cuppingBasicArtifact { std::move(cuppingArtifact) };
     cuppingBasicArtifact.SetName("cupping");
-    auto& cupping = concatenation.AddImageArtifact(std::move(cuppingBasicArtifact));
+    auto& cupping = concatenation.AddImageArtifact(ImageArtifact(std::move(cuppingBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Cupping Pipelines");
 
     auto cuppingProperties = cupping.GetProperties();
 
     auto& minRadiodensityFactorProperty = cuppingProperties.GetPropertyByName<float>("Minimum Radiodensity Factor");
-    ParameterSpan<float> minRadiodensityFactorSpan {
+    ParameterSpan minRadiodensityFactorSpan {
             ArtifactVariantPointer(&cupping),
             minRadiodensityFactorProperty,
             { minRadiodensityFactorRange.Min, minRadiodensityFactorRange.Max, minRadiodensityFactorRange.Step },
@@ -476,7 +476,7 @@ auto SimpleSceneInitializer::InitializeCupping() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&cupping), std::move(minRadiodensityFactorSpan));
 
     auto& centerProperty = cuppingProperties.GetPropertyByName<FloatPoint>("Center");
-    ParameterSpan<FloatPoint> centerSpan {
+    ParameterSpan centerSpan {
             ArtifactVariantPointer(&cupping),
             centerProperty,
             { centerRange.Min, centerRange.Max, centerRange.Step },
@@ -485,9 +485,9 @@ auto SimpleSceneInitializer::InitializeCupping() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&cupping), std::move(centerSpan));
 }
 
-auto SimpleSceneInitializer::InitializeRing() noexcept -> void {
-    static Range<float> const radiodensityFactorRange = { 0.25, 1.75, 0.125 };
-    static Range<FloatPoint> const centerRange = { { -50.0, -50.0, -50.0 },
+auto SimpleSceneInitializer::InitializeRing() const noexcept -> void {
+    static constexpr Range<float> radiodensityFactorRange = { 0.25, 1.75, 0.125 };
+    static constexpr Range<FloatPoint> centerRange = { { -50.0, -50.0, -50.0 },
                                                    { 50.0, 50.0, 50.0 },
                                                    { 10.0, 10.0, 10.0 } };
 
@@ -503,14 +503,14 @@ auto SimpleSceneInitializer::InitializeRing() noexcept -> void {
 
     BasicImageArtifact ringBasicArtifact { std::move(ringArtifact) };
     ringBasicArtifact.SetName("ring");
-    auto& ring = concatenation.AddImageArtifact(std::move(ringBasicArtifact));
+    auto& ring = concatenation.AddImageArtifact(ImageArtifact(std::move(ringBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Ring Pipelines");
 
     auto ringProperties = ring.GetProperties();
 
     auto& radiodensityFactorProperty = ringProperties.GetPropertyByName<float>("Radiodensity Factor");
-    ParameterSpan<float> radiodensityFactorSpan {
+    ParameterSpan radiodensityFactorSpan {
             ArtifactVariantPointer(&ring),
             radiodensityFactorProperty,
             { radiodensityFactorRange.Min, radiodensityFactorRange.Max, radiodensityFactorRange.Step },
@@ -519,7 +519,7 @@ auto SimpleSceneInitializer::InitializeRing() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&ring), std::move(radiodensityFactorSpan));
 
     auto& centerProperty = ringProperties.GetPropertyByName<FloatPoint>("Center");
-    ParameterSpan<FloatPoint> centerSpan {
+    ParameterSpan centerSpan {
             ArtifactVariantPointer(&ring),
             centerProperty,
             { centerRange.Min, centerRange.Max, centerRange.Step },
@@ -528,9 +528,9 @@ auto SimpleSceneInitializer::InitializeRing() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&ring), std::move(centerSpan));
 }
 
-auto SimpleSceneInitializer::InitializeSaltPepper() noexcept -> void {
-    static Range<float> const saltAmountRange = { 0.0, 0.01, 0.001 };
-    static Range<float> const pepperAmountRange = { 0.0, 0.01, 0.001 };
+auto SimpleSceneInitializer::InitializeSaltPepper() const noexcept -> void {
+    static constexpr Range<float> saltAmountRange = { 0.0, 0.01, 0.001 };
+    static constexpr Range<float> pepperAmountRange = { 0.0, 0.01, 0.001 };
 
     auto& pipeline = Pipelines.AddPipeline();
 
@@ -544,14 +544,14 @@ auto SimpleSceneInitializer::InitializeSaltPepper() noexcept -> void {
 
     BasicImageArtifact saltPepperBasicArtifact { std::move(saltPepperArtifact) };
     saltPepperBasicArtifact.SetName("salt and pepper");
-    auto& saltPepper = concatenation.AddImageArtifact(std::move(saltPepperBasicArtifact));
+    auto& saltPepper = concatenation.AddImageArtifact(ImageArtifact(std::move(saltPepperBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Salt Pepper Pipelines");
 
     auto saltPepperProperties = saltPepper.GetProperties();
 
     auto& saltAmountProperty = saltPepperProperties.GetPropertyByName<float>("Salt Amount");
-    ParameterSpan<float> saltAmountSpan {
+    ParameterSpan saltAmountSpan {
             ArtifactVariantPointer(&saltPepper),
             saltAmountProperty,
             { saltAmountRange.Min, saltAmountRange.Max, saltAmountRange.Step },
@@ -560,7 +560,7 @@ auto SimpleSceneInitializer::InitializeSaltPepper() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(saltAmountSpan));
 
     auto& pepperAmountProperty = saltPepperProperties.GetPropertyByName<float>("Pepper Amount");
-    ParameterSpan<float> pepperAmountSpan {
+    ParameterSpan pepperAmountSpan {
             ArtifactVariantPointer(&saltPepper),
             pepperAmountProperty,
             { pepperAmountRange.Min, pepperAmountRange.Max, pepperAmountRange.Step },
@@ -569,8 +569,8 @@ auto SimpleSceneInitializer::InitializeSaltPepper() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(pepperAmountSpan));
 }
 
-auto SimpleSceneInitializer::InitializeStairStep() noexcept -> void {
-    static Range<float> const zSamplingRate = { 0.1, 1.0, 0.008 };
+auto SimpleSceneInitializer::InitializeStairStep() const noexcept -> void {
+    static constexpr Range<float> zSamplingRate = { 0.1, 1.0, 0.008 };
 
     auto& pipeline = Pipelines.AddPipeline();
 
@@ -581,14 +581,14 @@ auto SimpleSceneInitializer::InitializeStairStep() noexcept -> void {
 
     BasicImageArtifact stairStepBasicArtifact { std::move(stairStepArtifact) };
     stairStepBasicArtifact.SetName("stair step");
-    auto& stairStep = concatenation.AddImageArtifact(std::move(stairStepBasicArtifact));
+    auto& stairStep = concatenation.AddImageArtifact(ImageArtifact(std::move(stairStepBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Stair Step Pipelines");
 
     auto stairStepProperties = stairStep.GetProperties();
 
     auto& zAxisSamplingRateProperty = stairStepProperties.GetPropertyByName<float>("z-Axis Sampling Rate");
-    ParameterSpan<float> zAxisSamplingRateSpan {
+    ParameterSpan zAxisSamplingRateSpan {
             ArtifactVariantPointer(&stairStep),
             zAxisSamplingRateProperty,
             { zSamplingRate.Min, zSamplingRate.Max, zSamplingRate.Step },
@@ -597,9 +597,9 @@ auto SimpleSceneInitializer::InitializeStairStep() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&stairStep), std::move(zAxisSamplingRateSpan));
 }
 
-auto SimpleSceneInitializer::InitializeWindMill() noexcept -> void {
-    static Range<float> const brightIntensityRange = { 0.0, 80.0, 10.0 };
-    static Range<float> const angularWidth = { 1.0, 13.0, 4.0 };
+auto SimpleSceneInitializer::InitializeWindMill() const noexcept -> void {
+    static constexpr Range<float> brightIntensityRange = { 0.0, 80.0, 10.0 };
+    static constexpr Range<float> angularWidth = { 1.0, 13.0, 4.0 };
 
     auto& pipeline = Pipelines.AddPipeline();
 
@@ -614,14 +614,14 @@ auto SimpleSceneInitializer::InitializeWindMill() noexcept -> void {
 
     BasicImageArtifact windMillBasicArtifact { std::move(windMillArtifact) };
     windMillBasicArtifact.SetName("wind mill");
-    auto& windMill = concatenation.AddImageArtifact(std::move(windMillBasicArtifact));
+    auto& windMill = concatenation.AddImageArtifact(ImageArtifact(std::move(windMillBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Wind Mill Pipelines");
 
     auto windMillProperties = windMill.GetProperties();
 
     auto& brightIntensityProperty = windMillProperties.GetPropertyByName<float>("Bright Intensity");
-    ParameterSpan<float> brightIntensitySpan {
+    ParameterSpan brightIntensitySpan {
             ArtifactVariantPointer(&windMill),
             brightIntensityProperty,
             { brightIntensityRange.Min, brightIntensityRange.Max, brightIntensityRange.Step },
@@ -630,7 +630,7 @@ auto SimpleSceneInitializer::InitializeWindMill() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&windMill), std::move(brightIntensitySpan));
 
     auto& brightAngularWidthProperty = windMillProperties.GetPropertyByName<float>("Bright Angular Width");
-    ParameterSpan<float> brightAngularWidthSpan {
+    ParameterSpan brightAngularWidthSpan {
             ArtifactVariantPointer(&windMill),
             brightAngularWidthProperty,
             { angularWidth.Min, angularWidth.Max, angularWidth.Step },
@@ -639,7 +639,7 @@ auto SimpleSceneInitializer::InitializeWindMill() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&windMill), std::move(brightAngularWidthSpan));
 
     auto& darkAngularWidthProperty = windMillProperties.GetPropertyByName<float>("Dark Angular Width");
-    ParameterSpan<float> darkAngularWidthSpan {
+    ParameterSpan darkAngularWidthSpan {
             ArtifactVariantPointer(&windMill),
             darkAngularWidthProperty,
             { angularWidth.Min, angularWidth.Max, angularWidth.Step },
@@ -648,8 +648,8 @@ auto SimpleSceneInitializer::InitializeWindMill() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&windMill), std::move(darkAngularWidthSpan));
 }
 
-auto SimpleSceneInitializer::InitializeMotion() noexcept -> void {
-    static Range<float> const ctNumberFactorRange = { 0.5, 1.5, 0.01 };
+auto SimpleSceneInitializer::InitializeMotion() const noexcept -> void {
+    static constexpr Range<float> ctNumberFactorRange = { 0.5, 1.5, 0.01 };
 
     auto& pipeline = Pipelines.AddPipeline();
 
@@ -670,7 +670,7 @@ auto SimpleSceneInitializer::InitializeMotion() noexcept -> void {
     auto motionProperties = motion.GetProperties();
 
     auto& radiodensityFactorProperty = motionProperties.GetPropertyByName<float>("Radiodensity Factor");
-    ParameterSpan<float> radiodensityFactorSpan {
+    ParameterSpan radiodensityFactorSpan {
             ArtifactVariantPointer(&motion),
             radiodensityFactorProperty,
             { ctNumberFactorRange.Min, ctNumberFactorRange.Max, ctNumberFactorRange.Step },
@@ -684,7 +684,7 @@ auto SimpleSceneInitializer::InitializeMotion() noexcept -> void {
 MethodologyAcquisitionSceneInitializer::MethodologyAcquisitionSceneInitializer(App& app) :
         SceneInitializer(app) {}
 
-auto MethodologyAcquisitionSceneInitializer::operator()() -> void {
+auto MethodologyAcquisitionSceneInitializer::operator()() const -> void {
     auto airTissue = BasicStructureDetails::GetTissueTypeByName("Air");
     auto lungTissue = BasicStructureDetails::GetTissueTypeByName("Lung");
     auto muscleTissue = BasicStructureDetails::GetTissueTypeByName("Muscle");
@@ -771,7 +771,7 @@ auto MethodologyAcquisitionSceneInitializer::operator()() -> void {
     CtDataTree.AddBasicStructure(std::move(heartSphereStructure), chestStructure);
 
 
-    static Range<float> const meanRange = { -25.0,  25.0, 5.0 };
+    static constexpr Range<float> meanRange = { -25.0,  25.0, 5.0 };
 
     auto& pipeline = Pipelines.Get(0);
 
@@ -783,14 +783,14 @@ auto MethodologyAcquisitionSceneInitializer::operator()() -> void {
 
     BasicImageArtifact gaussianBasicArtifact { std::move(gaussianArtifact) };
     gaussianBasicArtifact.SetName("gaussian");
-    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact));
+    auto& gaussian = concatenation.AddImageArtifact(ImageArtifact(std::move(gaussianBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Gaussian Pipelines");
 
     auto gaussianProperties = gaussian.GetProperties();
 
     auto& meanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
-    ParameterSpan<float> meanSpan {
+    ParameterSpan meanSpan {
             ArtifactVariantPointer(&gaussian),
             meanProperty,
             { meanRange.Min, meanRange.Max, meanRange.Step },
@@ -804,7 +804,7 @@ auto MethodologyAcquisitionSceneInitializer::operator()() -> void {
 MethodologyArtifactsSceneInitializer::MethodologyArtifactsSceneInitializer(App& app) :
         SceneInitializer(app) {}
 
-auto MethodologyArtifactsSceneInitializer::operator()() -> void {
+auto MethodologyArtifactsSceneInitializer::operator()() const -> void {
     auto softTissue = BasicStructureDetails::GetTissueTypeByName("Soft Tissue");
     auto cancellousBoneTissue = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
 
@@ -870,14 +870,14 @@ auto MethodologyArtifactsSceneInitializer::operator()() -> void {
     CompositeImageArtifact parallelCompositeArtifact;
     parallelCompositeArtifact.SetCompositionType(CompositeImageArtifactDetails::CompositionType::PARALLEL);
     parallelCompositeArtifact.SetName("sequential");
-    auto& compositeArtifact = concatenation.AddImageArtifact(std::move(parallelCompositeArtifact));
+    auto& compositeArtifact = concatenation.AddImageArtifact(ImageArtifact(std::move(parallelCompositeArtifact)));
 
     GaussianArtifact gaussianArtifact {};
     gaussianArtifact.SetMean(10.0);
     gaussianArtifact.SetStandardDeviation(30.0);
     BasicImageArtifact gaussianBasicArtifact(std::move(gaussianArtifact));
     gaussianBasicArtifact.SetName("parallel");
-    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact), &compositeArtifact);
+    concatenation.AddImageArtifact(ImageArtifact(std::move(gaussianBasicArtifact)), &compositeArtifact);
 
     RingArtifact ringArtifact {};
     ringArtifact.SetRadiodensityFactor(0.3);
@@ -885,7 +885,7 @@ auto MethodologyArtifactsSceneInitializer::operator()() -> void {
     ringArtifact.SetRingWidth(3.0);
     BasicImageArtifact ringBasicArtifact(std::move(ringArtifact));
     ringBasicArtifact.SetName("parallel");
-    auto& ring = concatenation.AddImageArtifact(std::move(ringBasicArtifact), &compositeArtifact);
+    concatenation.AddImageArtifact(ImageArtifact(std::move(ringBasicArtifact)), &compositeArtifact);
 
     SaltPepperArtifact saltPepperArtifact {};
 #ifdef BUILD_TYPE_DEBUG
@@ -896,13 +896,13 @@ auto MethodologyArtifactsSceneInitializer::operator()() -> void {
     saltPepperArtifact.SetSaltIntensity(450);
     BasicImageArtifact saltPepperBasicArtifact(std::move(saltPepperArtifact));
     saltPepperBasicArtifact.SetName("sequential");
-    auto& saltPepper = concatenation.AddImageArtifact(std::move(saltPepperBasicArtifact));
+    concatenation.AddImageArtifact(ImageArtifact(std::move(saltPepperBasicArtifact)));
 }
 
 MethodologySegmentationSceneInitializer::MethodologySegmentationSceneInitializer(App& app) :
         SceneInitializer(app) {}
 
-auto MethodologySegmentationSceneInitializer::operator()() -> void {
+auto MethodologySegmentationSceneInitializer::operator()() const -> void {
     auto softTissue = BasicStructureDetails::GetTissueTypeByName("Soft Tissue");
     auto cancellousBoneTissue = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
 
@@ -968,14 +968,14 @@ auto MethodologySegmentationSceneInitializer::operator()() -> void {
     CompositeImageArtifact parallelCompositeArtifact;
     parallelCompositeArtifact.SetCompositionType(CompositeImageArtifactDetails::CompositionType::PARALLEL);
     parallelCompositeArtifact.SetName("sequential");
-    auto& compositeArtifact = concatenation.AddImageArtifact(std::move(parallelCompositeArtifact));
+    auto& compositeArtifact = concatenation.AddImageArtifact(ImageArtifact(std::move(parallelCompositeArtifact)));
 
     GaussianArtifact gaussianArtifact {};
     gaussianArtifact.SetMean(10.0);
     gaussianArtifact.SetStandardDeviation(30.0);
     BasicImageArtifact gaussianBasicArtifact(std::move(gaussianArtifact));
     gaussianBasicArtifact.SetName("parallel");
-    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact), &compositeArtifact);
+    concatenation.AddImageArtifact(ImageArtifact(std::move(gaussianBasicArtifact)), &compositeArtifact);
 
     RingArtifact ringArtifact {};
     ringArtifact.SetRadiodensityFactor(0.3);
@@ -983,7 +983,7 @@ auto MethodologySegmentationSceneInitializer::operator()() -> void {
     ringArtifact.SetRingWidth(3.0);
     BasicImageArtifact ringBasicArtifact(std::move(ringArtifact));
     ringBasicArtifact.SetName("parallel");
-    auto& ring = concatenation.AddImageArtifact(std::move(ringBasicArtifact), &compositeArtifact);
+    concatenation.AddImageArtifact(ImageArtifact(std::move(ringBasicArtifact)), &compositeArtifact);
 
     SaltPepperArtifact saltPepperArtifact {};
 #ifdef BUILD_TYPE_DEBUG
@@ -994,7 +994,7 @@ auto MethodologySegmentationSceneInitializer::operator()() -> void {
     saltPepperArtifact.SetSaltIntensity(450);
     BasicImageArtifact saltPepperBasicArtifact(std::move(saltPepperArtifact));
     saltPepperBasicArtifact.SetName("sequential");
-    auto& saltPepper = concatenation.AddImageArtifact(std::move(saltPepperBasicArtifact));
+    concatenation.AddImageArtifact(ImageArtifact(std::move(saltPepperBasicArtifact)));
 }
 
 
@@ -1002,7 +1002,7 @@ auto MethodologySegmentationSceneInitializer::operator()() -> void {
 MethodologyAnalysisSceneInitializer::MethodologyAnalysisSceneInitializer(App& app) :
         SceneInitializer(app) {}
 
-auto MethodologyAnalysisSceneInitializer::operator()() -> void {
+auto MethodologyAnalysisSceneInitializer::operator()() const -> void {
     auto softTissue = BasicStructureDetails::GetTissueTypeByName("Soft Tissue");
     auto cancellousBoneTissue = BasicStructureDetails::GetTissueTypeByName("Cancellous Bone");
 
@@ -1068,14 +1068,14 @@ auto MethodologyAnalysisSceneInitializer::operator()() -> void {
     CompositeImageArtifact parallelCompositeArtifact;
     parallelCompositeArtifact.SetCompositionType(CompositeImageArtifactDetails::CompositionType::PARALLEL);
     parallelCompositeArtifact.SetName("sequential");
-    auto& compositeArtifact = concatenation.AddImageArtifact(std::move(parallelCompositeArtifact));
+    auto& compositeArtifact = concatenation.AddImageArtifact(ImageArtifact(std::move(parallelCompositeArtifact)));
 
     GaussianArtifact gaussianArtifact {};
     gaussianArtifact.SetMean(10.0);
     gaussianArtifact.SetStandardDeviation(30.0);
     BasicImageArtifact gaussianBasicArtifact(std::move(gaussianArtifact));
     gaussianBasicArtifact.SetName("parallel");
-    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact), &compositeArtifact);
+    auto& gaussian = concatenation.AddImageArtifact(ImageArtifact(std::move(gaussianBasicArtifact)), &compositeArtifact);
 
     RingArtifact ringArtifact {};
     ringArtifact.SetRadiodensityFactor(0.3);
@@ -1083,7 +1083,7 @@ auto MethodologyAnalysisSceneInitializer::operator()() -> void {
     ringArtifact.SetRingWidth(3.0);
     BasicImageArtifact ringBasicArtifact(std::move(ringArtifact));
     ringBasicArtifact.SetName("parallel");
-    auto& ring = concatenation.AddImageArtifact(std::move(ringBasicArtifact), &compositeArtifact);
+    concatenation.AddImageArtifact(ImageArtifact(std::move(ringBasicArtifact)), &compositeArtifact);
 
     SaltPepperArtifact saltPepperArtifact {};
 #ifdef BUILD_TYPE_DEBUG
@@ -1094,18 +1094,18 @@ auto MethodologyAnalysisSceneInitializer::operator()() -> void {
     saltPepperArtifact.SetSaltIntensity(450);
     BasicImageArtifact saltPepperBasicArtifact(std::move(saltPepperArtifact));
     saltPepperBasicArtifact.SetName("sequential");
-    auto& saltPepper = concatenation.AddImageArtifact(std::move(saltPepperBasicArtifact));
+    auto& saltPepper = concatenation.AddImageArtifact(ImageArtifact(std::move(saltPepperBasicArtifact)));
 
 
     {
         PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Pipelines A");
 
-        static Range<float> const meanRange = { -10.0, 10.0, 5.0 };
-        static Range<float> const sdRange = { 0.0, 40.0, 10.0 };
+        static constexpr Range<float> meanRange = { -10.0, 10.0, 5.0 };
+        static constexpr Range<float> sdRange = { 0.0, 40.0, 10.0 };
 
         auto gaussianProperties = gaussian.GetProperties();
         auto& meanProperty = gaussianProperties.GetPropertyByName<float>("Mean");
-        ParameterSpan<float> meanSpan{
+        ParameterSpan meanSpan{
                 ArtifactVariantPointer(&gaussian),
                 meanProperty,
                 { meanRange.Min, meanRange.Max, meanRange.Step },
@@ -1114,7 +1114,7 @@ auto MethodologyAnalysisSceneInitializer::operator()() -> void {
         pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(meanSpan));
 
         auto& sdProperty = gaussianProperties.GetPropertyByName<float>("Standard Deviation");
-        ParameterSpan<float> sdSpan{
+        ParameterSpan sdSpan{
                 ArtifactVariantPointer(&gaussian),
                 sdProperty,
                 { sdRange.Min, sdRange.Max, sdRange.Step },
@@ -1127,9 +1127,9 @@ auto MethodologyAnalysisSceneInitializer::operator()() -> void {
 
         auto motionProperties = unionMotion.GetProperties();
 
-        static Range<float> const radiodensityFactorRange = { 0.5, 1.5, 0.25 };
+        static constexpr Range<float> radiodensityFactorRange = { 0.5, 1.5, 0.25 };
         auto& radiodensityFactorProperty = motionProperties.GetPropertyByName<float>("Radiodensity Factor");
-        ParameterSpan<float> radiodensityFactorSpan {
+        ParameterSpan radiodensityFactorSpan {
                 ArtifactVariantPointer(&unionMotion),
                 radiodensityFactorProperty,
                 { radiodensityFactorRange.Min, radiodensityFactorRange.Max, radiodensityFactorRange.Step },
@@ -1142,12 +1142,12 @@ auto MethodologyAnalysisSceneInitializer::operator()() -> void {
     {
         PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Pipelines B");
 
-        static Range<float> const saltAmountRange = { 0.0, 0.20, 0.0025 };
+        static constexpr Range<float> saltAmountRange = { 0.0, 0.20, 0.0025 };
 
         auto saltPepperProperties = saltPepper.GetProperties();
 
         auto& saltAmountProperty = saltPepperProperties.GetPropertyByName<float>("Salt Amount");
-        ParameterSpan<float> saltAmountSpan {
+        ParameterSpan saltAmountSpan {
                 ArtifactVariantPointer(&saltPepper),
                 saltAmountProperty,
                 { saltAmountRange.Min, saltAmountRange.Max, saltAmountRange.Step },
@@ -1160,7 +1160,7 @@ auto MethodologyAnalysisSceneInitializer::operator()() -> void {
 ScenarioImplicitInitializer::ScenarioImplicitInitializer(App& app) :
         SceneInitializer(app) {}
 
-auto ScenarioImplicitInitializer::operator()() -> void {
+auto ScenarioImplicitInitializer::operator()() const -> void {
     auto waterTissue = BasicStructureDetails::GetTissueTypeByName("Water");
     auto organ1Tissue = BasicStructureDetails::GetTissueTypeByName("Organ1");
     auto organ2Tissue = BasicStructureDetails::GetTissueTypeByName("Organ2");
@@ -1230,9 +1230,9 @@ auto ScenarioImplicitInitializer::operator()() -> void {
     InitializeMotion();
 }
 
-auto ScenarioImplicitInitializer::InitializeSaltPepper() noexcept -> void {
-    static Range<float> const saltAmountRange = { 0.005, 0.05, 0.005 };
-    static Range<float> const pepperAmountRange = { 0.005, 0.05, 0.005 };
+auto ScenarioImplicitInitializer::InitializeSaltPepper() const noexcept -> void {
+    static constexpr Range<float> saltAmountRange = { 0.005, 0.05, 0.005 };
+    static constexpr Range<float> pepperAmountRange = { 0.005, 0.05, 0.005 };
 
     auto& pipeline = Pipelines.Get(0);
 
@@ -1245,14 +1245,14 @@ auto ScenarioImplicitInitializer::InitializeSaltPepper() noexcept -> void {
     saltPepperArtifact.SetPepperAmount(pepperAmountRange.GetCenter());
 
     BasicImageArtifact saltPepperBasicArtifact { std::move(saltPepperArtifact) };
-    auto& saltPepper = concatenation.AddImageArtifact(std::move(saltPepperBasicArtifact));
+    auto& saltPepper = concatenation.AddImageArtifact(ImageArtifact(std::move(saltPepperBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Salt Pepper Pipelines");
 
     auto saltPepperProperties = saltPepper.GetProperties();
 
     auto& saltAmountProperty = saltPepperProperties.GetPropertyByName<float>("Salt Amount");
-    ParameterSpan<float> saltAmountSpan {
+    ParameterSpan saltAmountSpan {
             ArtifactVariantPointer(&saltPepper),
             saltAmountProperty,
             { saltAmountRange.Min, saltAmountRange.Max, saltAmountRange.Step },
@@ -1261,7 +1261,7 @@ auto ScenarioImplicitInitializer::InitializeSaltPepper() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(saltAmountSpan));
 
     auto& pepperAmountProperty = saltPepperProperties.GetPropertyByName<float>("Pepper Amount");
-    ParameterSpan<float> pepperAmountSpan {
+    ParameterSpan pepperAmountSpan {
             ArtifactVariantPointer(&saltPepper),
             pepperAmountProperty,
             { pepperAmountRange.Min, pepperAmountRange.Max, pepperAmountRange.Step },
@@ -1270,8 +1270,8 @@ auto ScenarioImplicitInitializer::InitializeSaltPepper() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(pepperAmountSpan));
 }
 
-auto ScenarioImplicitInitializer::InitializeGaussian() noexcept -> void {
-    static Range<float> const sdRange   = { 0.0, 20.0, 0.2 };
+auto ScenarioImplicitInitializer::InitializeGaussian() const noexcept -> void {
+    static constexpr Range<float> sdRange   = { 0.0, 20.0, 0.2 };
 
     auto& pipeline = Pipelines.AddPipeline();
 
@@ -1282,14 +1282,14 @@ auto ScenarioImplicitInitializer::InitializeGaussian() noexcept -> void {
     gaussianArtifact.SetStandardDeviation(sdRange.GetCenter());
 
     BasicImageArtifact gaussianBasicArtifact { std::move(gaussianArtifact) };
-    auto& gaussian = concatenation.AddImageArtifact(std::move(gaussianBasicArtifact));
+    auto& gaussian = concatenation.AddImageArtifact(ImageArtifact(std::move(gaussianBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Gaussian Pipelines");
 
     auto gaussianProperties = gaussian.GetProperties();
 
     auto& sdProperty = gaussianProperties.GetPropertyByName<float>("Standard Deviation");
-    ParameterSpan<float> sdSpan {
+    ParameterSpan sdSpan {
             ArtifactVariantPointer(&gaussian),
             sdProperty,
             { sdRange.Min, sdRange.Max, sdRange.Step },
@@ -1298,9 +1298,9 @@ auto ScenarioImplicitInitializer::InitializeGaussian() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&gaussian), std::move(sdSpan));
 }
 
-auto ScenarioImplicitInitializer::InitializeCupping() noexcept -> void {
-    static Range<float> const minRadiodensityFactorRange = { 0.5, 0.95, 0.05 };
-    static Range<FloatPoint> const centerRange = { { -10.0, -10.0, -10.0 },
+auto ScenarioImplicitInitializer::InitializeCupping() const noexcept -> void {
+    static constexpr Range<float> minRadiodensityFactorRange = { 0.5, 0.95, 0.05 };
+    static constexpr Range<FloatPoint> centerRange = { { -10.0, -10.0, -10.0 },
                                                    { 10.0, 10.0, 10.0 },
                                                    { 2.0, 2.0, 2.0 } };
 
@@ -1313,14 +1313,14 @@ auto ScenarioImplicitInitializer::InitializeCupping() noexcept -> void {
     cuppingArtifact.SetCenter(centerRange.GetCenter());
 
     BasicImageArtifact cuppingBasicArtifact { std::move(cuppingArtifact) };
-    auto& cupping = concatenation.AddImageArtifact(std::move(cuppingBasicArtifact));
+    auto& cupping = concatenation.AddImageArtifact(ImageArtifact(std::move(cuppingBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Cupping Pipelines");
 
     auto cuppingProperties = cupping.GetProperties();
 
     auto& minRadiodensityFactorProperty = cuppingProperties.GetPropertyByName<float>("Minimum Radiodensity Factor");
-    ParameterSpan<float> minRadiodensityFactorSpan {
+    ParameterSpan minRadiodensityFactorSpan {
             ArtifactVariantPointer(&cupping),
             minRadiodensityFactorProperty,
             { minRadiodensityFactorRange.Min, minRadiodensityFactorRange.Max, minRadiodensityFactorRange.Step },
@@ -1329,7 +1329,7 @@ auto ScenarioImplicitInitializer::InitializeCupping() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&cupping), std::move(minRadiodensityFactorSpan));
 
     auto& centerProperty = cuppingProperties.GetPropertyByName<FloatPoint>("Center");
-    ParameterSpan<FloatPoint> centerSpan {
+    ParameterSpan centerSpan {
             ArtifactVariantPointer(&cupping),
             centerProperty,
             { centerRange.Min, centerRange.Max, centerRange.Step },
@@ -1338,9 +1338,9 @@ auto ScenarioImplicitInitializer::InitializeCupping() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&cupping), std::move(centerSpan));
 }
 
-auto ScenarioImplicitInitializer::InitializeRing() noexcept -> void {
-    static Range<float> const radiodensityFactorRange = { 0.0, 2.0, 0.20 };
-    static Range<float> const innerRadiusRange = { 0.0, 10.0, 1.0 };
+auto ScenarioImplicitInitializer::InitializeRing() const noexcept -> void {
+    static constexpr Range<float> radiodensityFactorRange = { 0.0, 2.0, 0.20 };
+    static constexpr Range<float> innerRadiusRange = { 0.0, 10.0, 1.0 };
 
     auto& pipeline = Pipelines.AddPipeline();
 
@@ -1353,14 +1353,14 @@ auto ScenarioImplicitInitializer::InitializeRing() noexcept -> void {
     ringArtifact.SetCenter({});
 
     BasicImageArtifact ringBasicArtifact { std::move(ringArtifact) };
-    auto& ring = concatenation.AddImageArtifact(std::move(ringBasicArtifact));
+    auto& ring = concatenation.AddImageArtifact(ImageArtifact(std::move(ringBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Ring Pipelines");
 
     auto ringProperties = ring.GetProperties();
 
     auto& radiodensityFactorProperty = ringProperties.GetPropertyByName<float>("Radiodensity Factor");
-    ParameterSpan<float> radiodensityFactorSpan {
+    ParameterSpan radiodensityFactorSpan {
             ArtifactVariantPointer(&ring),
             radiodensityFactorProperty,
             { radiodensityFactorRange.Min, radiodensityFactorRange.Max, radiodensityFactorRange.Step },
@@ -1369,7 +1369,7 @@ auto ScenarioImplicitInitializer::InitializeRing() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&ring), std::move(radiodensityFactorSpan));
 
     auto& innerRadiusProperty = ringProperties.GetPropertyByName<float>("Inner Radius");
-    ParameterSpan<float> innerRadiusSpan {
+    ParameterSpan innerRadiusSpan {
             ArtifactVariantPointer(&ring),
             innerRadiusProperty,
             { innerRadiusRange.Min, innerRadiusRange.Max, innerRadiusRange.Step },
@@ -1378,9 +1378,9 @@ auto ScenarioImplicitInitializer::InitializeRing() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&ring), std::move(innerRadiusSpan));
 }
 
-auto ScenarioImplicitInitializer::InitializeMetal() noexcept -> void {
-    static Range<float> const attenuationFactorRange = { 0.0, 0.9, 0.1 };
-    static Range<float> const lengthRange = { 1.0, 10.0, 1.0 };
+auto ScenarioImplicitInitializer::InitializeMetal() const noexcept -> void {
+    static constexpr Range<float> attenuationFactorRange = { 0.0, 0.9, 0.1 };
+    static constexpr Range<float> lengthRange = { 1.0, 10.0, 1.0 };
 
     auto& pipeline = Pipelines.AddPipeline();
 
@@ -1399,7 +1399,7 @@ auto ScenarioImplicitInitializer::InitializeMetal() noexcept -> void {
     auto metalProperties = metal.GetProperties();
 
     auto& attenuationFactorProperty = metalProperties.GetPropertyByName<float>("Maximum Attenuation Factor");
-    ParameterSpan<float> attenuationFactorSpan {
+    ParameterSpan attenuationFactorSpan {
             ArtifactVariantPointer(&metal),
             attenuationFactorProperty,
             { attenuationFactorRange.Min, attenuationFactorRange.Max, attenuationFactorRange.Step },
@@ -1408,7 +1408,7 @@ auto ScenarioImplicitInitializer::InitializeMetal() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&metal), std::move(attenuationFactorSpan));
 
     auto& lengthProperty = metalProperties.GetPropertyByName<float>("Length");
-    ParameterSpan<float> lengthSpan {
+    ParameterSpan lengthSpan {
             ArtifactVariantPointer(&metal),
             lengthProperty,
             { lengthRange.Min, lengthRange.Max, lengthRange.Step },
@@ -1417,9 +1417,9 @@ auto ScenarioImplicitInitializer::InitializeMetal() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&metal), std::move(lengthSpan));
 }
 
-auto ScenarioImplicitInitializer::InitializeWindmill() noexcept -> void {
-    static Range<float> const angularWidthRange = { 30.0, 90.0, 6.0 };
-    static Range<float> const lengthRange = { 1.0, 10.0, 1.0 };
+auto ScenarioImplicitInitializer::InitializeWindmill() const noexcept -> void {
+    static constexpr Range<float> angularWidthRange = { 30.0, 90.0, 6.0 };
+    static constexpr Range<float> lengthRange = { 1.0, 10.0, 1.0 };
 
     auto& pipeline = Pipelines.AddPipeline();
 
@@ -1439,7 +1439,7 @@ auto ScenarioImplicitInitializer::InitializeWindmill() noexcept -> void {
     auto metalProperties = metal.GetProperties();
 
     auto& angularWidthProperty = metalProperties.GetPropertyByName<float>("Angular Width");
-    ParameterSpan<float> angularWidthSpan {
+    ParameterSpan angularWidthSpan {
             ArtifactVariantPointer(&metal),
             angularWidthProperty,
             { angularWidthRange.Min, angularWidthRange.Max, angularWidthRange.Step },
@@ -1448,7 +1448,7 @@ auto ScenarioImplicitInitializer::InitializeWindmill() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&metal), std::move(angularWidthSpan));
 
     auto& lengthProperty = metalProperties.GetPropertyByName<float>("Length");
-    ParameterSpan<float> lengthSpan {
+    ParameterSpan lengthSpan {
             ArtifactVariantPointer(&metal),
             lengthProperty,
             { lengthRange.Min, lengthRange.Max, lengthRange.Step },
@@ -1457,9 +1457,9 @@ auto ScenarioImplicitInitializer::InitializeWindmill() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&metal), std::move(lengthSpan));
 }
 
-auto ScenarioImplicitInitializer::InitializeMotion() noexcept -> void {
-    static Range<float> const radiodensityFactorRange = { 0.9, 1.1, 0.02 };
-    static Range<float> const blurSdRange = { 0.1, 10.0, 1.0 };
+auto ScenarioImplicitInitializer::InitializeMotion() const noexcept -> void {
+    static constexpr Range<float> radiodensityFactorRange = { 0.9, 1.1, 0.02 };
+    static constexpr Range<float> blurSdRange = { 0.1, 10.0, 1.0 };
     auto& pipeline = Pipelines.AddPipeline();
 
     auto& structureArtifacts = pipeline.GetStructureArtifactList(3);
@@ -1480,7 +1480,7 @@ auto ScenarioImplicitInitializer::InitializeMotion() noexcept -> void {
     auto motionProperties = motion.GetProperties();
 
     auto& radiodensityFactorProperty = motionProperties.GetPropertyByName<float>("Radiodensity Factor");
-    ParameterSpan<float> radiodensityFactorSpan {
+    ParameterSpan radiodensityFactorSpan {
             ArtifactVariantPointer(&motion),
             radiodensityFactorProperty,
             { radiodensityFactorRange.Min, radiodensityFactorRange.Max, radiodensityFactorRange.Step },
@@ -1489,7 +1489,7 @@ auto ScenarioImplicitInitializer::InitializeMotion() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&motion), std::move(radiodensityFactorSpan));
 
     auto& blurSdProperty = motionProperties.GetPropertyByName<float>("Blur Standard Deviation");
-    ParameterSpan<float> blurSdSpan {
+    ParameterSpan blurSdSpan {
             ArtifactVariantPointer(&motion),
             blurSdProperty,
             { blurSdRange.Min, blurSdRange.Max, blurSdRange.Step },
@@ -1503,7 +1503,7 @@ auto ScenarioImplicitInitializer::InitializeMotion() noexcept -> void {
 ScenarioImportedInitializer::ScenarioImportedInitializer(App& app) :
         SceneInitializer(app) {}
 
-auto ScenarioImportedInitializer::operator()() -> void {
+auto ScenarioImportedInitializer::operator()() const -> void {
     vtkNew<NrrdCtDataSource> dataSource;
     dataSource->SetVolumeDataPhysicalDimensions({ 100.0, 100.0, 100.0 });
 #ifdef BUILD_TYPE_DEBUG
@@ -1527,7 +1527,7 @@ auto ScenarioImportedInitializer::operator()() -> void {
 
     auto* radiodensityArray = vtkFloatArray::SafeDownCast(inputImage.GetPointData()->GetScalars());
     float* radiodensities = radiodensityArray->WritePointer(0, inputImage.GetNumberOfPoints());
-    std::span<float> const radiodensitySpan { radiodensities, static_cast<size_t>(inputImage.GetNumberOfPoints()) };
+    std::span const radiodensitySpan { radiodensities, static_cast<size_t>(inputImage.GetNumberOfPoints()) };
     auto const [ imageMinIt, imageMaxIt ] = std::minmax_element(radiodensitySpan.begin(), radiodensitySpan.end());
     CtRenderWidget::SetWindowWidth({ *imageMinIt - 30.0, *imageMaxIt });
 //    CtRenderWidget::SetWindowWidth({ *imageMinIt - 300.0, (*imageMaxIt)*2.0 }); // brighter
@@ -1541,19 +1541,19 @@ auto ScenarioImportedInitializer::operator()() -> void {
 
         ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 
-        auto basicImageArtifacts = CreateBasicImageArtifacts();
+        auto [saltPepperBasicArtifact, gaussianBasicArtifact, cuppingBasicArtifact, ringBasicArtifact] = CreateBasicImageArtifacts();
 
         CompositeImageArtifact physicsArtifacts;
         physicsArtifacts.SetCompositionType(CompositeImageArtifactDetails::CompositionType::PARALLEL);
-        auto& compositeArtifact = concatenation.AddImageArtifact(std::move(physicsArtifacts));
-        auto& gaussian = concatenation.AddImageArtifact(std::move(*basicImageArtifacts.Gaussian.release()),
+        auto& compositeArtifact = concatenation.AddImageArtifact(ImageArtifact(std::move(physicsArtifacts)));
+        auto& gaussian = concatenation.AddImageArtifact(ImageArtifact(std::move(*gaussianBasicArtifact.release())),
                                                         &compositeArtifact);
-        auto& cupping = concatenation.AddImageArtifact(std::move(*basicImageArtifacts.Cupping.release()),
+        auto& cupping = concatenation.AddImageArtifact(ImageArtifact(std::move(*cuppingBasicArtifact.release())),
                                                        &compositeArtifact);
 
-        auto& ring = concatenation.AddImageArtifact(std::move(*basicImageArtifacts.Ring.release()));
+        auto& ring = concatenation.AddImageArtifact(ImageArtifact(std::move(*ringBasicArtifact.release())));
 
-        auto& saltPepper = concatenation.AddImageArtifact(std::move(*basicImageArtifacts.SaltPepper.release()));
+        auto& saltPepper = concatenation.AddImageArtifact(ImageArtifact(std::move(*saltPepperBasicArtifact.release())));
 
         PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Order A");
 
@@ -1566,18 +1566,18 @@ auto ScenarioImportedInitializer::operator()() -> void {
 
         ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 
-        auto basicImageArtifacts = CreateBasicImageArtifacts();
+        auto [saltPepperBasicArtifact, gaussianBasicArtifact, cuppingBasicArtifact, ringBasicArtifact] = CreateBasicImageArtifacts();
 
         CompositeImageArtifact physicsArtifacts;
         physicsArtifacts.SetCompositionType(CompositeImageArtifactDetails::CompositionType::PARALLEL);
-        auto& compositeArtifact = concatenation.AddImageArtifact(std::move(physicsArtifacts));
-        auto& saltPepper = concatenation.AddImageArtifact(std::move(*basicImageArtifacts.SaltPepper.release()),
+        auto& compositeArtifact = concatenation.AddImageArtifact(ImageArtifact(std::move(physicsArtifacts)));
+        auto& saltPepper = concatenation.AddImageArtifact(ImageArtifact(std::move(*saltPepperBasicArtifact.release())),
                                                           &compositeArtifact);
-        auto& gaussian = concatenation.AddImageArtifact(std::move(*basicImageArtifacts.Gaussian.release()),
+        auto& gaussian = concatenation.AddImageArtifact(ImageArtifact(std::move(*gaussianBasicArtifact.release())),
                                                         &compositeArtifact);
-        auto& cupping = concatenation.AddImageArtifact(std::move(*basicImageArtifacts.Cupping.release()),
+        auto& cupping = concatenation.AddImageArtifact(ImageArtifact(std::move(*cuppingBasicArtifact.release())),
                                                        &compositeArtifact);
-        auto& ring = concatenation.AddImageArtifact(std::move(*basicImageArtifacts.Ring.release()),
+        auto& ring = concatenation.AddImageArtifact(ImageArtifact(std::move(*ringBasicArtifact.release())),
                                                     &compositeArtifact);
 
         PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Order B");
@@ -1590,12 +1590,12 @@ auto ScenarioImportedInitializer::operator()() -> void {
 
         ImageArtifactConcatenation& concatenation = pipeline.GetImageArtifactConcatenation();
 
-        auto basicImageArtifacts = CreateBasicImageArtifacts();
+        auto [saltPepperBasicArtifact, gaussianBasicArtifact, cuppingBasicArtifact, ringBasicArtifact] = CreateBasicImageArtifacts();
 
-        auto& saltPepper = concatenation.AddImageArtifact(std::move(*basicImageArtifacts.SaltPepper.release()));
-        auto& gaussian = concatenation.AddImageArtifact(std::move(*basicImageArtifacts.Gaussian.release()));
-        auto& cupping = concatenation.AddImageArtifact(std::move(*basicImageArtifacts.Cupping.release()));
-        auto& ring = concatenation.AddImageArtifact(std::move(*basicImageArtifacts.Ring.release()));
+        auto& saltPepper = concatenation.AddImageArtifact(ImageArtifact(std::move(*saltPepperBasicArtifact.release())));
+        auto& gaussian = concatenation.AddImageArtifact(ImageArtifact(std::move(*gaussianBasicArtifact.release())));
+        auto& cupping = concatenation.AddImageArtifact(ImageArtifact(std::move(*cuppingBasicArtifact.release())));
+        auto& ring = concatenation.AddImageArtifact(ImageArtifact(std::move(*ringBasicArtifact.release())));
 
         PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Order C");
 
@@ -1643,7 +1643,7 @@ auto ScenarioImportedInitializer::CreateBasicImageArtifacts() -> BasicImageArtif
 auto ScenarioImportedInitializer::AddParameterSpans(PipelineGroup& pipelineGroup, ImageArtifacts& artifacts) -> void {
     auto gaussianProperties = artifacts.Gaussian.GetProperties();
     auto& sdProperty = gaussianProperties.GetPropertyByName<float>("Standard Deviation");
-    ParameterSpan<float> sdSpan {
+    ParameterSpan sdSpan {
             ArtifactVariantPointer(&artifacts.Gaussian),
             sdProperty,
             { GaussianSdRange.Min, GaussianSdRange.Max, GaussianSdRange.Step },
@@ -1653,7 +1653,7 @@ auto ScenarioImportedInitializer::AddParameterSpans(PipelineGroup& pipelineGroup
 
     auto cuppingProperties = artifacts.Cupping.GetProperties();
     auto& minRadiodensityFactorProperty = cuppingProperties.GetPropertyByName<float>("Minimum Radiodensity Factor");
-    ParameterSpan<float> minRadiodensityFactorSpan {
+    ParameterSpan minRadiodensityFactorSpan {
             ArtifactVariantPointer(&artifacts.Cupping),
             minRadiodensityFactorProperty,
             { CuppingMinRdFactorRange.Min, CuppingMinRdFactorRange.Max, CuppingMinRdFactorRange.Step },
@@ -1663,7 +1663,7 @@ auto ScenarioImportedInitializer::AddParameterSpans(PipelineGroup& pipelineGroup
 
     auto ringProperties = artifacts.Ring.GetProperties();
     auto& innerRadiusProperty = ringProperties.GetPropertyByName<float>("Inner Radius");
-    ParameterSpan<float> innerRadiusSpan {
+    ParameterSpan innerRadiusSpan {
             ArtifactVariantPointer(&artifacts.Ring),
             innerRadiusProperty,
             { RingInnerRadiusRange.Min, RingInnerRadiusRange.Max, RingInnerRadiusRange.Step },
@@ -1674,13 +1674,13 @@ auto ScenarioImportedInitializer::AddParameterSpans(PipelineGroup& pipelineGroup
     auto saltPepperProperties = artifacts.SaltPepper.GetProperties();
     auto& saltAmountProperty = saltPepperProperties.GetPropertyByName<float>("Salt Amount");
     auto& pepperAmountProperty = saltPepperProperties.GetPropertyByName<float>("Pepper Amount");
-    ParameterSpan<float> saltAmountSpan {
+    ParameterSpan saltAmountSpan {
             ArtifactVariantPointer(&artifacts.SaltPepper),
             saltAmountProperty,
             { SaltAmountRange.Min, SaltAmountRange.Max, SaltAmountRange.Step },
             "Salt Amount Span"
     };
-    ParameterSpan<float> pepperAmountSpan {
+    ParameterSpan pepperAmountSpan {
             ArtifactVariantPointer(&artifacts.SaltPepper),
             pepperAmountProperty,
             { PepperAmountRange.Min, PepperAmountRange.Max, PepperAmountRange.Step },
@@ -1695,14 +1695,14 @@ auto ScenarioImportedInitializer::CalculateOtsuThreshold(vtkImageData& image) ->
 
     auto* radiodensityArray = vtkFloatArray::SafeDownCast(image.GetPointData()->GetScalars());
     float* radiodensities = radiodensityArray->WritePointer(0, numberOfValues);
-    std::span<float> const radiodensitySpan { radiodensities, numberOfValues };
+    std::span const radiodensitySpan { radiodensities, numberOfValues };
 
     auto const [ imageMinIt, imageMaxIt ] = std::minmax_element(radiodensitySpan.begin(), radiodensitySpan.end());
     double const min = std::max(floor(static_cast<double>(*imageMinIt)), -1000.0);
     double const max = std::min(ceil(static_cast<double>(*imageMaxIt)),  3000.0);
     int const numberOfBins = max - min + 1;
 
-    vtkNew<vtkImageAccumulate> histogramFilter;
+    vtkNew<vtkImageAccumulate> const histogramFilter;
     histogramFilter->SetComponentSpacing(1.0, 0.0, 0.0);
     histogramFilter->SetComponentOrigin(min, 0.0, 0.0);
     histogramFilter->SetComponentExtent(0, numberOfBins - 1, 0, 0, 0, 0);
@@ -1712,17 +1712,14 @@ auto ScenarioImportedInitializer::CalculateOtsuThreshold(vtkImageData& image) ->
 
     auto* histogramArray = vtkIdTypeArray::SafeDownCast(histogramImage->GetPointData()->GetScalars());
     vtkIdType* histogramValues = histogramArray->WritePointer(0, histogramImage->GetNumberOfPoints());
-    std::span<vtkIdType> const histogramSpan { histogramValues,
+    std::span const histogramSpan { histogramValues,
                                                   static_cast<size_t>(histogramImage->GetNumberOfPoints()) };
-    int const absoluteSum = std::reduce(histogramSpan.begin(), histogramSpan.end());
-
     std::vector<double> relativeHistogramVector { histogramSpan.size(), std::allocator<double> {} };
-    std::transform(histogramSpan.begin(), histogramSpan.end(),
-                   relativeHistogramVector.begin(),
-                   [numberOfValues](vtkIdType const& val) {
-        return static_cast<double>(val) / static_cast<double>(numberOfValues);
-    });
-    double const relativeSum = std::reduce(relativeHistogramVector.begin(), relativeHistogramVector.end());
+    std::ranges::transform(histogramSpan,
+                           relativeHistogramVector.begin(),
+                           [numberOfValues](vtkIdType const& val) {
+                               return static_cast<double>(val) / static_cast<double>(numberOfValues);
+                           });
 
     std::vector<double> cdfVector = Stats::CumulativeSum(relativeHistogramVector);
     assert(abs(cdfVector.back() - 1.0) < 1e-10);
@@ -1749,8 +1746,8 @@ auto ScenarioImportedInitializer::CalculateOtsuThreshold(vtkImageData& image) ->
     double maxInterClassVariance = -1.0;
     for (int i = 1, threshold = min + 1.0; i < numberOfBins - 1; ++i, ++threshold) {
         auto const cutoffIt = std::next(relativeHistogramVector.begin(), i);
-        std::span<double> const class1 { relativeHistogramVector.begin(), cutoffIt };
-        std::span<double> const class2 { cutoffIt, relativeHistogramVector.end() };
+        std::span const class1 { relativeHistogramVector.begin(), cutoffIt };
+        std::span const class2 { cutoffIt, relativeHistogramVector.end() };
         double const interClassVariance = CalculateInterClassVariance(
                 cdfVector[i], SumOfProducts(class1, min) / cdfVector[i],
                 1.0 - cdfVector[i], SumOfProducts(class2, threshold) / (1.0 - cdfVector[i])
@@ -1768,7 +1765,7 @@ auto ScenarioImportedInitializer::CalculateOtsuThreshold(vtkImageData& image) ->
 WorkflowFigureInitializer::WorkflowFigureInitializer(App& app)
         : SceneInitializer(app) {}
 
-auto WorkflowFigureInitializer::operator()() -> void {
+auto WorkflowFigureInitializer::operator()() const -> void {
     auto waterTissue = BasicStructureDetails::GetTissueTypeByName("Water");
     auto organ1Tissue = BasicStructureDetails::GetTissueTypeByName("Organ1");
     auto organ2Tissue = BasicStructureDetails::GetTissueTypeByName("Organ2");
@@ -1833,9 +1830,9 @@ auto WorkflowFigureInitializer::operator()() -> void {
     InitializeRing();
 }
 
-auto WorkflowFigureInitializer::InitializeSaltPepper() noexcept -> void {
-    static Range<float> const saltAmountRange = { 0.00, 0.10, 0.02 };
-    static Range<float> const pepperAmountRange = { 0.00, 0.10, 0.02 };
+auto WorkflowFigureInitializer::InitializeSaltPepper() const noexcept -> void {
+    static constexpr Range<float> saltAmountRange = { 0.00, 0.10, 0.02 };
+    static constexpr Range<float> pepperAmountRange = { 0.00, 0.10, 0.02 };
 
     auto& pipeline = Pipelines.Get(0);
 
@@ -1848,14 +1845,14 @@ auto WorkflowFigureInitializer::InitializeSaltPepper() noexcept -> void {
     saltPepperArtifact.SetPepperAmount(pepperAmountRange.GetCenter());
 
     BasicImageArtifact saltPepperBasicArtifact { std::move(saltPepperArtifact) };
-    auto& saltPepper = concatenation.AddImageArtifact(std::move(saltPepperBasicArtifact));
+    auto& saltPepper = concatenation.AddImageArtifact(ImageArtifact(std::move(saltPepperBasicArtifact)));
 
     PipelineGroup& pipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Salt Pepper Pipelines");
 
     auto saltPepperProperties = saltPepper.GetProperties();
 
     auto& saltAmountProperty = saltPepperProperties.GetPropertyByName<float>("Salt Amount");
-    ParameterSpan<float> saltAmountSpan {
+    ParameterSpan saltAmountSpan {
             ArtifactVariantPointer(&saltPepper),
             saltAmountProperty,
             { saltAmountRange.Min, saltAmountRange.Max, saltAmountRange.Step },
@@ -1864,7 +1861,7 @@ auto WorkflowFigureInitializer::InitializeSaltPepper() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(saltAmountSpan));
 
     auto& pepperAmountProperty = saltPepperProperties.GetPropertyByName<float>("Pepper Amount");
-    ParameterSpan<float> pepperAmountSpan {
+    ParameterSpan pepperAmountSpan {
             ArtifactVariantPointer(&saltPepper),
             pepperAmountProperty,
             { pepperAmountRange.Min, pepperAmountRange.Max, pepperAmountRange.Step },
@@ -1873,10 +1870,9 @@ auto WorkflowFigureInitializer::InitializeSaltPepper() noexcept -> void {
     pipelineGroup.AddParameterSpan(ArtifactVariantPointer(&saltPepper), std::move(pepperAmountSpan));
 }
 
-auto WorkflowFigureInitializer::InitializeRing() noexcept -> void {
-    static Range<float> const innerRadiusRange = { 0.0, 10.0, 0.5 };
-    static Range<float> const rdFactorRange = { 0.0, 1.0, 0.05 };
-    static Range<FloatPoint> const centerRange = { { -10.0, 0.0, 0.0 }, { 10.0, 0.0, 0.0 }, { 1.0, 0.0, 0.0 } };
+auto WorkflowFigureInitializer::InitializeRing() const noexcept -> void {
+    static constexpr Range<float> innerRadiusRange = { 0.0, 10.0, 0.5 };
+    static constexpr Range<float> rdFactorRange = { 0.0, 1.0, 0.05 };
 
     auto& pipeline = Pipelines.AddPipeline();
 
@@ -1889,12 +1885,12 @@ auto WorkflowFigureInitializer::InitializeRing() noexcept -> void {
     ringArtifact.SetCenter({});
 
     BasicImageArtifact ringBasicArtifact { std::move(ringArtifact) };
-    auto& ring = concatenation.AddImageArtifact(std::move(ringBasicArtifact));
+    auto& ring = concatenation.AddImageArtifact(ImageArtifact(std::move(ringBasicArtifact)));
 
     PipelineGroup& radiusPipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Ring Radius Pipelines");
     auto ringProperties = ring.GetProperties();
     auto& innerRadiusProperty = ringProperties.GetPropertyByName<float>("Inner Radius");
-    ParameterSpan<float> innerRadiusSpan {
+    ParameterSpan innerRadiusSpan {
             ArtifactVariantPointer(&ring),
             innerRadiusProperty,
             { innerRadiusRange.Min, innerRadiusRange.Max, innerRadiusRange.Step },
@@ -1904,7 +1900,7 @@ auto WorkflowFigureInitializer::InitializeRing() noexcept -> void {
 
     PipelineGroup& rdPipelineGroup = PipelineGroups.AddPipelineGroup(pipeline, "Ring Radiodensity Factor Pipelines");
     auto& rdProperty = ringProperties.GetPropertyByName<float>("Radiodensity Factor");
-    ParameterSpan<float> rdSpan {
+    ParameterSpan rdSpan {
             ArtifactVariantPointer(&ring),
             rdProperty,
             { rdFactorRange.Min, rdFactorRange.Max, rdFactorRange.Step },

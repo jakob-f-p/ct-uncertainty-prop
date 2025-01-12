@@ -58,7 +58,7 @@ protected:
 
 private:
     [[nodiscard]] auto
-    PixelPosToRangeValue(int pos) -> int;
+    PixelPosToRangeValue(int pos) const -> int;
 
     enum struct ActiveSlider { INVALID, LOW, HIGH };
 
@@ -82,7 +82,7 @@ public:
     GetValue() const noexcept -> RangeSlider::Range;
 
     auto
-    SetValue(RangeSlider::Range range) -> void;
+    SetValue(RangeSlider::Range range) const -> void;
 
 Q_SIGNALS:
     auto

@@ -1,15 +1,14 @@
 #include "CoordinateRowWidget.h"
 
-#include <QDoubleSpinBox>
 #include <QGridLayout>
 #include <QLabel>
 #include <QSpinBox>
 
 template<typename ValueT, typename SpinBoxT>
-CoordinateRowWidget<ValueT, SpinBoxT>::CoordinateRowWidget(CoordinateRowWidget::NumericSettings numericSettings,
+CoordinateRowWidget<ValueT, SpinBoxT>::CoordinateRowWidget(NumericSettings numericSettings,
                                            const QString& labelText) :
-        GLayout(new QGridLayout(this)),
-        HasLabel(!labelText.isEmpty()) {
+        HasLabel(!labelText.isEmpty()),
+        GLayout(new QGridLayout(this)) {
     GLayout->setContentsMargins(0, 0, 0, 0);
 
     AppendCoordinatesRow(numericSettings, labelText);
@@ -17,8 +16,8 @@ CoordinateRowWidget<ValueT, SpinBoxT>::CoordinateRowWidget(CoordinateRowWidget::
 
 template<typename ValueT, typename SpinBoxT>
 CoordinateRowWidget<ValueT, SpinBoxT>::CoordinateRowWidget(bool hasLabel) :
-        GLayout(new QGridLayout(this)),
-        HasLabel(hasLabel) {
+        HasLabel(hasLabel),
+        GLayout(new QGridLayout(this)) {
 
     GLayout->setContentsMargins(0, 0, 0, 0);
 }
@@ -56,11 +55,11 @@ auto CoordinateRowWidget<ValueT, SpinBoxT>::AppendCoordinatesRow(const NumericSe
 
     for (auto* spinBox : std::vector({ spinBoxRow.X, spinBoxRow.Y, spinBoxRow.Z }))
         connect(spinBox, &SpinBoxT::valueChanged,
-                this, [this]() { Q_EMIT ValueChanged(); });
+                this, [this] { Q_EMIT ValueChanged(); });
 }
 
 template<typename ValueT, typename SpinBoxT>
-auto CoordinateRowWidget<ValueT, SpinBoxT>::GetRowData(uint8_t rowIdx) const -> CoordinateRowWidget::RowData {
+auto CoordinateRowWidget<ValueT, SpinBoxT>::GetRowData(uint8_t rowIdx) const -> RowData {
     if (rowIdx >= Rows.size())
         throw std::runtime_error("Given row index too large");
 
@@ -80,7 +79,7 @@ auto CoordinateRowWidget<ValueT, SpinBoxT>::GetRowData() const noexcept -> std::
 }
 
 template<typename ValueT, typename SpinBoxT>
-auto CoordinateRowWidget<ValueT, SpinBoxT>::SetRowData(uint8_t rowIdx, CoordinateRowWidget::RowData data) -> void {
+auto CoordinateRowWidget<ValueT, SpinBoxT>::SetRowData(uint8_t rowIdx, RowData data) -> void {
     if (rowIdx >= Rows.size())
         throw std::runtime_error("Given row index too large");
 

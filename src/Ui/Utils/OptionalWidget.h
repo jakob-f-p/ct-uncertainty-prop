@@ -9,7 +9,7 @@ class OptionalWidget : public QStackedWidget {
 public:
     explicit OptionalWidget(QString placeholderText, WidgetType* widget = nullptr, QWidget* parent = nullptr) :
             QStackedWidget(parent),
-            PlaceholderWidget([&placeholderText]() {
+            PlaceholderWidget([&placeholderText] {
                 auto* widget = new QWidget();
                 auto* vLayout = new QVBoxLayout(widget);
                 auto* textLabel = new QLabel(placeholderText);

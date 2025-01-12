@@ -11,13 +11,13 @@ class QFormLayout;
 class QWidget;
 
 template<typename T>
-concept TStructureData = requires(T derivedData, T::Structure structure) {
+concept TStructureData = requires(T derivedData, typename T::Structure structure) {
     derivedData.PopulateStructure(structure);
     derivedData.PopulateFromStructure(structure);
 };
 
 template<typename T>
-concept TStructureWidget = requires(T widget, T::Data data) {
+concept TStructureWidget = requires(T widget, typename T::Data data) {
     widget.GetData();
     widget.Populate(data);
 };
@@ -27,28 +27,28 @@ concept TStructureWidget = requires(T widget, T::Data data) {
 class CtStructureBase {
 public:
     [[nodiscard]] auto
-    GetMTime() const noexcept -> vtkMTimeType { return Transform.GetMTime(); };
+    GetMTime() const noexcept -> vtkMTimeType { return Transform.GetMTime(); }
 
     auto
-    Modified() noexcept -> void { Transform.Modified(); };
+    Modified() const noexcept -> void { Transform.Modified(); }
 
     auto
-    SetName(std::string&& name) noexcept -> void { Name = std::move(name); };
+    SetName(std::string&& name) noexcept -> void { Name = std::move(name); }
 
     [[nodiscard]] auto
-    GetName() const -> std::string { return Name; };
+    GetName() const -> std::string { return Name; }
 
     [[nodiscard]] auto
-    GetTransformedPoint(Point point) const noexcept -> Point { return Transform.TransformPoint(point); }
+    GetTransformedPoint(Point const& point) const noexcept -> Point { return Transform.TransformPoint(point); }
 
     [[nodiscard]] auto
-    GetInverselyTransformedPoint(Point point) const noexcept -> Point { return Transform.InverseTransformPoint(point); }
+    GetInverselyTransformedPoint(Point const& point) const noexcept -> Point { return Transform.InverseTransformPoint(point); }
 
     auto
     SetTransformData(SimpleTransformData const& transformData) noexcept -> void { Transform.SetData(transformData); }
 
     [[nodiscard]] auto
-    GetTransformData() const noexcept -> SimpleTransformData { return Transform.GetData(); };
+    GetTransformData() const noexcept -> SimpleTransformData { return Transform.GetData(); }
 
 protected:
     CtStructureBase() = default;
@@ -67,7 +67,7 @@ private:
 
 template<TStructureData StructureData>
 class CtStructureBaseData {
-    using Structure = StructureData::Structure;
+    using Structure = typename StructureData::Structure;
 
 public:
     QString Name;

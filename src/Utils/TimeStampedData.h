@@ -3,7 +3,6 @@
 #include <vtkTimeStamp.h>
 
 #include <optional>
-#include <vector>
 
 
 template<typename DataT>
@@ -11,7 +10,7 @@ requires std::is_same_v<std::decay_t<DataT>, DataT> && (!std::is_pointer_v<std::
 struct TimeStampedData {
     TimeStampedData() = default;
     explicit TimeStampedData(DataT&& data, vtkMTimeType time) :
-            OptionalData(std::move(data)), Time(time) {}
+            Time(time), OptionalData(std::move(data)) {}
 
     [[nodiscard]] auto
     GetTime() const noexcept -> vtkMTimeType { return Time; }
@@ -73,7 +72,7 @@ requires std::is_same_v<std::decay_t<DataT>, DataT> && (!std::is_pointer_v<std::
 struct TimeStampedDataRef {
     explicit TimeStampedDataRef(TimeStampedData<DataT> const& data) :
             DataRef(*data),
-            Time(data.GetTime()) {};
+            Time(data.GetTime()) {}
 
     [[nodiscard]] auto
     GetTime() const noexcept -> vtkMTimeType { return Time; }
