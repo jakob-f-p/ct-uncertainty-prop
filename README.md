@@ -1,4 +1,4 @@
-# Surface-aware Mesh Texture Synthesis with Pre-trained 2D CNNs
+# Investigating the Propagation of CT Acquisition Artifacts along the Medical Imaging Pipeline
 [Jakob Peischl](mailto:e12123459@student.tuwien.ac.at), [Renata G. Raidou](https://www.cg.tuwien.ac.at/staff/RenataRaidou)
 
 ![Workflow pipeline image](assets/teaser-pipeline.png)
@@ -7,8 +7,8 @@
 
 <img src="assets/tuwien-logo.svg" alt="TU Wien" width="25%">
 
-This repository contains the official implementation of the paper "nvestigating the Propagation of CT Acquisition Artifacts
-along the Medical Imaging Pipeline".
+This repository contains the official implementation of the paper
+"Investigating the Propagation of CT Acquisition Artifacts along the Medical Imaging Pipeline".
 
 Abstract: *We propose a framework to support the simulation, exploration, and analysis of uncertainty propagation in
 the medical imaging pipeline—exemplified with artifacts arising during CT acquisition. Uncertainty in the
@@ -29,15 +29,24 @@ The project uses two languages that interact with each other. Most of the applic
 processing is done using Python. For running the code, you need
  - C++ Compiler with full C++20 support
  - C++ Dependencies
-   - Some of the required dependencies get installed automatically by CMake when running the application for the first time. Unfortunately, dependency management through CMake can be fragile. So some things might not work immediately on some systems. The dependencies and their setup are implicitly documented in the respective CMakeList.txt in the /deps directory of this project.
-   - Qt 6.6.2
-   - VTK 9.3.0 with Qt Support
-   - HDF5: This dependency needs to be installed manually. Please ensure that zlib support is enabled.
- - Python 3.9
+   - Manual installation (configuration in `src/CMakeLists.txt` file might need adaptations):
+      - Qt 6.6.2 (with modules Core, GUI, Widgets, and Charts)
+      - VTK 9.3.0 with Qt Support
+      - HDF5 with zlib support
+   - The dependencies listed in the `/deps` directory get installed automatically by CMake when running the
+   application for the first time.
+ - Python 3.9 (strict minor version)
  - Python Dependencies:
-   - PyRadiomics 3.1.0: Either install the official version using `pip install 'pyradiomics==3.1.0'` or install the custom performance-optimized version in the `/external` directory of this project. For more information, please read the `README.md` file there.
+   - PyRadiomics 3.1.0: Either install the official version using `pip install 'pyradiomics==3.1.0'`
+   or install the custom performance-optimized version in the `/external` directory of this project.
+   For more information, please read the `README.md` file there.
 
 These are the dependencies the system was last tested with. Newer minor releases will probably also work.
+
+Unfortunately, dependency management through CMake can be fragile.
+So some things might not work immediately on some systems.
+The dependencies are configured in the respective `CMakeList.txt` files in the `/src` directory
+and in the `/deps/**` directories of this project.
 
 ## BibTeX
 Paper:
