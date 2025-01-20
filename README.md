@@ -3,8 +3,8 @@
 
 <img src="assets/teaser-pipeline.png" alt="Workflow pipeline image" width="100%" style="max-width:1080px; margin:auto;"/>
 <div>
- <img src="assets/teaser-pca.png" alt="Analysis PCA" width="58.5%" style="max-width:615px; margin:auto;"/>
- <img src="assets/teaser-tsne.png" alt="Analysis t-SNE" width="41%" style="max-width:432px; margin:auto;"/>
+ <img src="assets/teaser-pca.png" alt="Analysis PCA" width="57.5%" style="max-width:615px; margin:auto;"/>
+ <img src="assets/teaser-tsne.png" alt="Analysis t-SNE" width="40%" style="max-width:432px; margin:auto;"/>
 </div>
 
 <img src="assets/tuwien-logo.svg" alt="TU Wien" width="25%" style="max-width:270px; display:block">
