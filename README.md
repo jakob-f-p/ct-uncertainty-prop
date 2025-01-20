@@ -23,10 +23,11 @@ the effects of individual and combined artifacts on segmentation outcomes. Our a
 effective and flexible exploration and analysis of the impact of uncertainties on the outcomes of the medical
 imaging pipeline. Initial insights into the nature and patterns of the simulated artifacts could also be derived.*
 
-[https://github.com/jakob-f-p/ct-uncertainty-prop/assets/video.mp4](https://github.com/jakob-f-p/ct-uncertainty-prop/blob/main/assets/video.mp4)
 
 
-[//] <video src="assets/video.mp4" controls width="100%" style="max-width:1080px; margin:auto;" alt="Tutorial Video: In case it does not play, you can download it from `assets/video.mp4`"/>
+https://github.com/user-attachments/assets/843fb424-93d6-45a4-9239-2377be7dc947
+
+Download [higher quality video](https://github.com/jakob-f-p/ct-uncertainty-prop/blob/main/assets/video.mp4).
 
 
 ## Running the code
