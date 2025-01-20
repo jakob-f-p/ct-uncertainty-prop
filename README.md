@@ -1,9 +1,11 @@
 # Investigating the Propagation of CT Acquisition Artifacts along the Medical Imaging Pipeline
 [Jakob Peischl](mailto:e12123459@student.tuwien.ac.at), [Renata G. Raidou](https://www.cg.tuwien.ac.at/staff/RenataRaidou)
 
-<img src="assets/teaser-pipeline.png" alt="Workflow pipeline image" width="100%" style="max-width:1080px; margin:auto;">
-<img src="assets/teaser-pca.png" alt="Analysis PCA" width="57%" style="max-width:615px; margin:auto;">
-<img src="assets/teaser-tsne.png" alt="Analysis t-SNE" width="40%" style="max-width:432px; margin:auto;">
+<img src="assets/teaser-pipeline.png" alt="Workflow pipeline image" width="100%" style="max-width:1080px; margin:auto;"/>
+<div>
+ <img src="assets/teaser-pca.png" alt="Analysis PCA" width="58.5%" style="max-width:615px; margin:auto;"/>
+ <img src="assets/teaser-tsne.png" alt="Analysis t-SNE" width="41%" style="max-width:432px; margin:auto;"/>
+</div>
 
 <img src="assets/tuwien-logo.svg" alt="TU Wien" width="25%" style="max-width:270px; display:block">
 
@@ -23,11 +25,9 @@ the effects of individual and combined artifacts on segmentation outcomes. Our a
 effective and flexible exploration and analysis of the impact of uncertainties on the outcomes of the medical
 imaging pipeline. Initial insights into the nature and patterns of the simulated artifacts could also be derived.*
 
-
-
 https://github.com/user-attachments/assets/843fb424-93d6-45a4-9239-2377be7dc947
 
-Download [higher quality video](https://github.com/jakob-f-p/ct-uncertainty-prop/blob/main/assets/video.mp4).
+Download [video in original quality](https://github.com/jakob-f-p/ct-uncertainty-prop/blob/main/assets/video.mp4).
 
 
 ## Running the code
