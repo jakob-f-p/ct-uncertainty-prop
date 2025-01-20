@@ -1,11 +1,11 @@
 # Investigating the Propagation of CT Acquisition Artifacts along the Medical Imaging Pipeline
 [Jakob Peischl](mailto:e12123459@student.tuwien.ac.at), [Renata G. Raidou](https://www.cg.tuwien.ac.at/staff/RenataRaidou)
 
-![Workflow pipeline image](assets/teaser-pipeline.png)
-<img src="assets/teaser-pca.png" alt="Analysis PCA" width="57%">
-<img src="assets/teaser-tsne.png" alt="Analysis t-SNE" width="40%">
+<img src="assets/teaser-pipeline.png" alt="Workflow pipeline image" width="100%" style="max-width:1080px; margin:auto;">
+<img src="assets/teaser-pca.png" alt="Analysis PCA" width="57%" style="max-width:615px; margin:auto;">
+<img src="assets/teaser-tsne.png" alt="Analysis t-SNE" width="40%" style="max-width:432px; margin:auto;">
 
-<img src="assets/tuwien-logo.svg" alt="TU Wien" width="25%">
+<img src="assets/tuwien-logo.svg" alt="TU Wien" width="25%" style="max-width:270px; display:block">
 
 This repository contains the official implementation of the paper
 "Investigating the Propagation of CT Acquisition Artifacts along the Medical Imaging Pipeline".
@@ -22,6 +22,9 @@ individual artifacts or combinations thereof. We demonstrate our proposed framew
 the effects of individual and combined artifacts on segmentation outcomes. Our application supports the
 effective and flexible exploration and analysis of the impact of uncertainties on the outcomes of the medical
 imaging pipeline. Initial insights into the nature and patterns of the simulated artifacts could also be derived.*
+
+<video src="assets/video.mp4" controls width="100%" style="max-width:1080px; margin:auto;" alt="Tutorial Video: In case it does not play, you can download it from `assets/video.mp4`"/>
+
 
 ## Running the code
 
